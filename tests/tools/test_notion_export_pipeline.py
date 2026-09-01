@@ -266,6 +266,7 @@ class NotionExportPipelineTests(unittest.TestCase):
         ]
         with self.assertRaisesRegex(ExportValidationError, "events.*reachable dialogue cycle"):
             self.pipeline.build_snapshots(cycle, "confirmed-test")
+
     def test_recipe_unlock_biome_relation_uses_stable_id(self):
         schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
         recipe_notion = schema["datasets"]["recipes"]["notion"]
@@ -618,6 +619,7 @@ class NotionExportPipelineTests(unittest.TestCase):
             for item in json.loads((generated / "recipes.json").read_text(encoding="utf-8"))["items"]
         }
 
+        self.assertEqual(recipes["bandage"]["unlock_biome_id"], "common_region")
         self.assertEqual(recipes["wooden_workbench"]["unlock_biome"], "일반")
         self.assertEqual(recipes["wooden_workbench"]["unlock_biome_id"], "common_region")
         self.assertEqual(recipes["mountain_kiln"]["unlock_biome_id"], "mountain_region")
