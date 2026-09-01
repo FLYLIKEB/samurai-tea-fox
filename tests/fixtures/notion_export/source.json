@@ -31,7 +31,15 @@
     "balance": {
       "source": "collection://balance",
       "items": [
-        {"id": "player_hp_max", "name": "플레이어 HP 최대치", "status": "테스트", "value": 100}
+        {"id": "player_hp_max", "name": "플레이어 HP 최대치", "status": "테스트", "value": 100},
+        {"id": "day_phase_duration_seconds", "name": "낮 페이즈 지속 시간", "status": "확정", "value": 300},
+        {"id": "dusk_phase_duration_seconds", "name": "해질녘 페이즈 지속 시간", "status": "확정", "value": 120},
+        {"id": "night_phase_duration_seconds", "name": "밤 페이즈 지속 시간", "status": "확정", "value": 240},
+        {"id": "late_night_phase_duration_seconds", "name": "깊은 밤 페이즈 지속 시간", "status": "확정", "value": 180},
+        {"id": "dusk_kokoro_decay_per_second", "name": "해질녘 心 감소량", "status": "확정", "value": 0.02},
+        {"id": "night_kokoro_decay_per_second", "name": "밤 心 감소량", "status": "확정", "value": 0.05},
+        {"id": "late_night_kokoro_decay_per_second", "name": "깊은 밤 心 감소량", "status": "확정", "value": 0.1},
+        {"id": "safe_sleep_hp_recovery_ratio", "name": "안전 수면 HP 회복 비율", "status": "확정", "value": 0.2}
       ]
     }
   }

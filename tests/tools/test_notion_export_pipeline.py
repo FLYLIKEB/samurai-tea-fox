@@ -41,8 +41,9 @@ class NotionExportPipelineTests(unittest.TestCase):
             [item["id"] for item in confirmed_test["items"]["items"]],
             ["clay", "wood"],
         )
-        self.assertEqual(confirmed["balance"]["items"], [])
-        self.assertEqual(confirmed_test["balance"]["items"][0]["id"], "player_hp_max")
+        self.assertIn("day_phase_duration_seconds", [item["id"] for item in confirmed["balance"]["items"]])
+        self.assertNotIn("player_hp_max", [item["id"] for item in confirmed["balance"]["items"]])
+        self.assertIn("player_hp_max", [item["id"] for item in confirmed_test["balance"]["items"]])
 
     def test_missing_required_field_fails_with_dataset_and_item_context(self):
         invalid = copy.deepcopy(self.capture)
@@ -67,8 +68,10 @@ class NotionExportPipelineTests(unittest.TestCase):
         del incomplete_test["datasets"]["balance"]["items"][0]["value"]
 
         snapshots = self.pipeline.build_snapshots(incomplete_test, "confirmed")
+        balance_ids = [item["id"] for item in snapshots["balance"]["items"]]
 
-        self.assertEqual(snapshots["balance"]["items"], [])
+        self.assertIn("day_phase_duration_seconds", balance_ids)
+        self.assertNotIn("player_hp_max", balance_ids)
 
     def test_duplicate_stable_id_fails(self):
         invalid = copy.deepcopy(self.capture)
@@ -116,6 +119,24 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(road_bandit["status"], "테스트")
         self.assertEqual(road_bandit["movement_speed"], 1.6)
         self.assertEqual(road_bandit["attack_period_seconds"], 1.8)
+
+    def test_dev_6_time_and_sleep_balance_exports_are_present(self):
+        generated = ROOT / "data/generated"
+        self.pipeline.validate_directory(generated)
+
+        balance = {
+            item["id"]: item["value"]
+            for item in json.loads((generated / "balance.json").read_text(encoding="utf-8"))["items"]
+        }
+
+        self.assertEqual(balance["day_phase_duration_seconds"], 300)
+        self.assertEqual(balance["dusk_phase_duration_seconds"], 120)
+        self.assertEqual(balance["night_phase_duration_seconds"], 240)
+        self.assertEqual(balance["late_night_phase_duration_seconds"], 180)
+        self.assertEqual(balance["dusk_kokoro_decay_per_second"], 0.02)
+        self.assertEqual(balance["night_kokoro_decay_per_second"], 0.05)
+        self.assertEqual(balance["late_night_kokoro_decay_per_second"], 0.1)
+        self.assertEqual(balance["safe_sleep_hp_recovery_ratio"], 0.2)
 
     def test_validate_directory_rejects_unsupported_schema_version(self):
         with tempfile.TemporaryDirectory() as directory:

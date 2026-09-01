@@ -1,5 +1,5 @@
 {
-  "content_hash": "373b272edad0eec5fb32b4773e7332e023cb64e1c59cc3afbc5e70d834cc18b4",
+  "content_hash": "662b313ee01f53f37862dfd4cedf456782c2d974c2d7ef1ecc7262d7b82c0c75",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -53,6 +53,15 @@
       "value": 1
     },
     {
+      "category": "시간",
+      "formula_note": "하루 시작 구간. 이 구간에서는 心 자연 감소가 없다.",
+      "id": "day_phase_duration_seconds",
+      "name": "낮 페이즈 지속 시간",
+      "status": "확정",
+      "unit": "초",
+      "value": 300
+    },
+    {
       "category": "회피",
       "formula_note": "짧은 쿨타임으로 연속 난사를 제한한다.",
       "id": "dodge_cooldown_seconds",
@@ -81,6 +90,24 @@
       "status": "테스트",
       "unit": "초",
       "value": 0.18
+    },
+    {
+      "category": "心",
+      "formula_note": "해질녘부터 心이 천천히 감소한다. 낮에는 감소하지 않는다.",
+      "id": "dusk_kokoro_decay_per_second",
+      "name": "해질녘 心 감소량",
+      "status": "확정",
+      "unit": "point/sec",
+      "value": 0.02
+    },
+    {
+      "category": "시간",
+      "formula_note": "낮 이후 밤으로 넘어가는 완충 구간.",
+      "id": "dusk_phase_duration_seconds",
+      "name": "해질녘 페이즈 지속 시간",
+      "status": "확정",
+      "unit": "초",
+      "value": 120
     },
     {
       "category": "전투",
@@ -155,6 +182,24 @@
     },
     {
       "category": "心",
+      "formula_note": "깊은 밤 시간대의 心 감소량.",
+      "id": "late_night_kokoro_decay_per_second",
+      "name": "깊은 밤 心 감소량",
+      "status": "확정",
+      "unit": "point/sec",
+      "value": 0.1
+    },
+    {
+      "category": "시간",
+      "formula_note": "수면 전 마지막 밤 시간대.",
+      "id": "late_night_phase_duration_seconds",
+      "name": "깊은 밤 페이즈 지속 시간",
+      "status": "확정",
+      "unit": "초",
+      "value": 180
+    },
+    {
+      "category": "心",
       "formula_note": "心 ≤ 30일 때 요술 기운 소모 × 1.25.",
       "id": "low_kokoro_ability_cost_increase",
       "name": "低心 요술 소모 증가",
@@ -162,6 +207,24 @@
       "status": "테스트",
       "unit": "%",
       "value": 25
+    },
+    {
+      "category": "心",
+      "formula_note": "밤 시간대의 心 감소량.",
+      "id": "night_kokoro_decay_per_second",
+      "name": "밤 心 감소량",
+      "status": "확정",
+      "unit": "point/sec",
+      "value": 0.05
+    },
+    {
+      "category": "시간",
+      "formula_note": "밤 시간대의 기본 지속 시간.",
+      "id": "night_phase_duration_seconds",
+      "name": "밤 페이즈 지속 시간",
+      "status": "확정",
+      "unit": "초",
+      "value": 240
     },
     {
       "category": "플레이어",
@@ -172,6 +235,15 @@
       "status": "테스트",
       "unit": "point",
       "value": 100
+    },
+    {
+      "category": "수면",
+      "formula_note": "안전 수면 시 최대 HP의 20%를 회복하며 최대 HP를 넘지 않는다.",
+      "id": "safe_sleep_hp_recovery_ratio",
+      "name": "안전 수면 HP 회복 비율",
+      "status": "확정",
+      "unit": "ratio",
+      "value": 0.2
     },
     {
       "category": "차",
