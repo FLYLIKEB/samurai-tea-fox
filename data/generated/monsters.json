@@ -1,22 +1,159 @@
 {
+  "content_hash": "0c4fcfd42063f20867f294c70fa0fdf58d5169288b85160404813c1be3ed5497",
   "data_version": "notion-2026-09-01",
-  "source": "collection://8058308e-e875-45aa-929c-49fd8575601a",
   "items": [
-    {"id": "wild_dog", "name": "들개", "kind": "야생동물", "biome": "일반", "day_night": "둘 다", "danger": 1, "status": "초안", "behavior_note": "짧게 거리를 두고 빙글 돌다가 직선으로 달려든다."},
-    {"id": "road_bandit", "name": "노상 도적", "kind": "도적·무사", "biome": "일반", "day_night": "낮", "danger": 1, "status": "초안", "behavior_note": "길목을 막고 한두 번 베고 물러난다."},
-    {"id": "foxfire", "name": "여우불", "kind": "요괴", "biome": "일반", "day_night": "밤", "danger": 2, "status": "초안", "behavior_note": "가까이 오면 한 번 사라져 옆으로 이동한다."},
-    {"id": "mountain_boar", "name": "산멧돼지", "kind": "야생동물", "biome": "산악", "day_night": "둘 다", "danger": 2, "status": "초안", "behavior_note": "좁은 산길에서 짧은 예고 후 돌진한다."},
-    {"id": "abandoned_mine_samurai", "name": "폐광 무사", "kind": "도적·무사", "biome": "산악", "day_night": "둘 다", "danger": 3, "status": "초안", "behavior_note": "동굴 입구와 좁은 통로를 지키며 막기와 찌르기를 반복한다."},
-    {"id": "stonebound_yokai", "name": "돌붙이 요괴", "kind": "요괴", "biome": "산악", "day_night": "밤", "danger": 3, "status": "초안", "behavior_note": "바위처럼 멈춰 있다가 가까이 오면 깨어난다."},
-    {"id": "ash_crow_flock", "name": "잿빛 까마귀떼", "kind": "야생동물", "biome": "황무지", "day_night": "낮", "danger": 3, "status": "초안", "behavior_note": "짧게 시야를 가리고 다른 적 주변으로 흩어진다."},
-    {"id": "wandering_ronin", "name": "떠돌이 낭인", "kind": "도적·무사", "biome": "황무지", "day_night": "둘 다", "danger": 3, "status": "초안", "behavior_note": "간격을 재다가 플레이어 공격 직후 빈틈을 노린다."},
-    {"id": "empty_armor_yokai", "name": "빈 갑주 요괴", "kind": "요괴", "biome": "황무지", "day_night": "밤", "danger": 4, "status": "초안", "behavior_note": "느리지만 정면 공격을 잘 버틴다."},
-    {"id": "snow_wolf", "name": "설원 늑대", "kind": "야생동물", "biome": "설원", "day_night": "둘 다", "danger": 3, "status": "초안", "behavior_note": "두세 마리가 넓게 퍼져 접근한다."},
-    {"id": "snow_path_assassin", "name": "눈길 자객", "kind": "도적·무사", "biome": "설원", "day_night": "밤", "danger": 4, "status": "초안", "behavior_note": "눈더미 뒤에서 접근해 한 번 공격하고 다시 거리를 둔다."},
-    {"id": "frost_lantern_yokai", "name": "서리등불 요괴", "kind": "요괴", "biome": "설원", "day_night": "밤", "danger": 4, "status": "초안", "behavior_note": "얼어붙은 강과 좁은 길 쪽으로 유도한다."},
-    {"id": "swamp_snake", "name": "습지 뱀", "kind": "야생동물", "biome": "열대우림", "day_night": "둘 다", "danger": 3, "status": "초안", "behavior_note": "물가와 풀숲에 숨어 있다가 짧게 튀어나온다."},
-    {"id": "agarwood_thief", "name": "향목 도둑", "kind": "도적·무사", "biome": "열대우림", "day_night": "둘 다", "danger": 4, "status": "초안", "behavior_note": "희귀 목재와 향목 주변을 순찰한다."},
-    {"id": "moss_tree_yokai", "name": "이끼쓴 나무요괴", "kind": "요괴", "biome": "열대우림", "day_night": "밤", "danger": 4, "status": "초안", "behavior_note": "오래된 나무처럼 멈춰 있고 가까이 오면 뿌리 범위 공격을 한다."}
-  ]
+    {
+      "behavior_note": "동굴 입구와 좁은 통로를 지키며 막기와 찌르기를 반복한다.",
+      "biome": "산악",
+      "danger": 3,
+      "day_night": "둘 다",
+      "id": "abandoned_mine_samurai",
+      "kind": "도적·무사",
+      "name": "폐광 무사",
+      "status": "초안"
+    },
+    {
+      "behavior_note": "희귀 목재와 향목 주변을 순찰한다.",
+      "biome": "열대우림",
+      "danger": 4,
+      "day_night": "둘 다",
+      "id": "agarwood_thief",
+      "kind": "도적·무사",
+      "name": "향목 도둑",
+      "status": "초안"
+    },
+    {
+      "behavior_note": "짧게 시야를 가리고 다른 적 주변으로 흩어진다.",
+      "biome": "황무지",
+      "danger": 3,
+      "day_night": "낮",
+      "id": "ash_crow_flock",
+      "kind": "야생동물",
+      "name": "잿빛 까마귀떼",
+      "status": "초안"
+    },
+    {
+      "behavior_note": "느리지만 정면 공격을 잘 버틴다.",
+      "biome": "황무지",
+      "danger": 4,
+      "day_night": "밤",
+      "id": "empty_armor_yokai",
+      "kind": "요괴",
+      "name": "빈 갑주 요괴",
+      "status": "초안"
+    },
+    {
+      "behavior_note": "가까이 오면 한 번 사라져 옆으로 이동한다.",
+      "biome": "일반",
+      "danger": 2,
+      "day_night": "밤",
+      "id": "foxfire",
+      "kind": "요괴",
+      "name": "여우불",
+      "status": "초안"
+    },
+    {
+      "behavior_note": "얼어붙은 강과 좁은 길 쪽으로 유도한다.",
+      "biome": "설원",
+      "danger": 4,
+      "day_night": "밤",
+      "id": "frost_lantern_yokai",
+      "kind": "요괴",
+      "name": "서리등불 요괴",
+      "status": "초안"
+    },
+    {
+      "behavior_note": "오래된 나무처럼 멈춰 있고 가까이 오면 뿌리 범위 공격을 한다.",
+      "biome": "열대우림",
+      "danger": 4,
+      "day_night": "밤",
+      "id": "moss_tree_yokai",
+      "kind": "요괴",
+      "name": "이끼쓴 나무요괴",
+      "status": "초안"
+    },
+    {
+      "behavior_note": "좁은 산길에서 짧은 예고 후 돌진한다.",
+      "biome": "산악",
+      "danger": 2,
+      "day_night": "둘 다",
+      "id": "mountain_boar",
+      "kind": "야생동물",
+      "name": "산멧돼지",
+      "status": "초안"
+    },
+    {
+      "behavior_note": "길목을 막고 한두 번 베고 물러난다.",
+      "biome": "일반",
+      "danger": 1,
+      "day_night": "낮",
+      "id": "road_bandit",
+      "kind": "도적·무사",
+      "name": "노상 도적",
+      "status": "초안"
+    },
+    {
+      "behavior_note": "눈더미 뒤에서 접근해 한 번 공격하고 다시 거리를 둔다.",
+      "biome": "설원",
+      "danger": 4,
+      "day_night": "밤",
+      "id": "snow_path_assassin",
+      "kind": "도적·무사",
+      "name": "눈길 자객",
+      "status": "초안"
+    },
+    {
+      "behavior_note": "두세 마리가 넓게 퍼져 접근한다.",
+      "biome": "설원",
+      "danger": 3,
+      "day_night": "둘 다",
+      "id": "snow_wolf",
+      "kind": "야생동물",
+      "name": "설원 늑대",
+      "status": "초안"
+    },
+    {
+      "behavior_note": "바위처럼 멈춰 있다가 가까이 오면 깨어난다.",
+      "biome": "산악",
+      "danger": 3,
+      "day_night": "밤",
+      "id": "stonebound_yokai",
+      "kind": "요괴",
+      "name": "돌붙이 요괴",
+      "status": "초안"
+    },
+    {
+      "behavior_note": "물가와 풀숲에 숨어 있다가 짧게 튀어나온다.",
+      "biome": "열대우림",
+      "danger": 3,
+      "day_night": "둘 다",
+      "id": "swamp_snake",
+      "kind": "야생동물",
+      "name": "습지 뱀",
+      "status": "초안"
+    },
+    {
+      "behavior_note": "간격을 재다가 플레이어 공격 직후 빈틈을 노린다.",
+      "biome": "황무지",
+      "danger": 3,
+      "day_night": "둘 다",
+      "id": "wandering_ronin",
+      "kind": "도적·무사",
+      "name": "떠돌이 낭인",
+      "status": "초안"
+    },
+    {
+      "behavior_note": "짧게 거리를 두고 빙글 돌다가 직선으로 달려든다.",
+      "biome": "일반",
+      "danger": 1,
+      "day_night": "둘 다",
+      "id": "wild_dog",
+      "kind": "야생동물",
+      "name": "들개",
+      "status": "초안"
+    }
+  ],
+  "profile": "confirmed-test",
+  "schema_version": 1,
+  "source": "collection://8058308e-e875-45aa-929c-49fd8575601a"
 }
-

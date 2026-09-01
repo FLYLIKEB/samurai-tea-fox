@@ -15,6 +15,8 @@ const FILES := {
 }
 
 var data_version := ""
+var schema_version := 0
+var profile := ""
 var sources: Dictionary = {}
 var definitions: Dictionary = {}
 
@@ -23,6 +25,13 @@ func load_from_directory(directory: String) -> Dictionary:
 	definitions.clear()
 	sources.clear()
 	data_version = ""
+	schema_version = 0
+	profile = ""
+
+	var schema_path := "res://data/schemas/export_schema.json"
+	var export_schema = JSON.parse_string(FileAccess.get_file_as_string(schema_path))
+	if typeof(export_schema) != TYPE_DICTIONARY or typeof(export_schema.get("datasets")) != TYPE_DICTIONARY:
+		return {"ok": false, "error": "Invalid export schema: %s" % schema_path}
 
 	for key in FILES.keys():
 		var path := "%s/%s" % [directory, FILES[key]]
@@ -36,13 +45,19 @@ func load_from_directory(directory: String) -> Dictionary:
 
 		if data_version == "":
 			data_version = parsed.data_version
+			schema_version = parsed.schema_version
+			profile = parsed.profile
 		elif data_version != parsed.data_version:
 			return {"ok": false, "error": "Mismatched data_version in %s" % path}
+		elif schema_version != parsed.schema_version:
+			return {"ok": false, "error": "Mismatched schema_version in %s" % path}
+		elif profile != parsed.profile:
+			return {"ok": false, "error": "Mismatched profile in %s" % path}
 
 		sources[key] = parsed.source
 		definitions[key] = parsed.items
 
-	return {"ok": true}
+	return validator.validate_catalog(definitions, export_schema.datasets)
 
 func get_definitions(key: String) -> Array:
 	return definitions.get(key, [])
@@ -58,4 +73,3 @@ func find_balance_value(id: String, fallback := 0.0) -> float:
 	if item.is_empty():
 		return fallback
 	return float(item.get("value", fallback))
-

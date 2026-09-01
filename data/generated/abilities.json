@@ -1,19 +1,141 @@
 {
+  "content_hash": "4544ad9ffdb39ab64039d8df07b478b4efa8173c06696d03cdfd624a8e4ba785",
   "data_version": "notion-2026-09-01",
-  "source": "collection://011bff45-d1e8-4d8a-a52d-bbf6c06a3566",
   "items": [
-    {"id": "ember", "name": "잔불", "type": "공격", "tail_requirement": 1, "ki_cost": 14, "cooldown_seconds": 4, "base_damage": 20, "range": 3, "status": "초안"},
-    {"id": "water_shadow", "name": "물그림자", "type": "이동", "tail_requirement": 1, "ki_cost": 12, "cooldown_seconds": 5, "base_damage": 0, "range": 2, "status": "초안"},
-    {"id": "cracked_screen", "name": "금 간 막", "type": "방어", "tail_requirement": 2, "ki_cost": 18, "cooldown_seconds": 8, "base_damage": 0, "range": 0, "status": "초안"},
-    {"id": "remaining_incense", "name": "남은 향", "type": "제어", "tail_requirement": 2, "ki_cost": 16, "cooldown_seconds": 7, "base_damage": 6, "range": 2.5, "status": "초안"},
-    {"id": "crooked_cut", "name": "비뚤어진 베기", "type": "공격", "tail_requirement": 3, "ki_cost": 22, "cooldown_seconds": 6, "base_damage": 34, "range": 1.8, "status": "초안"},
-    {"id": "cup_pause", "name": "한 잔의 틈", "type": "보조", "tail_requirement": 3, "ki_cost": 14, "cooldown_seconds": 10, "base_damage": 0, "range": 0, "status": "초안"},
-    {"id": "empty_place", "name": "빈자리", "type": "이동", "tail_requirement": 5, "ki_cost": 24, "cooldown_seconds": 9, "base_damage": 0, "range": 3, "status": "초안"},
-    {"id": "ash_wind", "name": "잿바람", "type": "제어", "tail_requirement": 5, "ki_cost": 26, "cooldown_seconds": 9, "base_damage": 16, "range": 4, "status": "초안"},
-    {"id": "overlapped_shadow", "name": "겹친 그림자", "type": "공격", "tail_requirement": 7, "ki_cost": 30, "cooldown_seconds": 11, "base_damage": 26, "range": 2.2, "status": "초안"},
-    {"id": "old_bowl_breath", "name": "낡은 그릇의 숨", "type": "방어", "tail_requirement": 7, "ki_cost": 30, "cooldown_seconds": 14, "base_damage": 0, "range": 0, "status": "초안"},
-    {"id": "once_one_meeting", "name": "一期一会", "type": "공격", "tail_requirement": 9, "ki_cost": 42, "cooldown_seconds": 20, "base_damage": 70, "range": 3, "status": "초안"},
-    {"id": "sit_together", "name": "함께 앉는 자리", "type": "보조", "tail_requirement": 9, "ki_cost": 36, "cooldown_seconds": 20, "base_damage": 0, "range": 2.5, "status": "초안"}
-  ]
+    {
+      "base_damage": 16,
+      "cooldown_seconds": 9,
+      "id": "ash_wind",
+      "ki_cost": 26,
+      "name": "잿바람",
+      "range": 4,
+      "status": "초안",
+      "tail_requirement": 5,
+      "type": "제어"
+    },
+    {
+      "base_damage": 0,
+      "cooldown_seconds": 8,
+      "id": "cracked_screen",
+      "ki_cost": 18,
+      "name": "금 간 막",
+      "range": 0,
+      "status": "초안",
+      "tail_requirement": 2,
+      "type": "방어"
+    },
+    {
+      "base_damage": 34,
+      "cooldown_seconds": 6,
+      "id": "crooked_cut",
+      "ki_cost": 22,
+      "name": "비뚤어진 베기",
+      "range": 1.8,
+      "status": "초안",
+      "tail_requirement": 3,
+      "type": "공격"
+    },
+    {
+      "base_damage": 0,
+      "cooldown_seconds": 10,
+      "id": "cup_pause",
+      "ki_cost": 14,
+      "name": "한 잔의 틈",
+      "range": 0,
+      "status": "초안",
+      "tail_requirement": 3,
+      "type": "보조"
+    },
+    {
+      "base_damage": 20,
+      "cooldown_seconds": 4,
+      "id": "ember",
+      "ki_cost": 14,
+      "name": "잔불",
+      "range": 3,
+      "status": "초안",
+      "tail_requirement": 1,
+      "type": "공격"
+    },
+    {
+      "base_damage": 0,
+      "cooldown_seconds": 9,
+      "id": "empty_place",
+      "ki_cost": 24,
+      "name": "빈자리",
+      "range": 3,
+      "status": "초안",
+      "tail_requirement": 5,
+      "type": "이동"
+    },
+    {
+      "base_damage": 0,
+      "cooldown_seconds": 14,
+      "id": "old_bowl_breath",
+      "ki_cost": 30,
+      "name": "낡은 그릇의 숨",
+      "range": 0,
+      "status": "초안",
+      "tail_requirement": 7,
+      "type": "방어"
+    },
+    {
+      "base_damage": 70,
+      "cooldown_seconds": 20,
+      "id": "once_one_meeting",
+      "ki_cost": 42,
+      "name": "一期一会",
+      "range": 3,
+      "status": "초안",
+      "tail_requirement": 9,
+      "type": "공격"
+    },
+    {
+      "base_damage": 26,
+      "cooldown_seconds": 11,
+      "id": "overlapped_shadow",
+      "ki_cost": 30,
+      "name": "겹친 그림자",
+      "range": 2.2,
+      "status": "초안",
+      "tail_requirement": 7,
+      "type": "공격"
+    },
+    {
+      "base_damage": 6,
+      "cooldown_seconds": 7,
+      "id": "remaining_incense",
+      "ki_cost": 16,
+      "name": "남은 향",
+      "range": 2.5,
+      "status": "초안",
+      "tail_requirement": 2,
+      "type": "제어"
+    },
+    {
+      "base_damage": 0,
+      "cooldown_seconds": 20,
+      "id": "sit_together",
+      "ki_cost": 36,
+      "name": "함께 앉는 자리",
+      "range": 2.5,
+      "status": "초안",
+      "tail_requirement": 9,
+      "type": "보조"
+    },
+    {
+      "base_damage": 0,
+      "cooldown_seconds": 5,
+      "id": "water_shadow",
+      "ki_cost": 12,
+      "name": "물그림자",
+      "range": 2,
+      "status": "초안",
+      "tail_requirement": 1,
+      "type": "이동"
+    }
+  ],
+  "profile": "confirmed-test",
+  "schema_version": 1,
+  "source": "collection://011bff45-d1e8-4d8a-a52d-bbf6c06a3566"
 }
-

@@ -1,0 +1,116 @@
+import unittest
+
+from tools.notion_export.capture import CaptureBuilder
+from tools.notion_export.pipeline import ExportPipeline, ExportValidationError
+
+
+class NotionCaptureTests(unittest.TestCase):
+    def setUp(self):
+        self.schema = {
+            "schema_version": 1,
+            "stable_id_pattern": "^[a-z][a-z0-9_]*$",
+            "profiles": {"confirmed": {"include_test": False}},
+            "required_file_keys": [],
+            "datasets": {
+                "items": {
+                    "file": "items.json",
+                    "required_fields": ["id", "name", "status"],
+                    "notion": {
+                        "source": "collection://items",
+                        "title_field": "이름",
+                        "status_field": "설정 상태",
+                        "unique_id_field": "아이템 ID",
+                        "id_prefix": "item",
+                        "field_map": {"종류": "type"},
+                    },
+                },
+                "biomes": {
+                    "file": "biomes.json",
+                    "required_fields": ["id", "name", "status"],
+                    "notion": {
+                        "source": "collection://biomes",
+                        "title_field": "이름",
+                        "status_field": "설정 상태",
+                        "unique_id_field": "지역 ID",
+                        "id_prefix": "biome",
+                    },
+                },
+                "recipes": {
+                    "file": "recipes.json",
+                    "required_fields": ["id", "name", "status"],
+                    "relations": {"result_item_id": "items", "unlock_biome_id": "biomes"},
+                    "notion": {
+                        "source": "collection://recipes",
+                        "title_field": "이름",
+                        "status_field": "설정 상태",
+                        "unique_id_field": "제작법 ID",
+                        "id_prefix": "recipe",
+                        "relation_map": {
+                            "결과 아이템": {"field": "result_item_id", "target": "items", "many": False},
+                            "해금 지역 관계": {"field": "unlock_biome_id", "target": "biomes", "many": False},
+                        },
+                    },
+                },
+            },
+        }
+        self.rows = {
+            "items": [
+                {
+                    "_notion_id": "page-item",
+                    "아이템 ID": {"prefix": None, "number": 7},
+                    "이름": "목재",
+                    "설정 상태": "확정",
+                    "종류": "재료",
+                }
+            ],
+            "biomes": [
+                {
+                    "_notion_id": "page-biome",
+                    "지역 ID": {"prefix": None, "number": 2},
+                    "이름": "일반 지역",
+                    "설정 상태": "확정",
+                }
+            ],
+            "recipes": [
+                {
+                    "_notion_id": "page-recipe",
+                    "제작법 ID": {"prefix": None, "number": 3},
+                    "이름": "목재 작업대 제작",
+                    "설정 상태": "확정",
+                    "결과 아이템": ["page-item"],
+                    "해금 지역 관계": ["page-biome"],
+                }
+            ],
+        }
+
+    def test_builds_runtime_fields_and_stable_relation_ids(self):
+        builder = CaptureBuilder(self.schema, {"page-item": "wood"})
+        capture = builder.build_from_rows(self.rows, "notion-fixture-v1")
+        snapshots = ExportPipeline(self.schema).build_snapshots(capture)
+
+        self.assertEqual(capture["datasets"]["items"]["items"][0]["id"], "wood")
+        self.assertEqual(capture["datasets"]["biomes"]["items"][0]["id"], "biome_2")
+        recipe = capture["datasets"]["recipes"]["items"][0]
+        self.assertEqual(recipe["result_item_id"], "wood")
+        self.assertEqual(recipe["unlock_biome_id"], "biome_2")
+        self.assertEqual(snapshots["recipes"]["items"][0]["id"], "recipe_3")
+
+    def test_missing_relation_target_fails_during_capture(self):
+        self.rows["recipes"][0]["결과 아이템"] = ["missing-page"]
+        with self.assertRaisesRegex(ExportValidationError, "recipes.*result_item_id.*missing-page"):
+            CaptureBuilder(self.schema).build_from_rows(self.rows, "notion-fixture-v1")
+
+    def test_legacy_name_override_bootstraps_existing_runtime_id(self):
+        overrides = {
+            "notion_pages": {},
+            "legacy_names": {"items": {"목재": "wood"}},
+        }
+        capture = CaptureBuilder(self.schema, overrides).build_from_rows(
+            self.rows, "notion-fixture-v1"
+        )
+
+        self.assertEqual(capture["datasets"]["items"]["items"][0]["id"], "wood")
+
+
+if __name__ == "__main__":
+    unittest.main()

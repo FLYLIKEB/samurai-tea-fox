@@ -1,14 +1,94 @@
 {
+  "content_hash": "2b289ce268d733444a9d9a2d13d34f1b64dfd9f19b5d0c50763d2f1c1caea7ac",
   "data_version": "notion-2026-09-01",
-  "source": "collection://d4b40007-096f-4528-8840-53de80bda0dd",
   "items": [
-    {"id": "baekguk", "name": "백국", "type": "국가", "progression_order": null, "difficulty": 0, "teleport": false, "status": "확정", "summary": "주인공의 고향. 중국차 문화권을 모티브로 하며 산지·품종·제다·향미·우림 등 차 자체를 탐구하는 문화가 발달한다."},
-    {"id": "hongguk", "name": "홍국", "type": "국가", "progression_order": null, "difficulty": 1, "teleport": false, "status": "확정", "summary": "전국시대풍 섬나라. 무사와 영주가 다투는 가운데 다도가 권력·미학·정치와 결합한다."},
-    {"id": "common_region", "name": "일반 지역", "type": "바이옴", "progression_order": 1, "difficulty": 1, "teleport": true, "status": "확정", "terrain": "풀밭, 흙길, 돌길, 작은 숲, 강, 다리, 논밭, 마을", "resources": "목재, 돌, 점토, 기본 식재료, 일반 찻잎", "facilities": "우물, 찻집, 작은 사당, 민가, 시장", "core_dungeon_concept": "버려진 목조 저택 / 산사 / 폐쇄된 창고형 다실"},
-    {"id": "mountain_region", "name": "산악 지역", "type": "바이옴", "progression_order": 2, "difficulty": 2, "teleport": true, "status": "확정", "terrain": "산길, 절벽, 바위지대, 계곡, 폭포, 침엽수림, 동굴", "resources": "철광석, 구리, 단단한 돌, 목재, 고산지 찻잎", "facilities": "광산, 산사, 폐광, 산중 찻집", "core_dungeon_concept": "폐광 / 산속 요새"},
-    {"id": "wasteland", "name": "황무지", "type": "바이옴", "progression_order": 3, "difficulty": 3, "teleport": true, "status": "확정", "terrain": "마른 흙, 갈라진 땅, 죽은 나무, 폐허, 말라붙은 하천, 군영 흔적", "resources": "숯, 철 조각, 오래된 목재, 폐기 장비 부품, 일부 보존된 찻잎", "facilities": "폐촌, 버려진 초소, 무너진 다실, 전쟁터 흔적", "core_dungeon_concept": "폐성 / 버려진 군영 / 불탄 사찰"},
-    {"id": "snowfield", "name": "설원", "type": "바이옴", "progression_order": 4, "difficulty": 4, "teleport": true, "status": "확정", "terrain": "눈밭, 얼어붙은 강, 침엽수, 빙벽, 눈 덮인 산길", "resources": "침엽수 목재, 얼음·설원 광물, 모피류 소재, 한랭 고지 찻잎", "facilities": "산장, 온천, 설원 사당, 얼어붙은 광산", "core_dungeon_concept": "얼어붙은 사찰 / 설산 다실 / 빙결 광산"},
-    {"id": "rainforest", "name": "열대우림", "type": "바이옴", "progression_order": 5, "difficulty": 5, "teleport": true, "status": "확정", "terrain": "밀림, 습지, 넓은 강, 덩굴 통로, 차 재배지, 향목 숲", "resources": "특수 찻잎, 목재, 점토·석재, 향목, 침향 계열 재료", "facilities": "차 재배지, 강변 취락, 숲속 다실, 향 문화 공간", "core_dungeon_concept": "숲속 목조 다실 미궁 / 수몰 유적 / 향목 사원"}
-  ]
+    {
+      "difficulty": 0,
+      "id": "baekguk",
+      "name": "백국",
+      "progression_order": null,
+      "status": "확정",
+      "summary": "주인공의 고향. 중국차 문화권을 모티브로 하며 산지·품종·제다·향미·우림 등 차 자체를 탐구하는 문화가 발달한다.",
+      "teleport": false,
+      "type": "국가"
+    },
+    {
+      "core_dungeon_concept": "버려진 목조 저택 / 산사 / 폐쇄된 창고형 다실",
+      "difficulty": 1,
+      "facilities": "우물, 찻집, 작은 사당, 민가, 시장",
+      "id": "common_region",
+      "name": "일반 지역",
+      "progression_order": 1,
+      "resources": "목재, 돌, 점토, 기본 식재료, 일반 찻잎",
+      "status": "확정",
+      "teleport": true,
+      "terrain": "풀밭, 흙길, 돌길, 작은 숲, 강, 다리, 논밭, 마을",
+      "type": "바이옴"
+    },
+    {
+      "difficulty": 1,
+      "id": "hongguk",
+      "name": "홍국",
+      "progression_order": null,
+      "status": "확정",
+      "summary": "전국시대풍 섬나라. 무사와 영주가 다투는 가운데 다도가 권력·미학·정치와 결합한다.",
+      "teleport": false,
+      "type": "국가"
+    },
+    {
+      "core_dungeon_concept": "폐광 / 산속 요새",
+      "difficulty": 2,
+      "facilities": "광산, 산사, 폐광, 산중 찻집",
+      "id": "mountain_region",
+      "name": "산악 지역",
+      "progression_order": 2,
+      "resources": "철광석, 구리, 단단한 돌, 목재, 고산지 찻잎",
+      "status": "확정",
+      "teleport": true,
+      "terrain": "산길, 절벽, 바위지대, 계곡, 폭포, 침엽수림, 동굴",
+      "type": "바이옴"
+    },
+    {
+      "core_dungeon_concept": "숲속 목조 다실 미궁 / 수몰 유적 / 향목 사원",
+      "difficulty": 5,
+      "facilities": "차 재배지, 강변 취락, 숲속 다실, 향 문화 공간",
+      "id": "rainforest",
+      "name": "열대우림",
+      "progression_order": 5,
+      "resources": "특수 찻잎, 목재, 점토·석재, 향목, 침향 계열 재료",
+      "status": "확정",
+      "teleport": true,
+      "terrain": "밀림, 습지, 넓은 강, 덩굴 통로, 차 재배지, 향목 숲",
+      "type": "바이옴"
+    },
+    {
+      "core_dungeon_concept": "얼어붙은 사찰 / 설산 다실 / 빙결 광산",
+      "difficulty": 4,
+      "facilities": "산장, 온천, 설원 사당, 얼어붙은 광산",
+      "id": "snowfield",
+      "name": "설원",
+      "progression_order": 4,
+      "resources": "침엽수 목재, 얼음·설원 광물, 모피류 소재, 한랭 고지 찻잎",
+      "status": "확정",
+      "teleport": true,
+      "terrain": "눈밭, 얼어붙은 강, 침엽수, 빙벽, 눈 덮인 산길",
+      "type": "바이옴"
+    },
+    {
+      "core_dungeon_concept": "폐성 / 버려진 군영 / 불탄 사찰",
+      "difficulty": 3,
+      "facilities": "폐촌, 버려진 초소, 무너진 다실, 전쟁터 흔적",
+      "id": "wasteland",
+      "name": "황무지",
+      "progression_order": 3,
+      "resources": "숯, 철 조각, 오래된 목재, 폐기 장비 부품, 일부 보존된 찻잎",
+      "status": "확정",
+      "teleport": true,
+      "terrain": "마른 흙, 갈라진 땅, 죽은 나무, 폐허, 말라붙은 하천, 군영 흔적",
+      "type": "바이옴"
+    }
+  ],
+  "profile": "confirmed-test",
+  "schema_version": 1,
+  "source": "collection://d4b40007-096f-4528-8840-53de80bda0dd"
 }
-

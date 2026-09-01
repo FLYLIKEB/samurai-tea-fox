@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "data_version": "fixture-2026-09-01",
+  "datasets": {
+    "items": {
+      "source": "collection://items",
+      "items": [
+        {"id": "wood", "name": "목재", "status": "확정"},
+        {"id": "clay", "name": "점토", "status": "테스트"},
+        {"id": "obsolete_item", "name": "폐기 아이템", "status": "폐기"}
+      ]
+    },
+    "biomes": {
+      "source": "collection://biomes",
+      "items": [
+        {"id": "common_region", "name": "일반 지역", "status": "확정"}
+      ]
+    },
+    "recipes": {
+      "source": "collection://recipes",
+      "items": [
+        {
+          "id": "wooden_workbench",
+          "name": "목재 작업대 제작",
+          "status": "확정",
+          "result_item_id": "wood",
+          "unlock_biome_id": "common_region"
+        }
+      ]
+    },
+    "balance": {
+      "source": "collection://balance",
+      "items": [
+        {"id": "player_hp_max", "name": "플레이어 HP 최대치", "status": "테스트", "value": 100}
+      ]
+    }
+  }
+}
