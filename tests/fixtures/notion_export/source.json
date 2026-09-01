@@ -31,7 +31,15 @@
     "balance": {
       "source": "collection://balance",
       "items": [
-        {"id": "player_hp_max", "name": "플레이어 HP 최대치", "status": "테스트", "value": 100}
+        {"id": "player_hp_max", "name": "플레이어 HP 최대치", "status": "테스트", "value": 100},
+        {"id": "day_phase_duration_seconds", "notion_id": "3ce37369-9e66-8142-bdd7-e6eaff3fe967", "name": "낮 지속시간", "status": "테스트", "category": "心", "unit": "초", "value": 300, "description": "낮 상태의 프로토타입 지속시간", "formula_note": "낮에는 心 감소가 없다. DEV-6 프로토타입 시간대 전이값."},
+        {"id": "dusk_phase_duration_seconds", "notion_id": "3ce37369-9e66-8137-8069-e0b914681ae1", "name": "해질녘 지속시간", "status": "테스트", "category": "心", "unit": "초", "value": 120, "description": "해질녘 상태의 프로토타입 지속시간", "formula_note": "DEV-6 프로토타입 시간대 전이값."},
+        {"id": "night_phase_duration_seconds", "notion_id": "3ce37369-9e66-8191-91c3-c04612c42293", "name": "밤 지속시간", "status": "테스트", "category": "心", "unit": "초", "value": 240, "description": "밤 상태의 프로토타입 지속시간", "formula_note": "DEV-6 프로토타입 시간대 전이값."},
+        {"id": "late_night_phase_duration_seconds", "notion_id": "3ce37369-9e66-817b-a89d-e63126a7d7e3", "name": "심야 지속시간", "status": "테스트", "category": "心", "unit": "초", "value": 180, "description": "심야 상태의 프로토타입 지속시간", "formula_note": "완료 후 낮으로 순환한다. DEV-6 프로토타입 시간대 전이값."},
+        {"id": "dusk_kokoro_decay_per_second", "notion_id": "3ce37369-9e66-810d-a412-c015501c1281", "name": "해질녘 心 감소율", "status": "테스트", "category": "心", "unit": "point/초", "value": 0.02, "description": "해질녘부터 적용되는 心 감소율", "formula_note": "낮 0 < 해질녘 < 밤 < 심야 순으로 증가한다."},
+        {"id": "night_kokoro_decay_per_second", "notion_id": "3ce37369-9e66-81c2-a7e6-fd48e5eb07d9", "name": "밤 心 감소율", "status": "테스트", "category": "心", "unit": "point/초", "value": 0.05, "description": "밤의 心 감소율", "formula_note": "낮 0 < 해질녘 < 밤 < 심야 순으로 증가한다."},
+        {"id": "late_night_kokoro_decay_per_second", "notion_id": "3ce37369-9e66-815b-872c-e2edbf7fcabd", "name": "심야 心 감소율", "status": "테스트", "category": "心", "unit": "point/초", "value": 0.1, "description": "심야의 心 감소율", "formula_note": "낮 0 < 해질녘 < 밤 < 심야 순으로 증가한다."},
+        {"id": "safe_sleep_hp_recovery_ratio", "notion_id": "3ce37369-9e66-81f9-af8d-f2ba12d04d47", "name": "안전 수면 HP 회복 비율", "status": "확정", "category": "플레이어", "unit": "비율", "value": 0.2, "description": "해질녘·밤에 안전 지점에서 수면 시 최대 HP 기준 회복 비율", "formula_note": "sleep_heal = max_hp × 0.20. 心은 완전 회복하며 차·기운은 자동 회복하지 않는다."}
       ]
     }
   }

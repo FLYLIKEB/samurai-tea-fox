@@ -1,5 +1,5 @@
 {
-  "content_hash": "373b272edad0eec5fb32b4773e7332e023cb64e1c59cc3afbc5e70d834cc18b4",
+  "content_hash": "fda73e721a0c18ee0c995fbd4323471c57c0e44637cfc02110d7ecba969edc55",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -53,6 +53,17 @@
       "value": 1
     },
     {
+      "category": "心",
+      "description": "낮 상태의 프로토타입 지속시간",
+      "formula_note": "낮에는 心 감소가 없다. DEV-6 프로토타입 시간대 전이값.",
+      "id": "day_phase_duration_seconds",
+      "name": "낮 지속시간",
+      "notion_id": "3ce37369-9e66-8142-bdd7-e6eaff3fe967",
+      "status": "테스트",
+      "unit": "초",
+      "value": 300
+    },
+    {
       "category": "회피",
       "formula_note": "짧은 쿨타임으로 연속 난사를 제한한다.",
       "id": "dodge_cooldown_seconds",
@@ -81,6 +92,28 @@
       "status": "테스트",
       "unit": "초",
       "value": 0.18
+    },
+    {
+      "category": "心",
+      "description": "해질녘부터 적용되는 心 감소율",
+      "formula_note": "낮 0 < 해질녘 < 밤 < 심야 순으로 증가한다.",
+      "id": "dusk_kokoro_decay_per_second",
+      "name": "해질녘 心 감소율",
+      "notion_id": "3ce37369-9e66-810d-a412-c015501c1281",
+      "status": "테스트",
+      "unit": "point/초",
+      "value": 0.02
+    },
+    {
+      "category": "心",
+      "description": "해질녘 상태의 프로토타입 지속시간",
+      "formula_note": "DEV-6 프로토타입 시간대 전이값.",
+      "id": "dusk_phase_duration_seconds",
+      "name": "해질녘 지속시간",
+      "notion_id": "3ce37369-9e66-8137-8069-e0b914681ae1",
+      "status": "테스트",
+      "unit": "초",
+      "value": 120
     },
     {
       "category": "전투",
@@ -155,6 +188,28 @@
     },
     {
       "category": "心",
+      "description": "심야의 心 감소율",
+      "formula_note": "낮 0 < 해질녘 < 밤 < 심야 순으로 증가한다.",
+      "id": "late_night_kokoro_decay_per_second",
+      "name": "심야 心 감소율",
+      "notion_id": "3ce37369-9e66-815b-872c-e2edbf7fcabd",
+      "status": "테스트",
+      "unit": "point/초",
+      "value": 0.1
+    },
+    {
+      "category": "心",
+      "description": "심야 상태의 프로토타입 지속시간",
+      "formula_note": "완료 후 낮으로 순환한다. DEV-6 프로토타입 시간대 전이값.",
+      "id": "late_night_phase_duration_seconds",
+      "name": "심야 지속시간",
+      "notion_id": "3ce37369-9e66-817b-a89d-e63126a7d7e3",
+      "status": "테스트",
+      "unit": "초",
+      "value": 180
+    },
+    {
+      "category": "心",
       "formula_note": "心 ≤ 30일 때 요술 기운 소모 × 1.25.",
       "id": "low_kokoro_ability_cost_increase",
       "name": "低心 요술 소모 증가",
@@ -162,6 +217,28 @@
       "status": "테스트",
       "unit": "%",
       "value": 25
+    },
+    {
+      "category": "心",
+      "description": "밤의 心 감소율",
+      "formula_note": "낮 0 < 해질녘 < 밤 < 심야 순으로 증가한다.",
+      "id": "night_kokoro_decay_per_second",
+      "name": "밤 心 감소율",
+      "notion_id": "3ce37369-9e66-81c2-a7e6-fd48e5eb07d9",
+      "status": "테스트",
+      "unit": "point/초",
+      "value": 0.05
+    },
+    {
+      "category": "心",
+      "description": "밤 상태의 프로토타입 지속시간",
+      "formula_note": "DEV-6 프로토타입 시간대 전이값.",
+      "id": "night_phase_duration_seconds",
+      "name": "밤 지속시간",
+      "notion_id": "3ce37369-9e66-8191-91c3-c04612c42293",
+      "status": "테스트",
+      "unit": "초",
+      "value": 240
     },
     {
       "category": "플레이어",
@@ -172,6 +249,17 @@
       "status": "테스트",
       "unit": "point",
       "value": 100
+    },
+    {
+      "category": "플레이어",
+      "description": "해질녘·밤에 안전 지점에서 수면 시 최대 HP 기준 회복 비율",
+      "formula_note": "sleep_heal = max_hp × 0.20. 心은 완전 회복하며 차·기운은 자동 회복하지 않는다.",
+      "id": "safe_sleep_hp_recovery_ratio",
+      "name": "안전 수면 HP 회복 비율",
+      "notion_id": "3ce37369-9e66-81f9-af8d-f2ba12d04d47",
+      "status": "확정",
+      "unit": "비율",
+      "value": 0.2
     },
     {
       "category": "차",

@@ -1,12 +1,21 @@
 {
   "map_version": 1,
-  "notion_pages": {},
+  "notion_pages": {
+    "3ce37369-9e66-810d-a412-c015501c1281": "dusk_kokoro_decay_per_second",
+    "3ce37369-9e66-8137-8069-e0b914681ae1": "dusk_phase_duration_seconds",
+    "3ce37369-9e66-8142-bdd7-e6eaff3fe967": "day_phase_duration_seconds",
+    "3ce37369-9e66-815b-872c-e2edbf7fcabd": "late_night_kokoro_decay_per_second",
+    "3ce37369-9e66-817b-a89d-e63126a7d7e3": "late_night_phase_duration_seconds",
+    "3ce37369-9e66-81f9-af8d-f2ba12d04d47": "safe_sleep_hp_recovery_ratio",
+    "3ce37369-9e66-8191-91c3-c04612c42293": "night_phase_duration_seconds",
+    "3ce37369-9e66-81c2-a7e6-fd48e5eb07d9": "night_kokoro_decay_per_second"
+  },
   "legacy_names": {
     "abilities": {
       "잔불": "ember", "물그림자": "water_shadow", "금 간 막": "cracked_screen", "남은 향": "remaining_incense", "비뚤어진 베기": "crooked_cut", "한 잔의 틈": "cup_pause", "빈자리": "empty_place", "잿바람": "ash_wind", "겹친 그림자": "overlapped_shadow", "낡은 그릇의 숨": "old_bowl_breath", "一期一会": "once_one_meeting", "함께 앉는 자리": "sit_together"
     },
     "balance": {
-      "플레이어 HP 최대치": "player_hp_max", "기운 0 공격 배율": "ki_attack_multiplier_0", "心 최대치": "kokoro_max", "차 마시기 기본 시간": "tea_drink_base_seconds", "인벤토리 기본 슬롯": "inventory_base_slots", "기본 공격 콤보 타수": "basic_attack_combo_hits", "바이옴 핵심 던전 수": "biome_core_dungeon_count", "바이옴 텔레포트 존 수": "biome_teleport_zone_count", "회피 쿨타임": "dodge_cooldown_seconds", "기운 최대치": "ki_max", "低心 요술 소모 증가": "low_kokoro_ability_cost_increase", "기운 100 공격 배율": "ki_attack_multiplier_100", "차 퀵슬롯 수": "tea_quickslot_count", "회피 무적시간": "dodge_invulnerability_seconds", "피격 무적시간": "hit_invulnerability_seconds", "요술 장착 슬롯": "ability_equip_slots", "心 저하 임계값": "kokoro_low_threshold", "기본 콤보 마지막타 넉백": "basic_combo_finisher_knockback_tiles", "회피 이동 거리": "dodge_distance_tiles"
+      "플레이어 HP 최대치": "player_hp_max", "기운 0 공격 배율": "ki_attack_multiplier_0", "心 최대치": "kokoro_max", "차 마시기 기본 시간": "tea_drink_base_seconds", "인벤토리 기본 슬롯": "inventory_base_slots", "기본 공격 콤보 타수": "basic_attack_combo_hits", "바이옴 핵심 던전 수": "biome_core_dungeon_count", "바이옴 텔레포트 존 수": "biome_teleport_zone_count", "회피 쿨타임": "dodge_cooldown_seconds", "기운 최대치": "ki_max", "低心 요술 소모 증가": "low_kokoro_ability_cost_increase", "기운 100 공격 배율": "ki_attack_multiplier_100", "차 퀵슬롯 수": "tea_quickslot_count", "회피 무적시간": "dodge_invulnerability_seconds", "피격 무적시간": "hit_invulnerability_seconds", "요술 장착 슬롯": "ability_equip_slots", "心 저하 임계값": "kokoro_low_threshold", "기본 콤보 마지막타 넉백": "basic_combo_finisher_knockback_tiles", "회피 이동 거리": "dodge_distance_tiles", "낮 지속시간": "day_phase_duration_seconds", "해질녘 지속시간": "dusk_phase_duration_seconds", "밤 지속시간": "night_phase_duration_seconds", "심야 지속시간": "late_night_phase_duration_seconds", "해질녘 心 감소율": "dusk_kokoro_decay_per_second", "밤 心 감소율": "night_kokoro_decay_per_second", "심야 心 감소율": "late_night_kokoro_decay_per_second", "안전 수면 HP 회복 비율": "safe_sleep_hp_recovery_ratio"
     },
     "biomes": {
       "백국": "baekguk", "홍국": "hongguk", "일반 지역": "common_region", "산악 지역": "mountain_region", "황무지": "wasteland", "설원": "snowfield", "열대우림": "rainforest"
