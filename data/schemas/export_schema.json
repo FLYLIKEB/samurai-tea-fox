@@ -1,0 +1,10 @@
+{
+  "required_file_keys": ["data_version", "source", "items"],
+  "definition_rules": [
+    "Runtime treats generated JSON as immutable definition data.",
+    "Runtime state must not be written back into data/generated.",
+    "Stable IDs are used in code. Display names are presentation/content only.",
+    "Relations should be exported as stable IDs when an exporter is added."
+  ]
+}
+

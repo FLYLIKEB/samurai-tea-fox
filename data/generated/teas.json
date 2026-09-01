@@ -1,0 +1,14 @@
+{
+  "data_version": "notion-2026-09-01",
+  "source": "collection://58c6edaf-0851-48da-a412-541be09d7dcb",
+  "items": [
+    {"id": "father_spring_pan_fired_tea", "name": "아버지의 봄 덖음차", "tea_type": "녹차", "origin": "백국 구미호가 머물던 산기슭", "ki_recovery": 24, "status": "초안", "memory": true},
+    {"id": "nameless_old_teamaster_matcha", "name": "이름 없는 노다인의 말차", "tea_type": "말차", "origin": "홍국 중부", "ki_recovery": 25, "status": "초안", "memory": true},
+    {"id": "oribe_green_matcha", "name": "오리베의 청말", "tea_type": "말차", "origin": "홍국 일반 지역", "ki_recovery": 26, "status": "초안", "memory": true},
+    {"id": "potter_mountain_mist_oolong", "name": "도공의 산안개 청차", "tea_type": "청차", "origin": "홍국 산악 고지", "ki_recovery": 30, "status": "초안", "memory": true},
+    {"id": "daimyo_sealed_dark_tea", "name": "다이묘의 봉인 저장차", "tea_type": "흑차", "origin": "백국산 찻잎·홍국 반입", "ki_recovery": 34, "status": "초안", "memory": true},
+    {"id": "monk_snow_green_tea", "name": "승려의 설중차", "tea_type": "녹차", "origin": "홍국 설산 사찰 주변 고지", "ki_recovery": 28, "status": "초안", "memory": true},
+    {"id": "yokai_old_tree_white_tea", "name": "요괴 다인의 노목 백차", "tea_type": "백차", "origin": "열대우림의 오래된 차나무 숲", "ki_recovery": 32, "status": "초안", "memory": true}
+  ]
+}
+

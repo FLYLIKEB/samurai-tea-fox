@@ -1,0 +1,15 @@
+{
+  "data_version": "notion-2026-09-01",
+  "source": "무사여우: 한 잔의 도 — 게임 컨셉 바이블",
+  "sources": {
+    "balance": "collection://dd8249a2-14e5-4a96-b26d-77ce33fdc43c",
+    "biomes": "collection://d4b40007-096f-4528-8840-53de80bda0dd",
+    "teas": "collection://58c6edaf-0851-48da-a412-541be09d7dcb",
+    "items": "collection://cc4817d1-bb64-45b0-9193-b3c742327064",
+    "recipes": "collection://a755c8a9-1e5f-4f04-9ede-4ee63caa0663",
+    "monsters": "collection://8058308e-e875-45aa-929c-49fd8575601a",
+    "abilities": "collection://011bff45-d1e8-4d8a-a52d-bbf6c06a3566",
+    "meta_unlocks": "collection://7927bdc1-70eb-4fe7-82c5-971c74caa5d3"
+  }
+}
+

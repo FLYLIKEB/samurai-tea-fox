@@ -1,0 +1,78 @@
+# 무사여우: 한 잔의 도
+
+Godot 4.x + GDScript 기반의 top-down 32x32 pixel-art roguelike RPG입니다.
+
+이 저장소는 Notion 문서 **무사여우: 한 잔의 도 — 게임 컨셉 바이블**을 기획 정본으로 사용합니다. 게임 런타임은 Notion API를 직접 호출하지 않고, `data/generated/` 아래에 export된 정적 데이터를 읽습니다.
+
+## 정본
+
+- 기획 라우팅 인덱스: `무사여우: 한 잔의 도 — 게임 컨셉 바이블`
+- 정보 책임: `00. 기획 아키텍처·정본 규칙`
+- 기술 선택과 구현 경계: `12. 기술 스펙·아키텍처`
+- 개별 콘텐츠와 수치: Notion 콘텐츠 DB와 `⚖️ 밸런스 상수`
+
+충돌 시 우선순위는 `00 정본 규칙 -> 12 기술 스펙 -> 현재 백로그 이슈 -> 해당 시스템 문서 -> 콘텐츠/밸런스 DB -> 오래된 설명`입니다. 단, 정확한 콘텐츠 값과 수치는 항상 해당 DB가 우선합니다.
+
+## 기술 원칙
+
+- Engine: Godot 4.x
+- Language: GDScript
+- Targets: mobile + desktop
+- Graphics: 32x32 기반 저해상도 픽셀아트, nearest filtering, 정수 배율 우선
+- Map: TileMapLayer + 데이터 주도 월드 생성
+- Data: Notion planning DB -> exported static data -> runtime definition -> runtime state
+- Save: run save와 meta save 분리, schema version 필수
+- Input: keyboard/touch/gamepad 입력은 platform-independent game command로 변환
+
+## 구조
+
+```text
+assets/
+  sprites/
+  tiles/
+  ui/
+  audio/
+data/
+  generated/
+  schemas/
+docs/
+scenes/
+src/
+  core/
+    commands/
+    data/
+    rng/
+  player/
+  combat/
+  tea/
+  inventory/
+  crafting/
+  world/
+    biome/
+    generation/
+  dungeon/
+  enemy/
+  ability/
+  time/
+  save/
+  meta/
+  ui/
+tests/
+tools/
+  notion_export/
+```
+
+## 검증
+
+Godot가 설치된 환경에서:
+
+```sh
+godot --headless --path . --script res://tests/test_runner.gd
+```
+
+현재 테스트 골격은 다음 경계를 확인합니다.
+
+- 같은 seed + 같은 data version은 같은 월드 데이터를 생성한다.
+- 플랫폼 입력은 게임 명령으로만 변환된다.
+- run save와 meta save는 schema version과 kind를 분리한다.
+
