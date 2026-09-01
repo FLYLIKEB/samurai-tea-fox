@@ -17,6 +17,8 @@ const DATA_SLOT_TEA_WARE := "다구"
 const EFFECT_ATTACK := "공격"
 const EFFECT_DEFENSE := "방어"
 const EFFECT_TEA_OPERATION := "차 운용"
+const METADATA_TEA_WARE_USE_COUNT := "tea_ware_use_count"
+const SNAPSHOT_ACCOUNTED_TEA_COMPLETION_IDS := "accounted_tea_completion_ids"
 
 const SLOT_KEYS := [SLOT_WEAPON, SLOT_ARMOR, SLOT_TEA_WARE]
 const SLOT_FROM_DATA := {
@@ -32,6 +34,7 @@ var equipped_slots := {
 	SLOT_ARMOR: {},
 	SLOT_TEA_WARE: {}
 }
+var accounted_tea_completion_ids: Dictionary = {}
 
 static func from_catalog(catalog) -> Dictionary:
 	var definitions_result := _definitions_from_catalog(catalog)
@@ -52,6 +55,7 @@ func configure(definitions: Dictionary, new_data_version := "") -> Dictionary:
 	item_definitions = definitions.duplicate(true)
 	data_version = new_data_version
 	equipped_slots = _empty_equipped_slots()
+	accounted_tea_completion_ids = {}
 	_emit_changed()
 	return {"ok": true}
 
@@ -139,7 +143,53 @@ func get_tea_modifier_query() -> Dictionary:
 	if payload.is_empty():
 		return {}
 	var definition: Dictionary = payload.definition
-	return _tea_modifier_query_from_definition(definition)
+	var query := _tea_modifier_query_from_definition(definition)
+	query["vessel_instance_id"] = String(payload.instance_id)
+	query["attachment_description_key"] = _attachment_description_key_for_payload(payload)
+	return query
+
+func get_tea_ware_use_count() -> int:
+	var payload := _slot_payload(SLOT_TEA_WARE)
+	if payload.is_empty():
+		return 0
+	return max(0, int(payload.metadata.get(METADATA_TEA_WARE_USE_COUNT, 0)))
+
+func get_tea_ware_attachment_description_key() -> String:
+	var payload := _slot_payload(SLOT_TEA_WARE)
+	if payload.is_empty():
+		return ""
+	return _attachment_description_key_for_payload(payload)
+
+func record_tea_ware_use_completion(completion_result: Dictionary, inventory = null) -> Dictionary:
+	if not bool(completion_result.get("ok", false)):
+		return _fail("invalid_completion", "Tea ware use accounting requires a successful completion result.")
+	if not bool(completion_result.get("consumed", false)):
+		return _fail("incomplete_use", "Tea ware use accounting only accepts completed tea use events.")
+	var action: Dictionary = _duplicate_dictionary(completion_result.get("action", {}))
+	if not bool(action.get("completed", false)):
+		return _fail("incomplete_use", "Tea ware use accounting only accepts completed tea use events.")
+	var completion_id := _completion_identity(completion_result, action)
+	if completion_id.is_empty():
+		return _fail("missing_completion_identity", "Tea ware use accounting requires a stable completion identity.")
+	if accounted_tea_completion_ids.has(completion_id):
+		return {"ok": true, "accounted": false, "reason": "duplicate_completion", "completion_id": completion_id}
+
+	var completed_instance_id := String(action.get("vessel_instance_id", completion_result.get("vessel_instance_id", "")))
+	if completed_instance_id.is_empty():
+		return {"ok": true, "accounted": false, "reason": "missing_vessel_instance_id"}
+	var equipped_result := _record_equipped_tea_ware_use(completed_instance_id)
+	if equipped_result.accounted:
+		_mark_completion_accounted(completion_id)
+		equipped_result["completion_id"] = completion_id
+		_emit_changed()
+		return equipped_result
+	var inventory_result := _record_inventory_tea_ware_use(completed_instance_id, inventory)
+	if inventory_result.accounted:
+		_mark_completion_accounted(completion_id)
+		inventory_result["completion_id"] = completion_id
+		_emit_changed()
+		return inventory_result
+	return inventory_result
 
 func to_snapshot() -> Dictionary:
 	var snapshot_slots := {}
@@ -148,7 +198,8 @@ func to_snapshot() -> Dictionary:
 	return {
 		"schema_version": SNAPSHOT_SCHEMA_VERSION,
 		"data_version": data_version,
-		"slots": snapshot_slots
+		"slots": snapshot_slots,
+		SNAPSHOT_ACCOUNTED_TEA_COMPLETION_IDS: _accounted_completion_id_array()
 	}
 
 func load_snapshot(snapshot: Dictionary) -> Dictionary:
@@ -168,6 +219,7 @@ func load_snapshot(snapshot: Dictionary) -> Dictionary:
 
 	equipped_slots = loaded_slots
 	data_version = String(snapshot.get("data_version", data_version))
+	accounted_tea_completion_ids = _normalize_accounted_completion_ids(snapshot.get(SNAPSHOT_ACCOUNTED_TEA_COMPLETION_IDS, []))
 	_emit_changed()
 	return {"ok": true}
 
@@ -253,6 +305,11 @@ static func _definition_from_item(row: Dictionary) -> Dictionary:
 		definition["drink_seconds_multiplier"] = drink_multiplier_result.value
 		definition["drink_seconds_bonus"] = drink_bonus_result.value
 		definition["sustain_modifier"] = sustain_result.value
+		var attachment_result := _attachment_stage_definition_from_row(row, item_id)
+		if not attachment_result.ok:
+			return attachment_result
+		definition["attachment_stage_thresholds"] = attachment_result.thresholds
+		definition["attachment_description_keys"] = attachment_result.description_keys
 
 	return {"ok": true, "equippable": true, "definition": definition}
 
@@ -303,8 +360,189 @@ static func _tea_modifier_query_from_definition(definition: Dictionary) -> Dicti
 		"drink_seconds_multiplier": float(definition.get("drink_seconds_multiplier", 1.0)),
 		"drink_seconds_bonus": float(definition.get("drink_seconds_bonus", 0.0)),
 		"sustain_modifier": float(definition.get("sustain_modifier", 0.0)),
-		"effect_value": float(definition.get("effect_value", 0.0))
+		"effect_value": float(definition.get("effect_value", 0.0)),
+		"attachment_stage_thresholds": _duplicate_array(definition.get("attachment_stage_thresholds", [])),
+		"attachment_description_keys": _duplicate_array(definition.get("attachment_description_keys", []))
 	}
+
+static func _attachment_stage_definition_from_row(row: Dictionary, item_id: String) -> Dictionary:
+	var thresholds_result := _required_integer_array_field(row, "attachment_stage_thresholds")
+	if not thresholds_result.ok:
+		return thresholds_result
+	var thresholds: Array = thresholds_result.values
+	if thresholds.size() < 3:
+		return _fail("invalid_attachment_stages", "Tea ware attachment requires at least three stage thresholds: %s" % item_id)
+	var previous := -1
+	for threshold in thresholds:
+		var value := int(threshold)
+		if value < 0 or value <= previous:
+			return _fail("invalid_attachment_stages", "Tea ware attachment thresholds must be ascending non-negative integers: %s" % item_id)
+		previous = value
+
+	var keys_result := _required_string_array_field(row, "attachment_description_keys")
+	if not keys_result.ok:
+		return keys_result
+	var description_keys: Array = keys_result.values
+	if description_keys.size() < thresholds.size():
+		return _fail("invalid_attachment_stages", "Tea ware attachment description keys must cover every threshold: %s" % item_id)
+
+	return {"ok": true, "thresholds": thresholds, "description_keys": description_keys}
+
+static func _required_integer_array_field(row: Dictionary, field: String) -> Dictionary:
+	if not row.has(field) or row[field] == null:
+		return _fail("missing_definition_field", "Definition is missing required field: %s.%s" % [row.get("id", ""), field])
+	var raw_values := _array_from_field(row[field])
+	if raw_values.is_empty():
+		return _fail("invalid_definition", "Definition field must be a non-empty array: %s.%s" % [row.get("id", ""), field])
+	var values: Array = []
+	for raw in raw_values:
+		if typeof(raw) == TYPE_STRING:
+			var text := String(raw).strip_edges()
+			if not text.is_valid_int():
+				return _fail("invalid_definition", "Definition array field must contain integers: %s.%s" % [row.get("id", ""), field])
+			values.append(int(text))
+			continue
+		if typeof(raw) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(raw)) or float(raw) != floor(float(raw)):
+			return _fail("invalid_definition", "Definition array field must contain integers: %s.%s" % [row.get("id", ""), field])
+		values.append(int(raw))
+	return {"ok": true, "values": values}
+
+static func _required_string_array_field(row: Dictionary, field: String) -> Dictionary:
+	if not row.has(field) or row[field] == null:
+		return _fail("missing_definition_field", "Definition is missing required field: %s.%s" % [row.get("id", ""), field])
+	var raw_values := _array_from_field(row[field])
+	if raw_values.is_empty():
+		return _fail("invalid_definition", "Definition field must be a non-empty array: %s.%s" % [row.get("id", ""), field])
+	var values: Array = []
+	for raw in raw_values:
+		var value := String(raw).strip_edges()
+		if value.is_empty():
+			return _fail("invalid_definition", "Definition array field must contain non-empty strings: %s.%s" % [row.get("id", ""), field])
+		values.append(value)
+	return {"ok": true, "values": values}
+
+static func _array_from_field(value) -> Array:
+	if typeof(value) == TYPE_ARRAY:
+		return value.duplicate(true)
+	if typeof(value) == TYPE_STRING:
+		var values: Array = []
+		for part in String(value).split(",", false):
+			values.append(String(part).strip_edges())
+		return values
+	return []
+
+static func _attachment_description_key_for_payload(payload: Dictionary) -> String:
+	var slot := {
+		"item_id": String(payload.item_id),
+		"metadata": _duplicate_dictionary(payload.get("metadata", {}))
+	}
+	return _attachment_description_key_for_definition(payload.definition, slot)
+
+func _attachment_description_key_for_slot(slot: Dictionary) -> String:
+	var item_id := String(slot.get("item_id", ""))
+	return _attachment_description_key_for_definition(item_definitions.get(item_id, {}), slot)
+
+static func _attachment_description_key_for_definition(definition: Dictionary, slot: Dictionary) -> String:
+	var thresholds: Array = _duplicate_array(definition.get("attachment_stage_thresholds", []))
+	var description_keys: Array = _duplicate_array(definition.get("attachment_description_keys", []))
+	if thresholds.is_empty() or description_keys.is_empty():
+		return ""
+	var use_count: int = max(0, int(_duplicate_dictionary(slot.get("metadata", {})).get(METADATA_TEA_WARE_USE_COUNT, 0)))
+	var stage_index := 0
+	for index in range(thresholds.size()):
+		if use_count >= int(thresholds[index]):
+			stage_index = index
+	return String(description_keys[min(stage_index, description_keys.size() - 1)])
+
+func _record_equipped_tea_ware_use(completed_instance_id: String) -> Dictionary:
+	var current: Dictionary = equipped_slots[SLOT_TEA_WARE]
+	if _is_empty_slot(current):
+		return {"ok": true, "accounted": false, "reason": "no_equipped_tea_ware"}
+	if completed_instance_id != String(current.get("instance_id", "")):
+		return {"ok": true, "accounted": false, "reason": "vessel_instance_mismatch"}
+	var result := _increment_tea_ware_slot_metadata(current)
+	equipped_slots[SLOT_TEA_WARE] = result.slot
+	return {
+		"ok": true,
+		"accounted": true,
+		"source": "equipment",
+		"use_count": result.use_count,
+		"previous_description_key": result.previous_description_key,
+		"description_key": result.description_key
+	}
+
+func _record_inventory_tea_ware_use(completed_instance_id: String, inventory) -> Dictionary:
+	if inventory == null or not inventory.has_method("to_snapshot") or not inventory.has_method("load_snapshot"):
+		return {"ok": true, "accounted": false, "reason": "vessel_instance_mismatch"}
+	var snapshot: Dictionary = inventory.to_snapshot()
+	var slots = snapshot.get("slots", [])
+	if typeof(slots) != TYPE_ARRAY:
+		return {"ok": true, "accounted": false, "reason": "invalid_inventory_snapshot"}
+	for index in range(slots.size()):
+		var slot = slots[index]
+		if _is_empty_slot(slot) or String(slot.get("instance_id", "")) != completed_instance_id:
+			continue
+		var item_id := String(slot.get("item_id", ""))
+		if not item_definitions.has(item_id) or String(item_definitions[item_id].equipment_slot) != SLOT_TEA_WARE:
+			return {"ok": true, "accounted": false, "reason": "vessel_instance_mismatch"}
+		var result := _increment_tea_ware_slot_metadata(slot)
+		slots[index] = result.slot
+		snapshot["slots"] = slots
+		var load_result: Dictionary = inventory.load_snapshot(snapshot)
+		if not load_result.ok:
+			return load_result
+		return {
+			"ok": true,
+			"accounted": true,
+			"source": "inventory",
+			"inventory_slot": index,
+			"use_count": result.use_count,
+			"previous_description_key": result.previous_description_key,
+			"description_key": result.description_key
+		}
+	return {"ok": true, "accounted": false, "reason": "vessel_instance_mismatch"}
+
+func _increment_tea_ware_slot_metadata(slot: Dictionary) -> Dictionary:
+	var updated_slot := _duplicate_dictionary(slot)
+	var metadata: Dictionary = _duplicate_dictionary(updated_slot.get("metadata", {}))
+	var before_count: int = max(0, int(metadata.get(METADATA_TEA_WARE_USE_COUNT, 0)))
+	var before_key := _attachment_description_key_for_slot(updated_slot)
+	metadata[METADATA_TEA_WARE_USE_COUNT] = before_count + 1
+	updated_slot["metadata"] = metadata
+	var after_key := _attachment_description_key_for_slot(updated_slot)
+	return {
+		"slot": updated_slot,
+		"use_count": before_count + 1,
+		"previous_description_key": before_key,
+		"description_key": after_key
+	}
+
+func _mark_completion_accounted(completion_id: String) -> void:
+	accounted_tea_completion_ids[completion_id] = true
+
+func _accounted_completion_id_array() -> Array:
+	var ids: Array = accounted_tea_completion_ids.keys()
+	ids.sort()
+	return ids
+
+static func _normalize_accounted_completion_ids(raw_ids) -> Dictionary:
+	var ids := {}
+	if typeof(raw_ids) != TYPE_ARRAY:
+		return ids
+	for raw_id in raw_ids:
+		var completion_id := String(raw_id)
+		if not completion_id.is_empty():
+			ids[completion_id] = true
+	return ids
+
+static func _completion_identity(completion_result: Dictionary, action: Dictionary) -> String:
+	var action_id := String(action.get("action_id", completion_result.get("action_id", "")))
+	if not action_id.is_empty():
+		return action_id
+	var prepared_id := String(action.get("prepared_id", completion_result.get("prepared_id", "")))
+	if not prepared_id.is_empty():
+		return prepared_id
+	return ""
 
 static func _tea_recovery_bonus_from_effect(row: Dictionary) -> int:
 	if String(row.get("effect_type", "")) == EFFECT_TEA_OPERATION:
@@ -418,6 +656,11 @@ static func _is_empty_slot(slot) -> bool:
 static func _duplicate_dictionary(value) -> Dictionary:
 	if typeof(value) != TYPE_DICTIONARY:
 		return {}
+	return value.duplicate(true)
+
+static func _duplicate_array(value) -> Array:
+	if typeof(value) != TYPE_ARRAY:
+		return []
 	return value.duplicate(true)
 
 static func _checkbox_value(value) -> bool:

@@ -1,8 +1,18 @@
 {
-  "content_hash": "b12750675a122649b610aa446164ee66960651462849bb5c23091d5ca3cefc2c",
+  "content_hash": "9c6b810a53064d750b0ea52a1032ce2807adeff667310cfea142c130880abeeb",
   "data_version": "notion-2026-09-01",
   "items": [
     {
+      "attachment_description_keys": [
+        "items.ash_stained_iron_kettle.attachment.stage_0",
+        "items.ash_stained_iron_kettle.attachment.stage_1",
+        "items.ash_stained_iron_kettle.attachment.stage_2"
+      ],
+      "attachment_stage_thresholds": [
+        0,
+        3,
+        7
+      ],
       "core_tea_ware": true,
       "core_tea_ware_order": 4,
       "craftable": false,
@@ -57,6 +67,16 @@
       "type": "방어구"
     },
     {
+      "attachment_description_keys": [
+        "items.old_incense_box.attachment.stage_0",
+        "items.old_incense_box.attachment.stage_1",
+        "items.old_incense_box.attachment.stage_2"
+      ],
+      "attachment_stage_thresholds": [
+        0,
+        3,
+        7
+      ],
       "core_tea_ware": true,
       "core_tea_ware_order": 5,
       "craftable": false,
@@ -71,6 +91,16 @@
       "type": "다구"
     },
     {
+      "attachment_description_keys": [
+        "items.oribe_green_glazed_bowl.attachment.stage_0",
+        "items.oribe_green_glazed_bowl.attachment.stage_1",
+        "items.oribe_green_glazed_bowl.attachment.stage_2"
+      ],
+      "attachment_stage_thresholds": [
+        0,
+        3,
+        7
+      ],
       "core_tea_ware": true,
       "core_tea_ware_order": 1,
       "craftable": false,
@@ -137,6 +167,16 @@
       "type": "방어구"
     },
     {
+      "attachment_description_keys": [
+        "items.unbroken_failure.attachment.stage_0",
+        "items.unbroken_failure.attachment.stage_1",
+        "items.unbroken_failure.attachment.stage_2"
+      ],
+      "attachment_stage_thresholds": [
+        0,
+        3,
+        7
+      ],
       "core_tea_ware": true,
       "core_tea_ware_order": 2,
       "craftable": false,
@@ -151,6 +191,16 @@
       "type": "다구"
     },
     {
+      "attachment_description_keys": [
+        "items.war_tea_caddy.attachment.stage_0",
+        "items.war_tea_caddy.attachment.stage_1",
+        "items.war_tea_caddy.attachment.stage_2"
+      ],
+      "attachment_stage_thresholds": [
+        0,
+        3,
+        7
+      ],
       "core_tea_ware": true,
       "core_tea_ware_order": 3,
       "craftable": false,

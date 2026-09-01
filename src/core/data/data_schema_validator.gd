@@ -56,6 +56,9 @@ func validate_catalog(definitions: Dictionary, dataset_rules: Dictionary) -> Dic
 					return {"ok": false, "error": "%s item '%s' is missing required field '%s'." % [dataset_name, item.id, required_field]}
 				if typeof(item[required_field]) == TYPE_STRING and item[required_field].is_empty():
 					return {"ok": false, "error": "%s item '%s' is missing required field '%s'." % [dataset_name, item.id, required_field]}
+			var item_result := _validate_item_contract(dataset_name, item)
+			if not item_result.ok:
+				return item_result
 			for field in relations:
 				if not item.has(field) or item[field] == null:
 					continue
@@ -102,4 +105,34 @@ func _validate_event_result_items(events: Array, ids_by_dataset: Dictionary) -> 
 					var result_id := String(result.get("id", ""))
 					if not ids_by_dataset.items.has(result_id):
 						return {"ok": false, "error": "events item '%s' option '%s' grant_item targets missing item id '%s'." % [event.get("id", ""), option.get("id", ""), result_id]}
+	return {"ok": true}
+
+func _validate_item_contract(dataset_name: String, item: Dictionary) -> Dictionary:
+	if dataset_name != "items":
+		return {"ok": true}
+	if String(item.get("type", "")) != "다구" or String(item.get("equipment_slot", "")) != "다구":
+		return {"ok": true}
+	return _validate_attachment_stage_data(item)
+
+func _validate_attachment_stage_data(item: Dictionary) -> Dictionary:
+	for field in ["attachment_stage_thresholds", "attachment_description_keys"]:
+		if not item.has(field) or item[field] == null:
+			return {"ok": false, "error": "items item '%s' is missing required field '%s'." % [item.id, field]}
+		if typeof(item[field]) != TYPE_ARRAY or item[field].size() < 3:
+			return {"ok": false, "error": "items item '%s' field '%s' must contain at least 3 stages." % [item.id, field]}
+	var thresholds: Array = item.attachment_stage_thresholds
+	var description_keys: Array = item.attachment_description_keys
+	if description_keys.size() < thresholds.size():
+		return {"ok": false, "error": "items item '%s' attachment_description_keys must cover every threshold." % item.id}
+	var previous := -1
+	for threshold in thresholds:
+		if typeof(threshold) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(threshold)) or float(threshold) != floor(float(threshold)):
+			return {"ok": false, "error": "items item '%s' attachment_stage_thresholds must contain integers." % item.id}
+		var value := int(threshold)
+		if value < 0 or value <= previous:
+			return {"ok": false, "error": "items item '%s' attachment_stage_thresholds must be ascending non-negative integers." % item.id}
+		previous = value
+	for description_key in description_keys:
+		if typeof(description_key) != TYPE_STRING or String(description_key).strip_edges().is_empty():
+			return {"ok": false, "error": "items item '%s' attachment_description_keys must contain non-empty strings." % item.id}
 	return {"ok": true}

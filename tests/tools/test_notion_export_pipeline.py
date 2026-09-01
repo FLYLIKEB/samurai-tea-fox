@@ -336,7 +336,73 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(item["effect_value"], 10)
         self.assertTrue(item["core_tea_ware"])
         self.assertEqual(item["core_tea_ware_order"], 1)
+        self.assertEqual(item["attachment_stage_thresholds"], [0, 3, 7])
+        self.assertEqual(
+            item["attachment_description_keys"],
+            [
+                "items.oribe_bowl.attachment.stage_0",
+                "items.oribe_bowl.attachment.stage_1",
+                "items.oribe_bowl.attachment.stage_2",
+            ],
+        )
         self.assertNotIn("tea_recovery_bonus", item)
+
+    def test_equipment_tea_ware_attachment_fields_accept_flattened_notion_strings(self):
+        flattened = copy.deepcopy(self.capture)
+        item = next(item for item in flattened["datasets"]["items"]["items"] if item["id"] == "oribe_bowl")
+        item["attachment_stage_thresholds"] = "0, 3, 7"
+        item["attachment_description_keys"] = (
+            "items.oribe_bowl.attachment.stage_0, "
+            "items.oribe_bowl.attachment.stage_1, "
+            "items.oribe_bowl.attachment.stage_2"
+        )
+
+        snapshots = self.pipeline.build_snapshots(flattened, "confirmed-test")
+        exported = next(item for item in snapshots["items"]["items"] if item["id"] == "oribe_bowl")
+
+        self.assertEqual(exported["attachment_stage_thresholds"], [0, 3, 7])
+        self.assertEqual(
+            exported["attachment_description_keys"],
+            [
+                "items.oribe_bowl.attachment.stage_0",
+                "items.oribe_bowl.attachment.stage_1",
+                "items.oribe_bowl.attachment.stage_2",
+            ],
+        )
+
+    def test_equipment_tea_ware_attachment_threshold_list_strings_remain_supported(self):
+        flattened = copy.deepcopy(self.capture)
+        item = next(item for item in flattened["datasets"]["items"]["items"] if item["id"] == "oribe_bowl")
+        item["attachment_stage_thresholds"] = ["0", "3", "7"]
+
+        snapshots = self.pipeline.build_snapshots(flattened, "confirmed-test")
+        exported = next(item for item in snapshots["items"]["items"] if item["id"] == "oribe_bowl")
+
+        self.assertEqual(exported["attachment_stage_thresholds"], [0, 3, 7])
+
+    def test_equipment_tea_ware_attachment_stage_export_is_required(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        item_notion = schema["datasets"]["items"]["notion"]
+        self.assertEqual(item_notion["field_map"]["정붙음 단계 임계값"], "attachment_stage_thresholds")
+        self.assertEqual(item_notion["field_map"]["정붙음 설명 키"], "attachment_description_keys")
+
+        missing = copy.deepcopy(self.capture)
+        item = next(item for item in missing["datasets"]["items"]["items"] if item["id"] == "oribe_bowl")
+        del item["attachment_stage_thresholds"]
+        with self.assertRaisesRegex(ExportValidationError, "oribe_bowl.*attachment_stage_thresholds"):
+            self.pipeline.build_snapshots(missing, "confirmed-test")
+
+        too_few = copy.deepcopy(self.capture)
+        item = next(item for item in too_few["datasets"]["items"]["items"] if item["id"] == "oribe_bowl")
+        item["attachment_stage_thresholds"] = [0, 3]
+        with self.assertRaisesRegex(ExportValidationError, "oribe_bowl.*at least 3"):
+            self.pipeline.build_snapshots(too_few, "confirmed-test")
+
+        bad_keys = copy.deepcopy(self.capture)
+        item = next(item for item in bad_keys["datasets"]["items"]["items"] if item["id"] == "oribe_bowl")
+        item["attachment_description_keys"] = ["items.oribe_bowl.attachment.stage_0"]
+        with self.assertRaisesRegex(ExportValidationError, "oribe_bowl.*cover every threshold"):
+            self.pipeline.build_snapshots(bad_keys, "confirmed-test")
 
     def test_dev_4_static_combat_exports_are_present(self):
         generated = ROOT / "data/generated"
@@ -345,6 +411,7 @@ class NotionExportPipelineTests(unittest.TestCase):
         items = json.loads((generated / "items.json").read_text(encoding="utf-8"))["items"]
         monsters = json.loads((generated / "monsters.json").read_text(encoding="utf-8"))["items"]
         sword = next(item for item in items if item["id"] == "short_travel_sword")
+        oribe_bowl = next(item for item in items if item["id"] == "oribe_green_glazed_bowl")
         road_bandit = next(monster for monster in monsters if monster["id"] == "road_bandit")
 
         self.assertEqual(sword["base_damage"], 14)
@@ -352,6 +419,15 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(sword["range"], 1.15)
         self.assertEqual(sword["status"], "확정")
         self.assertFalse(sword["craftable"])
+        self.assertEqual(oribe_bowl["attachment_stage_thresholds"], [0, 3, 7])
+        self.assertEqual(
+            oribe_bowl["attachment_description_keys"],
+            [
+                "items.oribe_green_glazed_bowl.attachment.stage_0",
+                "items.oribe_green_glazed_bowl.attachment.stage_1",
+                "items.oribe_green_glazed_bowl.attachment.stage_2",
+            ],
+        )
         self.assertEqual(road_bandit["hp"], 70)
         self.assertEqual(road_bandit["attack"], 10)
         self.assertEqual(road_bandit["status"], "테스트")

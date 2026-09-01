@@ -73,6 +73,24 @@ class NotionClientTests(unittest.TestCase):
                     "type": "unique_id",
                     "unique_id": {"prefix": "ART", "number": 8},
                 },
+                "정붙음 단계 임계값": {
+                    "id": "attachment-thresholds-id",
+                    "type": "rich_text",
+                    "rich_text": [{"plain_text": "0, 3, 7"}],
+                },
+                "정붙음 설명 키": {
+                    "id": "attachment-keys-id",
+                    "type": "rich_text",
+                    "rich_text": [
+                        {
+                            "plain_text": (
+                                "items.oribe_bowl.attachment.stage_0, "
+                                "items.oribe_bowl.attachment.stage_1, "
+                                "items.oribe_bowl.attachment.stage_2"
+                            )
+                        }
+                    ],
+                },
             },
         }
 
@@ -86,6 +104,15 @@ class NotionClientTests(unittest.TestCase):
         self.assertEqual(row["태그"], ["A", "B"])
         self.assertEqual(row["관계"], ["target-1", "target-2"])
         self.assertEqual(row["고유 ID"], {"prefix": "ART", "number": 8})
+        self.assertEqual(row["정붙음 단계 임계값"], "0, 3, 7")
+        self.assertEqual(
+            row["정붙음 설명 키"],
+            (
+                "items.oribe_bowl.attachment.stage_0, "
+                "items.oribe_bowl.attachment.stage_1, "
+                "items.oribe_bowl.attachment.stage_2"
+            ),
+        )
         self.assertTrue(client.requests[0][1].startswith("/v1/pages/page-1/properties/f%5C%5C%3Ap?"))
         self.assertNotIn("%25", client.requests[0][1])
 
