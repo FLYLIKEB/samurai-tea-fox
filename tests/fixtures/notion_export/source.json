@@ -7,8 +7,14 @@
       "items": [
         {
           "core_tea_ware": true,
-          "core_tea_ware_order": 1,
-          "effect_type": "차 운용",
+	          "core_tea_ware_order": 1,
+	          "attachment_stage_thresholds": [0, 3, 7],
+	          "attachment_description_keys": [
+	            "items.oribe_bowl.attachment.stage_0",
+	            "items.oribe_bowl.attachment.stage_1",
+	            "items.oribe_bowl.attachment.stage_2"
+	          ],
+	          "effect_type": "차 운용",
           "effect_value": 10,
           "equipment_slot": "다구",
           "id": "oribe_bowl",

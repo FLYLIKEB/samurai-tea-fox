@@ -2,13 +2,19 @@ extends Node2D
 
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
 const DesktopCommandAdapter = preload("res://src/core/commands/desktop_command_adapter.gd")
+const EquipmentModel = preload("res://src/inventory/equipment_model.gd")
+const InventoryModel = preload("res://src/inventory/inventory_model.gd")
 const MovementCommandSelector = preload("res://src/core/commands/movement_command_selector.gd")
+const TeaService = preload("res://src/tea/tea_service.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 
 @onready var player = $Player
 @onready var combat_dummy = $CombatDummy
 
 var catalog
+var inventory
+var equipment
+var tea_service
 var generated_world: Dictionary = {}
 var _desktop_adapter := DesktopCommandAdapter.new()
 var _movement_selector := MovementCommandSelector.new()
@@ -18,6 +24,10 @@ func _ready() -> void:
 	var result: Dictionary = catalog.load_from_directory("res://data/generated")
 	if not result.ok:
 		push_error(result.error)
+		return
+	var runtime_result := _configure_run_services(catalog)
+	if not runtime_result.ok:
+		push_error(runtime_result.error)
 		return
 	var player_combat_result: Dictionary = player.configure_combat(catalog)
 	if not player_combat_result.ok:
@@ -49,3 +59,26 @@ func submit_mobile_movement_command(command) -> bool:
 
 func submit_mobile_action_command(command) -> bool:
 	return player.submit_command(command)
+
+func _configure_run_services(loaded_catalog) -> Dictionary:
+	var inventory_result: Dictionary = InventoryModel.from_catalog(loaded_catalog)
+	if not inventory_result.ok:
+		return inventory_result
+	var equipment_result: Dictionary = EquipmentModel.from_catalog(loaded_catalog)
+	if not equipment_result.ok:
+		return equipment_result
+	var tea_result: Dictionary = TeaService.from_catalog(loaded_catalog)
+	if not tea_result.ok:
+		return tea_result
+	inventory = inventory_result.inventory
+	equipment = equipment_result.equipment
+	tea_service = tea_result.tea_service
+	tea_service.drink_completed.connect(_on_tea_drink_completed)
+	return {"ok": true}
+
+func _on_tea_drink_completed(result: Dictionary) -> void:
+	if equipment == null:
+		return
+	var accounting_result: Dictionary = equipment.record_tea_ware_use_completion(result, inventory)
+	if not accounting_result.ok:
+		push_error(accounting_result.error)

@@ -146,6 +146,7 @@ class ExportPipeline:
             for field in required_fields:
                 if field not in row or row[field] in (None, ""):
                     raise ExportValidationError(f"{dataset_name} item {item_id}: missing required field {field}")
+            self._validate_row_contract(dataset_name, row)
             item_id = row["id"]
             if not isinstance(item_id, str) or not id_pattern.fullmatch(item_id):
                 raise ExportValidationError(f"{dataset_name} item {item_id}: invalid stable id")
@@ -155,6 +156,38 @@ class ExportPipeline:
             included.append(copy_json_value(row))
 
         return sorted(included, key=lambda item: item["id"])
+
+    def _validate_row_contract(self, dataset_name: str, row: dict[str, Any]) -> None:
+        if dataset_name != "items":
+            return
+        if row.get("type") != "다구" or row.get("equipment_slot") != "다구":
+            return
+        self._validate_attachment_stage_data(row)
+
+    def _validate_attachment_stage_data(self, row: dict[str, Any]) -> None:
+        item_id = row.get("id", "")
+        thresholds = row.get("attachment_stage_thresholds")
+        description_keys = row.get("attachment_description_keys")
+        if not isinstance(thresholds, list) or len(thresholds) < 3:
+            raise ExportValidationError(
+                f"items item {item_id}: attachment_stage_thresholds must contain at least 3 stages"
+            )
+        if not isinstance(description_keys, list) or len(description_keys) < len(thresholds):
+            raise ExportValidationError(
+                f"items item {item_id}: attachment_description_keys must cover every threshold"
+            )
+        previous = -1
+        for threshold in thresholds:
+            if not isinstance(threshold, int) or threshold < 0 or threshold <= previous:
+                raise ExportValidationError(
+                    f"items item {item_id}: attachment_stage_thresholds must be ascending non-negative integers"
+                )
+            previous = threshold
+        for description_key in description_keys:
+            if not isinstance(description_key, str) or not description_key:
+                raise ExportValidationError(
+                    f"items item {item_id}: attachment_description_keys must contain non-empty strings"
+                )
 
     def _validate_snapshot(self, dataset_name: str, snapshot: dict[str, Any]) -> None:
         if not isinstance(snapshot, dict):
