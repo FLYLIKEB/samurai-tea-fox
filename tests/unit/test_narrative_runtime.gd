@@ -22,6 +22,8 @@ func run(asserts) -> void:
 	_assert_branching_and_result_commands(asserts)
 	_assert_once_and_repeat_policies(asserts)
 	_assert_bad_references_are_rejected(asserts)
+	_assert_bad_graph_shapes_are_rejected(asserts)
+	_assert_result_contracts_are_rejected(asserts)
 	_assert_run_meta_boundary(asserts)
 	_assert_read_model_does_not_mutate_state(asserts)
 
@@ -58,6 +60,7 @@ func _assert_branching_and_result_commands(asserts) -> void:
 	asserts.equal(choice.commands[0].type, GameCommand.Type.NARRATIVE_RESULT, "result is emitted as a domain command")
 	asserts.equal(choice.commands[0].payload.result.type, "set_run_flag", "result command preserves stable result type")
 	asserts.equal(choice.commands[0].payload.result.id, "accepted_roadside_kettle", "result command preserves stable result id")
+	asserts.equal(choice.commands[1].payload.result.id, "ash_stained_iron_kettle", "grant_item result targets an existing item stable id")
 	asserts.false_value(run_state.narrative_flags.has("accepted_roadside_kettle"), "selecting an option does not apply result state directly")
 
 func _assert_once_and_repeat_policies(asserts) -> void:
@@ -67,6 +70,9 @@ func _assert_once_and_repeat_policies(asserts) -> void:
 	asserts.true_value(finish_once.ok, "once event can complete first time")
 	asserts.equal(int(run_state.narrative_event_counts.roadside_teahouse_intro), 1, "once event completion is recorded in run state")
 	asserts.false_value(runtime.read_model_for_event("roadside_teahouse_intro", run_state).ok, "once event cannot reopen after completion")
+	var stale_selection: Dictionary = runtime.select_option("roadside_teahouse_intro", "start", "ask_again", run_state)
+	asserts.false_value(stale_selection.ok, "stale selection cannot bypass once replay policy after completion")
+	asserts.equal(stale_selection.reason, "event_already_completed", "stale selection returns explicit once replay failure")
 	var repeat_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": "common_region"}
 	var finish_repeat: Dictionary = runtime.select_option("mountain_shrine_echo", "start", "ordinary_prayer", repeat_state)
 	asserts.true_value(finish_repeat.ok, "repeat event completes")
@@ -92,6 +98,74 @@ func _assert_bad_references_are_rejected(asserts) -> void:
 	}]}))
 	asserts.false_value(bad_next.ok, "option with missing next node is rejected")
 
+func _assert_bad_graph_shapes_are_rejected(asserts) -> void:
+	var duplicate_node: Dictionary = _runtime_result_from_events([{
+		"id": "duplicate_node",
+		"name": "Duplicate Node",
+		"status": "확정",
+		"replay_policy": "repeat",
+		"start_node_id": "start",
+		"nodes": [
+			{"id": "start", "text": "", "options": [{"id": "done", "display_text": "Done", "results": [], "completes_event": true}]},
+			{"id": "start", "text": "", "options": [{"id": "done", "display_text": "Done", "results": [], "completes_event": true}]}
+		]
+	}])
+	asserts.false_value(duplicate_node.ok, "duplicate node ids are rejected")
+	asserts.equal(duplicate_node.reason, "duplicate_node_id", "duplicate node ids return explicit reason")
+	var duplicate_option: Dictionary = _runtime_result_from_events([{
+		"id": "duplicate_option",
+		"name": "Duplicate Option",
+		"status": "확정",
+		"replay_policy": "repeat",
+		"start_node_id": "start",
+		"nodes": [{"id": "start", "text": "", "options": [
+			{"id": "done", "display_text": "Done", "results": [], "completes_event": true},
+			{"id": "done", "display_text": "Done Again", "results": [], "completes_event": true}
+		]}]
+	}])
+	asserts.false_value(duplicate_option.ok, "duplicate option ids are rejected")
+	asserts.equal(duplicate_option.reason, "duplicate_option_id", "duplicate option ids return explicit reason")
+	var no_completion: Dictionary = _runtime_result_from_events([{
+		"id": "no_completion",
+		"name": "No Completion",
+		"status": "확정",
+		"replay_policy": "repeat",
+		"start_node_id": "start",
+		"nodes": [{"id": "start", "text": "", "options": [{"id": "wait", "display_text": "Wait", "results": [], "next_node_id": "", "completes_event": false}]}]
+	}])
+	asserts.false_value(no_completion.ok, "all reachable dialogue paths must complete")
+	asserts.equal(no_completion.reason, "non_terminating_dialogue_path", "non-completing leaf returns explicit reason")
+	var cycle: Dictionary = _runtime_result_from_events([{
+		"id": "cycle",
+		"name": "Cycle",
+		"status": "확정",
+		"replay_policy": "repeat",
+		"start_node_id": "start",
+		"nodes": [
+			{"id": "start", "text": "", "options": [{"id": "loop", "display_text": "Loop", "results": [], "next_node_id": "again", "completes_event": false}]},
+			{"id": "again", "text": "", "options": [{"id": "back", "display_text": "Back", "results": [], "next_node_id": "start", "completes_event": false}]}
+		]
+	}])
+	asserts.false_value(cycle.ok, "reachable dialogue cycles are rejected")
+	asserts.equal(cycle.reason, "dialogue_cycle", "cycle returns explicit reason")
+
+func _assert_result_contracts_are_rejected(asserts) -> void:
+	var unknown_type: Dictionary = _runtime_result_from_events([_single_result_event({"type": "grant_currency", "id": "coins", "quantity": 1})])
+	asserts.false_value(unknown_type.ok, "unknown narrative result types are rejected")
+	asserts.equal(unknown_type.reason, "invalid_result_type", "unknown result type returns explicit reason")
+	var missing_quantity: Dictionary = _runtime_result_from_events([_single_result_event({"type": "grant_item", "id": "ash_stained_iron_kettle"})])
+	asserts.false_value(missing_quantity.ok, "grant_item requires quantity")
+	asserts.equal(missing_quantity.reason, "missing_result_quantity", "missing quantity returns explicit reason")
+	var bad_quantity: Dictionary = _runtime_result_from_events([_single_result_event({"type": "grant_item", "id": "ash_stained_iron_kettle", "quantity": 0})])
+	asserts.false_value(bad_quantity.ok, "grant_item quantity must be positive")
+	asserts.equal(bad_quantity.reason, "invalid_result_quantity", "invalid quantity returns explicit reason")
+	var bad_item: Dictionary = NarrativeRuntime.new().from_catalog(FakeCatalog.new({
+		"items": [{"id": "ash_stained_iron_kettle", "name": "재 묻은 철솥", "status": "초안"}],
+		"events": [_single_result_event({"type": "grant_item", "id": "missing_item", "quantity": 1})]
+	}))
+	asserts.false_value(bad_item.ok, "grant_item targets must exist in catalog items when catalog items are available")
+	asserts.equal(bad_item.reason, "missing_result_item", "missing grant item returns explicit reason")
+
 func _assert_run_meta_boundary(asserts) -> void:
 	var runtime: NarrativeRuntime = _fixture_runtime(asserts)
 	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": "common_region"}
@@ -107,14 +181,14 @@ func _assert_run_meta_boundary(asserts) -> void:
 		"status": "확정",
 		"replay_policy": "repeat",
 		"start_node_id": "start",
-		"nodes": [{"id": "start", "text": "", "options": [{"id": "bad", "display_text": "Bad", "conditions": [{"type": "meta_inventory_has_item", "id": "wood"}], "results": []}]}]
+		"nodes": [{"id": "start", "text": "", "options": [{"id": "bad", "display_text": "Bad", "conditions": [{"type": "meta_inventory_has_item", "id": "wood"}], "results": [], "next_node_id": "", "completes_event": true}]}]
 	}])
 	var boundary_result: Dictionary = boundary_runtime.read_model_for_event("bad_meta_condition", run_state, meta_state)
 	asserts.false_value(boundary_result.ok, "non-allowlisted meta condition type cannot query meta state")
 
 func _assert_read_model_does_not_mutate_state(asserts) -> void:
 	var runtime: NarrativeRuntime = _fixture_runtime(asserts)
-	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {"plain_travel_kettle": 0}, "current_biome_id": "common_region"}
+	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {"ash_stained_iron_kettle": 0}, "current_biome_id": "common_region"}
 	var before := run_state.duplicate(true)
 	var model: Dictionary = runtime.read_model_for_event("roadside_teahouse_intro", run_state)
 	asserts.true_value(model.ok, "read model can be built")
@@ -123,8 +197,14 @@ func _assert_read_model_does_not_mutate_state(asserts) -> void:
 func _fixture_runtime(asserts) -> NarrativeRuntime:
 	return _runtime_from_events(asserts, _fixture_events())
 
+func _runtime_result_from_events(events: Array) -> Dictionary:
+	return NarrativeRuntime.new().from_catalog(FakeCatalog.new({
+		"items": [{"id": "ash_stained_iron_kettle", "name": "재 묻은 철솥", "status": "초안"}],
+		"events": events
+	}))
+
 func _runtime_from_events(asserts, events: Array) -> NarrativeRuntime:
-	var result: Dictionary = NarrativeRuntime.new().from_catalog(FakeCatalog.new({"events": events}))
+	var result: Dictionary = _runtime_result_from_events(events)
 	asserts.true_value(result.ok, "fixture narrative runtime initializes")
 	return result.runtime
 
@@ -133,6 +213,16 @@ func _option_ids(read_model: Dictionary) -> Array:
 	for option in read_model.options:
 		ids.append(option.id)
 	return ids
+
+func _single_result_event(result: Dictionary) -> Dictionary:
+	return {
+		"id": "single_result_event",
+		"name": "Single Result Event",
+		"status": "확정",
+		"replay_policy": "repeat",
+		"start_node_id": "start",
+		"nodes": [{"id": "start", "text": "", "options": [{"id": "done", "display_text": "Done", "results": [result], "next_node_id": "", "completes_event": true}]}]
+	}
 
 func _fixture_events() -> Array:
 	return [
@@ -154,7 +244,7 @@ func _fixture_events() -> Array:
 							"conditions": [{"type": "run_not_flag", "id": "accepted_roadside_kettle"}],
 							"results": [
 								{"type": "set_run_flag", "id": "accepted_roadside_kettle"},
-								{"type": "grant_item", "id": "plain_travel_kettle", "quantity": 1}
+								{"type": "grant_item", "id": "ash_stained_iron_kettle", "quantity": 1}
 							],
 							"next_node_id": "thanks",
 							"completes_event": false

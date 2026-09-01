@@ -176,6 +176,50 @@ class NotionExportPipelineTests(unittest.TestCase):
         ):
             self.pipeline.build_snapshots(invalid, "confirmed")
 
+    def test_event_result_grant_item_must_target_catalog_item(self):
+        invalid = self._minimal_event_capture()
+        invalid["datasets"]["events"]["items"][0]["nodes"][0]["options"][0]["results"][0]["id"] = "missing_item"
+
+        with self.assertRaisesRegex(ExportValidationError, "events.*grant_item.*missing item id missing_item"):
+            self.pipeline.build_snapshots(invalid, "confirmed-test")
+
+    def test_event_duplicate_ids_and_non_completing_paths_fail(self):
+        duplicate_node = self._minimal_event_capture()
+        duplicate_node["datasets"]["events"]["items"][0]["nodes"].append(
+            {"id": "start", "text": "duplicate", "options": []}
+        )
+        with self.assertRaisesRegex(ExportValidationError, "events.*duplicate node id start"):
+            self.pipeline.build_snapshots(duplicate_node, "confirmed-test")
+
+        duplicate_option = self._minimal_event_capture()
+        duplicate_option["datasets"]["events"]["items"][0]["nodes"][0]["options"].append(
+            {"id": "take", "display_text": "Again", "results": [], "next_node_id": "", "completes_event": True}
+        )
+        with self.assertRaisesRegex(ExportValidationError, "events.*duplicate option id take"):
+            self.pipeline.build_snapshots(duplicate_option, "confirmed-test")
+
+        non_terminating = self._minimal_event_capture()
+        non_terminating["datasets"]["events"]["items"][0]["nodes"][0]["options"][0]["completes_event"] = False
+        non_terminating["datasets"]["events"]["items"][0]["nodes"][0]["options"][0]["next_node_id"] = ""
+        with self.assertRaisesRegex(ExportValidationError, "events.*neither completes nor advances"):
+            self.pipeline.build_snapshots(non_terminating, "confirmed-test")
+
+        cycle = self._minimal_event_capture()
+        cycle["datasets"]["events"]["items"][0]["nodes"] = [
+            {
+                "id": "start",
+                "text": "start",
+                "options": [{"id": "loop", "display_text": "Loop", "results": [], "next_node_id": "again", "completes_event": False}],
+            },
+            {
+                "id": "again",
+                "text": "again",
+                "options": [{"id": "back", "display_text": "Back", "results": [], "next_node_id": "start", "completes_event": False}],
+            },
+        ]
+        with self.assertRaisesRegex(ExportValidationError, "events.*reachable dialogue cycle"):
+            self.pipeline.build_snapshots(cycle, "confirmed-test")
+
     def test_write_snapshots_round_trips_through_validation(self):
         with tempfile.TemporaryDirectory() as directory:
             written = self.pipeline.export(self.capture, Path(directory), "confirmed-test")
@@ -183,6 +227,46 @@ class NotionExportPipelineTests(unittest.TestCase):
             validated = self.pipeline.validate_directory(Path(directory))
             self.assertEqual(validated["data_version"], "fixture-2026-09-01")
             self.assertEqual(validated["profile"], "confirmed-test")
+
+    def _minimal_event_capture(self):
+        return {
+            "schema_version": 1,
+            "data_version": "fixture-events-2026-09-01",
+            "datasets": {
+                "items": {
+                    "source": "collection://items",
+                    "items": [{"id": "ash_stained_iron_kettle", "name": "재 묻은 철솥", "status": "초안"}],
+                },
+                "events": {
+                    "source": "fixture://events",
+                    "items": [
+                        {
+                            "id": "sample_event",
+                            "name": "Sample Event",
+                            "status": "확정",
+                            "replay_policy": "once",
+                            "start_node_id": "start",
+                            "nodes": [
+                                {
+                                    "id": "start",
+                                    "text": "start",
+                                    "options": [
+                                        {
+                                            "id": "take",
+                                            "display_text": "Take",
+                                            "conditions": [],
+                                            "results": [{"type": "grant_item", "id": "ash_stained_iron_kettle", "quantity": 1}],
+                                            "next_node_id": "",
+                                            "completes_event": True,
+                                        }
+                                    ],
+                                }
+                            ],
+                        }
+                    ],
+                },
+            },
+        }
 
     def test_equipment_tea_ware_exports_canonical_effect_fields_only(self):
         snapshots = self.pipeline.build_snapshots(self.capture, "confirmed-test")

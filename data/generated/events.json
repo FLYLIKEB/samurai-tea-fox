@@ -3,7 +3,7 @@
   "data_version": "notion-2026-09-01",
   "profile": "confirmed-test",
   "source": "fixture://dev_25_story_events",
-  "content_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "content_hash": "fb2bf90d646522a433d6bae9c643b9c0e0a785bffea1513781037f1726df7c66",
   "items": [
     {
       "id": "roadside_teahouse_intro",
@@ -25,7 +25,7 @@
               ],
               "results": [
                 {"type": "set_run_flag", "id": "accepted_roadside_kettle"},
-                {"type": "grant_item", "id": "plain_travel_kettle", "quantity": 1}
+                {"type": "grant_item", "id": "ash_stained_iron_kettle", "quantity": 1}
               ],
               "next_node_id": "thanks",
               "completes_event": false
