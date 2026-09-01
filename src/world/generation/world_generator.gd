@@ -3,6 +3,8 @@ class_name WorldGenerator
 
 const DeterministicRng = preload("res://src/core/rng/deterministic_rng.gd")
 const ConnectivityValidator = preload("res://src/world/generation/connectivity_validator.gd")
+const WorldData = preload("res://src/world/data/world_data.gd")
+const WorldRendererProjection = preload("res://src/world/rendering/world_renderer_projection.gd")
 
 func generate(seed: int, data_version: String, biome_definition: Dictionary, balance_definitions: Array) -> Dictionary:
 	var rng := DeterministicRng.new(seed)
@@ -30,6 +32,9 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 	}
 
 	var validator := ConnectivityValidator.new()
+	var world_data := _world_data_from_landmarks(landmarks)
+	world.world_data = world_data.to_dictionary()
+	world.renderer_input = WorldRendererProjection.new().project(world.world_data)
 	world.connectivity = validator.validate(world)
 	return world
 
@@ -54,9 +59,19 @@ func _chunks(rng: DeterministicRng) -> Array:
 		})
 	return chunks
 
+func _world_data_from_landmarks(landmarks: Array) -> WorldData:
+	var world_data := WorldData.new(64, 36, "common_ground", true)
+	for landmark in landmarks:
+		var position: Dictionary = landmark.position
+		world_data.add_required_landmark(
+			landmark.kind,
+			landmark.id,
+			Vector2i(int(position.x), int(position.y))
+		)
+	return world_data
+
 func _balance_value(balance_definitions: Array, id: String, fallback: float) -> float:
 	for item in balance_definitions:
 		if item.get("id", "") == id:
 			return float(item.get("value", fallback))
 	return fallback
-
