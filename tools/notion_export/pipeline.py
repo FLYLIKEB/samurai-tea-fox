@@ -146,14 +146,15 @@ class ExportPipeline:
             for field in required_fields:
                 if field not in row or row[field] in (None, ""):
                     raise ExportValidationError(f"{dataset_name} item {item_id}: missing required field {field}")
-            self._validate_row_contract(dataset_name, row)
-            item_id = row["id"]
+            normalized_row = normalize_structured_fields(dataset_name, row)
+            self._validate_row_contract(dataset_name, normalized_row)
+            item_id = normalized_row["id"]
             if not isinstance(item_id, str) or not id_pattern.fullmatch(item_id):
                 raise ExportValidationError(f"{dataset_name} item {item_id}: invalid stable id")
             if item_id in seen_ids:
                 raise ExportValidationError(f"{dataset_name}: duplicate stable id {item_id}")
             seen_ids.add(item_id)
-            included.append(copy_json_value(row))
+            included.append(copy_json_value(normalized_row))
 
         return sorted(included, key=lambda item: item["id"])
 
@@ -381,3 +382,56 @@ class ExportPipeline:
 
 def copy_json_value(value: Any) -> Any:
     return json.loads(json.dumps(value, ensure_ascii=False))
+
+
+def normalize_structured_fields(dataset_name: str, row: dict[str, Any]) -> dict[str, Any]:
+    normalized = copy_json_value(row)
+    if dataset_name != "items":
+        return normalized
+
+    if "attachment_stage_thresholds" in normalized:
+        normalized["attachment_stage_thresholds"] = _normalize_attachment_stage_thresholds(
+            normalized["attachment_stage_thresholds"],
+            str(normalized.get("id", "")),
+        )
+    if "attachment_description_keys" in normalized:
+        normalized["attachment_description_keys"] = _normalize_attachment_description_keys(
+            normalized["attachment_description_keys"]
+        )
+    return normalized
+
+
+def _normalize_attachment_stage_thresholds(value: Any, item_id: str) -> Any:
+    if isinstance(value, str):
+        parts = _split_comma_list(value)
+    elif isinstance(value, list) and all(isinstance(part, str) for part in value):
+        parts = value
+    elif isinstance(value, list):
+        return value
+    else:
+        return value
+
+    thresholds: list[int] = []
+    for part in parts:
+        stripped = part.strip()
+        if not stripped:
+            continue
+        try:
+            thresholds.append(int(stripped))
+        except ValueError as error:
+            raise ExportValidationError(
+                f"items item {item_id}: attachment_stage_thresholds must contain integers"
+            ) from error
+    return thresholds
+
+
+def _normalize_attachment_description_keys(value: Any) -> Any:
+    if isinstance(value, str):
+        return _split_comma_list(value)
+    if isinstance(value, list) and all(isinstance(part, str) for part in value):
+        return [part.strip() for part in value if part.strip()]
+    return value
+
+
+def _split_comma_list(value: str) -> list[str]:
+    return [part.strip() for part in value.split(",") if part.strip()]

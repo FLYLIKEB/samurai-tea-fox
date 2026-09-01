@@ -3,7 +3,11 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from tools.notion_export.pipeline import ExportValidationError, copy_json_value
+from tools.notion_export.pipeline import (
+    ExportValidationError,
+    copy_json_value,
+    normalize_structured_fields,
+)
 
 
 class CaptureBuilder:
@@ -149,7 +153,7 @@ class CaptureBuilder:
                 )
             elif resolved:
                 item[relation["field"]] = resolved[0]
-        return item
+        return normalize_structured_fields(dataset_name, item)
 
     def _dataset_config(self, dataset_name: str) -> dict[str, Any]:
         try:

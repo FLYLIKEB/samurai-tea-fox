@@ -347,6 +347,39 @@ class NotionExportPipelineTests(unittest.TestCase):
         )
         self.assertNotIn("tea_recovery_bonus", item)
 
+    def test_equipment_tea_ware_attachment_fields_accept_flattened_notion_strings(self):
+        flattened = copy.deepcopy(self.capture)
+        item = next(item for item in flattened["datasets"]["items"]["items"] if item["id"] == "oribe_bowl")
+        item["attachment_stage_thresholds"] = "0, 3, 7"
+        item["attachment_description_keys"] = (
+            "items.oribe_bowl.attachment.stage_0, "
+            "items.oribe_bowl.attachment.stage_1, "
+            "items.oribe_bowl.attachment.stage_2"
+        )
+
+        snapshots = self.pipeline.build_snapshots(flattened, "confirmed-test")
+        exported = next(item for item in snapshots["items"]["items"] if item["id"] == "oribe_bowl")
+
+        self.assertEqual(exported["attachment_stage_thresholds"], [0, 3, 7])
+        self.assertEqual(
+            exported["attachment_description_keys"],
+            [
+                "items.oribe_bowl.attachment.stage_0",
+                "items.oribe_bowl.attachment.stage_1",
+                "items.oribe_bowl.attachment.stage_2",
+            ],
+        )
+
+    def test_equipment_tea_ware_attachment_threshold_list_strings_remain_supported(self):
+        flattened = copy.deepcopy(self.capture)
+        item = next(item for item in flattened["datasets"]["items"]["items"] if item["id"] == "oribe_bowl")
+        item["attachment_stage_thresholds"] = ["0", "3", "7"]
+
+        snapshots = self.pipeline.build_snapshots(flattened, "confirmed-test")
+        exported = next(item for item in snapshots["items"]["items"] if item["id"] == "oribe_bowl")
+
+        self.assertEqual(exported["attachment_stage_thresholds"], [0, 3, 7])
+
     def test_equipment_tea_ware_attachment_stage_export_is_required(self):
         schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
         item_notion = schema["datasets"]["items"]["notion"]

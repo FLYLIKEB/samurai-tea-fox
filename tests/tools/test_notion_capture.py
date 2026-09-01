@@ -4,6 +4,13 @@ from tools.notion_export.capture import CaptureBuilder
 from tools.notion_export.pipeline import ExportPipeline, ExportValidationError
 
 
+def copy_rows(rows):
+    return {
+        dataset_name: [dict(row) for row in dataset_rows]
+        for dataset_name, dataset_rows in rows.items()
+    }
+
+
 class NotionCaptureTests(unittest.TestCase):
     def setUp(self):
         self.schema = {
@@ -21,7 +28,13 @@ class NotionCaptureTests(unittest.TestCase):
                         "status_field": "설정 상태",
                         "unique_id_field": "아이템 ID",
                         "id_prefix": "item",
-                        "field_map": {"종류": "type"},
+                        "field_map": {
+                            "종류": "type",
+                            "장비 슬롯": "equipment_slot",
+                            "정붙음 단계 임계값": "attachment_stage_thresholds",
+                            "정붙음 설명 키": "attachment_description_keys",
+                            "태그": "tags",
+                        },
                     },
                 },
                 "biomes": {
@@ -110,6 +123,63 @@ class NotionCaptureTests(unittest.TestCase):
         )
 
         self.assertEqual(capture["datasets"]["items"]["items"][0]["id"], "wood")
+
+    def test_live_flattened_attachment_fields_export_as_structured_arrays(self):
+        rows = copy_rows(self.rows)
+        rows["items"][0].update(
+            {
+                "종류": "다구",
+                "장비 슬롯": "다구",
+                "정붙음 단계 임계값": "0, 3, 7",
+                "정붙음 설명 키": (
+                    "items.oribe_bowl.attachment.stage_0, "
+                    "items.oribe_bowl.attachment.stage_1, "
+                    "items.oribe_bowl.attachment.stage_2"
+                ),
+                "태그": ["existing", "array"],
+            }
+        )
+
+        capture = CaptureBuilder(self.schema, {"page-item": "oribe_bowl"}).build_from_rows(
+            rows,
+            "notion-fixture-v1",
+        )
+        snapshots = ExportPipeline(self.schema).build_snapshots(capture)
+        item = snapshots["items"]["items"][0]
+
+        self.assertEqual(item["attachment_stage_thresholds"], [0, 3, 7])
+        self.assertEqual(
+            item["attachment_description_keys"],
+            [
+                "items.oribe_bowl.attachment.stage_0",
+                "items.oribe_bowl.attachment.stage_1",
+                "items.oribe_bowl.attachment.stage_2",
+            ],
+        )
+        self.assertEqual(item["tags"], ["existing", "array"])
+
+    def test_attachment_list_string_threshold_input_still_exports_as_integers(self):
+        rows = copy_rows(self.rows)
+        rows["items"][0].update(
+            {
+                "종류": "다구",
+                "장비 슬롯": "다구",
+                "정붙음 단계 임계값": ["0", "3", "7"],
+                "정붙음 설명 키": [
+                    "items.oribe_bowl.attachment.stage_0",
+                    "items.oribe_bowl.attachment.stage_1",
+                    "items.oribe_bowl.attachment.stage_2",
+                ],
+            }
+        )
+
+        capture = CaptureBuilder(self.schema, {"page-item": "oribe_bowl"}).build_from_rows(
+            rows,
+            "notion-fixture-v1",
+        )
+        item = ExportPipeline(self.schema).build_snapshots(capture)["items"]["items"][0]
+
+        self.assertEqual(item["attachment_stage_thresholds"], [0, 3, 7])
 
 
 if __name__ == "__main__":
