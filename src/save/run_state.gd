@@ -4,7 +4,7 @@ class_name RunState
 var data_version := ""
 var seed := 0
 var current_biome_id := ""
-var inventory := []
+var inventory := {}
 var currency := 0
 var tails := 1
 var abilities := []
@@ -23,4 +23,3 @@ func to_dictionary() -> Dictionary:
 		"repaired_teleports": repaired_teleports,
 		"crafting_unlocks": crafting_unlocks
 	}
-
