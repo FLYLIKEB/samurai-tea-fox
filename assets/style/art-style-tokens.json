@@ -1,0 +1,351 @@
+{
+  "schema_version": 1,
+  "id": "samurai-tea-fox-art-style-tokens",
+  "title": "무사여우: 한 잔의 도 아트 스타일 토큰",
+  "management_rule": {
+    "priority": "이미지 생성, PixelLab, 스프라이트 제작 프롬프트는 이 파일을 최우선으로 읽는다.",
+    "single_source": "색상 팔레트, 공통 시각 컨셉, 이미지 생성용 positive/negative 토큰은 다른 문서에 복제하지 않는다.",
+    "notion_alignment": "상위 기획 정본은 Notion 09. 아트디렉션·맵·UI와 🎨 아트 에셋 DB다.",
+    "runtime_boundary": "이 파일은 제작용 스타일 토큰이며 게임 런타임이 Notion API를 호출한다는 뜻이 아니다."
+  },
+  "source_context": {
+    "notion_art_direction": {
+      "title": "09. 아트디렉션·맵·UI",
+      "url": "https://app.notion.com/p/3c9373699e6681eab381e085f0ac1b89?pvs=204",
+      "last_checked": "2026-09-01"
+    },
+    "notion_asset_database": {
+      "title": "🎨 아트 에셋",
+      "role": "실제 제작 에셋 목록, 규격, 방향 수, 프레임 수, 제작 상태, 파일의 정본"
+    }
+  },
+  "project_concept": {
+    "short": "귀여운 여우 사무라이와 다도 미학을 결합한 32x32 저해상도 픽셀아트 로그라이크",
+    "mood": [
+      "조용함",
+      "절제",
+      "낡은 물건의 온기",
+      "다도적 여백",
+      "읽기 쉬운 모험감"
+    ],
+    "motifs": [
+      "붉은여우 귀와 꼬리",
+      "작은 검 또는 단도",
+      "찻잎",
+      "차통",
+      "다구",
+      "수선 흔적",
+      "산길",
+      "숲",
+      "강",
+      "사찰과 다실"
+    ],
+    "avoid_mood": [
+      "과한 영웅 판타지",
+      "어두운 고어",
+      "현대 SF",
+      "네온 사이버펑크",
+      "고광택 모바일 RPG"
+    ]
+  },
+  "pixel_rules": {
+    "base_tile_size_px": 32,
+    "sprite_base_size_px": 32,
+    "texture_filter": "nearest",
+    "scale": "integer_preferred",
+    "anti_aliasing": "avoid",
+    "lighting": "minimal",
+    "shading": "minimal_two_or_three_steps",
+    "linework": "clear_outline_first",
+    "detail_density": "low",
+    "readability": "silhouette_first",
+    "max_colors_per_32px_sprite": 12,
+    "max_colors_per_32px_tile": 10
+  },
+  "style_pillars": [
+    {
+      "id": "cute_fox_silhouette",
+      "name": "귀여운 여우 실루엣",
+      "rule": "큰 귀와 꼬리가 먼저 읽혀야 한다."
+    },
+    {
+      "id": "samurai_restraint",
+      "name": "사무라이적 절제",
+      "rule": "장비와 포즈는 과장보다 단순한 방향성과 균형을 우선한다."
+    },
+    {
+      "id": "tea_ceremony_calm",
+      "name": "다도적 고요",
+      "rule": "차, 다구, 다실 요소는 회복과 여백의 인상을 준다."
+    },
+    {
+      "id": "wabi_sabi_wear",
+      "name": "와비사비 사용감",
+      "rule": "흠집, 마모, 수선, 비대칭은 실패가 아니라 시간과 관계의 흔적으로 표현한다."
+    },
+    {
+      "id": "minimal_readability",
+      "name": "미니멀 가독성",
+      "rule": "언더테일처럼 단순하고 읽기 쉬운 화면 구성을 우선한다."
+    }
+  ],
+  "palette": {
+    "global": [
+      {
+        "id": "ink_line",
+        "name": "먹선",
+        "hex": "#2A271F",
+        "role": "outline",
+        "usage": "캐릭터 외곽선, UI 테두리, 중요한 실루엣"
+      },
+      {
+        "id": "charcoal_shadow",
+        "name": "숯 그림자",
+        "hex": "#4A4038",
+        "role": "deep_shadow",
+        "usage": "오브젝트 안쪽 그림자, 바위와 목재의 어두운 면"
+      },
+      {
+        "id": "paper_warm",
+        "name": "한지 온백색",
+        "hex": "#E7D9BE",
+        "role": "warm_light",
+        "usage": "UI 바탕, 밝은 흙길, 종이 느낌 하이라이트"
+      },
+      {
+        "id": "clay_path",
+        "name": "다실 흙길",
+        "hex": "#A88B62",
+        "role": "earth_mid",
+        "usage": "길, 흙, 마른 나무, 차실 바닥"
+      },
+      {
+        "id": "tea_leaf",
+        "name": "차잎 녹색",
+        "hex": "#6F8B5F",
+        "role": "nature_primary",
+        "usage": "차, 풀, 회복 계열 UI"
+      },
+      {
+        "id": "moss_deep",
+        "name": "이끼 녹색",
+        "hex": "#3F5F4A",
+        "role": "nature_shadow",
+        "usage": "숲 그림자, 이끼, 오래된 돌 주변"
+      },
+      {
+        "id": "fox_russet",
+        "name": "여우 적갈색",
+        "hex": "#B7653F",
+        "role": "character_primary",
+        "usage": "여우 귀, 꼬리, 주인공 포인트"
+      },
+      {
+        "id": "fox_cream",
+        "name": "여우 크림색",
+        "hex": "#E6CFA4",
+        "role": "character_light",
+        "usage": "귀 안쪽, 꼬리 끝, 얼굴 밝은 면"
+      },
+      {
+        "id": "tea_steam",
+        "name": "차 김",
+        "hex": "#C9D7C0",
+        "role": "soft_effect",
+        "usage": "차 김, 회복 이펙트, 고요한 하이라이트"
+      },
+      {
+        "id": "river_muted",
+        "name": "흐린 강물",
+        "hex": "#5F8791",
+        "role": "water_primary",
+        "usage": "강, 물가, 차가운 UI 보조색"
+      },
+      {
+        "id": "night_indigo",
+        "name": "밤 남색",
+        "hex": "#2F3E5C",
+        "role": "night_shadow",
+        "usage": "밤, 수면, 心 저하 상황"
+      },
+      {
+        "id": "heart_cinnabar",
+        "name": "단사 심홍",
+        "hex": "#A94B4B",
+        "role": "hp_and_warning",
+        "usage": "HP, 경고, 피해 표시"
+      },
+      {
+        "id": "ki_gold",
+        "name": "기운 황금",
+        "hex": "#D6A84F",
+        "role": "ki_resource",
+        "usage": "기운, 차 회복, 요술 사용 전 에너지"
+      },
+      {
+        "id": "mind_violet",
+        "name": "心 보라",
+        "hex": "#7A668E",
+        "role": "mind_resource",
+        "usage": "心, 밤샘, 정신적 평정 UI"
+      }
+    ],
+    "biome_accents": [
+      {
+        "id": "white_country",
+        "name": "백국",
+        "colors": [
+          "#E7D9BE",
+          "#C9D7C0",
+          "#9FAF9A"
+        ],
+        "usage": "출발지, 절제된 밝음, 차분한 숲"
+      },
+      {
+        "id": "red_country",
+        "name": "홍국",
+        "colors": [
+          "#B7653F",
+          "#A94B4B",
+          "#D6A84F"
+        ],
+        "usage": "전란, 사무라이, 붉은 흙과 깃발"
+      },
+      {
+        "id": "night_memory",
+        "name": "밤과 기억",
+        "colors": [
+          "#2F3E5C",
+          "#7A668E",
+          "#C9D7C0"
+        ],
+        "usage": "수면, 心, 기억차, 이전 런의 흔적"
+      }
+    ],
+    "rules": {
+      "dominant_saturation": "low_to_mid",
+      "contrast": "clear_shape_over_soft_gradient",
+      "outline": "use_ink_line_for_readability",
+      "do_not_use": [
+        "고채도 네온",
+        "부드러운 디지털 그라디언트",
+        "과한 bloom",
+        "실사 질감",
+        "금속 광택 위주의 판타지 렌더링"
+      ]
+    }
+  },
+  "asset_profiles": {
+    "character_sprite": {
+      "positive_tokens": [
+        "32x32 pixel art",
+        "cute fox samurai",
+        "large fox ears",
+        "readable tail silhouette",
+        "small sword",
+        "tea ceremony motif",
+        "clear dark outline",
+        "minimal shading",
+        "low saturation"
+      ],
+      "negative_tokens": [
+        "photorealistic",
+        "high detail illustration",
+        "smooth gradient",
+        "anti-aliased edges",
+        "glossy lighting",
+        "oversized weapon",
+        "aggressive dark fantasy"
+      ]
+    },
+    "connected_tileset": {
+      "positive_tokens": [
+        "32x32 connected tiles",
+        "tileable edges",
+        "clear terrain silhouette",
+        "simple outline",
+        "minimal texture noise",
+        "Nintendo DS era map sprite feeling",
+        "low saturation"
+      ],
+      "negative_tokens": [
+        "single decorative icon",
+        "non-tileable border",
+        "realistic texture",
+        "complex lighting",
+        "overcrowded detail"
+      ]
+    },
+    "mobile_ui": {
+      "positive_tokens": [
+        "simple pixel panel",
+        "edge HUD",
+        "map-first layout",
+        "touch friendly buttons",
+        "HP ki mind resources only",
+        "tea ceremony calm",
+        "minimal readable icons"
+      ],
+      "negative_tokens": [
+        "crowded HUD",
+        "extra mana bar",
+        "stamina bar",
+        "modern glossy UI",
+        "large decorative panels",
+        "text-heavy tutorial overlay"
+      ]
+    },
+    "background_concept": {
+      "positive_tokens": [
+        "low resolution pixel art background",
+        "quiet tea road",
+        "forest and river",
+        "wabi-sabi wear",
+        "simple shapes",
+        "muted palette",
+        "negative space"
+      ],
+      "negative_tokens": [
+        "cinematic realism",
+        "busy composition",
+        "dramatic lens flare",
+        "neon atmosphere",
+        "high fantasy castle"
+      ]
+    }
+  },
+  "prompt_assembly": {
+    "default_positive_prefix": [
+      "32x32 low resolution pixel art",
+      "clear outline",
+      "minimal shading",
+      "low saturation",
+      "cute fox samurai tea ceremony mood",
+      "wabi-sabi worn but warm details"
+    ],
+    "default_negative_suffix": [
+      "photorealistic",
+      "smooth gradient",
+      "anti-aliased",
+      "high detail",
+      "glossy",
+      "neon",
+      "crowded composition",
+      "extra RPG resource bars"
+    ],
+    "required_ui_resources": [
+      "HP",
+      "기운",
+      "心"
+    ],
+    "forbidden_ui_resources": [
+      "MP",
+      "SP",
+      "stamina",
+      "hunger",
+      "thirst",
+      "temperature",
+      "fatigue"
+    ]
+  }
+}
