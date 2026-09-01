@@ -2,6 +2,7 @@ extends RefCounted
 class_name AcquisitionService
 
 const GameCommand = preload("res://src/core/commands/game_command.gd")
+const WorldData = preload("res://src/world/data/world_data.gd")
 
 const SNAPSHOT_SCHEMA_VERSION := 1
 const POLICY_DIRECT := "direct"
@@ -216,26 +217,27 @@ func load_snapshot(snapshot: Dictionary) -> Dictionary:
 	if typeof(request_ids) != TYPE_ARRAY:
 		return _fail("invalid_drop_request_ids", "Processed drop request ids must be an array.")
 
+	# Prove every reservation against a detached world before mutating live state.
+	var staged_world = WorldData.from_dictionary(world_data.to_dictionary())
+	_release_reservations(staged_world, gatherables, pickups)
+	var staged_restore := _restore_snapshot_reservations(staged_world, normalized_gatherables.values, normalized_pickups.values)
+	if not staged_restore.ok:
+		return staged_restore
+
+	var previous_gatherables := gatherables
+	var previous_pickups := pickups
 	_release_runtime_reservations()
 	gatherables = normalized_gatherables.values
 	pickups = normalized_pickups.values
+	var live_restore := _restore_snapshot_reservations(world_data, gatherables, pickups)
+	if not live_restore.ok:
+		_release_runtime_reservations()
+		gatherables = previous_gatherables
+		pickups = previous_pickups
+		_restore_snapshot_reservations(world_data, gatherables, pickups)
+		return live_restore
 	processed_drop_request_ids = request_ids.duplicate()
 	next_pickup_id = max(1, int(snapshot.get("next_pickup_id", 1)))
-	for node in gatherables.values():
-		if not bool(node.depleted):
-			var restored: Dictionary = _restore_gatherable_reservation(node)
-			if not restored.ok:
-				return restored
-	for pickup in pickups.values():
-		var reservation: Dictionary = world_data.reserve_entity(
-			pickup.pickup_id,
-			_vector_from_dictionary(pickup.position),
-			Vector2i.ONE,
-			true,
-			{"interaction_kind": PICKUP_KIND, "item_id": pickup.item_id, "quantity": pickup.quantity}
-		)
-		if not reservation.ok:
-			return _world_failure(reservation)
 	_emit_changed()
 	return {"ok": true}
 
@@ -296,10 +298,38 @@ func _restore_gatherable_reservation(node: Dictionary) -> Dictionary:
 	return {"ok": true} if reservation.ok else _world_failure(reservation)
 
 func _release_runtime_reservations() -> void:
-	for node_id in gatherables:
-		world_data.release_footprint(node_id)
-	for pickup_id in pickups:
-		world_data.release_footprint(pickup_id)
+	_release_reservations(world_data, gatherables, pickups)
+
+func _release_reservations(target_world, source_gatherables: Dictionary, source_pickups: Dictionary) -> void:
+	for node_id in source_gatherables:
+		target_world.release_footprint(node_id)
+	for pickup_id in source_pickups:
+		target_world.release_footprint(pickup_id)
+
+func _restore_snapshot_reservations(target_world, source_gatherables: Dictionary, source_pickups: Dictionary) -> Dictionary:
+	for node in source_gatherables.values():
+		if bool(node.depleted):
+			continue
+		var reservation: Dictionary = target_world.reserve_entity(
+			node.node_id,
+			_vector_from_dictionary(node.position),
+			Vector2i.ONE,
+			true,
+			{"interaction_kind": GATHERABLE_KIND, "definition_id": node.definition_id}
+		)
+		if not reservation.ok:
+			return _world_failure(reservation)
+	for pickup in source_pickups.values():
+		var reservation: Dictionary = target_world.reserve_entity(
+			pickup.pickup_id,
+			_vector_from_dictionary(pickup.position),
+			Vector2i.ONE,
+			true,
+			{"interaction_kind": PICKUP_KIND, "item_id": pickup.item_id, "quantity": pickup.quantity}
+		)
+		if not reservation.ok:
+			return _world_failure(reservation)
+	return {"ok": true}
 
 func _rollback_new_pickups(existing_pickup_ids: Array) -> void:
 	for pickup_id in pickups.keys():
@@ -320,8 +350,7 @@ func _can_adopt_existing_gatherable(node_id: String, definition_id: String, posi
 	var definition: Dictionary = gatherable_definitions[definition_id]
 	var matches_generated_resource := String(metadata.get("resource_id", "")) == String(definition.item_id)
 	var matches_gatherable_definition := String(metadata.get("definition_id", "")) == definition_id
-	var matches_interaction_kind := String(metadata.get("interaction_kind", "")) == GATHERABLE_KIND
-	if not matches_generated_resource and not matches_gatherable_definition and not matches_interaction_kind:
+	if not matches_generated_resource and not matches_gatherable_definition:
 		return _fail("cannot_adopt_reservation", "Existing reservation metadata does not match gatherable definition.")
 	return {"ok": true}
 

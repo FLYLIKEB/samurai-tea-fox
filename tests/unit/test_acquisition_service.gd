@@ -42,6 +42,8 @@ func run(asserts) -> void:
 	_assert_run_save_round_trip_preserves_world_state(asserts)
 	_assert_invalid_definitions_are_atomic(asserts)
 	_assert_generated_resource_reservation_can_be_adopted(asserts)
+	_assert_interaction_kind_alone_cannot_be_adopted(asserts)
+	_assert_failed_snapshot_restore_is_atomic(asserts)
 	_assert_multi_grant_drop_rolls_back_on_world_failure(asserts)
 
 func _assert_four_fixture_types_share_interact_contract(asserts) -> void:
@@ -149,6 +151,36 @@ func _assert_generated_resource_reservation_can_be_adopted(asserts) -> void:
 	asserts.true_value(registered.ok, "acquisition adopts matching generated resource reservation")
 	asserts.true_value(runtime.service.gather("resource_0").ok, "adopted generated resource gathers normally")
 	asserts.equal(runtime.inventory.get_total_quantity("wood"), 1, "adopted resource grants stable item id")
+
+func _assert_interaction_kind_alone_cannot_be_adopted(asserts) -> void:
+	var runtime := _runtime(2, Vector2i(2, 1))
+	asserts.true_value(runtime.world.reserve_entity("resource_kind_only", Vector2i.ZERO, Vector2i.ONE, true, {"interaction_kind": "gatherable"}).ok, "kind-only fixture reserves the cell")
+	var registered: Dictionary = runtime.service.register_gatherable("resource_kind_only", "fixture_tree_common", Vector2i.ZERO)
+	asserts.false_value(registered.ok, "interaction kind alone cannot adopt a resource reservation")
+	asserts.equal(registered.reason, "world_owner_already_reserved", "kind-only reservation retains the world failure reason")
+
+func _assert_failed_snapshot_restore_is_atomic(asserts) -> void:
+	var runtime := _runtime(3, Vector2i(3, 1))
+	asserts.true_value(runtime.service.register_gatherable("tree_existing", "fixture_tree_common", Vector2i.ZERO).ok, "atomic fixture registers prior gatherable")
+	asserts.true_value(runtime.world.reserve_entity("unrelated_blocker", Vector2i(2, 0)).ok, "atomic fixture reserves unrelated world state")
+	var service_before: Dictionary = runtime.service.to_snapshot()
+	var world_before: Dictionary = runtime.world.to_dictionary()
+	var failed: Dictionary = runtime.service.load_snapshot({
+		"schema_version": AcquisitionService.SNAPSHOT_SCHEMA_VERSION,
+		"next_pickup_id": 2,
+		"gatherables": [],
+		"pickups": [{
+			"pickup_id": "pickup_000001",
+			"item_id": "wood",
+			"quantity": 1,
+			"position": {"x": 2, "y": 0},
+			"source": {}
+		}],
+		"processed_drop_request_ids": []
+	})
+	asserts.false_value(failed.ok, "snapshot restore rejects a conflicting reservation")
+	asserts.equal(runtime.service.to_snapshot(), service_before, "failed snapshot restore preserves prior service state")
+	asserts.equal(runtime.world.to_dictionary(), world_before, "failed snapshot restore preserves prior world state")
 
 func _assert_multi_grant_drop_rolls_back_on_world_failure(asserts) -> void:
 	var runtime := _runtime(2, Vector2i(1, 1))
