@@ -1,5 +1,5 @@
 {
-  "content_hash": "d4668595e5661b92854f852dd541dbb2aa5f007bbd995e6d6b1fcba85424452b",
+  "content_hash": "bb1b14166dcf861a9c26edccc5f4bb628f21577c4066f2cbffeb06d6d4cf08da",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -61,6 +61,15 @@
       "notion_id": "3cd37369-9e66-8129-8814-da72145e8b5f",
       "status": "확정",
       "unit": "개",
+      "value": 1
+    },
+    {
+      "category": "소모품",
+      "formula_note": "소모품은 완료 시점에만 1개 소비하고 효과를 적용한다.",
+      "id": "consumable_use_base_seconds",
+      "name": "소모품 기본 사용 시간",
+      "status": "테스트",
+      "unit": "초",
       "value": 1
     },
     {

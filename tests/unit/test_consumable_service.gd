@@ -1,0 +1,552 @@
+extends RefCounted
+
+const ConsumableService = preload("res://src/consumable/consumable_service.gd")
+const ConsumableDefinition = preload("res://src/consumable/consumable_definition.gd")
+const DataCatalog = preload("res://src/core/data/data_catalog.gd")
+const InventoryModel = preload("res://src/inventory/inventory_model.gd")
+const PlayerResources = preload("res://src/player/player_resources.gd")
+const RunState = preload("res://src/save/run_state.gd")
+const SaveCodec = preload("res://src/save/save_codec.gd")
+
+class FakeCatalog:
+	extends RefCounted
+	var definitions: Dictionary
+	var data_version := "fixture-consumables"
+
+	func _init(initial_definitions: Dictionary) -> void:
+		definitions = initial_definitions
+
+	func get_definitions(dataset: String) -> Array:
+		return definitions.get(dataset, [])
+
+	func find_by_id(dataset: String, id: String) -> Dictionary:
+		for definition in definitions.get(dataset, []):
+			if definition.get("id", "") == id:
+				return definition
+		return {}
+
+class InvalidResources:
+	extends RefCounted
+
+func run(asserts) -> void:
+	_assert_generated_catalog_configures_consumables(asserts)
+	_assert_use_action_consumes_and_heals_only_on_completion(asserts)
+	_assert_heal_requires_valid_resources_before_consuming(asserts)
+	_assert_completed_original_action_cannot_be_reused(asserts)
+	_assert_hit_interrupt_preserves_hp_and_quantity(asserts)
+	_assert_interrupted_original_action_cannot_be_reused(asserts)
+	_assert_returned_action_copy_is_observational(asserts)
+	_assert_hp_heal_clamps_and_stack_decrements(asserts)
+	_assert_insufficient_quantity_and_crafting_integration(asserts)
+	_assert_active_use_rejects_double_start_without_state_change(asserts)
+	_assert_completion_and_interruption_clear_active_action(asserts)
+	_assert_snapshot_round_trips_active_action(asserts)
+	_assert_loaded_active_use_rejects_double_start_without_state_change(asserts)
+	_assert_loaded_active_action_can_continue_complete_and_interrupt(asserts)
+	_assert_snapshot_roundtrip_preserves_action_idempotency(asserts)
+	_assert_malformed_snapshot_active_actions_are_rejected(asserts)
+	_assert_stale_snapshot_active_action_is_rejected_atomically(asserts)
+	_assert_legacy_owner_snapshot_cannot_authorize_completion(asserts)
+	_assert_fabricated_snapshot_action_cannot_authorize_completion(asserts)
+	_assert_failed_snapshot_load_preserves_service_state(asserts)
+	_assert_invalid_data_is_rejected(asserts)
+
+func _assert_generated_catalog_configures_consumables(asserts) -> void:
+	var catalog := DataCatalog.new()
+	var catalog_result := catalog.load_from_directory("res://data/generated")
+	asserts.true_value(catalog_result.ok, "generated catalog loads for consumable service")
+	var service_result: Dictionary = ConsumableService.from_catalog(catalog)
+	asserts.true_value(service_result.ok, "consumable service initializes from generated catalog")
+	if not service_result.ok:
+		return
+	var service: ConsumableService = service_result.consumable_service
+	asserts.true_value(service.has_definition("bandage"), "bandage definition comes from generated item data")
+	asserts.true_value(service.consumable_definitions["bandage"] is ConsumableDefinition, "runtime stores validated consumable definitions separately from action state")
+	asserts.equal(service.definition_for("bandage").effect_type, ConsumableService.EFFECT_HEAL_HP, "bandage effect is normalized from data")
+	asserts.equal(service.definition_for("bandage").effect_value, 25, "bandage heal amount comes from item data")
+	asserts.equal(service.definition_for("bandage").use_seconds, 1.0, "bandage use time comes from item data")
+	var exported_definition := service.definition_for("bandage")
+	exported_definition.effect_value = 999
+	asserts.equal(service.definition_for("bandage").effect_value, 25, "definition lookup cannot mutate immutable runtime definition data")
+
+	var fallback_result: Dictionary = ConsumableService.from_catalog(FakeCatalog.new({
+		"balance": _balance_rows(),
+		"items": [{"id": "field_dressing", "name": "응급 붕대", "status": "테스트", "type": "소모품", "max_stack": 5, "effect_type": "HP 회복", "effect_value": 10}]
+	}))
+	asserts.true_value(fallback_result.ok, "consumable without item use_seconds configures")
+	if fallback_result.ok:
+		asserts.equal(fallback_result.consumable_service.definition_for("field_dressing").use_seconds, 1.0, "missing item use time falls back to balance value")
+
+func _assert_use_action_consumes_and_heals_only_on_completion(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(inventory.add_item("bandage", 2).ok, "bandages can be stocked")
+	resources.apply_damage(60)
+
+	var start: Dictionary = service.start_use("bandage", inventory)
+	asserts.true_value(start.ok, "consumable use can start")
+	asserts.equal(inventory.get_total_quantity("bandage"), 2, "start does not consume an item")
+	asserts.equal(resources.hp, 40, "start does not heal HP")
+
+	var partial: Dictionary = service.tick_use(0.4, inventory, resources)
+	asserts.true_value(partial.ok, "consumable use can progress")
+	asserts.false_value(partial.completed, "partial use is not complete")
+	asserts.equal(inventory.get_total_quantity("bandage"), 2, "progress does not consume an item")
+	asserts.equal(resources.hp, 40, "progress does not heal HP")
+
+	var complete: Dictionary = service.tick_use(0.6, inventory, resources)
+	asserts.true_value(complete.ok, "consumable completes at configured use time")
+	asserts.true_value(complete.consumed, "completion consumes one item")
+	asserts.equal(inventory.get_total_quantity("bandage"), 1, "completion decrements stacked quantity")
+	asserts.equal(complete.effect.hp_healed, 25, "completion reports applied healing")
+	asserts.equal(resources.hp, 65, "completion applies HP healing")
+
+func _assert_heal_requires_valid_resources_before_consuming(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(inventory.add_item("bandage", 2).ok, "bandages can be stocked for invalid target regression")
+	resources.apply_damage(40)
+
+	var start: Dictionary = service.start_use("bandage", inventory)
+	asserts.true_value(start.ok, "consumable use can start before invalid target regression")
+	var null_target: Dictionary = service.complete_use(inventory, null)
+	asserts.false_value(null_target.ok, "heal consumable completion rejects null resources")
+	asserts.equal(inventory.get_total_quantity("bandage"), 2, "null resource failure does not consume inventory")
+	asserts.equal(resources.hp, 60, "null resource failure does not change HP")
+
+	var invalid_target: Dictionary = service.complete_use(inventory, InvalidResources.new())
+	asserts.false_value(invalid_target.ok, "heal consumable completion rejects resources without heal_hp")
+	asserts.equal(inventory.get_total_quantity("bandage"), 2, "invalid resource failure does not consume inventory")
+	asserts.equal(resources.hp, 60, "invalid resource failure does not change HP")
+
+func _assert_completed_original_action_cannot_be_reused(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(inventory.add_item("bandage", 2).ok, "bandages can be stocked for completion idempotency")
+	resources.apply_damage(60)
+
+	var start: Dictionary = service.start_use("bandage", inventory)
+	var complete: Dictionary = service.complete_use(inventory, resources)
+	asserts.true_value(complete.ok, "first original action completion succeeds")
+	asserts.equal(inventory.get_total_quantity("bandage"), 1, "first completion consumes exactly one item")
+	asserts.equal(resources.hp, 65, "first completion applies HP healing once")
+
+	var replay: Dictionary = service.complete_use(inventory, resources)
+	asserts.false_value(replay.ok, "same original action cannot complete twice")
+	asserts.equal(inventory.get_total_quantity("bandage"), 1, "replayed original completion does not consume another item")
+	asserts.equal(resources.hp, 65, "replayed original completion does not heal again")
+
+func _assert_hit_interrupt_preserves_hp_and_quantity(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(inventory.add_item("bandage", 1).ok, "bandage add succeeds")
+	resources.apply_damage(30)
+
+	var start: Dictionary = service.start_use("bandage", inventory)
+	var interrupt: Dictionary = service.interrupt_use("hit")
+	asserts.true_value(interrupt.ok, "hit can interrupt consumable use")
+	asserts.false_value(interrupt.consumed, "interrupt does not consume the item")
+	asserts.equal(inventory.get_total_quantity("bandage"), 1, "interrupt preserves quantity")
+	asserts.equal(resources.hp, 70, "interrupt does not heal HP")
+	asserts.false_value(service.complete_use(inventory, resources).ok, "interrupted action cannot complete later")
+
+func _assert_interrupted_original_action_cannot_be_reused(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(inventory.add_item("bandage", 1).ok, "bandage add succeeds for interrupt idempotency")
+	resources.apply_damage(30)
+
+	var start: Dictionary = service.start_use("bandage", inventory)
+	var interrupt: Dictionary = service.interrupt_use("hit")
+	asserts.true_value(interrupt.ok, "first interrupt succeeds")
+	var replay: Dictionary = service.complete_use(inventory, resources)
+	asserts.false_value(replay.ok, "interrupted original action cannot be reused for completion")
+	asserts.equal(inventory.get_total_quantity("bandage"), 1, "interrupted original replay preserves quantity")
+	asserts.equal(resources.hp, 70, "interrupted original replay preserves HP")
+
+func _assert_returned_action_copy_is_observational(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(inventory.add_item("bandage", 1).ok, "bandage can be stocked for observational copy regression")
+	resources.apply_damage(60)
+
+	var start: Dictionary = service.start_use("bandage", inventory)
+	start.action.item_id = "cloth"
+	start.action.elapsed_seconds = 99.0
+	var complete: Dictionary = service.complete_use(inventory, resources)
+	asserts.true_value(complete.ok, "caller-mutated action copy cannot change service-owned active action")
+	asserts.equal(complete.item_id, "bandage", "completion uses service-owned item id")
+	asserts.equal(resources.hp, 65, "completion applies original service-owned effect")
+
+func _assert_hp_heal_clamps_and_stack_decrements(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(inventory.add_item("bandage", 3).ok, "stacked bandages can be stocked")
+	resources.apply_damage(10)
+	var start: Dictionary = service.start_use("bandage", inventory)
+	var complete: Dictionary = service.complete_use(inventory, resources)
+	asserts.true_value(complete.ok, "direct completion is valid")
+	asserts.equal(complete.effect.hp_healed, 10, "HP healing clamps at maximum")
+	asserts.equal(resources.hp, 100, "HP cannot exceed maximum")
+	asserts.equal(inventory.get_total_quantity("bandage"), 2, "one item is consumed from the stack")
+
+func _assert_insufficient_quantity_and_crafting_integration(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	asserts.false_value(service.start_use("bandage", inventory).ok, "missing bandage cannot start use")
+
+	var crafting_script = load("res://src/crafting/crafting_service.gd")
+	var craft_result: Dictionary = crafting_script.from_catalog(FakeCatalog.new({
+		"items": _item_rows(),
+		"teas": [],
+		"recipes": [
+			{"id": "bandage", "name": "붕대 제작", "status": "테스트", "facility": "손제작", "materials": [{"item_id": "cloth", "quantity": 2}], "result_item_id": "bandage", "result_quantity": 1}
+		]
+	}))
+	asserts.true_value(craft_result.ok, "cloth-to-bandage recipe configures")
+	if not craft_result.ok:
+		return
+	var insufficient: Dictionary = craft_result.crafting_service.can_craft("bandage", inventory)
+	asserts.false_value(insufficient.ok, "bandage crafting reports insufficient cloth")
+	asserts.true_value(inventory.add_item("cloth", 2).ok, "cloth can be stocked")
+	asserts.true_value(craft_result.crafting_service.craft("bandage", inventory).ok, "cloth crafts into bandage")
+	asserts.equal(inventory.get_total_quantity("cloth"), 0, "bandage crafting consumes cloth")
+	asserts.equal(inventory.get_total_quantity("bandage"), 1, "bandage crafting adds inventory item")
+
+func _assert_active_use_rejects_double_start_without_state_change(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	asserts.true_value(inventory.add_item("bandage", 2).ok, "bandages can be stocked for double-start regression")
+	var start: Dictionary = service.start_use("bandage", inventory)
+	asserts.true_value(start.ok, "first consumable use starts before double-start regression")
+	var before_service: Dictionary = service.to_snapshot()
+	var before_inventory: Dictionary = inventory.to_snapshot()
+
+	var second: Dictionary = service.start_use("bandage", inventory)
+	asserts.false_value(second.ok, "second consumable use is rejected while one action is active")
+	asserts.equal(second.reason, "active_consumable_action", "double-start reports active action clearly")
+	asserts.equal(service.to_snapshot(), before_service, "double-start rejection leaves service active action unchanged")
+	asserts.equal(inventory.to_snapshot(), before_inventory, "double-start rejection leaves inventory unchanged")
+	asserts.equal(service.to_snapshot().active_action, before_service.active_action, "double-start preserves original service-owned active action")
+
+func _assert_completion_and_interruption_clear_active_action(asserts) -> void:
+	var complete_service := _fixture_service()
+	var complete_inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(complete_inventory.add_item("bandage", 2).ok, "bandages can be stocked for completion clear regression")
+	resources.apply_damage(40)
+	var complete_start: Dictionary = complete_service.start_use("bandage", complete_inventory)
+	asserts.true_value(complete_start.ok, "consumable use starts before completion clear regression")
+	var complete: Dictionary = complete_service.complete_use(complete_inventory, resources)
+	asserts.true_value(complete.ok, "completion succeeds before next start regression")
+	asserts.equal(complete_service.to_snapshot().active_action, {}, "completion clears active action")
+	var after_complete_start: Dictionary = complete_service.start_use("bandage", complete_inventory)
+	asserts.true_value(after_complete_start.ok, "new consumable use can start after completion clears action")
+	asserts.false_value(complete_service.to_snapshot().active_action.is_empty(), "post-completion start registers service-owned active action")
+
+	var interrupt_service := _fixture_service()
+	var interrupt_inventory := _fixture_inventory()
+	asserts.true_value(interrupt_inventory.add_item("bandage", 2).ok, "bandages can be stocked for interrupt clear regression")
+	var interrupt_start: Dictionary = interrupt_service.start_use("bandage", interrupt_inventory)
+	asserts.true_value(interrupt_start.ok, "consumable use starts before interruption clear regression")
+	var interrupt: Dictionary = interrupt_service.interrupt_use("hit")
+	asserts.true_value(interrupt.ok, "interrupt succeeds before next start regression")
+	asserts.equal(interrupt_service.to_snapshot().active_action, {}, "interruption clears active action")
+	var after_interrupt_start: Dictionary = interrupt_service.start_use("bandage", interrupt_inventory)
+	asserts.true_value(after_interrupt_start.ok, "new consumable use can start after interruption clears action")
+	asserts.false_value(interrupt_service.to_snapshot().active_action.is_empty(), "post-interrupt start registers service-owned active action")
+
+func _assert_snapshot_round_trips_active_action(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	asserts.true_value(inventory.add_item("bandage", 1).ok, "bandage add succeeds before snapshot")
+	var start: Dictionary = service.start_use("bandage", inventory)
+	var partial: Dictionary = service.tick_use(0.5, inventory)
+	var snapshot: Dictionary = service.to_snapshot()
+
+	var loaded := _fixture_service()
+	var load_result: Dictionary = loaded.load_snapshot(snapshot)
+	asserts.true_value(load_result.ok, "consumable snapshot reload succeeds")
+	asserts.equal(load_result.active_action, snapshot.active_action, "active action round-trip preserves progress")
+	asserts.equal(loaded.to_snapshot().active_action, snapshot.active_action, "active action round-trip is service-owned after load")
+	asserts.false_value(snapshot.has("active_action_owners"), "consumable snapshot omits legacy active action owner contract")
+
+	var run_state := RunState.new()
+	run_state.inventory = inventory.to_snapshot()
+	run_state.consumables = snapshot
+	var encoded := SaveCodec.encode_run(run_state.to_dictionary())
+	var decoded: Dictionary = SaveCodec.decode_run(encoded)
+	asserts.true_value(decoded.ok, "run save with consumable snapshot decodes")
+	asserts.equal(decoded.state.consumables.active_action.elapsed_seconds, 0.5, "run save preserves consumable progress")
+	asserts.false_value(decoded.state.consumables.has("active_action_owners"), "run save does not preserve legacy consumable action ownership")
+
+func _assert_snapshot_roundtrip_preserves_action_idempotency(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(inventory.add_item("bandage", 2).ok, "bandages can be stocked for snapshot idempotency")
+	resources.apply_damage(60)
+	var start: Dictionary = service.start_use("bandage", inventory)
+	var snapshot: Dictionary = service.to_snapshot()
+
+	var loaded := _fixture_service()
+	asserts.true_value(loaded.load_snapshot(snapshot).ok, "active action ownership loads")
+	var complete: Dictionary = loaded.complete_use(inventory, resources)
+	asserts.true_value(complete.ok, "loaded active action can complete once")
+	asserts.equal(inventory.get_total_quantity("bandage"), 1, "loaded completion consumes exactly one item")
+	asserts.equal(resources.hp, 65, "loaded completion heals once")
+
+	var replay: Dictionary = loaded.complete_use(inventory, resources)
+	asserts.false_value(replay.ok, "loaded service rejects completed original action reuse")
+	asserts.equal(inventory.get_total_quantity("bandage"), 1, "loaded replay preserves quantity")
+	asserts.equal(resources.hp, 65, "loaded replay preserves HP")
+
+func _assert_loaded_active_use_rejects_double_start_without_state_change(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	asserts.true_value(inventory.add_item("bandage", 2).ok, "bandages can be stocked before loaded double-start regression")
+	var start: Dictionary = service.start_use("bandage", inventory)
+	var partial: Dictionary = service.tick_use(0.25, inventory)
+	asserts.true_value(partial.ok, "active consumable can be partially progressed before snapshot")
+	var snapshot: Dictionary = service.to_snapshot()
+
+	var loaded := _fixture_service()
+	var load_result: Dictionary = loaded.load_snapshot(snapshot)
+	asserts.true_value(load_result.ok, "loaded service restores active action before double-start regression")
+	var before_loaded: Dictionary = loaded.to_snapshot()
+	var before_inventory: Dictionary = inventory.to_snapshot()
+	var second: Dictionary = loaded.start_use("bandage", inventory)
+	asserts.false_value(second.ok, "loaded active action rejects second start")
+	asserts.equal(second.reason, "active_consumable_action", "loaded double-start reports active action clearly")
+	asserts.equal(loaded.to_snapshot(), before_loaded, "loaded double-start rejection leaves active action state unchanged")
+	asserts.equal(inventory.to_snapshot(), before_inventory, "loaded double-start rejection leaves inventory unchanged")
+	asserts.equal(loaded.to_snapshot().active_action, before_loaded.active_action, "loaded double-start preserves service-owned active action")
+
+func _assert_loaded_active_action_can_continue_complete_and_interrupt(asserts) -> void:
+	var complete_service := _fixture_service()
+	var complete_inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(complete_inventory.add_item("bandage", 1).ok, "bandage can be stocked before loaded continue/complete")
+	resources.apply_damage(60)
+	asserts.true_value(complete_service.start_use("bandage", complete_inventory).ok, "use starts before loaded continue/complete")
+	asserts.true_value(complete_service.tick_use(0.25, complete_inventory).ok, "use partially progresses before loaded continue/complete")
+	var loaded_complete := _fixture_service()
+	var complete_load: Dictionary = loaded_complete.load_snapshot(complete_service.to_snapshot())
+	asserts.true_value(complete_load.ok, "loaded service restores partial active action")
+	var continued: Dictionary = loaded_complete.tick_use(0.75, complete_inventory, resources)
+	asserts.true_value(continued.ok, "loaded active action can continue to completion")
+	asserts.true_value(continued.consumed, "loaded continued action consumes on completion")
+	asserts.equal(complete_inventory.get_total_quantity("bandage"), 0, "loaded continued completion decrements inventory")
+	asserts.equal(loaded_complete.to_snapshot().active_action, {}, "loaded continued completion clears active action")
+
+	var interrupt_service := _fixture_service()
+	var interrupt_inventory := _fixture_inventory()
+	asserts.true_value(interrupt_inventory.add_item("bandage", 1).ok, "bandage can be stocked before loaded interrupt")
+	asserts.true_value(interrupt_service.start_use("bandage", interrupt_inventory).ok, "use starts before loaded interrupt")
+	asserts.true_value(interrupt_service.tick_use(0.25, interrupt_inventory).ok, "use partially progresses before loaded interrupt")
+	var loaded_interrupt := _fixture_service()
+	asserts.true_value(loaded_interrupt.load_snapshot(interrupt_service.to_snapshot()).ok, "loaded service restores interruptible active action")
+	var interrupted: Dictionary = loaded_interrupt.interrupt_use("hit")
+	asserts.true_value(interrupted.ok, "loaded active action can be interrupted")
+	asserts.equal(interrupt_inventory.get_total_quantity("bandage"), 1, "loaded interruption preserves inventory")
+	asserts.equal(loaded_interrupt.to_snapshot().active_action, {}, "loaded interruption clears active action")
+
+func _assert_malformed_snapshot_active_actions_are_rejected(asserts) -> void:
+	var service := _fixture_service()
+	var valid_action := {
+		"action_id": "consumable_action_000001",
+		"item_id": "bandage",
+		"elapsed_seconds": 0.5,
+		"use_seconds": 1.0,
+		"context": {},
+		"completed": false,
+		"interrupted": false
+	}
+	var cases := [
+		{"label": "non-string action id", "action": _with(valid_action, "action_id", 7)},
+		{"label": "empty action id", "action": _with(valid_action, "action_id", "")},
+		{"label": "non-string item id", "action": _with(valid_action, "item_id", 1)},
+		{"label": "unknown item id", "action": _with(valid_action, "item_id", "missing_bandage")},
+		{"label": "non-finite use seconds", "action": _with(valid_action, "use_seconds", INF)},
+		{"label": "non-finite elapsed seconds", "action": _with(valid_action, "elapsed_seconds", INF)},
+		{"label": "negative elapsed", "action": _with(valid_action, "elapsed_seconds", -0.1)},
+		{"label": "elapsed beyond use seconds", "action": _with(valid_action, "elapsed_seconds", 1.1)},
+		{"label": "timing mismatch", "action": _with(valid_action, "use_seconds", 2.0)},
+		{"label": "non-dictionary context", "action": _with(valid_action, "context", "scene")},
+		{"label": "completed action", "action": _with(valid_action, "completed", true)},
+		{"label": "interrupted action", "action": _with(valid_action, "interrupted", true)}
+	]
+	for malformed in cases:
+		var snapshot := _snapshot_with_action(malformed.action)
+		var loaded := _fixture_service()
+		asserts.false_value(loaded.load_snapshot(snapshot).ok, "consumable snapshot rejects %s" % malformed.label)
+
+func _assert_stale_snapshot_active_action_is_rejected_atomically(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	asserts.true_value(inventory.add_item("bandage", 2).ok, "bandages can be stocked before stale active action regression")
+	asserts.true_value(service.start_use("bandage", inventory).ok, "current active action starts before stale active action regression")
+	asserts.true_value(service.tick_use(0.25, inventory).ok, "current active action progresses before stale active action regression")
+	var before: Dictionary = service.to_snapshot()
+
+	var stale_snapshot: Dictionary = before.duplicate(true)
+	stale_snapshot.next_action_id = 10
+	stale_snapshot.active_action.action_id = "consumable_action_000001"
+
+	var load_result: Dictionary = service.load_snapshot(stale_snapshot)
+	asserts.false_value(load_result.ok, "stale active action lower than next action id is rejected")
+	asserts.equal(load_result.reason, "invalid_consumable_next_action_id", "stale active action reports sequence inconsistency")
+	asserts.equal(service.to_snapshot(), before, "stale active action load failure preserves existing service state")
+
+func _assert_legacy_owner_snapshot_cannot_authorize_completion(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(inventory.add_item("bandage", 1).ok, "bandage can be stocked for legacy owner snapshot regression")
+	resources.apply_damage(60)
+	var start: Dictionary = service.start_use("bandage", inventory)
+	var legacy_owner_snapshot: Dictionary = service.to_snapshot()
+	legacy_owner_snapshot.active_action_owners = {
+		String(start.action.action_id): {
+			"item_id": "bandage",
+			"use_seconds": 1.0
+		}
+	}
+
+	var loaded := _fixture_service()
+	var before_loaded: Dictionary = loaded.to_snapshot()
+	var load_result: Dictionary = loaded.load_snapshot(legacy_owner_snapshot)
+	asserts.false_value(load_result.ok, "legacy owner consumable snapshot is rejected")
+	asserts.equal(loaded.to_snapshot(), before_loaded, "legacy owner snapshot load leaves service state unchanged")
+
+	var fabricated_completion: Dictionary = loaded.complete_use(inventory, resources)
+	asserts.false_value(fabricated_completion.ok, "legacy owner snapshot cannot fabricate completion authority")
+	asserts.equal(inventory.get_total_quantity("bandage"), 1, "fabricated completion preserves inventory")
+	asserts.equal(resources.hp, 40, "fabricated completion preserves HP")
+
+func _assert_fabricated_snapshot_action_cannot_authorize_completion(asserts) -> void:
+	var fabricated_action := {
+		"action_id": "consumable_action_000009",
+		"item_id": "bandage",
+		"elapsed_seconds": 0.5,
+		"use_seconds": 1.0,
+		"context": {},
+		"completed": false,
+		"interrupted": false
+	}
+	var fabricated_snapshot := {
+		"schema_version": ConsumableService.SNAPSHOT_SCHEMA_VERSION,
+		"data_version": "fixture-consumables",
+		"next_action_id": 2,
+		"active_action": fabricated_action,
+		"active_action_owners": {
+			"consumable_action_000009": {
+				"item_id": "bandage",
+				"use_seconds": 1.0
+			}
+		}
+	}
+	var loaded := _fixture_service()
+	var before_loaded: Dictionary = loaded.to_snapshot()
+	var load_result: Dictionary = loaded.load_snapshot(fabricated_snapshot)
+	asserts.false_value(load_result.ok, "fabricated consumable action sequence is rejected")
+	asserts.equal(loaded.to_snapshot(), before_loaded, "fabricated snapshot load leaves service state unchanged")
+
+	var inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(inventory.add_item("bandage", 1).ok, "bandage can be stocked for fabricated snapshot regression")
+	resources.apply_damage(60)
+	var fabricated_completion: Dictionary = loaded.complete_use(inventory, resources)
+	asserts.false_value(fabricated_completion.ok, "fabricated snapshot cannot grant completion authority")
+	asserts.equal(inventory.get_total_quantity("bandage"), 1, "fabricated active action completion preserves inventory")
+	asserts.equal(resources.hp, 40, "fabricated active action completion preserves HP")
+
+func _assert_failed_snapshot_load_preserves_service_state(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	asserts.true_value(inventory.add_item("bandage", 1).ok, "bandage can be stocked before failed load atomicity regression")
+	var start: Dictionary = service.start_use("bandage", inventory)
+	var partial: Dictionary = service.tick_use(0.25, inventory)
+	var before: Dictionary = service.to_snapshot()
+	var malformed: Dictionary = before.duplicate(true)
+	malformed.data_version = "tampered-data-version"
+	malformed.next_action_id = 99
+	malformed.active_action_owners = {
+		String(partial.action.action_id): {
+			"item_id": "bandage",
+			"use_seconds": 1.0
+		},
+		"extra_action": {
+			"item_id": "bandage",
+			"use_seconds": 1.0
+		}
+	}
+
+	var load_result: Dictionary = service.load_snapshot(malformed)
+	asserts.false_value(load_result.ok, "malformed legacy owner field rejects snapshot load")
+	asserts.equal(service.to_snapshot(), before, "failed consumable snapshot load is atomic")
+
+func _assert_invalid_data_is_rejected(asserts) -> void:
+	var missing_balance: Dictionary = ConsumableService.from_catalog(FakeCatalog.new({
+		"balance": [],
+		"items": _item_rows()
+	}))
+	asserts.false_value(missing_balance.ok, "missing use seconds balance is rejected")
+
+	var bad_effect: Dictionary = ConsumableService.from_catalog(FakeCatalog.new({
+		"balance": _balance_rows(),
+		"items": [{"id": "bad", "name": "bad", "status": "테스트", "type": "소모품", "effect_type": "poison", "effect_value": 1}]
+	}))
+	asserts.false_value(bad_effect.ok, "unknown consumable effect is rejected")
+
+	var fractional_heal: Dictionary = ConsumableService.from_catalog(FakeCatalog.new({
+		"balance": _balance_rows(),
+		"items": [{"id": "bad", "name": "bad", "status": "테스트", "type": "소모품", "effect_type": "HP 회복", "effect_value": 1.5}]
+	}))
+	asserts.false_value(fractional_heal.ok, "fractional heal values are rejected")
+
+func _fixture_service() -> ConsumableService:
+	var result: Dictionary = ConsumableService.from_catalog(FakeCatalog.new({
+		"balance": _balance_rows(),
+		"items": _item_rows()
+	}))
+	return result.consumable_service
+
+func _fixture_inventory() -> InventoryModel:
+	var result: Dictionary = InventoryModel.from_catalog(FakeCatalog.new({
+		"balance": [{"id": "inventory_base_slots", "name": "인벤토리 기본 슬롯", "status": "테스트", "value": 4}],
+		"items": _item_rows(),
+		"teas": []
+	}))
+	return result.inventory
+
+func _balance_rows() -> Array:
+	return [
+		{"id": "consumable_use_base_seconds", "name": "소모품 기본 사용 시간", "status": "테스트", "value": 1.0}
+	]
+
+func _item_rows() -> Array:
+	return [
+		{"id": "cloth", "name": "천", "status": "테스트", "type": "재료", "max_stack": 20},
+		{"id": "bandage", "name": "붕대", "status": "테스트", "type": "소모품", "max_stack": 5, "effect_type": "HP 회복", "effect_value": 25, "use_seconds": 1.0}
+	]
+
+func _snapshot_with_action(action: Dictionary) -> Dictionary:
+	return {
+		"schema_version": ConsumableService.SNAPSHOT_SCHEMA_VERSION,
+		"data_version": "fixture-consumables",
+		"next_action_id": 2,
+		"active_action": action.duplicate(true)
+	}
+
+func _with(source: Dictionary, key: String, value) -> Dictionary:
+	var copy := source.duplicate(true)
+	copy[key] = value
+	return copy

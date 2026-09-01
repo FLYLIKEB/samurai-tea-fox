@@ -13,6 +13,7 @@ var repaired_teleports := []
 var crafting_unlocks := []
 var narrative_flags := []
 var narrative_event_counts := {}
+var consumables := {}
 
 func to_dictionary() -> Dictionary:
 	return {
@@ -27,5 +28,6 @@ func to_dictionary() -> Dictionary:
 		"repaired_teleports": repaired_teleports,
 		"crafting_unlocks": crafting_unlocks,
 		"narrative_flags": narrative_flags,
-		"narrative_event_counts": narrative_event_counts
+		"narrative_event_counts": narrative_event_counts,
+		"consumables": consumables
 	}

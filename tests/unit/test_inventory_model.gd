@@ -40,6 +40,8 @@ func _assert_generated_catalog_configures_inventory(asserts) -> void:
 	var inventory: InventoryModel = inventory_result.inventory
 	asserts.equal(inventory.slot_count, 24, "inventory slot count comes from balance data")
 	asserts.true_value(inventory.has_definition("short_travel_sword"), "item definitions come from item data")
+	asserts.true_value(inventory.has_definition("bandage"), "generated consumable item is inventory-addressable")
+	asserts.equal(inventory.definition_for("bandage").max_stack, 5, "consumable stack size comes from generated item data")
 	asserts.true_value(inventory.has_definition("father_spring_pan_fired_tea"), "tea definitions are inventory items")
 	asserts.equal(inventory.definition_for("short_travel_sword").requires_instance, true, "weapon policy is individual")
 
