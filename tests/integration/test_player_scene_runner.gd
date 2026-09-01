@@ -42,8 +42,8 @@ func run() -> void:
 	player.submit_command(GameCommand.new(GameCommand.Type.MOVE, Vector2i.RIGHT))
 	await physics_frame
 	await physics_frame
-	if sprite.texture.resource_path != "res://assets/sprites/characters/fox_samurai/fox_samurai_right_idle_32x32.png":
-		failures.append("player movement resolves the right-facing stable asset ID")
+	if sprite.texture.resource_path != "res://assets/sprites/characters/fox_samurai/fox_samurai_front_idle_32x32.png":
+		failures.append("player movement keeps the front-facing stable asset ID")
 	for _index in 38:
 		await physics_frame
 

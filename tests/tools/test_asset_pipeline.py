@@ -102,6 +102,24 @@ class AssetPipelineTests(unittest.TestCase):
         result = self.validate()
         self.assertEqual(result, {"asset_count": 1, "resource_count": 1})
 
+    def test_gd_res_png_literal_is_checked(self):
+        (self.root / "src/valid.gd").write_text(
+            'const SPRITE := "res://assets/sprites/valid.png"\n',
+            encoding="utf-8",
+        )
+        self.write_manifest()
+        result = self.validate()
+        self.assertEqual(result, {"asset_count": 1, "resource_count": 1})
+
+    def test_gd_project_relative_png_literal_is_checked(self):
+        (self.root / "src/valid.gd").write_text(
+            'const SPRITE := "assets/sprites/valid.png"\n',
+            encoding="utf-8",
+        )
+        self.write_manifest()
+        result = self.validate()
+        self.assertEqual(result, {"asset_count": 1, "resource_count": 1})
+
     def test_wrong_png_size_fails(self):
         shutil.copy(FIXTURES / "wrong_size_rgba_16x32.png", self.root / "assets/sprites/valid.png")
         self.assert_invalid("PNG size is 16x32, expected 32x32")
@@ -144,6 +162,30 @@ class AssetPipelineTests(unittest.TestCase):
             encoding="utf-8",
         )
         self.assert_invalid("unregistered PNG reference")
+
+    def test_unregistered_png_gd_reference_fails(self):
+        shutil.copy(FIXTURES / "valid_rgba_32x32.png", self.root / "assets/sprites/unregistered.png")
+        (self.root / "src/unregistered.gd").write_text(
+            'const SPRITE := "assets/sprites/unregistered.png"\n',
+            encoding="utf-8",
+        )
+        self.assert_invalid("unregistered PNG reference")
+
+    def test_asset_reference_path_escape_fails(self):
+        (self.root / "src/escaped.gd").write_text(
+            'const SPRITE := "assets/../secret.png"\n',
+            encoding="utf-8",
+        )
+        self.assert_invalid("broken resource reference")
+
+    def test_non_asset_png_text_is_not_a_runtime_reference(self):
+        (self.root / "src/comment.gd").write_text(
+            'const NOTE := "docs/assets/sprites/unregistered.png"\n',
+            encoding="utf-8",
+        )
+        self.write_manifest()
+        result = self.validate()
+        self.assertEqual(result, {"asset_count": 1, "resource_count": 0})
 
 
 if __name__ == "__main__":

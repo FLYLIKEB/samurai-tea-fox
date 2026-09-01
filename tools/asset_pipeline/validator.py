@@ -9,9 +9,9 @@ from typing import Any
 
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
-RESOURCE_PATH_PATTERN = re.compile(r'path="(res://[^"\r\n]+)"')
+ASSET_REFERENCE_PATTERN = re.compile(r"""["']((?:res://)?assets/[^"'\r\n]*?\.png)["']""")
 STABLE_ID_FALLBACK = re.compile(r"^[a-z][a-z0-9_]*$")
-TEXT_RESOURCE_SUFFIXES = {".tscn", ".tres"}
+TEXT_RESOURCE_SUFFIXES = {".gd", ".tscn", ".tres"}
 PNG_ALPHA_COLOR_TYPES = {4, 6}
 
 
@@ -257,16 +257,23 @@ class AssetManifestValidator:
                 if resource_file.suffix not in TEXT_RESOURCE_SUFFIXES:
                     continue
                 text = self._read_text(resource_file, str(resource_file.relative_to(self.project_root)))
-                for resource_path in RESOURCE_PATH_PATTERN.findall(text):
+                for resource_path in ASSET_REFERENCE_PATTERN.findall(text):
                     references += 1
-                    target = self._res_path(resource_path)
+                    normalized_path = self._normalize_asset_reference(resource_path)
+                    target = self._res_path(normalized_path)
                     if target is None or not target.is_file():
                         source = resource_file.relative_to(self.project_root)
                         self.errors.append(f"broken resource reference in {source}: {resource_path}")
-                    if resource_path.lower().endswith(".png") and resource_path not in registered_paths:
+                        continue
+                    if normalized_path not in registered_paths:
                         source = resource_file.relative_to(self.project_root)
                         self.errors.append(f"unregistered PNG reference in {source}: {resource_path}")
         return references
+
+    def _normalize_asset_reference(self, value: str) -> str:
+        if value.startswith("res://"):
+            return value
+        return f"res://{value}"
 
     def _res_roots(self, value: Any, label: str) -> list[str]:
         if not isinstance(value, list) or not value:
