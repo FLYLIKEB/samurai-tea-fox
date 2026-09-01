@@ -16,6 +16,7 @@ Fetched on 2026-09-01 from the current Notion workspace.
 
 | Runtime file | Notion DB | Data source |
 | --- | --- | --- |
+| `assets/sprites/characters/notion-character-map.json` | `캐릭터 목록` | `collection://86d9c16b-e60e-4434-9c84-26b4b00d16c8` |
 | `data/generated/balance.json` | `⚖️ 밸런스 상수` | `collection://dd8249a2-14e5-4a96-b26d-77ce33fdc43c` |
 | `data/generated/biomes.json` | `지역·바이옴` | `collection://d4b40007-096f-4528-8840-53de80bda0dd` |
 | `data/generated/teas.json` | `차 도감` | `collection://58c6edaf-0851-48da-a412-541be09d7dcb` |
