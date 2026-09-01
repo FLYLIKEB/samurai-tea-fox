@@ -52,8 +52,9 @@
     "base_tile_size_px": 32,
     "sprite_base_size_px": 32,
     "view_model": "square_tile_top_view",
-    "orientation": "front_facing_only",
-    "orientation_rule": "모든 캐릭터, 맵, 맵 내 사물은 정사각형 타일 기반 탑뷰 로그라이크 가독성을 위해 정면을 보게 제작한다.",
+    "orientation": "front_facing_default_with_character_directional_exception",
+    "orientation_rule": "캐릭터, 맵, 맵 내 사물의 기본 표현은 정사각형 타일 기반 탑뷰 로그라이크 가독성을 위해 정면을 우선한다. 맵과 사물은 정면 고정이며, 캐릭터 이동용 방향 세트가 명시된 경우에만 정면 원본을 기준으로 좌·우·후면을 추가한다.",
+    "directional_character_exception": "이동용 4방향 캐릭터 세트는 front/south 원본을 고정하고 left/west, right/east, back/north를 같은 32x32 규격과 정체성으로 제작한다. 3/4 및 아이소메트릭 시점은 사용하지 않는다.",
     "texture_filter": "nearest",
     "scale": "integer_preferred",
     "anti_aliasing": "avoid",
@@ -92,9 +93,9 @@
       "rule": "언더테일처럼 단순하고 읽기 쉬운 화면 구성을 우선한다."
     },
     {
-      "id": "front_facing_top_view",
-      "name": "정면 고정 탑뷰",
-      "rule": "정사각형 타일 기반 탑뷰 로그라이크이므로 캐릭터, 맵, 맵 내 사물은 모두 정면을 보며, 측면·후면·3/4·아이소메트릭 시점으로 제작하지 않는다."
+      "id": "front_priority_top_view",
+      "name": "정면 우선 탑뷰",
+      "rule": "기본 에셋과 맵·사물은 정면을 유지한다. 캐릭터 이동용 4방향 세트만 정면 원본을 기준으로 좌·우·후면을 허용하며, 3/4·아이소메트릭 시점은 사용하지 않는다."
     }
   ],
   "palette": {
