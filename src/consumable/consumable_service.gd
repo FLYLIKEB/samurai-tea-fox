@@ -256,7 +256,7 @@ func _validate_snapshot_action_sequence(active_action: Dictionary, loaded_next_a
 	if action_number_text.length() != 6 or not action_number_text.is_valid_int():
 		return _fail("invalid_consumable_action", "Consumable snapshot action id has an invalid sequence.")
 	var action_number := int(action_number_text)
-	if action_number < 1 or action_number >= loaded_next_action_id:
+	if action_number != loaded_next_action_id - 1:
 		return _fail("invalid_consumable_next_action_id", "Consumable snapshot next action id is inconsistent with active action.")
 	return {"ok": true}
 

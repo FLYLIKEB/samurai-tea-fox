@@ -45,6 +45,7 @@ func run(asserts) -> void:
 	_assert_loaded_active_action_can_continue_complete_and_interrupt(asserts)
 	_assert_snapshot_roundtrip_preserves_action_idempotency(asserts)
 	_assert_malformed_snapshot_active_actions_are_rejected(asserts)
+	_assert_stale_snapshot_active_action_is_rejected_atomically(asserts)
 	_assert_legacy_owner_snapshot_cannot_authorize_completion(asserts)
 	_assert_fabricated_snapshot_action_cannot_authorize_completion(asserts)
 	_assert_failed_snapshot_load_preserves_service_state(asserts)
@@ -386,6 +387,23 @@ func _assert_malformed_snapshot_active_actions_are_rejected(asserts) -> void:
 		var snapshot := _snapshot_with_action(malformed.action)
 		var loaded := _fixture_service()
 		asserts.false_value(loaded.load_snapshot(snapshot).ok, "consumable snapshot rejects %s" % malformed.label)
+
+func _assert_stale_snapshot_active_action_is_rejected_atomically(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	asserts.true_value(inventory.add_item("bandage", 2).ok, "bandages can be stocked before stale active action regression")
+	asserts.true_value(service.start_use("bandage", inventory).ok, "current active action starts before stale active action regression")
+	asserts.true_value(service.tick_use(0.25, inventory).ok, "current active action progresses before stale active action regression")
+	var before: Dictionary = service.to_snapshot()
+
+	var stale_snapshot: Dictionary = before.duplicate(true)
+	stale_snapshot.next_action_id = 10
+	stale_snapshot.active_action.action_id = "consumable_action_000001"
+
+	var load_result: Dictionary = service.load_snapshot(stale_snapshot)
+	asserts.false_value(load_result.ok, "stale active action lower than next action id is rejected")
+	asserts.equal(load_result.reason, "invalid_consumable_next_action_id", "stale active action reports sequence inconsistency")
+	asserts.equal(service.to_snapshot(), before, "stale active action load failure preserves existing service state")
 
 func _assert_legacy_owner_snapshot_cannot_authorize_completion(asserts) -> void:
 	var service := _fixture_service()
