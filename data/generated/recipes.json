@@ -1,5 +1,5 @@
 {
-  "content_hash": "5edae768850454ca243793093830d090bca5554243ea4b682dd2c0a1efc30605",
+  "content_hash": "357945b0d2e3e72a6318b1eaf4808d95e250e3b5ea2dd46a3768a91a34733350",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -17,7 +17,8 @@
       "result_item_id": "bandage",
       "result_quantity": 1,
       "status": "테스트",
-      "unlock_biome": "일반"
+      "unlock_biome": "일반",
+      "unlock_biome_id": "common_region"
     },
     {
       "category": "다구",
