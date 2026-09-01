@@ -165,7 +165,7 @@
       {
         "id": "river_muted",
         "name": "흐린 강물",
-        "hex": "#5F8791",
+        "hex": "#5F879B",
         "role": "water_primary",
         "usage": "강, 물가, 차가운 UI 보조색"
       },
