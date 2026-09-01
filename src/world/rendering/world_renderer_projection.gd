@@ -3,7 +3,7 @@ class_name WorldRendererProjection
 
 const WorldData = preload("res://src/world/data/world_data.gd")
 
-func project(world_data: Dictionary) -> Dictionary:
+func project(world_data: Dictionary, progression_projection := {}) -> Dictionary:
 	var bounds: Dictionary = world_data.get("bounds", {})
 	var width := int(bounds.get("width", 0))
 	var height := int(bounds.get("height", 0))
@@ -39,8 +39,24 @@ func project(world_data: Dictionary) -> Dictionary:
 			{"id": WorldData.LAYER_ENTITIES, "kind": "footprint", "cells": entity_cells},
 			{"id": WorldData.LAYER_INTERACTABLES, "kind": "interaction", "cells": interactable_cells}
 		],
-		"required_landmarks": world_data.get("required_landmarks", []).duplicate(true)
+		"required_landmarks": _project_landmarks(world_data, progression_projection)
 	}
+
+func _project_landmarks(world_data: Dictionary, progression_projection) -> Array:
+	var landmarks: Array = world_data.get("required_landmarks", []).duplicate(true)
+	if typeof(progression_projection) != TYPE_DICTIONARY:
+		return landmarks
+	var teleport_states: Dictionary = progression_projection.get("teleport_states", {})
+	for landmark in landmarks:
+		if String(landmark.get("kind", landmark.get("type", ""))) != WorldData.LANDMARK_TELEPORT_ZONE:
+			continue
+		var metadata: Dictionary = landmark.get("metadata", {})
+		var biome_id := String(metadata.get("teleport_biome_id", metadata.get("biome_id", "")))
+		if biome_id.is_empty() or not teleport_states.has(biome_id):
+			continue
+		landmark["teleport_biome_id"] = biome_id
+		landmark["teleport_state"] = String(teleport_states[biome_id])
+	return landmarks
 
 func _add_owner_cells(output: Array, position: Dictionary, owners: Array) -> void:
 	for owner_id in owners:

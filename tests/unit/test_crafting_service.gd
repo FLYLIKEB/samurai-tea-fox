@@ -27,6 +27,7 @@ func run(asserts) -> void:
 	_assert_generated_catalog_configures_crafting(asserts)
 	_assert_handcraft_consumes_materials_and_grants_result(asserts)
 	_assert_material_and_facility_requirements_are_reported(asserts)
+	_assert_current_run_biome_unlock_allows_recipe(asserts)
 	_assert_crafting_rolls_back_when_result_grant_fails(asserts)
 	_assert_facility_placement_reserves_valid_footprint(asserts)
 	_assert_facility_placement_rejects_blocked_or_missing_workspace(asserts)
@@ -107,6 +108,16 @@ func _assert_crafting_rolls_back_when_result_grant_fails(asserts) -> void:
 	asserts.equal(result.reason, "inventory_full", "result grant failure is surfaced")
 	asserts.equal(inventory.to_snapshot(), before, "failed result grant rolls back consumed materials")
 
+func _assert_current_run_biome_unlock_allows_recipe(asserts) -> void:
+	var service := _fixture_crafting_service()
+	var inventory := _fixture_inventory(2)
+	asserts.true_value(inventory.add_item("clay", 3).ok, "locked recipe material add succeeds")
+	var locked: Dictionary = service.can_craft("regional_bowl", inventory)
+	asserts.false_value(locked.ok, "biome recipe stays locked without current-run unlock")
+	asserts.equal(locked.reason, "locked", "locked biome recipe reports stable reason")
+	var unlocked: Dictionary = service.can_craft("regional_bowl", inventory, {"unlocked_biome_ids": ["common_region"]})
+	asserts.true_value(unlocked.ok, "current-run biome unlock allows recipe")
+
 func _assert_facility_placement_reserves_valid_footprint(asserts) -> void:
 	var service := _fixture_placement_service()
 	var world := WorldData.new(5, 5, "grass", true)
@@ -184,5 +195,6 @@ func _recipe_rows() -> Array:
 	return [
 		{"id": "wooden_workbench", "name": "목재 작업대 제작", "status": "테스트", "facility": "손제작", "materials_note": "목재 6 + 돌 3"},
 		{"id": "humble_clay_bowl", "name": "소박한 흙사발 제작", "status": "테스트", "facility": "목재 작업대", "materials_note": "점토 3"},
+		{"id": "regional_bowl", "result_item_id": "humble_clay_bowl", "name": "지역 흙사발 제작", "status": "테스트", "facility": "손제작", "materials_note": "점토 3", "unlock_biome_id": "common_region"},
 		{"id": "crowded_bowl", "name": "꽉 찬 사발 제작", "status": "테스트", "facility": "손제작", "materials": [{"item_id": "clay", "quantity": 2}]}
 	]

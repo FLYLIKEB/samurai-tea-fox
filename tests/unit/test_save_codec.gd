@@ -1,6 +1,7 @@
 extends RefCounted
 
 const SaveCodec = preload("res://src/save/save_codec.gd")
+const RunState = preload("res://src/save/run_state.gd")
 
 func run(asserts) -> void:
 	var run_equipment := {"slots": {"tea_ware": {"item_id": "travel_bottle", "quantity": 1, "instance_id": "inst_tea_ware", "metadata": {"tea_ware_use_count": 4}}}}
@@ -17,3 +18,16 @@ func run(asserts) -> void:
 	asserts.true_value(SaveCodec.decode_meta(meta_save).ok, "meta save decodes")
 	asserts.false_value(SaveCodec.decode_meta(meta_save).state.has("tea_ware_use_count"), "meta save does not gain tea ware attachment state")
 	asserts.false_value(SaveCodec.decode_meta(run_save).ok, "run save cannot decode as meta")
+
+	var state := RunState.new()
+	state.current_biome_id = "common_region"
+	state.completed_dungeon_ids = ["common_region"]
+	state.teleport_states = {"common_region": "repairable"}
+	state.crafting_unlocks = ["common_region"]
+	var progression_save := SaveCodec.encode_run(state.to_dictionary())
+	asserts.equal(SaveCodec.decode_run(progression_save).state.teleport_states.common_region, "repairable", "run save preserves teleport progression")
+	state.reset_biome_progression()
+	asserts.equal(state.current_biome_id, "", "run state reset clears current biome")
+	asserts.equal(state.completed_dungeon_ids, [], "run state reset clears dungeon completion")
+	asserts.equal(state.teleport_states, {}, "run state reset clears teleport states")
+	asserts.equal(state.crafting_unlocks, [], "run state reset clears crafting unlocks")
