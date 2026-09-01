@@ -63,6 +63,8 @@ func definition_for(item_id: String) -> Dictionary:
 	return definition.to_dictionary()
 
 func start_use(item_id: String, inventory, context := {}) -> Dictionary:
+	if not active_action_owners.is_empty():
+		return _fail_and_emit(_fail("active_consumable_action", "A consumable use action is already active."))
 	if not consumable_definitions.has(item_id):
 		return _fail_and_emit(_fail("unknown_consumable", "Unknown consumable definition: %s" % item_id))
 	if inventory == null or not inventory.has_method("get_total_quantity") or inventory.get_total_quantity(item_id) < 1:
