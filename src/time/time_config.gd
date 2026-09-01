@@ -69,6 +69,13 @@ static func from_catalog(catalog) -> Dictionary:
 		if float(values[field]) < 0.0:
 			return {"ok": false, "error": "Time balance values must be non-negative: %s" % field}
 
+	if not (
+		0.0 < float(values.dusk_kokoro_decay_per_second)
+		and float(values.dusk_kokoro_decay_per_second) < float(values.night_kokoro_decay_per_second)
+		and float(values.night_kokoro_decay_per_second) < float(values.late_night_kokoro_decay_per_second)
+	):
+		return {"ok": false, "error": "Kokoro decay rates must increase by phase: dusk < night < late_night"}
+
 	if float(values.sleep_heal_ratio) < 0.0 or float(values.sleep_heal_ratio) > 1.0:
 		return {"ok": false, "error": "Sleep heal ratio must be between 0 and 1"}
 

@@ -1,5 +1,5 @@
 {
-  "content_hash": "662b313ee01f53f37862dfd4cedf456782c2d974c2d7ef1ecc7262d7b82c0c75",
+  "content_hash": "9697b3a735cc766a4ac35d5a4ba2af9d36893e0f3fdb9256d1f802b968e9b161",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -53,11 +53,12 @@
       "value": 1
     },
     {
-      "category": "시간",
+      "category": "心",
       "formula_note": "하루 시작 구간. 이 구간에서는 心 자연 감소가 없다.",
       "id": "day_phase_duration_seconds",
-      "name": "낮 페이즈 지속 시간",
-      "status": "확정",
+      "name": "낮 지속시간",
+      "notion_id": "3ce37369-9e66-8142-bdd7-e6eaff3fe967",
+      "status": "테스트",
       "unit": "초",
       "value": 300
     },
@@ -95,17 +96,19 @@
       "category": "心",
       "formula_note": "해질녘부터 心이 천천히 감소한다. 낮에는 감소하지 않는다.",
       "id": "dusk_kokoro_decay_per_second",
-      "name": "해질녘 心 감소량",
-      "status": "확정",
-      "unit": "point/sec",
+      "name": "해질녘 心 감소율",
+      "notion_id": "3ce37369-9e66-810d-a412-c015501c1281",
+      "status": "테스트",
+      "unit": "point/초",
       "value": 0.02
     },
     {
-      "category": "시간",
+      "category": "心",
       "formula_note": "낮 이후 밤으로 넘어가는 완충 구간.",
       "id": "dusk_phase_duration_seconds",
-      "name": "해질녘 페이즈 지속 시간",
-      "status": "확정",
+      "name": "해질녘 지속시간",
+      "notion_id": "3ce37369-9e66-8137-8069-e0b914681ae1",
+      "status": "테스트",
       "unit": "초",
       "value": 120
     },
@@ -184,17 +187,19 @@
       "category": "心",
       "formula_note": "깊은 밤 시간대의 心 감소량.",
       "id": "late_night_kokoro_decay_per_second",
-      "name": "깊은 밤 心 감소량",
-      "status": "확정",
-      "unit": "point/sec",
+      "name": "심야 心 감소율",
+      "notion_id": "3ce37369-9e66-815b-872c-e2edbf7fcabd",
+      "status": "테스트",
+      "unit": "point/초",
       "value": 0.1
     },
     {
-      "category": "시간",
+      "category": "心",
       "formula_note": "수면 전 마지막 밤 시간대.",
       "id": "late_night_phase_duration_seconds",
-      "name": "깊은 밤 페이즈 지속 시간",
-      "status": "확정",
+      "name": "심야 지속시간",
+      "notion_id": "3ce37369-9e66-817b-a89d-e63126a7d7e3",
+      "status": "테스트",
       "unit": "초",
       "value": 180
     },
@@ -212,17 +217,19 @@
       "category": "心",
       "formula_note": "밤 시간대의 心 감소량.",
       "id": "night_kokoro_decay_per_second",
-      "name": "밤 心 감소량",
-      "status": "확정",
-      "unit": "point/sec",
+      "name": "밤 心 감소율",
+      "notion_id": "3ce37369-9e66-81c2-a7e6-fd48e5eb07d9",
+      "status": "테스트",
+      "unit": "point/초",
       "value": 0.05
     },
     {
-      "category": "시간",
+      "category": "心",
       "formula_note": "밤 시간대의 기본 지속 시간.",
       "id": "night_phase_duration_seconds",
-      "name": "밤 페이즈 지속 시간",
-      "status": "확정",
+      "name": "밤 지속시간",
+      "notion_id": "3ce37369-9e66-8191-91c3-c04612c42293",
+      "status": "테스트",
       "unit": "초",
       "value": 240
     },

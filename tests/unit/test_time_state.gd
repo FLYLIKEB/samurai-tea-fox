@@ -116,6 +116,22 @@ func _assert_invalid_time_balance_data(asserts) -> void:
 	var decay_result: Dictionary = TimeConfig.from_catalog(FakeCatalog.new({"balance": invalid_decay}))
 	asserts.false_value(decay_result.ok, "negative decay is rejected")
 
+	var zero_dusk_decay := _balance_values()
+	zero_dusk_decay[4]["value"] = 0.0
+	var zero_dusk_result: Dictionary = TimeConfig.from_catalog(FakeCatalog.new({"balance": zero_dusk_decay}))
+	asserts.false_value(zero_dusk_result.ok, "zero dusk decay is rejected")
+
+	var equal_decay := _balance_values()
+	equal_decay[5]["value"] = 0.02
+	var equal_decay_result: Dictionary = TimeConfig.from_catalog(FakeCatalog.new({"balance": equal_decay}))
+	asserts.false_value(equal_decay_result.ok, "equal decay rates are rejected")
+
+	var decreasing_decay := _balance_values()
+	decreasing_decay[5]["value"] = 0.09
+	decreasing_decay[6]["value"] = 0.08
+	var decreasing_decay_result: Dictionary = TimeConfig.from_catalog(FakeCatalog.new({"balance": decreasing_decay}))
+	asserts.false_value(decreasing_decay_result.ok, "decreasing decay rates are rejected")
+
 	var invalid_ratio := _balance_values()
 	invalid_ratio[8]["value"] = 1.1
 	var ratio_result: Dictionary = TimeConfig.from_catalog(FakeCatalog.new({"balance": invalid_ratio}))

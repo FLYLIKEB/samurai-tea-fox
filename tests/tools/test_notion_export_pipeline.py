@@ -15,6 +15,7 @@ from tools.notion_export.pipeline import (
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = ROOT / "tests/fixtures/notion_export/source.json"
 SCHEMA = ROOT / "data/schemas/export_schema.json"
+RUNTIME_ID_MAP = ROOT / "data/schemas/runtime_id_map.json"
 
 
 class NotionExportPipelineTests(unittest.TestCase):
@@ -41,7 +42,7 @@ class NotionExportPipelineTests(unittest.TestCase):
             [item["id"] for item in confirmed_test["items"]["items"]],
             ["clay", "wood"],
         )
-        self.assertIn("day_phase_duration_seconds", [item["id"] for item in confirmed["balance"]["items"]])
+        self.assertNotIn("day_phase_duration_seconds", [item["id"] for item in confirmed["balance"]["items"]])
         self.assertNotIn("player_hp_max", [item["id"] for item in confirmed["balance"]["items"]])
         self.assertIn("player_hp_max", [item["id"] for item in confirmed_test["balance"]["items"]])
 
@@ -70,7 +71,7 @@ class NotionExportPipelineTests(unittest.TestCase):
         snapshots = self.pipeline.build_snapshots(incomplete_test, "confirmed")
         balance_ids = [item["id"] for item in snapshots["balance"]["items"]]
 
-        self.assertIn("day_phase_duration_seconds", balance_ids)
+        self.assertNotIn("day_phase_duration_seconds", balance_ids)
         self.assertNotIn("player_hp_max", balance_ids)
 
     def test_duplicate_stable_id_fails(self):
@@ -125,18 +126,81 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.pipeline.validate_directory(generated)
 
         balance = {
-            item["id"]: item["value"]
+            item["id"]: item
             for item in json.loads((generated / "balance.json").read_text(encoding="utf-8"))["items"]
         }
+        expected_time_rows = {
+            "day_phase_duration_seconds": {
+                "name": "낮 지속시간",
+                "notion_id": "3ce37369-9e66-8142-bdd7-e6eaff3fe967",
+                "unit": "초",
+                "value": 300,
+            },
+            "dusk_phase_duration_seconds": {
+                "name": "해질녘 지속시간",
+                "notion_id": "3ce37369-9e66-8137-8069-e0b914681ae1",
+                "unit": "초",
+                "value": 120,
+            },
+            "night_phase_duration_seconds": {
+                "name": "밤 지속시간",
+                "notion_id": "3ce37369-9e66-8191-91c3-c04612c42293",
+                "unit": "초",
+                "value": 240,
+            },
+            "late_night_phase_duration_seconds": {
+                "name": "심야 지속시간",
+                "notion_id": "3ce37369-9e66-817b-a89d-e63126a7d7e3",
+                "unit": "초",
+                "value": 180,
+            },
+            "dusk_kokoro_decay_per_second": {
+                "name": "해질녘 心 감소율",
+                "notion_id": "3ce37369-9e66-810d-a412-c015501c1281",
+                "unit": "point/초",
+                "value": 0.02,
+            },
+            "night_kokoro_decay_per_second": {
+                "name": "밤 心 감소율",
+                "notion_id": "3ce37369-9e66-81c2-a7e6-fd48e5eb07d9",
+                "unit": "point/초",
+                "value": 0.05,
+            },
+            "late_night_kokoro_decay_per_second": {
+                "name": "심야 心 감소율",
+                "notion_id": "3ce37369-9e66-815b-872c-e2edbf7fcabd",
+                "unit": "point/초",
+                "value": 0.1,
+            },
+        }
 
-        self.assertEqual(balance["day_phase_duration_seconds"], 300)
-        self.assertEqual(balance["dusk_phase_duration_seconds"], 120)
-        self.assertEqual(balance["night_phase_duration_seconds"], 240)
-        self.assertEqual(balance["late_night_phase_duration_seconds"], 180)
-        self.assertEqual(balance["dusk_kokoro_decay_per_second"], 0.02)
-        self.assertEqual(balance["night_kokoro_decay_per_second"], 0.05)
-        self.assertEqual(balance["late_night_kokoro_decay_per_second"], 0.1)
-        self.assertEqual(balance["safe_sleep_hp_recovery_ratio"], 0.2)
+        for item_id, expected in expected_time_rows.items():
+            with self.subTest(item_id=item_id):
+                self.assertEqual(balance[item_id]["id"], item_id)
+                self.assertEqual(balance[item_id]["name"], expected["name"])
+                self.assertEqual(balance[item_id]["notion_id"], expected["notion_id"])
+                self.assertEqual(balance[item_id]["status"], "테스트")
+                self.assertEqual(balance[item_id]["category"], "心")
+                self.assertEqual(balance[item_id]["unit"], expected["unit"])
+                self.assertEqual(balance[item_id]["value"], expected["value"])
+        self.assertEqual(balance["safe_sleep_hp_recovery_ratio"]["value"], 0.2)
+
+    def test_dev_6_runtime_id_map_preserves_exact_notion_rows(self):
+        runtime_id_map = json.loads(RUNTIME_ID_MAP.read_text(encoding="utf-8"))
+        expected = {
+            "3ce37369-9e66-8142-bdd7-e6eaff3fe967": ("낮 지속시간", "day_phase_duration_seconds"),
+            "3ce37369-9e66-8137-8069-e0b914681ae1": ("해질녘 지속시간", "dusk_phase_duration_seconds"),
+            "3ce37369-9e66-8191-91c3-c04612c42293": ("밤 지속시간", "night_phase_duration_seconds"),
+            "3ce37369-9e66-817b-a89d-e63126a7d7e3": ("심야 지속시간", "late_night_phase_duration_seconds"),
+            "3ce37369-9e66-810d-a412-c015501c1281": ("해질녘 心 감소율", "dusk_kokoro_decay_per_second"),
+            "3ce37369-9e66-81c2-a7e6-fd48e5eb07d9": ("밤 心 감소율", "night_kokoro_decay_per_second"),
+            "3ce37369-9e66-815b-872c-e2edbf7fcabd": ("심야 心 감소율", "late_night_kokoro_decay_per_second"),
+        }
+
+        for page_id, (korean_name, stable_id) in expected.items():
+            with self.subTest(page_id=page_id):
+                self.assertEqual(runtime_id_map["notion_pages"][page_id], stable_id)
+                self.assertEqual(runtime_id_map["legacy_names"]["balance"][korean_name], stable_id)
 
     def test_validate_directory_rejects_unsupported_schema_version(self):
         with tempfile.TemporaryDirectory() as directory:
