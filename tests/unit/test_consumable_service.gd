@@ -25,13 +25,18 @@ class FakeCatalog:
 				return definition
 		return {}
 
+class InvalidResources:
+	extends RefCounted
+
 func run(asserts) -> void:
 	_assert_generated_catalog_configures_consumables(asserts)
 	_assert_use_action_consumes_and_heals_only_on_completion(asserts)
+	_assert_heal_requires_valid_resources_before_consuming(asserts)
 	_assert_hit_interrupt_preserves_hp_and_quantity(asserts)
 	_assert_hp_heal_clamps_and_stack_decrements(asserts)
 	_assert_insufficient_quantity_and_crafting_integration(asserts)
 	_assert_snapshot_round_trips_active_action(asserts)
+	_assert_malformed_snapshot_active_actions_are_rejected(asserts)
 	_assert_invalid_data_is_rejected(asserts)
 
 func _assert_generated_catalog_configures_consumables(asserts) -> void:
@@ -84,6 +89,25 @@ func _assert_use_action_consumes_and_heals_only_on_completion(asserts) -> void:
 	asserts.equal(inventory.get_total_quantity("bandage"), 1, "completion decrements stacked quantity")
 	asserts.equal(complete.effect.hp_healed, 25, "completion reports applied healing")
 	asserts.equal(resources.hp, 65, "completion applies HP healing")
+
+func _assert_heal_requires_valid_resources_before_consuming(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(inventory.add_item("bandage", 2).ok, "bandages can be stocked for invalid target regression")
+	resources.apply_damage(40)
+
+	var start: Dictionary = service.start_use("bandage", inventory)
+	asserts.true_value(start.ok, "consumable use can start before invalid target regression")
+	var null_target: Dictionary = service.complete_use(start.action, inventory, null)
+	asserts.false_value(null_target.ok, "heal consumable completion rejects null resources")
+	asserts.equal(inventory.get_total_quantity("bandage"), 2, "null resource failure does not consume inventory")
+	asserts.equal(resources.hp, 60, "null resource failure does not change HP")
+
+	var invalid_target: Dictionary = service.complete_use(start.action, inventory, InvalidResources.new())
+	asserts.false_value(invalid_target.ok, "heal consumable completion rejects resources without heal_hp")
+	asserts.equal(inventory.get_total_quantity("bandage"), 2, "invalid resource failure does not consume inventory")
+	asserts.equal(resources.hp, 60, "invalid resource failure does not change HP")
 
 func _assert_hit_interrupt_preserves_hp_and_quantity(asserts) -> void:
 	var service := _fixture_service()
@@ -157,6 +181,35 @@ func _assert_snapshot_round_trips_active_action(asserts) -> void:
 	asserts.true_value(decoded.ok, "run save with consumable snapshot decodes")
 	asserts.equal(decoded.state.consumables.active_action.elapsed_seconds, 0.5, "run save preserves consumable progress")
 
+func _assert_malformed_snapshot_active_actions_are_rejected(asserts) -> void:
+	var service := _fixture_service()
+	var valid_action := {
+		"action_id": "snapshot_action",
+		"item_id": "bandage",
+		"elapsed_seconds": 0.5,
+		"use_seconds": 1.0,
+		"context": {},
+		"completed": false,
+		"interrupted": false
+	}
+	var cases := [
+		{"label": "non-string action id", "action": _with(valid_action, "action_id", 7)},
+		{"label": "empty action id", "action": _with(valid_action, "action_id", "")},
+		{"label": "non-string item id", "action": _with(valid_action, "item_id", 1)},
+		{"label": "unknown item id", "action": _with(valid_action, "item_id", "missing_bandage")},
+		{"label": "non-finite use seconds", "action": _with(valid_action, "use_seconds", INF)},
+		{"label": "non-finite elapsed seconds", "action": _with(valid_action, "elapsed_seconds", INF)},
+		{"label": "negative elapsed", "action": _with(valid_action, "elapsed_seconds", -0.1)},
+		{"label": "elapsed beyond use seconds", "action": _with(valid_action, "elapsed_seconds", 1.1)},
+		{"label": "timing mismatch", "action": _with(valid_action, "use_seconds", 2.0)},
+		{"label": "completed action", "action": _with(valid_action, "completed", true)},
+		{"label": "interrupted action", "action": _with(valid_action, "interrupted", true)}
+	]
+	for malformed in cases:
+		var snapshot := service.to_snapshot(malformed.action)
+		var loaded := _fixture_service()
+		asserts.false_value(loaded.load_snapshot(snapshot).ok, "consumable snapshot rejects %s" % malformed.label)
+
 func _assert_invalid_data_is_rejected(asserts) -> void:
 	var missing_balance: Dictionary = ConsumableService.from_catalog(FakeCatalog.new({
 		"balance": [],
@@ -201,3 +254,8 @@ func _item_rows() -> Array:
 		{"id": "cloth", "name": "천", "status": "테스트", "type": "재료", "max_stack": 20},
 		{"id": "bandage", "name": "붕대", "status": "테스트", "type": "소모품", "max_stack": 5, "effect_type": "HP 회복", "effect_value": 25, "use_seconds": 1.0}
 	]
+
+func _with(source: Dictionary, key: String, value) -> Dictionary:
+	var copy := source.duplicate(true)
+	copy[key] = value
+	return copy

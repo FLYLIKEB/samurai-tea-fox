@@ -176,18 +176,15 @@ func _apply_effect(definition: ConsumableDefinition, _context, resources) -> Dic
 		"hp_healed": 0,
 		"hp_heal_requested": 0
 	}
-	if String(definition.effect_type) != EFFECT_HEAL_HP:
-		return _fail("invalid_effect_type", "Unknown consumable effect type: %s" % definition.effect_type)
 	var requested := int(definition.effect_value)
 	effect.hp_heal_requested = requested
-	var healed := requested
-	if resources != null:
-		healed = int(resources.heal_hp(requested))
-	effect.hp_healed = healed
+	effect.hp_healed = int(resources.heal_hp(requested))
 	return {"ok": true, "effect": effect}
 
 func _validate_effect_target(definition: ConsumableDefinition, resources) -> Dictionary:
-	if String(definition.effect_type) == EFFECT_HEAL_HP and resources != null and not resources.has_method("heal_hp"):
+	if String(definition.effect_type) != EFFECT_HEAL_HP:
+		return _fail("invalid_effect_type", "Unknown consumable effect type: %s" % definition.effect_type)
+	if resources == null or not resources.has_method("heal_hp"):
 		return _fail("invalid_resources", "HP healing consumable requires a resource model with heal_hp.")
 	return {"ok": true}
 
@@ -196,11 +193,26 @@ func _validate_action(action: Dictionary) -> Dictionary:
 		return _fail("completed_consumable_action", "Consumable action is already completed.")
 	if action.get("interrupted", false):
 		return _fail("interrupted_consumable_action", "Consumable action is interrupted.")
-	var item_id := String(action.get("item_id", ""))
+	if not action.has("action_id") or typeof(action.action_id) != TYPE_STRING or String(action.action_id).is_empty():
+		return _fail("invalid_consumable_action", "Consumable action is missing identity.")
+	if not action.has("item_id") or typeof(action.item_id) != TYPE_STRING:
+		return _fail("invalid_consumable_action", "Consumable action item id must be a string.")
+	var item_id := String(action.item_id)
 	if item_id.is_empty() or not consumable_definitions.has(item_id):
 		return _fail("unknown_consumable", "Unknown consumable definition: %s" % item_id)
-	if not action.has("action_id") or String(action.action_id).is_empty():
-		return _fail("invalid_consumable_action", "Consumable action is missing identity.")
+	if not action.has("use_seconds") or typeof(action.use_seconds) not in [TYPE_INT, TYPE_FLOAT]:
+		return _fail("invalid_consumable_action", "Consumable action use seconds must be numeric.")
+	var definition: ConsumableDefinition = consumable_definitions[item_id]
+	var action_use_seconds := float(action.use_seconds)
+	if action_use_seconds <= 0.0 or not is_finite(action_use_seconds):
+		return _fail("invalid_consumable_action", "Consumable action use seconds must be positive.")
+	if not is_equal_approx(action_use_seconds, float(definition.use_seconds)):
+		return _fail("consumable_timing_mismatch", "Consumable action timing does not match current definition: %s" % item_id)
+	if not action.has("elapsed_seconds") or typeof(action.elapsed_seconds) not in [TYPE_INT, TYPE_FLOAT]:
+		return _fail("invalid_consumable_action", "Consumable action elapsed seconds must be numeric.")
+	var elapsed_seconds := float(action.elapsed_seconds)
+	if elapsed_seconds < 0.0 or not is_finite(elapsed_seconds) or elapsed_seconds > action_use_seconds:
+		return _fail("invalid_consumable_action", "Consumable action elapsed seconds are out of range.")
 	return {"ok": true}
 
 func _normalize_snapshot_action(raw_action) -> Dictionary:
