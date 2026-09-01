@@ -1,5 +1,5 @@
 {
-  "content_hash": "69bbcddfe6de35a18dbcd783f058389e8120f194298596941c931f4870c61a7b",
+  "content_hash": "b12750675a122649b610aa446164ee66960651462849bb5c23091d5ca3cefc2c",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -14,7 +14,6 @@
       "max_stack": 1,
       "name": "재 묻은 철솥",
       "status": "확정",
-      "tea_recovery_bonus": 8,
       "type": "다구"
     },
     {
@@ -69,7 +68,6 @@
       "max_stack": 1,
       "name": "오래된 향합",
       "status": "확정",
-      "tea_recovery_bonus": 15,
       "type": "다구"
     },
     {
@@ -84,7 +82,6 @@
       "max_stack": 1,
       "name": "오리베 녹유 찻사발",
       "status": "확정",
-      "tea_recovery_bonus": 10,
       "type": "다구"
     },
     {
@@ -151,7 +148,6 @@
       "max_stack": 1,
       "name": "깨지지 않은 실패작",
       "status": "확정",
-      "tea_recovery_bonus": 15,
       "type": "다구"
     },
     {
@@ -166,7 +162,6 @@
       "max_stack": 1,
       "name": "전란의 차입",
       "status": "확정",
-      "tea_recovery_bonus": 1,
       "type": "다구"
     },
     {

@@ -364,9 +364,6 @@ static func _vessel_definition_from_row(row: Dictionary) -> Dictionary:
 	var recovery_multiplier_result := _optional_positive_number(row, "tea_recovery_multiplier", 1.0)
 	if not recovery_multiplier_result.ok:
 		return recovery_multiplier_result
-	var recovery_bonus_result := _optional_integer(row, "tea_recovery_bonus", 0)
-	if not recovery_bonus_result.ok:
-		return recovery_bonus_result
 	var carry_bonus_result := _optional_integer(row, "carry_use_bonus", 0)
 	if not carry_bonus_result.ok:
 		return carry_bonus_result
@@ -386,7 +383,7 @@ static func _vessel_definition_from_row(row: Dictionary) -> Dictionary:
 		"core_tea_ware": _checkbox_value(row.get("core_tea_ware", false)),
 		"core_tea_ware_order": int(row.get("core_tea_ware_order", 0)),
 		"tea_recovery_multiplier": recovery_multiplier_result.value,
-		"tea_recovery_bonus": recovery_bonus_result.value,
+		"tea_recovery_bonus": _tea_recovery_bonus_from_effect(row),
 		"carry_use_bonus": carry_bonus_result.value,
 		"drink_seconds_multiplier": drink_multiplier_result.value,
 		"drink_seconds_bonus": drink_bonus_result.value,
@@ -633,6 +630,11 @@ static func _checkbox_value(value) -> bool:
 	if typeof(value) == TYPE_STRING:
 		return String(value) == "__YES__"
 	return bool(value)
+
+static func _tea_recovery_bonus_from_effect(row: Dictionary) -> int:
+	if String(row.get("effect_type", "")) == "차 운용":
+		return int(round(float(row.get("effect_value", 0.0))))
+	return 0
 
 static func _fail(reason: String, message: String) -> Dictionary:
 	return {"ok": false, "reason": reason, "error": message}

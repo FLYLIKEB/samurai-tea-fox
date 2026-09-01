@@ -231,9 +231,6 @@ static func _definition_from_item(row: Dictionary) -> Dictionary:
 		var effect_result := _optional_number(row, "effect_value", 0.0)
 		if not effect_result.ok:
 			return effect_result
-		var recovery_bonus_result := _optional_integer(row, "tea_recovery_bonus", 0)
-		if not recovery_bonus_result.ok:
-			return recovery_bonus_result
 		var recovery_multiplier_result := _optional_positive_number(row, "tea_recovery_multiplier", 1.0)
 		if not recovery_multiplier_result.ok:
 			return recovery_multiplier_result
@@ -251,7 +248,7 @@ static func _definition_from_item(row: Dictionary) -> Dictionary:
 			return sustain_result
 		definition["effect_value"] = effect_result.value
 		definition["tea_recovery_multiplier"] = recovery_multiplier_result.value
-		definition["tea_recovery_bonus"] = recovery_bonus_result.value
+		definition["tea_recovery_bonus"] = _tea_recovery_bonus_from_effect(row)
 		definition["carry_use_bonus"] = carry_bonus_result.value
 		definition["drink_seconds_multiplier"] = drink_multiplier_result.value
 		definition["drink_seconds_bonus"] = drink_bonus_result.value
@@ -308,6 +305,11 @@ static func _tea_modifier_query_from_definition(definition: Dictionary) -> Dicti
 		"sustain_modifier": float(definition.get("sustain_modifier", 0.0)),
 		"effect_value": float(definition.get("effect_value", 0.0))
 	}
+
+static func _tea_recovery_bonus_from_effect(row: Dictionary) -> int:
+	if String(row.get("effect_type", "")) == EFFECT_TEA_OPERATION:
+		return int(round(float(row.get("effect_value", 0.0))))
+	return 0
 
 static func _validate_inventory_api(inventory) -> Dictionary:
 	for method in ["get_slot", "extract_slot", "insert_slot"]:

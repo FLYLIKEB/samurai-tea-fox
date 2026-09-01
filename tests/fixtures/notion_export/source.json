@@ -5,6 +5,17 @@
     "items": {
       "source": "collection://items",
       "items": [
+        {
+          "core_tea_ware": true,
+          "core_tea_ware_order": 1,
+          "effect_type": "차 운용",
+          "effect_value": 10,
+          "equipment_slot": "다구",
+          "id": "oribe_bowl",
+          "name": "오리베 찻사발",
+          "status": "확정",
+          "type": "다구"
+        },
         {"id": "wood", "name": "목재", "status": "확정"},
         {"id": "clay", "name": "점토", "status": "테스트"},
         {"id": "obsolete_item", "name": "폐기 아이템", "status": "폐기"}

@@ -45,6 +45,9 @@ func _assert_generated_catalog_configures_equipment(asserts) -> void:
 	asserts.true_value(equipment.item_definitions.has("traveler_quilted_clothes"), "armor definition is equippable")
 	asserts.true_value(equipment.item_definitions.has("oribe_green_glazed_bowl"), "core tea ware definition is equippable")
 	asserts.false_value(equipment.item_definitions.has("clay"), "materials are not equippable")
+	asserts.equal(equipment.item_definitions.oribe_green_glazed_bowl.tea_recovery_bonus, 10, "generated core tea ware modifier is rebuilt from effect value")
+	asserts.true_value(equipment.item_definitions.oribe_green_glazed_bowl.core_tea_ware, "generated core tea ware flag is preserved")
+	asserts.equal(equipment.item_definitions.oribe_green_glazed_bowl.core_tea_ware_order, 1, "generated core tea ware order is preserved")
 
 func _assert_equip_unequip_and_replace_preserve_instances(asserts) -> void:
 	var inventory := _fixture_inventory()
@@ -122,6 +125,7 @@ func _assert_core_and_general_tea_ware_are_distinct(asserts) -> void:
 	asserts.true_value(equipment.equip_from_inventory(inventory, 1).ok, "core tea ware equips")
 	asserts.true_value(equipment.get_tea_modifier_query().core_tea_ware, "core tea ware flag comes from definition")
 	asserts.equal(equipment.get_tea_modifier_query().core_tea_ware_order, 1, "core tea ware order comes from definition")
+	asserts.equal(equipment.get_tea_modifier_query().tea_recovery_bonus, 10, "core tea ware modifier is regenerated from effect value")
 
 func _assert_snapshot_round_trips_equipped_instances(asserts) -> void:
 	var inventory := _fixture_inventory()
@@ -212,8 +216,8 @@ func _item_rows() -> Array:
 		{"id": "stone_sword", "name": "산철검", "status": "테스트", "type": "무기", "equipment_slot": "무기", "max_stack": 1, "base_damage": 18, "range": 1.4, "attack_speed": 1.2, "effect_type": "공격", "effect_value": 18},
 		{"id": "linen_armor", "name": "누비옷", "status": "테스트", "type": "방어구", "equipment_slot": "방어구", "max_stack": 1, "defense": 5, "effect_type": "방어", "effect_value": 5},
 		{"id": "plain_bowl", "name": "소박한 사발", "status": "테스트", "type": "다구", "equipment_slot": "다구", "max_stack": 1, "effect_type": "차 운용", "effect_value": 0, "core_tea_ware": false},
-		{"id": "travel_bottle", "name": "보온 차병", "status": "테스트", "type": "다구", "equipment_slot": "다구", "max_stack": 1, "effect_type": "차 운용", "effect_value": 2, "core_tea_ware": false, "tea_recovery_multiplier": 1.25, "tea_recovery_bonus": 2, "carry_use_bonus": 2, "drink_seconds_multiplier": 0.5, "drink_seconds_bonus": 0.1, "sustain_modifier": 0.25},
-		{"id": "oribe_bowl", "name": "오리베 찻사발", "status": "테스트", "type": "다구", "equipment_slot": "다구", "max_stack": 1, "effect_type": "차 운용", "effect_value": 10, "core_tea_ware": "__YES__", "core_tea_ware_order": 1, "tea_recovery_bonus": 10}
+		{"id": "travel_bottle", "name": "보온 차병", "status": "테스트", "type": "다구", "equipment_slot": "다구", "max_stack": 1, "effect_type": "차 운용", "effect_value": 2, "core_tea_ware": false, "tea_recovery_multiplier": 1.25, "carry_use_bonus": 2, "drink_seconds_multiplier": 0.5, "drink_seconds_bonus": 0.1, "sustain_modifier": 0.25},
+		{"id": "oribe_bowl", "name": "오리베 찻사발", "status": "테스트", "type": "다구", "equipment_slot": "다구", "max_stack": 1, "effect_type": "차 운용", "effect_value": 10, "core_tea_ware": "__YES__", "core_tea_ware_order": 1}
 	]
 
 func _tea_rows() -> Array:
