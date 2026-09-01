@@ -1,0 +1,137 @@
+{
+  "description": "Notion character canon to promoted runtime sprite paths. Image files are moved without resizing, cropping, palette edits, or re-encoding.",
+  "source": {
+    "database": "https://app.notion.com/p/310b6a042b47441b8d476a6eb9d72eec",
+    "data_source": "collection://86d9c16b-e60e-4434-9c84-26b4b00d16c8"
+  },
+  "folder_rule": "assets/sprites/characters/<classification>/chr-<number>-<slug>/",
+  "characters": [
+    {
+      "character_id": "CHR-1",
+      "name": "아버지 — 차를 사랑하는 구미호",
+      "classification": "family",
+      "notion_url": "https://app.notion.com/p/3c9373699e66812ea87ee1d40d915b67",
+      "directory": "assets/sprites/characters/family/chr-1-kitsune-father",
+      "files": [
+        "kitsune_father_front_32x32.png",
+        "kitsune_father_front_64x64.png"
+      ],
+      "legacy_prefix": "npc_kitsune_spirit_flame"
+    },
+    {
+      "character_id": "CHR-2",
+      "name": "황무지 보스 — 다이묘",
+      "classification": "bosses",
+      "notion_url": "https://app.notion.com/p/3cd373699e668129b5eae148ce999421",
+      "directory": "assets/sprites/characters/bosses/chr-2-wasteland-daimyo",
+      "files": [
+        "wasteland_daimyo_front_32x32.png",
+        "wasteland_daimyo_front_64x64.png"
+      ],
+      "legacy_prefix": "npc_helmet_samurai"
+    },
+    {
+      "character_id": "CHR-3",
+      "name": "후루타 오리베 — 불완전함의 다인",
+      "classification": "rivals",
+      "notion_url": "https://app.notion.com/p/3cd373699e6681339012e19ec23a43ce",
+      "directory": "assets/sprites/characters/rivals/chr-3-furuta-oribe",
+      "files": [
+        "furuta_oribe_front_32x32.png",
+        "furuta_oribe_front_64x64.png"
+      ],
+      "legacy_prefix": "npc_fox_spirit_aura"
+    },
+    {
+      "character_id": "CHR-4",
+      "name": "설원 보스 — 승려",
+      "classification": "bosses",
+      "notion_url": "https://app.notion.com/p/3cd373699e6681849e5dcfc0da41644c",
+      "directory": "assets/sprites/characters/bosses/chr-4-snow-monk",
+      "files": [
+        "snow_monk_front_32x32.png",
+        "snow_monk_front_64x64.png"
+      ],
+      "legacy_prefix": "npc_bald_monk"
+    },
+    {
+      "character_id": "CHR-5",
+      "name": "센리큐 — 이름 없는 노다인",
+      "classification": "bosses",
+      "notion_url": "https://app.notion.com/p/3cd373699e6681a7b2f6f899c24fd27b",
+      "directory": "assets/sprites/characters/bosses/chr-5-sen-rikyu",
+      "files": [
+        "sen_rikyu_front_32x32.png",
+        "sen_rikyu_front_64x64.png"
+      ],
+      "legacy_prefix": "npc_tea_master"
+    },
+    {
+      "character_id": "CHR-6",
+      "name": "열대우림 보스 — 요괴 다인",
+      "classification": "bosses",
+      "notion_url": "https://app.notion.com/p/3cd373699e6681ab985ee8acf01fc6e8",
+      "directory": "assets/sprites/characters/bosses/chr-6-yokai-tea-master",
+      "files": [
+        "yokai_tea_master_front_32x32.png",
+        "yokai_tea_master_front_64x64.png"
+      ],
+      "legacy_prefix": "npc_oni_fox_mage"
+    },
+    {
+      "character_id": "CHR-7",
+      "name": "산악 지역 보스 — 도공",
+      "classification": "bosses",
+      "notion_url": "https://app.notion.com/p/3cd373699e6681ca82b5fb6006c5d86a",
+      "directory": "assets/sprites/characters/bosses/chr-7-mountain-potter",
+      "files": [
+        "mountain_potter_front_32x32.png",
+        "mountain_potter_front_64x64.png"
+      ],
+      "legacy_prefix": "npc_straw_hat_villager"
+    },
+    {
+      "character_id": "CHR-8",
+      "name": "여우무사",
+      "classification": "player",
+      "notion_url": "https://app.notion.com/p/3cd373699e66814d836bec75551f0ae1",
+      "directory": "assets/sprites/characters/player/chr-8-fox-samurai",
+      "files": [
+        "fox_samurai_back_idle_32x32.png",
+        "fox_samurai_back_idle_64x64.png",
+        "fox_samurai_front_idle_32x32.png",
+        "fox_samurai_front_idle_64x64.png",
+        "fox_samurai_left_idle_32x32.png",
+        "fox_samurai_left_idle_64x64.png",
+        "fox_samurai_right_idle_32x32.png",
+        "fox_samurai_right_idle_64x64.png"
+      ],
+      "legacy_prefix": "fox_samurai"
+    },
+    {
+      "character_id": "CHR-9",
+      "name": "떠돌이 차 상인",
+      "classification": "npcs",
+      "notion_url": "https://app.notion.com/p/3ce373699e66818d934ec07894388bde",
+      "directory": "assets/sprites/characters/npcs/chr-9-wandering-tea-merchant",
+      "files": [
+        "wandering_tea_merchant_front_32x32.png",
+        "wandering_tea_merchant_front_64x64.png"
+      ],
+      "legacy_prefix": "npc_pack_merchant"
+    }
+  ],
+  "ambient_npcs": [
+    {
+      "name": "망토 주민",
+      "notion_url": null,
+      "reason": "03. 주요 인물과 보스 규칙상 반복 서사 캐릭터가 아닌 배경 NPC로 유지",
+      "directory": "assets/sprites/characters/npcs/ambient/robed-villager",
+      "files": [
+        "robed_villager_front_32x32.png",
+        "robed_villager_front_64x64.png"
+      ],
+      "legacy_prefix": "npc_robed_villager"
+    }
+  ]
+}

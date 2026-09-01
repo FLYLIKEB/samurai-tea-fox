@@ -99,182 +99,182 @@
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/fox_samurai/fox_samurai_back_idle_32x32.png",
+      "path": "assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_back_idle_32x32.png",
       "width": 32,
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/fox_samurai/fox_samurai_back_idle_64x64.png",
+      "path": "assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_back_idle_64x64.png",
       "width": 64,
       "height": 64,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/fox_samurai/fox_samurai_front_idle_32x32.png",
+      "path": "assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_front_idle_32x32.png",
       "width": 32,
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/fox_samurai/fox_samurai_front_idle_64x64.png",
+      "path": "assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_front_idle_64x64.png",
       "width": 64,
       "height": 64,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/fox_samurai/fox_samurai_left_idle_32x32.png",
+      "path": "assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_left_idle_32x32.png",
       "width": 32,
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/fox_samurai/fox_samurai_left_idle_64x64.png",
+      "path": "assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_left_idle_64x64.png",
       "width": 64,
       "height": 64,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/fox_samurai/fox_samurai_right_idle_32x32.png",
+      "path": "assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_right_idle_32x32.png",
       "width": 32,
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/fox_samurai/fox_samurai_right_idle_64x64.png",
+      "path": "assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_right_idle_64x64.png",
       "width": 64,
       "height": 64,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_bald_monk_front_32x32.png",
+      "path": "assets/sprites/characters/bosses/chr-4-snow-monk/snow_monk_front_32x32.png",
       "width": 32,
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_bald_monk_front_64x64.png",
+      "path": "assets/sprites/characters/bosses/chr-4-snow-monk/snow_monk_front_64x64.png",
       "width": 64,
       "height": 64,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_fox_spirit_aura_front_32x32.png",
+      "path": "assets/sprites/characters/rivals/chr-3-furuta-oribe/furuta_oribe_front_32x32.png",
       "width": 32,
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_fox_spirit_aura_front_64x64.png",
+      "path": "assets/sprites/characters/rivals/chr-3-furuta-oribe/furuta_oribe_front_64x64.png",
       "width": 64,
       "height": 64,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_helmet_samurai_front_32x32.png",
+      "path": "assets/sprites/characters/bosses/chr-2-wasteland-daimyo/wasteland_daimyo_front_32x32.png",
       "width": 32,
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_helmet_samurai_front_64x64.png",
+      "path": "assets/sprites/characters/bosses/chr-2-wasteland-daimyo/wasteland_daimyo_front_64x64.png",
       "width": 64,
       "height": 64,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_kitsune_spirit_flame_front_32x32.png",
+      "path": "assets/sprites/characters/family/chr-1-kitsune-father/kitsune_father_front_32x32.png",
       "width": 32,
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_kitsune_spirit_flame_front_64x64.png",
+      "path": "assets/sprites/characters/family/chr-1-kitsune-father/kitsune_father_front_64x64.png",
       "width": 64,
       "height": 64,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_oni_fox_mage_front_32x32.png",
+      "path": "assets/sprites/characters/bosses/chr-6-yokai-tea-master/yokai_tea_master_front_32x32.png",
       "width": 32,
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_oni_fox_mage_front_64x64.png",
+      "path": "assets/sprites/characters/bosses/chr-6-yokai-tea-master/yokai_tea_master_front_64x64.png",
       "width": 64,
       "height": 64,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_pack_merchant_front_32x32.png",
+      "path": "assets/sprites/characters/npcs/chr-9-wandering-tea-merchant/wandering_tea_merchant_front_32x32.png",
       "width": 32,
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_pack_merchant_front_64x64.png",
+      "path": "assets/sprites/characters/npcs/chr-9-wandering-tea-merchant/wandering_tea_merchant_front_64x64.png",
       "width": 64,
       "height": 64,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_robed_villager_front_32x32.png",
+      "path": "assets/sprites/characters/npcs/ambient/robed-villager/robed_villager_front_32x32.png",
       "width": 32,
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_robed_villager_front_64x64.png",
+      "path": "assets/sprites/characters/npcs/ambient/robed-villager/robed_villager_front_64x64.png",
       "width": 64,
       "height": 64,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_straw_hat_villager_front_32x32.png",
+      "path": "assets/sprites/characters/bosses/chr-7-mountain-potter/mountain_potter_front_32x32.png",
       "width": 32,
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_straw_hat_villager_front_64x64.png",
+      "path": "assets/sprites/characters/bosses/chr-7-mountain-potter/mountain_potter_front_64x64.png",
       "width": 64,
       "height": 64,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_tea_master_front_32x32.png",
+      "path": "assets/sprites/characters/bosses/chr-5-sen-rikyu/sen_rikyu_front_32x32.png",
       "width": 32,
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/characters/npcs/npc_tea_master_front_64x64.png",
+      "path": "assets/sprites/characters/bosses/chr-5-sen-rikyu/sen_rikyu_front_64x64.png",
       "width": 64,
       "height": 64,
       "mode": "RGBA",
@@ -1954,9 +1954,9 @@
       "alpha_empty": false
     },
     {
-      "path": "assets/ui/test_heart_icon.png",
-      "width": 32,
-      "height": 32,
+      "path": "assets/ui/logo.png",
+      "width": 1536,
+      "height": 1024,
       "mode": "RGBA",
       "alpha_empty": false
     }
