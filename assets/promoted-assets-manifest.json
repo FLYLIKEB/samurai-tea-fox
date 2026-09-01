@@ -6,7 +6,7 @@
     "remaining_source_files": 0,
     "remaining_source_image_files": 0
   },
-  "total_runtime_pngs": 305,
+  "total_runtime_pngs": 415,
   "runtime_roots": [
     "assets/backgrounds",
     "assets/sprites",
@@ -2146,6 +2146,776 @@
       "path": "assets/sprites/characters/rivals/chr-3-furuta-oribe/furuta_oribe_right_32x32.png",
       "width": 32,
       "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/branding/muchau_title_plaque.png",
+      "width": 597,
+      "height": 173,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/branding/mu_round_emblem.png",
+      "width": 107,
+      "height": 102,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/branding/dialogue_red_seal.png",
+      "width": 38,
+      "height": 39,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/branding/red_white_stamp.png",
+      "width": 52,
+      "height": 56,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/panels/hud_player_status.png",
+      "width": 534,
+      "height": 121,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/panels/hud_resources.png",
+      "width": 476,
+      "height": 82,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/panels/hud_time.png",
+      "width": 370,
+      "height": 83,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/panels/dialogue_panel.png",
+      "width": 602,
+      "height": 207,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/panels/menu_panel.png",
+      "width": 315,
+      "height": 490,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/panels/map_panel.png",
+      "width": 410,
+      "height": 298,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/panels/quest_panel.png",
+      "width": 464,
+      "height": 327,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/panels/item_tooltip_panel.png",
+      "width": 266,
+      "height": 132,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/hotbar_selected_slot.png",
+      "width": 99,
+      "height": 100,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/hotbar_slot_2.png",
+      "width": 92,
+      "height": 95,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/hotbar_slot_3.png",
+      "width": 93,
+      "height": 95,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/hotbar_slot_4.png",
+      "width": 93,
+      "height": 95,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/hotbar_slot_5.png",
+      "width": 93,
+      "height": 95,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/hotbar_slot_6.png",
+      "width": 92,
+      "height": 95,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/hotbar_slot_7.png",
+      "width": 92,
+      "height": 95,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/hotbar_bag_slot.png",
+      "width": 84,
+      "height": 95,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/hotbar_pouch_slot.png",
+      "width": 86,
+      "height": 95,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/hotbar_scroll_slot.png",
+      "width": 88,
+      "height": 95,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/dialogue_tab.png",
+      "width": 103,
+      "height": 45,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/menu_tab.png",
+      "width": 127,
+      "height": 45,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/map_tab.png",
+      "width": 124,
+      "height": 45,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/quest_tab.png",
+      "width": 124,
+      "height": 45,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/menu_selected_row.png",
+      "width": 258,
+      "height": 56,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/category_tab_bar.png",
+      "width": 500,
+      "height": 53,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/map_zoom_plus.png",
+      "width": 52,
+      "height": 52,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/map_zoom_minus.png",
+      "width": 51,
+      "height": 52,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/map_center.png",
+      "width": 52,
+      "height": 54,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/checkbox_checked.png",
+      "width": 36,
+      "height": 36,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/checkbox_empty.png",
+      "width": 35,
+      "height": 35,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/toggle_on.png",
+      "width": 59,
+      "height": 38,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/toggle_off.png",
+      "width": 56,
+      "height": 37,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/pagination_left.png",
+      "width": 35,
+      "height": 39,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/pagination_diamonds.png",
+      "width": 157,
+      "height": 37,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/pagination_right.png",
+      "width": 26,
+      "height": 39,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/vertical_scrollbar.png",
+      "width": 33,
+      "height": 235,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/vertical_slider.png",
+      "width": 29,
+      "height": 213,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/horizontal_slider.png",
+      "width": 174,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/dpad.png",
+      "width": 185,
+      "height": 187,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/eye_button.png",
+      "width": 75,
+      "height": 76,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/attack_button.png",
+      "width": 106,
+      "height": 117,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/dash_button.png",
+      "width": 107,
+      "height": 117,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/tea_button.png",
+      "width": 107,
+      "height": 118,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/interact_button.png",
+      "width": 107,
+      "height": 118,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/menu_close.png",
+      "width": 34,
+      "height": 34,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/quest_collapse.png",
+      "width": 25,
+      "height": 22,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/quest_active_row.png",
+      "width": 411,
+      "height": 80,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/quest_row_arrow.png",
+      "width": 35,
+      "height": 37,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/hp_bar.png",
+      "width": 225,
+      "height": 23,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/controls/spirit_bar.png",
+      "width": 225,
+      "height": 23,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/leaf_large.png",
+      "width": 62,
+      "height": 59,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/teacup.png",
+      "width": 56,
+      "height": 46,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/teapot.png",
+      "width": 60,
+      "height": 60,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/sword.png",
+      "width": 54,
+      "height": 59,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/bag.png",
+      "width": 53,
+      "height": 58,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/map_scroll_open.png",
+      "width": 54,
+      "height": 59,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/low_table.png",
+      "width": 60,
+      "height": 53,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/crate.png",
+      "width": 54,
+      "height": 55,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/gourd.png",
+      "width": 37,
+      "height": 60,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/tea_tin.png",
+      "width": 50,
+      "height": 58,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/bowl.png",
+      "width": 60,
+      "height": 50,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/whisk.png",
+      "width": 49,
+      "height": 62,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/scroll_rolled.png",
+      "width": 61,
+      "height": 63,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/book.png",
+      "width": 58,
+      "height": 55,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/coin_disc.png",
+      "width": 53,
+      "height": 55,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/talisman.png",
+      "width": 44,
+      "height": 61,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/fire.png",
+      "width": 50,
+      "height": 55,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/water_drop.png",
+      "width": 40,
+      "height": 49,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/wind_swirl.png",
+      "width": 58,
+      "height": 51,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/meditation_stones.png",
+      "width": 51,
+      "height": 57,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/torii_gate.png",
+      "width": 58,
+      "height": 60,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/lantern.png",
+      "width": 41,
+      "height": 56,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/reeds.png",
+      "width": 53,
+      "height": 54,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/coin_resource.png",
+      "width": 38,
+      "height": 38,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/leaf_resource.png",
+      "width": 38,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/cup_resource.png",
+      "width": 37,
+      "height": 30,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/settings_gear.png",
+      "width": 40,
+      "height": 38,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/moon.png",
+      "width": 33,
+      "height": 35,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/menu_sword.png",
+      "width": 38,
+      "height": 39,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/menu_bag.png",
+      "width": 37,
+      "height": 38,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/menu_teacup.png",
+      "width": 37,
+      "height": 33,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/menu_skill.png",
+      "width": 39,
+      "height": 38,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/menu_quest.png",
+      "width": 35,
+      "height": 42,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/menu_map.png",
+      "width": 39,
+      "height": 33,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/menu_records.png",
+      "width": 37,
+      "height": 37,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/menu_settings.png",
+      "width": 37,
+      "height": 38,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/quest_diamond.png",
+      "width": 29,
+      "height": 30,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/quest_check_1.png",
+      "width": 28,
+      "height": 28,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/quest_check_2.png",
+      "width": 28,
+      "height": 28,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/map_player_marker.png",
+      "width": 27,
+      "height": 28,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/map_star_marker.png",
+      "width": 26,
+      "height": 30,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/map_square_marker.png",
+      "width": 28,
+      "height": 28,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/dialogue_next.png",
+      "width": 27,
+      "height": 24,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/status_flame.png",
+      "width": 19,
+      "height": 27,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/attack_sword.png",
+      "width": 54,
+      "height": 52,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/dash_streaks.png",
+      "width": 48,
+      "height": 38,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/tea_action_cup.png",
+      "width": 52,
+      "height": 42,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/atlas/interact_hand.png",
+      "width": 46,
+      "height": 57,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/decorators/dialogue_bamboo.png",
+      "width": 113,
+      "height": 152,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/decorators/menu_bamboo.png",
+      "width": 96,
+      "height": 155,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/decorators/divider_left.png",
+      "width": 281,
+      "height": 20,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/decorators/divider_middle.png",
+      "width": 214,
+      "height": 18,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/decorators/divider_under_brand.png",
+      "width": 594,
+      "height": 17,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/decorators/filter_symbols.png",
+      "width": 76,
+      "height": 30,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/decorators/tooltip_header_ornament.png",
+      "width": 286,
+      "height": 38,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/decorators/tooltip_selection_cursor.png",
+      "width": 31,
+      "height": 142,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/decorators/minimap_contents.png",
+      "width": 213,
+      "height": 194,
       "mode": "RGBA",
       "alpha_empty": false
     }
