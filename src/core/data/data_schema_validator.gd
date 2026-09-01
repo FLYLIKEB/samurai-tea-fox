@@ -121,6 +121,9 @@ func _validate_attachment_stage_data(item: Dictionary) -> Dictionary:
 		if typeof(item[field]) != TYPE_ARRAY or item[field].size() < 3:
 			return {"ok": false, "error": "items item '%s' field '%s' must contain at least 3 stages." % [item.id, field]}
 	var thresholds: Array = item.attachment_stage_thresholds
+	var description_keys: Array = item.attachment_description_keys
+	if description_keys.size() < thresholds.size():
+		return {"ok": false, "error": "items item '%s' attachment_description_keys must cover every threshold." % item.id}
 	var previous := -1
 	for threshold in thresholds:
 		if typeof(threshold) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(threshold)) or float(threshold) != floor(float(threshold)):
@@ -129,7 +132,7 @@ func _validate_attachment_stage_data(item: Dictionary) -> Dictionary:
 		if value < 0 or value <= previous:
 			return {"ok": false, "error": "items item '%s' attachment_stage_thresholds must be ascending non-negative integers." % item.id}
 		previous = value
-	for description_key in item.attachment_description_keys:
+	for description_key in description_keys:
 		if typeof(description_key) != TYPE_STRING or String(description_key).strip_edges().is_empty():
 			return {"ok": false, "error": "items item '%s' attachment_description_keys must contain non-empty strings." % item.id}
 	return {"ok": true}

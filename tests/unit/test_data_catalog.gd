@@ -83,6 +83,28 @@ func run(asserts) -> void:
 	})
 	asserts.true_value(flag_without_items.ok, "set_run_flag-only events do not require items definitions")
 
+	var short_attachment_description_result := validator.validate_catalog({
+		"items": [{
+			"id": "short_attachment_bowl",
+			"name": "정붙음 부족 사발",
+			"status": "테스트",
+			"type": "다구",
+			"equipment_slot": "다구",
+			"attachment_stage_thresholds": [0, 3, 7, 12],
+			"attachment_description_keys": [
+				"items.short_attachment_bowl.attachment.stage_0",
+				"items.short_attachment_bowl.attachment.stage_1",
+				"items.short_attachment_bowl.attachment.stage_2"
+			]
+		}]
+	}, {
+		"items": {"required_fields": ["id", "name", "status"]}
+	})
+	asserts.false_value(short_attachment_description_result.ok, "attachment description keys must cover all thresholds")
+	if not short_attachment_description_result.ok:
+		asserts.true_value("short_attachment_bowl" in short_attachment_description_result.error, "attachment description error names the item")
+		asserts.true_value("cover every threshold" in short_attachment_description_result.error, "attachment description error explains threshold coverage")
+
 func _event_with_result(result: Dictionary) -> Dictionary:
 	return {
 		"id": "fixture_event",
