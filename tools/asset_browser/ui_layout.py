@@ -91,17 +91,17 @@ class LayoutMixin:
         self.bottom_panel = tk.Frame(self, bg=PANEL, padx=8, pady=4)
         self.bottom_panel.pack(side=tk.BOTTOM, fill=tk.X)
 
-        bottom_bar = tk.Frame(self.bottom_panel, bg=PANEL)
-        bottom_bar.pack(side=tk.BOTTOM, fill=tk.X)
+        self.bottom_bar = tk.Frame(self.bottom_panel, bg=PANEL)
+        self.bottom_bar.pack(side=tk.BOTTOM, fill=tk.X)
         self.bottom_toggle_button = self._button(
-            bottom_bar,
+            self.bottom_bar,
             "작업 패널 열기",
             self.toggle_bottom_panel,
         )
         self.bottom_toggle_button.pack(side=tk.LEFT, padx=(0, 8))
 
         status = tk.Label(
-            bottom_bar,
+            self.bottom_bar,
             textvariable=self.status_var,
             anchor="w",
             bg=PANEL,
@@ -298,7 +298,7 @@ class LayoutMixin:
     def _set_bottom_panel_visible(self, visible: bool) -> None:
         self.bottom_panel_visible.set(visible)
         if visible:
-            self.bottom_content.pack(side=tk.TOP, fill=tk.X, before=self.bottom_panel.winfo_children()[-1])
+            self.bottom_content.pack(side=tk.TOP, fill=tk.X, before=self.bottom_bar)
             self.bottom_toggle_button.configure(text="작업 패널 닫기")
         else:
             self.bottom_content.pack_forget()
