@@ -1,0 +1,5 @@
+interface:
+  display_name: "Markdown 한국어 작성"
+  short_description: "Markdown과 스킬 한국어 작성 규칙."
+policy:
+  allow_implicit_invocation: true
