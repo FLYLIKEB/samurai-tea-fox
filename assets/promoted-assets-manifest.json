@@ -6,7 +6,7 @@
     "remaining_source_files": 0,
     "remaining_source_image_files": 0
   },
-  "total_runtime_pngs": 278,
+  "total_runtime_pngs": 305,
   "runtime_roots": [
     "assets/backgrounds",
     "assets/sprites",
@@ -1957,6 +1957,195 @@
       "path": "assets/ui/logo.png",
       "width": 1536,
       "height": 1024,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-2-wasteland-daimyo/wasteland_daimyo_back_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-2-wasteland-daimyo/wasteland_daimyo_left_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-2-wasteland-daimyo/wasteland_daimyo_right_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-4-snow-monk/snow_monk_back_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-4-snow-monk/snow_monk_left_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-4-snow-monk/snow_monk_right_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-5-sen-rikyu/sen_rikyu_back_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-5-sen-rikyu/sen_rikyu_left_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-5-sen-rikyu/sen_rikyu_right_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-6-yokai-tea-master/yokai_tea_master_back_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-6-yokai-tea-master/yokai_tea_master_left_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-6-yokai-tea-master/yokai_tea_master_right_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-7-mountain-potter/mountain_potter_back_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-7-mountain-potter/mountain_potter_left_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-7-mountain-potter/mountain_potter_right_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/family/chr-1-kitsune-father/kitsune_father_back_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/family/chr-1-kitsune-father/kitsune_father_left_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/family/chr-1-kitsune-father/kitsune_father_right_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/ambient/robed-villager/robed_villager_back_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/ambient/robed-villager/robed_villager_left_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/ambient/robed-villager/robed_villager_right_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/chr-9-wandering-tea-merchant/wandering_tea_merchant_back_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/chr-9-wandering-tea-merchant/wandering_tea_merchant_left_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/chr-9-wandering-tea-merchant/wandering_tea_merchant_right_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/rivals/chr-3-furuta-oribe/furuta_oribe_back_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/rivals/chr-3-furuta-oribe/furuta_oribe_left_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/rivals/chr-3-furuta-oribe/furuta_oribe_right_32x32.png",
+      "width": 32,
+      "height": 32,
       "mode": "RGBA",
       "alpha_empty": false
     }

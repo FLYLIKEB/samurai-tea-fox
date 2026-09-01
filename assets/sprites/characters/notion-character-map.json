@@ -1,10 +1,25 @@
 {
-  "description": "Notion character canon to promoted runtime sprite paths. Image files are moved without resizing, cropping, palette edits, or re-encoding.",
+  "description": "Notion character canon to promoted runtime sprite paths, including approved character movement directions.",
   "source": {
     "database": "https://app.notion.com/p/310b6a042b47441b8d476a6eb9d72eec",
     "data_source": "collection://86d9c16b-e60e-4434-9c84-26b4b00d16c8"
   },
   "folder_rule": "assets/sprites/characters/<classification>/chr-<number>-<slug>/",
+  "directional_production": {
+    "task": "DEV-54",
+    "generator": "PixelLab",
+    "endpoint": "/create-character-with-4-directions",
+    "source_rule": "Existing front_32x32 PNG is frozen as the south reference; generated west, east, and north outputs are promoted as left, right, and back.",
+    "direction_mapping": {
+      "south": "front",
+      "west": "left",
+      "east": "right",
+      "north": "back"
+    },
+    "runtime_canvas": "32x32",
+    "canvas_normalization": "PixelLab transparent animation margins are center-cropped only when the returned canvas exceeds 32x32 and the non-transparent bounding box fits entirely inside the target canvas.",
+    "raw_candidates": "assets/source/imagegen/pixellab-npc-4dir-20260901/raw/"
+  },
   "characters": [
     {
       "character_id": "CHR-1",
@@ -14,6 +29,9 @@
       "directory": "assets/sprites/characters/family/chr-1-kitsune-father",
       "files": [
         "kitsune_father_front_32x32.png",
+        "kitsune_father_left_32x32.png",
+        "kitsune_father_right_32x32.png",
+        "kitsune_father_back_32x32.png",
         "kitsune_father_front_64x64.png"
       ],
       "legacy_prefix": "npc_kitsune_spirit_flame"
@@ -26,6 +44,9 @@
       "directory": "assets/sprites/characters/bosses/chr-2-wasteland-daimyo",
       "files": [
         "wasteland_daimyo_front_32x32.png",
+        "wasteland_daimyo_left_32x32.png",
+        "wasteland_daimyo_right_32x32.png",
+        "wasteland_daimyo_back_32x32.png",
         "wasteland_daimyo_front_64x64.png"
       ],
       "legacy_prefix": "npc_helmet_samurai"
@@ -38,6 +59,9 @@
       "directory": "assets/sprites/characters/rivals/chr-3-furuta-oribe",
       "files": [
         "furuta_oribe_front_32x32.png",
+        "furuta_oribe_left_32x32.png",
+        "furuta_oribe_right_32x32.png",
+        "furuta_oribe_back_32x32.png",
         "furuta_oribe_front_64x64.png"
       ],
       "legacy_prefix": "npc_fox_spirit_aura"
@@ -50,6 +74,9 @@
       "directory": "assets/sprites/characters/bosses/chr-4-snow-monk",
       "files": [
         "snow_monk_front_32x32.png",
+        "snow_monk_left_32x32.png",
+        "snow_monk_right_32x32.png",
+        "snow_monk_back_32x32.png",
         "snow_monk_front_64x64.png"
       ],
       "legacy_prefix": "npc_bald_monk"
@@ -62,6 +89,9 @@
       "directory": "assets/sprites/characters/bosses/chr-5-sen-rikyu",
       "files": [
         "sen_rikyu_front_32x32.png",
+        "sen_rikyu_left_32x32.png",
+        "sen_rikyu_right_32x32.png",
+        "sen_rikyu_back_32x32.png",
         "sen_rikyu_front_64x64.png"
       ],
       "legacy_prefix": "npc_tea_master"
@@ -74,6 +104,9 @@
       "directory": "assets/sprites/characters/bosses/chr-6-yokai-tea-master",
       "files": [
         "yokai_tea_master_front_32x32.png",
+        "yokai_tea_master_left_32x32.png",
+        "yokai_tea_master_right_32x32.png",
+        "yokai_tea_master_back_32x32.png",
         "yokai_tea_master_front_64x64.png"
       ],
       "legacy_prefix": "npc_oni_fox_mage"
@@ -86,6 +119,9 @@
       "directory": "assets/sprites/characters/bosses/chr-7-mountain-potter",
       "files": [
         "mountain_potter_front_32x32.png",
+        "mountain_potter_left_32x32.png",
+        "mountain_potter_right_32x32.png",
+        "mountain_potter_back_32x32.png",
         "mountain_potter_front_64x64.png"
       ],
       "legacy_prefix": "npc_straw_hat_villager"
@@ -116,6 +152,9 @@
       "directory": "assets/sprites/characters/npcs/chr-9-wandering-tea-merchant",
       "files": [
         "wandering_tea_merchant_front_32x32.png",
+        "wandering_tea_merchant_left_32x32.png",
+        "wandering_tea_merchant_right_32x32.png",
+        "wandering_tea_merchant_back_32x32.png",
         "wandering_tea_merchant_front_64x64.png"
       ],
       "legacy_prefix": "npc_pack_merchant"
@@ -129,6 +168,9 @@
       "directory": "assets/sprites/characters/npcs/ambient/robed-villager",
       "files": [
         "robed_villager_front_32x32.png",
+        "robed_villager_left_32x32.png",
+        "robed_villager_right_32x32.png",
+        "robed_villager_back_32x32.png",
         "robed_villager_front_64x64.png"
       ],
       "legacy_prefix": "npc_robed_villager"

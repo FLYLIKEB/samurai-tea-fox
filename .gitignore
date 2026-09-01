@@ -40,7 +40,8 @@ tools/asset_browser/paint_backups/
 tools/asset_browser/adjustment_backups/
 
 # Local ImageGen source drops
-assets/source/imagegen/
+assets/source/imagegen/*
+!assets/source/imagegen/.gdignore
 
 # External asset browser checkout/build artifacts
 tools/asset_browser/.venv/
