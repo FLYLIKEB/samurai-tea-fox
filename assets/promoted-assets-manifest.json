@@ -6,7 +6,7 @@
     "remaining_source_files": 0,
     "remaining_source_image_files": 0
   },
-  "total_runtime_pngs": 220,
+  "total_runtime_pngs": 278,
   "runtime_roots": [
     "assets/backgrounds",
     "assets/sprites",
@@ -99,44 +99,184 @@
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/art-8_fox_samurai_base_4x32.png",
-      "width": 128,
-      "height": 32,
-      "mode": "RGBA",
-      "alpha_empty": false
-    },
-    {
-      "path": "assets/sprites/characters/fox_samurai/fox_samurai_front_idle_4x32.png",
-      "width": 128,
-      "height": 32,
-      "mode": "RGBA",
-      "alpha_empty": false
-    },
-    {
-      "path": "assets/sprites/characters/fox_samurai/fox_samurai_source_panel.png",
-      "width": 364,
-      "height": 238,
-      "mode": "RGBA",
-      "alpha_empty": false
-    },
-    {
-      "path": "assets/sprites/fox_samurai_idle_32.png",
+      "path": "assets/sprites/characters/fox_samurai/fox_samurai_back_idle_32x32.png",
       "width": 32,
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/fox_samurai_idle_32_preview.png",
-      "width": 128,
-      "height": 128,
+      "path": "assets/sprites/characters/fox_samurai/fox_samurai_back_idle_64x64.png",
+      "width": 64,
+      "height": 64,
       "mode": "RGBA",
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/fox_samurai_idle_source_panel.png",
-      "width": 364,
-      "height": 238,
+      "path": "assets/sprites/characters/fox_samurai/fox_samurai_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/fox_samurai/fox_samurai_front_idle_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/fox_samurai/fox_samurai_left_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/fox_samurai/fox_samurai_left_idle_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/fox_samurai/fox_samurai_right_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/fox_samurai/fox_samurai_right_idle_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_bald_monk_front_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_bald_monk_front_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_fox_spirit_aura_front_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_fox_spirit_aura_front_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_helmet_samurai_front_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_helmet_samurai_front_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_kitsune_spirit_flame_front_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_kitsune_spirit_flame_front_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_oni_fox_mage_front_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_oni_fox_mage_front_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_pack_merchant_front_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_pack_merchant_front_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_robed_villager_front_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_robed_villager_front_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_straw_hat_villager_front_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_straw_hat_villager_front_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_tea_master_front_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/npc_tea_master_front_64x64.png",
+      "width": 64,
+      "height": 64,
       "mode": "RGBA",
       "alpha_empty": false
     },
@@ -176,8 +316,8 @@
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/objects/crafting/drying_rack_1x2_64x32.png",
-      "width": 64,
+      "path": "assets/sprites/objects/crafting/drying_rack_32x32.png",
+      "width": 32,
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false
@@ -827,13 +967,6 @@
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/objects/structures/light_structure_pair_64x32.png",
-      "width": 64,
-      "height": 32,
-      "mode": "RGBA",
-      "alpha_empty": false
-    },
-    {
       "path": "assets/sprites/objects/structures/long_wooden_bridge_96x64.png",
       "width": 96,
       "height": 64,
@@ -1058,10 +1191,10 @@
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/sheets/source-atlases/character-ui/fox_character_terrain_ui_atlas.png",
+      "path": "assets/sprites/sheets/source-atlases/character-ui/fox_tea_character_ui_atlas.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGBA",
+      "mode": "RGB",
       "alpha_empty": false
     },
     {
@@ -1117,34 +1250,6 @@
       "path": "assets/sprites/sheets/source-atlases/object-structure/light_object_structure_sprite_atlas.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGBA",
-      "alpha_empty": false
-    },
-    {
-      "path": "assets/sprites/test_fox_idle.png",
-      "width": 32,
-      "height": 32,
-      "mode": "RGBA",
-      "alpha_empty": false
-    },
-    {
-      "path": "assets/tiles/art-1_forest_boundary_tileset_8x32.png",
-      "width": 256,
-      "height": 32,
-      "mode": "RGBA",
-      "alpha_empty": false
-    },
-    {
-      "path": "assets/tiles/art-9_common_flat_ground_32.png",
-      "width": 32,
-      "height": 32,
-      "mode": "RGBA",
-      "alpha_empty": false
-    },
-    {
-      "path": "assets/tiles/sheets/biome-atlases/biome-tile-map/biome_tiles_objects_dungeon_spec_sheet.png",
-      "width": 1402,
-      "height": 1122,
       "mode": "RGBA",
       "alpha_empty": false
     },
@@ -1366,7 +1471,196 @@
       "alpha_empty": false
     },
     {
-      "path": "assets/tiles/terrain/river/river_water_00_32.png",
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_202_420_146x145_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_204_59_144x147_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_204_771_143x146_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_205_597_144x145_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_205_951_143x147_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_28_237_145x148_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_28_418_146x148_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_29_419_144x145_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_29_593_145x148_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_29_60_145x148_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_29_773_145x145_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_30_952_144x146_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_374_764_149x153_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_377_238_146x147_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_377_58_147x149_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_377_951_147x148_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_378_417_147x146_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_378_595_147x145_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_552_417_151x149_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_553_951_148x146_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_554_61_147x146_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_732_60_144x148_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_733_594_145x147_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_733_950_146x150_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_907_60_144x147_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_907_950_148x148_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_908_771_144x146_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_909_594_142x148_resize_32x32.png",
       "width": 32,
       "height": 32,
       "mode": "RGBA",
@@ -1443,20 +1737,6 @@
       "alpha_empty": false
     },
     {
-      "path": "assets/tiles/test_grass_tile.png",
-      "width": 32,
-      "height": 32,
-      "mode": "RGBA",
-      "alpha_empty": false
-    },
-    {
-      "path": "assets/tiles/test_water_tile.png",
-      "width": 32,
-      "height": 32,
-      "mode": "RGBA",
-      "alpha_empty": false
-    },
-    {
       "path": "assets/ui/icons/alert_mark_32.png",
       "width": 32,
       "height": 32,
@@ -1465,6 +1745,132 @@
     },
     {
       "path": "assets/ui/icons/coin_32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_1030_572_65x60_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_1046_863_38x38_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_1055_727_56x57_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_1088_864_37x37_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_1126_863_43x39_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_1129_720_56x64_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_1174_861_40x39_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_1179_573_58x57_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_1215_860_44x45_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_1256_574_53x57_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_1259_859_48x44_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_1268_720_66x62_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_1306_862_43x39_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_1335_573_55x57_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_1352_864_35x35_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_1389_864_37x37_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_667_831_60x60_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/fox_tea_ui_flow_mockups_crop_964_571_59x60_resize_32x32.png",
       "width": 32,
       "height": 32,
       "mode": "RGBA",
