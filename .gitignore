@@ -1,5 +1,7 @@
 # Godot 4
 .godot/
+*.import
+*.uid
 *.translation
 export.cfg
 export_presets.cfg
