@@ -1,6 +1,6 @@
 ---
 name: notion-source-router
-description: 무사여우 Notion 정본을 읽을 때 루트 바이블의 순서와 책임 경계에 따라 필요한 문서와 DB만 선택하도록 라우팅할 때 사용한다.
+description: 무사여우 Notion 정본을 읽을 때 루트 바이블의 순서와 책임 경계에 따라 필요한 문서와 데이터베이스만 선택하도록 안내할 때 사용한다.
 metadata:
   short-description: Notion 정본 읽기 라우팅
 ---
@@ -27,6 +27,7 @@ metadata:
 - 어떤 콘텐츠가 존재하는지 확인할 때는 해당 콘텐츠 DB를 읽는다.
 - 정확한 수치와 공식은 `⚖️ 밸런스 상수` 또는 해당 콘텐츠 DB를 읽는다.
 - 그래픽 제작 단위는 `🎨 아트 에셋` DB를 읽는다.
+- 캐릭터, 맵, 맵 내 사물의 시점·방향 규칙은 `09. 아트디렉션·맵·UI`와 `assets/style/art-style-tokens.json`의 정면 고정 탑뷰 규칙을 함께 확인한다.
 
 ## 충돌 우선순위
 

@@ -1,8 +1,8 @@
 ---
 name: godot-scene-resource-authoring
-description: Godot 4.x의 .tscn, .tres, scene tree, Resource, autoload 관련 파일을 만들거나 수정할 때 텍스트 포맷과 책임 경계를 지키기 위해 사용한다.
+description: Godot 4.x의 장면 파일, 리소스 파일, 장면 트리, 자동 로드 관련 파일을 만들거나 수정할 때 텍스트 형식과 책임 경계를 지키기 위해 사용한다.
 metadata:
-  short-description: Godot scene/resource 작성 규칙
+  short-description: Godot 장면·리소스 작성 규칙
 ---
 
 # Godot Scene과 Resource 작성

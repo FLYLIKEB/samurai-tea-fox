@@ -1,8 +1,8 @@
 ---
 name: notion-export-data-sync
-description: Notion 콘텐츠·밸런스 DB를 게임용 정적 데이터로 반영하거나 data/generated, export schema, notion source map을 점검할 때 사용한다.
+description: Notion 콘텐츠·밸런스 데이터베이스를 게임용 정적 데이터로 반영하거나 생성 데이터, 내보내기 스키마, Notion 출처 지도를 점검할 때 사용한다.
 metadata:
-  short-description: Notion export 데이터 동기화
+  short-description: Notion 내보내기 데이터 동기화
 ---
 
 # Notion Export 데이터 동기화

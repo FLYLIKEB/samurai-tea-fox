@@ -1,8 +1,8 @@
 ---
 name: isolated-worktree-pr
-description: 병렬 Codex 에이전트 간 커밋 충돌을 막기 위해 코딩 작업마다 새 git 브랜치와 worktree를 만들고, PR·머지·로컬 main 동기화까지 수행할 때 사용한다.
+description: 병렬 Codex 에이전트 간 커밋 충돌을 막기 위해 코딩 작업마다 새 Git 브랜치와 독립 작업 트리를 만들고, 풀 리퀘스트·병합·로컬 메인 동기화까지 수행할 때 사용한다.
 metadata:
-  short-description: 독립 브랜치와 worktree 기반 PR 흐름
+  short-description: 독립 브랜치와 작업 트리 기반 PR 흐름
 ---
 
 # 독립 Worktree PR

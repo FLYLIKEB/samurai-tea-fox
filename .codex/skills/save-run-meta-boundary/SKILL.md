@@ -1,8 +1,8 @@
 ---
 name: save-run-meta-boundary
-description: run save와 meta save, 런 종료, 사망 처리, 메타 해금, 이전 런 기억 조건을 구현하거나 검토할 때 사용한다.
+description: 런 저장과 메타 저장, 런 종료, 사망 처리, 메타 해금, 이전 런 기억 조건을 구현하거나 검토할 때 사용한다.
 metadata:
-  short-description: run/meta 저장 경계 규칙
+  short-description: 런/메타 저장 경계 규칙
 ---
 
 # Run Save와 Meta Save 경계

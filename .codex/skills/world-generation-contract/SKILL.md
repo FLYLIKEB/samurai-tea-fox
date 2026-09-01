@@ -1,6 +1,6 @@
 ---
 name: world-generation-contract
-description: 월드 생성, biome definition, seed 재현성, required landmark, connectivity validation을 구현하거나 검토할 때 사용한다.
+description: 월드 생성, 바이옴 정의, 시드 재현성, 필수 랜드마크, 연결성 검증을 구현하거나 검토할 때 사용한다.
 metadata:
   short-description: 월드 생성 재현성과 연결성 규칙
 ---
@@ -33,6 +33,7 @@ seed
 - 진입 지점, 텔레포트 존, 핵심 던전, 최소 자원량, 통과 가능한 경로를 우선 보장한다.
 - 핵심 진행물이 지형 생성 때문에 접근 불가능해지는 결과는 허용하지 않는다.
 - visual TileMapLayer 렌더링은 생성 데이터 이후 단계로 둔다.
+- 렌더링용 맵, 랜드마크, 맵 내 사물 에셋은 정사각형 타일 기반 탑뷰 로그라이크에 맞춰 정면 시점으로 읽혀야 한다.
 
 ## 데이터 규칙
 

@@ -18,7 +18,7 @@ Godot 4.x + GDScript 기반의 top-down 32x32 pixel-art roguelike RPG입니다.
 - Engine: Godot 4.x
 - Language: GDScript
 - Targets: mobile + desktop
-- Graphics: 32x32 기반 저해상도 픽셀아트, nearest filtering, 정수 배율 우선
+- Graphics: 32x32 기반 저해상도 픽셀아트, nearest filtering, 정수 배율 우선, 캐릭터·맵·맵 내 사물 정면 고정
 - Map: TileMapLayer + 데이터 주도 월드 생성
 - Data: Notion planning DB -> exported static data -> runtime definition -> runtime state
 - Save: run save와 meta save 분리, schema version 필수

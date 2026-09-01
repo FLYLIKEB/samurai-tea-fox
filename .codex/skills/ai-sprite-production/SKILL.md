@@ -1,8 +1,8 @@
 ---
 name: ai-sprite-production
-description: 무사여우의 이미지 스프라이트를 AI로 직접 생성하거나, 생성 프롬프트·스프라이트시트·에셋 검수 흐름을 설계할 때 사용한다.
+description: 무사여우의 그림 조각을 AI로 직접 만들거나, 생성 문구·그림판·에셋 검수 흐름을 설계할 때 사용한다.
 metadata:
-  short-description: AI 스프라이트 생성과 검수 파이프라인
+  short-description: AI 그림 조각 생성과 검수 흐름
 ---
 
 # AI 스프라이트 제작

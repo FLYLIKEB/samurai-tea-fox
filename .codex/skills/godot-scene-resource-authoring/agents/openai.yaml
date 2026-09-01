@@ -1,5 +1,5 @@
 interface:
-  display_name: "Godot Scene 작성"
-  short_description: "Godot scene/resource 작성 규칙을 점검합니다."
+  display_name: "Godot 장면 작성"
+  short_description: "Godot 장면/리소스 작성 규칙을 점검합니다."
 policy:
   allow_implicit_invocation: true
