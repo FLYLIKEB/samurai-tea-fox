@@ -1,6 +1,8 @@
 extends RefCounted
 class_name SaveCodec
 
+const RunState = preload("res://src/save/run_state.gd")
+
 const CURRENT_SCHEMA_VERSION := 1
 
 static func encode_run(run_state: Dictionary) -> Dictionary:
@@ -21,7 +23,7 @@ static func decode_run(save_data: Dictionary) -> Dictionary:
 	var result := _validate(save_data, "run")
 	if not result.ok:
 		return result
-	return {"ok": true, "state": save_data.run}
+	return {"ok": true, "state": save_data.run, "run_state": RunState.from_dictionary(save_data.run)}
 
 static func decode_meta(save_data: Dictionary) -> Dictionary:
 	var result := _validate(save_data, "meta")
@@ -37,4 +39,3 @@ static func _validate(save_data: Dictionary, expected_kind: String) -> Dictionar
 	if not save_data.has(expected_kind):
 		return {"ok": false, "error": "Missing %s payload." % expected_kind}
 	return {"ok": true}
-

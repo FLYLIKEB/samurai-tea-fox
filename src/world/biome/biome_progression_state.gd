@@ -85,7 +85,6 @@ func complete_dungeon(biome_id: String) -> Dictionary:
 	if teleport_state_for(biome_id) != TELEPORT_BROKEN:
 		return _fail("invalid_teleport_state", "Dungeon completion requires a broken teleport.")
 	_run_state.completed_dungeon_ids.append(biome_id)
-	_run_state.crafting_unlocks.append(biome_id)
 	_run_state.teleport_states[biome_id] = TELEPORT_REPAIRABLE
 	return _success_projection()
 
@@ -102,6 +101,8 @@ func repair_teleport(biome_id: String) -> Dictionary:
 		return _fail("teleport_not_repairable", "Teleport is not repairable in its current state.")
 	_run_state.teleport_states[biome_id] = TELEPORT_REPAIRED
 	_run_state.repaired_teleports.append(biome_id)
+	if not _run_state.crafting_unlocks.has(biome_id):
+		_run_state.crafting_unlocks.append(biome_id)
 	return _success_projection()
 
 func advance_biome(biome_id: String) -> Dictionary:

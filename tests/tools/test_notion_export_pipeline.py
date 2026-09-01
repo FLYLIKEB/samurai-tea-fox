@@ -266,6 +266,18 @@ class NotionExportPipelineTests(unittest.TestCase):
         ]
         with self.assertRaisesRegex(ExportValidationError, "events.*reachable dialogue cycle"):
             self.pipeline.build_snapshots(cycle, "confirmed-test")
+    def test_recipe_unlock_biome_relation_uses_stable_id(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        recipe_notion = schema["datasets"]["recipes"]["notion"]
+        self.assertEqual(
+            recipe_notion["relation_map"]["해금 지역 관계"],
+            {"field": "unlock_biome_id", "target": "biomes", "many": False},
+        )
+
+        snapshots = self.pipeline.build_snapshots(self.capture, "confirmed-test")
+        recipe = snapshots["recipes"]["items"][0]
+
+        self.assertEqual(recipe["unlock_biome_id"], "common_region")
 
     def test_write_snapshots_round_trips_through_validation(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -596,6 +608,22 @@ class NotionExportPipelineTests(unittest.TestCase):
 
         self.assertEqual(common["resources"], "목재, 돌, 점토, 기본 식재료, 일반 찻잎")
         self.assertNotIn("resource_item_ids", common)
+
+    def test_dev_10_generated_recipes_have_stable_unlock_biome_ids(self):
+        generated = ROOT / "data/generated"
+        self.pipeline.validate_directory(generated)
+
+        recipes = {
+            item["id"]: item
+            for item in json.loads((generated / "recipes.json").read_text(encoding="utf-8"))["items"]
+        }
+
+        self.assertEqual(recipes["wooden_workbench"]["unlock_biome"], "일반")
+        self.assertEqual(recipes["wooden_workbench"]["unlock_biome_id"], "common_region")
+        self.assertEqual(recipes["mountain_kiln"]["unlock_biome_id"], "mountain_region")
+        self.assertEqual(recipes["repair_hammer"]["unlock_biome_id"], "wasteland")
+        self.assertEqual(recipes["insulated_tea_bottle"]["unlock_biome_id"], "snowfield")
+        self.assertEqual(recipes["incense_sticks"]["unlock_biome_id"], "rainforest")
 
     def test_validate_directory_rejects_unsupported_schema_version(self):
         with tempfile.TemporaryDirectory() as directory:

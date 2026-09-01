@@ -44,6 +44,7 @@ func _assert_generated_catalog_configures_crafting(asserts) -> void:
 	var service: CraftingService = service_result.crafting_service
 	asserts.true_value(service.has_recipe("wooden_workbench"), "generated handcraft recipe is available")
 	asserts.true_value(service.is_handcraft("wooden_workbench"), "손제작 recipe has no facility requirement")
+	asserts.equal(service.recipe_for("wooden_workbench").unlock_biome_id, "common_region", "generated recipe carries stable unlock biome id")
 	asserts.equal(service.required_facility_item_ids("humble_clay_bowl"), ["wooden_workbench"], "facility name maps through item data")
 
 	var inventory_result: Dictionary = InventoryModel.from_catalog(catalog)
@@ -52,9 +53,14 @@ func _assert_generated_catalog_configures_crafting(asserts) -> void:
 		var inventory: InventoryModel = inventory_result.inventory
 		asserts.true_value(inventory.add_item("wood", 6).ok, "generated wood can be stocked")
 		asserts.true_value(inventory.add_item("stone", 3).ok, "generated stone can be stocked")
-		asserts.true_value(service.craft("wooden_workbench", inventory).ok, "generated handcraft recipe executes")
+		var repair_locked := service.can_craft("wooden_workbench", inventory, {"current_biome_id": "common_region"})
+		asserts.false_value(repair_locked.ok, "generated catalog recipe rejects before repair unlock")
+		asserts.equal(repair_locked.reason, "locked", "generated catalog recipe reports locked before repair")
+		var unlocked_context := {"current_biome_id": "common_region", "unlocked_biome_ids": ["common_region"]}
+		var repair_unlocked := service.craft("wooden_workbench", inventory, unlocked_context)
+		asserts.true_value(repair_unlocked.ok, "generated catalog recipe executes after repair unlock")
 		asserts.true_value(inventory.add_item("cloth", 2).ok, "generated cloth can be stocked")
-		asserts.true_value(service.craft("bandage", inventory).ok, "generated bandage recipe executes")
+		asserts.true_value(service.craft("bandage", inventory, unlocked_context).ok, "generated bandage recipe executes")
 		asserts.equal(inventory.get_total_quantity("bandage"), 1, "cloth-to-bandage crafting grants bandage")
 
 	var placement_result: Dictionary = FacilityPlacementService.from_catalog(catalog)
@@ -115,6 +121,8 @@ func _assert_current_run_biome_unlock_allows_recipe(asserts) -> void:
 	var locked: Dictionary = service.can_craft("regional_bowl", inventory)
 	asserts.false_value(locked.ok, "biome recipe stays locked without current-run unlock")
 	asserts.equal(locked.reason, "locked", "locked biome recipe reports stable reason")
+	var current_only: Dictionary = service.can_craft("regional_bowl", inventory, {"current_biome_id": "common_region"})
+	asserts.false_value(current_only.ok, "current biome alone does not unlock recipe")
 	var unlocked: Dictionary = service.can_craft("regional_bowl", inventory, {"unlocked_biome_ids": ["common_region"]})
 	asserts.true_value(unlocked.ok, "current-run biome unlock allows recipe")
 

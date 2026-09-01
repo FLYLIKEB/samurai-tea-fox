@@ -2,6 +2,8 @@ extends RefCounted
 
 const ConnectivityValidator = preload("res://src/world/generation/connectivity_validator.gd")
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
+const BiomeProgressionState = preload("res://src/world/biome/biome_progression_state.gd")
+const RunState = preload("res://src/save/run_state.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 
@@ -32,8 +34,23 @@ func run(asserts) -> void:
 	asserts.true_value(a.has("world_data"), "generator exposes pure world data")
 	asserts.true_value(a.has("renderer_input"), "generator exposes renderer input contract")
 	asserts.equal(a.renderer_input.read_only, true, "renderer input is read-only projection")
+	_assert_teleport_landmark_metadata(asserts, a.world_data, "common_region")
 	_assert_renderer_source_paths_exist(asserts, a.renderer_input)
 	_assert_resource_accessibility(asserts, a)
+
+	var progression_result: Dictionary = BiomeProgressionState.from_catalog(catalog, RunState.new())
+	asserts.true_value(progression_result.ok, "progression state configures for renderer projection")
+	if progression_result.ok:
+		var projected := generator.generate(
+			11037,
+			catalog.data_version,
+			biome,
+			catalog.get_definitions("balance"),
+			catalog.get_definitions("items"),
+			{"progression_projection": progression_result.progression_state.to_projection()}
+		)
+		asserts.true_value(projected.ok, "world generation succeeds with progression projection")
+		_assert_projected_teleport_state(asserts, projected.renderer_input, "common_region", BiomeProgressionState.TELEPORT_BROKEN)
 
 	for seed in range(11000, 11125):
 		var generated := generator.generate(seed, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
@@ -88,6 +105,25 @@ func _assert_resource_accessibility(asserts, world: Dictionary) -> void:
 		asserts.equal(_manhattan_distance(node.position, node.access_position), 1, "%s has adjacent access cell" % node.id)
 	var access_validation := validator.validate_access_points(world.world_data, access_points)
 	asserts.true_value(access_validation.valid, "all resource access points are entry-reachable")
+
+func _assert_teleport_landmark_metadata(asserts, world_data: Dictionary, biome_id: String) -> void:
+	var teleports := []
+	for landmark in world_data.required_landmarks:
+		if String(landmark.get("kind", "")) == WorldData.LANDMARK_TELEPORT_ZONE:
+			teleports.append(landmark)
+	asserts.equal(teleports.size(), 1, "world data records generated teleport landmark")
+	if not teleports.is_empty():
+		asserts.equal(teleports[0].metadata.teleport_biome_id, biome_id, "teleport landmark metadata uses stable biome id")
+
+func _assert_projected_teleport_state(asserts, renderer_input: Dictionary, biome_id: String, expected_state: String) -> void:
+	var teleports := []
+	for landmark in renderer_input.required_landmarks:
+		if String(landmark.get("kind", "")) == WorldData.LANDMARK_TELEPORT_ZONE:
+			teleports.append(landmark)
+	asserts.equal(teleports.size(), 1, "renderer projection includes generated teleport landmark")
+	if not teleports.is_empty():
+		asserts.equal(teleports[0].teleport_biome_id, biome_id, "renderer projection exposes stable teleport biome id")
+		asserts.equal(teleports[0].teleport_state, expected_state, "renderer projection uses progression teleport state")
 
 func _interactable_owner_ids(renderer_input: Dictionary) -> Dictionary:
 	var owner_ids := {}

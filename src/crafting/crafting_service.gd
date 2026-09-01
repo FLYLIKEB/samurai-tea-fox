@@ -178,8 +178,6 @@ func _unlock_context_allows(recipe: Dictionary, context) -> bool:
 		return true
 	if typeof(context) != TYPE_DICTIONARY:
 		return false
-	if String(context.get("current_biome_id", "")) == unlock_biome_id:
-		return true
 	var unlocked = context.get("unlocked_biome_ids", [])
 	if typeof(unlocked) == TYPE_DICTIONARY:
 		return bool(unlocked.get(unlock_biome_id, false))

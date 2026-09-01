@@ -17,6 +17,22 @@ var narrative_flags := []
 var narrative_event_counts := {}
 var consumables := {}
 
+static func from_dictionary(data: Dictionary):
+	var state: RunState = load("res://src/save/run_state.gd").new()
+	state.data_version = String(data.get("data_version", ""))
+	state.seed = int(data.get("seed", 0))
+	state.current_biome_id = String(data.get("current_biome_id", ""))
+	state.inventory = _dictionary_value(data.get("inventory", {}))
+	state.equipment = _dictionary_value(data.get("equipment", {}))
+	state.currency = int(data.get("currency", 0))
+	state.tails = int(data.get("tails", 1))
+	state.abilities = _array_value(data.get("abilities", []))
+	state.completed_dungeon_ids = _array_value(data.get("completed_dungeon_ids", []))
+	state.teleport_states = _dictionary_value(data.get("teleport_states", {}))
+	state.repaired_teleports = _array_value(data.get("repaired_teleports", []))
+	state.crafting_unlocks = _array_value(data.get("crafting_unlocks", []))
+	return state
+
 func reset_biome_progression() -> void:
 	current_biome_id = ""
 	completed_dungeon_ids.clear()
@@ -42,3 +58,13 @@ func to_dictionary() -> Dictionary:
 		"narrative_event_counts": narrative_event_counts.duplicate(true),
 		"consumables": consumables.duplicate(true)
 	}
+
+static func _dictionary_value(value) -> Dictionary:
+	if typeof(value) != TYPE_DICTIONARY:
+		return {}
+	return value.duplicate(true)
+
+static func _array_value(value) -> Array:
+	if typeof(value) != TYPE_ARRAY:
+		return []
+	return value.duplicate(true)

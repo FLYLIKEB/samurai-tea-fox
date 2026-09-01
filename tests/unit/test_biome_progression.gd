@@ -38,15 +38,17 @@ func _progression_commands_and_order(asserts) -> void:
 	var completed := progression.apply_command(GameCommand.new(GameCommand.Type.COMPLETE_DUNGEON, Vector2i.ZERO, -1, {"biome_id": "common_region"}))
 	asserts.true_value(completed.ok, "dungeon completion command is accepted")
 	asserts.equal(progression.teleport_state_for("common_region"), BiomeProgressionState.TELEPORT_REPAIRABLE, "dungeon completion makes teleport repairable")
-	asserts.equal(progression.crafting_context().unlocked_biome_ids, ["common_region"], "dungeon completion grants current-run crafting unlock")
+	asserts.equal(progression.crafting_context().unlocked_biome_ids, [], "dungeon completion does not grant crafting unlock")
 	asserts.false_value(progression.complete_dungeon("common_region").ok, "duplicate dungeon completion is rejected")
 
 	asserts.true_value(progression.apply_command(GameCommand.new(GameCommand.Type.REPAIR_TELEPORT, Vector2i.ZERO, -1, {"biome_id": "common_region"})).ok, "repair after completion is accepted")
 	asserts.equal(progression.teleport_state_for("common_region"), BiomeProgressionState.TELEPORT_REPAIRED, "successful repair records repaired state")
+	asserts.equal(progression.crafting_context().unlocked_biome_ids, ["common_region"], "successful repair grants current-run crafting unlock")
 	asserts.true_value(progression.can_advance_biome(), "repaired current teleport satisfies next-biome condition")
 	var duplicate_repair := progression.repair_teleport("common_region")
 	asserts.false_value(duplicate_repair.ok, "duplicate teleport repair is rejected")
 	asserts.equal(duplicate_repair.reason, "duplicate_repair", "duplicate repair has stable reason")
+	asserts.equal(progression.crafting_context().unlocked_biome_ids, ["common_region"], "duplicate repair does not duplicate crafting unlock")
 
 	asserts.true_value(progression.apply_command(GameCommand.new(GameCommand.Type.ADVANCE_BIOME, Vector2i.ZERO, -1, {"biome_id": "common_region"})).ok, "advance command enters next ordered biome")
 	asserts.equal(progression.current_biome_id(), "mountain_region", "advance uses definition progression order")
