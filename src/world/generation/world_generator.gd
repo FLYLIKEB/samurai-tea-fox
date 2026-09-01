@@ -41,6 +41,7 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 	var core_dungeon_count := _balance_value(balance_definitions, "biome_core_dungeon_count", 1)
 	var teleport_zone_count := _balance_value(balance_definitions, "biome_teleport_zone_count", 1)
 	var combined_seed := _combined_seed(seed, data_version, biome_definition.get("id", ""))
+	var progression_projection: Dictionary = options.get("progression_projection", {})
 
 	for attempt in range(retry_limit + 1):
 		var rng := DeterministicRng.new(combined_seed + attempt)
@@ -55,17 +56,19 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 			int(teleport_zone_count),
 			min_resource_nodes,
 			max_resource_placement_attempts,
-			resource_ids
+			resource_ids,
+			progression_projection
 		)
 		if world.ok:
 			return world
 
 	return _failure(seed, data_version, biome_definition, retry_limit, "connectivity_or_resource_validation_failed")
 
-func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array) -> Dictionary:
+func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, progression_projection: Dictionary) -> Dictionary:
 	var world_data := WorldData.new(MAP_WIDTH, MAP_HEIGHT, TERRAIN_GROUND, true)
 	var chunks := _compose_chunks(rng, world_data)
-	var landmarks := _place_required_landmarks(world_data, rng, core_dungeon_count, teleport_zone_count)
+	var biome_id := String(biome_definition.get("id", ""))
+	var landmarks := _place_required_landmarks(world_data, rng, core_dungeon_count, teleport_zone_count, biome_id)
 	_carve_landmark_paths(world_data, landmarks)
 	var validator := ConnectivityValidator.new()
 	var reachable_cells := validator.reachable_cell_keys_from_entry(world_data.to_dictionary())
@@ -79,7 +82,7 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 		"ok": false,
 		"data_version": data_version,
 		"seed": seed,
-		"biome_id": biome_definition.get("id", ""),
+		"biome_id": biome_id,
 		"biome_progression_order": biome_definition.get("progression_order", null),
 		"landmarks": landmarks,
 		"chunks": chunks,
@@ -92,7 +95,7 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 		"world_data": world_data.to_dictionary()
 	}
 
-	world.renderer_input = WorldRendererProjection.new().project(world.world_data)
+	world.renderer_input = WorldRendererProjection.new().project(world.world_data, progression_projection)
 	world.connectivity = validator.validate(world)
 	world.resource_accessibility = validator.validate_access_points(world.world_data, access_points)
 	world.ok = world.connectivity.valid and world.resource_accessibility.valid and resource_nodes.size() >= min_resource_nodes
@@ -144,7 +147,7 @@ func _apply_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRn
 				_:
 					world_data.set_terrain(position, TERRAIN_GROUND, true, RENDER_GROUND)
 
-func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, core_dungeon_count: int, teleport_zone_count: int) -> Array:
+func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, core_dungeon_count: int, teleport_zone_count: int, biome_id: String) -> Array:
 	var landmarks := []
 	landmarks.append(_add_landmark(world_data, WorldData.LANDMARK_ENTRY, 0, Vector2i(3, rng.next_range(8, MAP_HEIGHT - 9))))
 
@@ -153,7 +156,8 @@ func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, cor
 			world_data,
 			WorldData.LANDMARK_TELEPORT_ZONE,
 			index,
-			Vector2i(rng.next_range(MAP_WIDTH / 3, MAP_WIDTH / 3 * 2), rng.next_range(6, MAP_HEIGHT - 7))
+			Vector2i(rng.next_range(MAP_WIDTH / 3, MAP_WIDTH / 3 * 2), rng.next_range(6, MAP_HEIGHT - 7)),
+			{"teleport_biome_id": biome_id}
 		))
 
 	for index in range(core_dungeon_count):
@@ -166,15 +170,16 @@ func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, cor
 
 	return landmarks
 
-func _add_landmark(world_data: WorldData, kind: String, index: int, position: Vector2i) -> Dictionary:
+func _add_landmark(world_data: WorldData, kind: String, index: int, position: Vector2i, metadata := {}) -> Dictionary:
 	world_data.set_terrain(position, TERRAIN_PATH, true, RENDER_GROUND)
 	var id := "%s_%d" % [kind, index]
-	world_data.add_required_landmark(kind, id, position)
+	world_data.add_required_landmark(kind, id, position, metadata)
 	return {
 		"id": id,
 		"kind": kind,
 		"position": _position_dictionary(position),
-		"required": true
+		"required": true,
+		"metadata": metadata.duplicate(true)
 	}
 
 func _carve_landmark_paths(world_data: WorldData, landmarks: Array) -> void:

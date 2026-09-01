@@ -84,6 +84,7 @@ func _renderer_projection_boundaries(asserts) -> void:
 	var world := WorldData.new(3, 2, "grass", true)
 	world.reserve_facility("drying_rack", Vector2i(1, 0), Vector2i(1, 2), true)
 	world.add_required_landmark(WorldData.LANDMARK_ENTRY, "entry_0", Vector2i(0, 0))
+	world.add_required_landmark(WorldData.LANDMARK_TELEPORT_ZONE, "teleport_0", Vector2i(2, 1), {"biome_id": "common_region"})
 	var world_data := world.to_dictionary()
 	world_data.cells.append({
 		"position": {"x": 9, "y": 9},
@@ -95,7 +96,9 @@ func _renderer_projection_boundaries(asserts) -> void:
 		}
 	})
 
-	var projection := WorldRendererProjection.new().project(world_data)
+	var projection := WorldRendererProjection.new().project(world_data, {
+		"teleport_states": {"common_region": "repairable"}
+	})
 	var terrain_layer: Dictionary = projection.layers[0]
 	var facility_layer: Dictionary = projection.layers[1]
 	projection.bounds.width = 99
@@ -103,4 +106,6 @@ func _renderer_projection_boundaries(asserts) -> void:
 	asserts.true_value(projection.read_only, "renderer projection is marked read-only")
 	asserts.equal(terrain_layer.cells.size(), 6, "projection includes only in-bounds terrain cells")
 	asserts.equal(facility_layer.cells.size(), 2, "projection exposes facility footprint cells")
+	asserts.equal(projection.required_landmarks[1].teleport_biome_id, "common_region", "projection maps teleport landmark through stable biome id")
+	asserts.equal(projection.required_landmarks[1].teleport_state, "repairable", "projection attaches run teleport state")
 	asserts.equal(world_data.bounds.width, 3, "projection duplicates source boundaries")

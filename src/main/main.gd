@@ -6,6 +6,8 @@ const EquipmentModel = preload("res://src/inventory/equipment_model.gd")
 const InventoryModel = preload("res://src/inventory/inventory_model.gd")
 const MovementCommandSelector = preload("res://src/core/commands/movement_command_selector.gd")
 const TeaService = preload("res://src/tea/tea_service.gd")
+const BiomeProgressionState = preload("res://src/world/biome/biome_progression_state.gd")
+const RunState = preload("res://src/save/run_state.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 
 @onready var player = $Player
@@ -44,7 +46,12 @@ func _ready() -> void:
 		return
 
 	var generator := WorldGenerator.new()
-	generated_world = generator.generate(11037, catalog.data_version, common_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var progression_result := BiomeProgressionState.from_catalog(catalog, RunState.new())
+	if not progression_result.ok:
+		push_error(progression_result.error)
+		return
+	var projection: Dictionary = progression_result.progression_state.to_projection()
+	generated_world = generator.generate(11037, catalog.data_version, common_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), {"progression_projection": projection})
 
 func _physics_process(_delta: float) -> void:
 	var desktop_command = _desktop_adapter.poll_movement_command()
