@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "art_assets_contract": {
+    "schema": "res://data/schemas/export_schema.json",
+    "dataset": "art_assets"
+  },
+  "style_tokens": "res://assets/style/art-style-tokens.json",
+  "promoted_assets": "res://assets/promoted-assets-manifest.json",
+  "runtime_roots": [
+    "res://assets/backgrounds/",
+    "res://assets/sprites/",
+    "res://assets/tiles/",
+    "res://assets/ui/"
+  ],
+  "resource_scan_roots": [
+    "res://scenes/",
+    "res://src/"
+  ],
+  "import_policy": {
+    "texture_filter": "nearest",
+    "godot_project_setting": "textures/canvas_textures/default_texture_filter",
+    "godot_nearest_value": 0
+  },
+  "placeholder_policy": {
+    "allow_runtime_placeholders": false,
+    "forbidden_path_segments": [
+      "placeholder",
+      "prototype",
+      "temp"
+    ]
+  },
+  "assets": [
+    {
+      "id": "fox_samurai_front_idle",
+      "name": "여우 사무라이 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {"columns": 1, "rows": 1, "frame_width": 32, "frame_height": 32},
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    },
+    {
+      "id": "terrain_plains_grass_ground_01",
+      "name": "초원 기본 땅 타일 01",
+      "status": "완료",
+      "kind": "terrain_tile",
+      "path": "res://assets/tiles/terrain/plains/grass_ground_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {"columns": 1, "rows": 1, "frame_width": 32, "frame_height": 32},
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    },
+    {
+      "id": "terrain_plains_flower_grass_01",
+      "name": "초원 꽃풀 타일 01",
+      "status": "완료",
+      "kind": "terrain_tile",
+      "path": "res://assets/tiles/terrain/plains/flower_grass_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {"columns": 1, "rows": 1, "frame_width": 32, "frame_height": 32},
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    },
+    {
+      "id": "terrain_forest_boundary_tree_tileset",
+      "name": "숲 경계 나무 타일셋",
+      "status": "완료",
+      "kind": "terrain_tile",
+      "path": "res://assets/tiles/terrain/forest/forest_boundary_tree_tileset_8x32.png",
+      "width": 256,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 8,
+      "frame_grid": {"columns": 8, "rows": 1, "frame_width": 32, "frame_height": 32},
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    },
+    {
+      "id": "terrain_river_water_01",
+      "name": "강물 타일 01",
+      "status": "완료",
+      "kind": "terrain_tile",
+      "path": "res://assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_202_420_146x145_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {"columns": 1, "rows": 1, "frame_width": 32, "frame_height": 32},
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    }
+  ]
+}

@@ -7,9 +7,11 @@ const PlayerResources = preload("res://src/player/player_resources.gd")
 const CombatConfig = preload("res://src/combat/combat_config.gd")
 const CombatState = preload("res://src/combat/combat_state.gd")
 const AbilityRuntime = preload("res://src/ability/ability_runtime.gd")
+const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
 
 const TILE_SIZE_PIXELS := 32.0
 const PLAYER_COMBAT_ID := "player"
+const PLAYER_SPRITE_ASSET_ID := "fox_samurai_front_idle"
 
 signal attack_started(swing: Dictionary)
 signal ability_cast(result: Dictionary)
@@ -30,6 +32,8 @@ var ability_runtime
 var ability_tail_query
 var ability_time_state
 var ability_target_query
+var asset_catalog := AssetCatalog.new()
+var _current_sprite_asset_id := ""
 var _movement_command = GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO)
 var _pending_swing: Dictionary = {}
 var _attack_query_pending := false
@@ -38,6 +42,9 @@ var _dodge_time_remaining := 0.0
 var _dodge_speed_pixels_per_second := 0.0
 
 func _ready() -> void:
+	var asset_result := asset_catalog.load_manifest()
+	if not asset_result.ok:
+		push_error(asset_result.error)
 	_update_sprite_frame()
 
 func _physics_process(delta: float) -> void:
@@ -229,4 +236,9 @@ func _position_attack_area(direction: Vector2, range_tiles: float) -> void:
 
 func _update_sprite_frame() -> void:
 	if sprite != null:
-		sprite.frame = movement_state.facing
+		if PLAYER_SPRITE_ASSET_ID == _current_sprite_asset_id:
+			return
+		var texture := asset_catalog.load_texture(PLAYER_SPRITE_ASSET_ID)
+		if texture != null:
+			sprite.texture = texture
+			_current_sprite_asset_id = PLAYER_SPRITE_ASSET_ID
