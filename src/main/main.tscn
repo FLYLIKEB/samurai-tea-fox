@@ -22,6 +22,8 @@ size = Vector2(14, 18)
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
 
+[node name="WorldVisuals" type="Node2D" parent="."]
+
 [node name="Ground" type="Polygon2D" parent="."]
 polygon = PackedVector2Array(-512, -320, 512, -320, 512, 320, -512, 320)
 color = Color(0.321569, 0.403922, 0.290196, 1)

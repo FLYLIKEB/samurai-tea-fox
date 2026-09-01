@@ -31,7 +31,7 @@ func load_manifest(path := DEFAULT_MANIFEST_PATH) -> Dictionary:
 			return {"ok": false, "error": "Invalid asset path for %s" % asset_id}
 		if definition.get("placeholder", true):
 			return {"ok": false, "error": "Runtime placeholder is forbidden: %s" % asset_id}
-		if not ResourceLoader.exists(asset_path, "Texture2D"):
+		if not _texture_exists(asset_path):
 			return {"ok": false, "error": "Missing asset file for %s: %s" % [asset_id, asset_path]}
 		definitions[asset_id] = definition.duplicate(true)
 	return {"ok": true}
@@ -49,4 +49,14 @@ func load_texture(id: String) -> Texture2D:
 	var path := path_for(id)
 	if path.is_empty():
 		return null
-	return ResourceLoader.load(path, "Texture2D") as Texture2D
+	if ResourceLoader.exists(path, "Texture2D"):
+		var loaded := ResourceLoader.load(path, "Texture2D") as Texture2D
+		if loaded != null:
+			return loaded
+	var image := Image.new()
+	if image.load(path) != OK:
+		return null
+	return ImageTexture.create_from_image(image)
+
+func _texture_exists(path: String) -> bool:
+	return ResourceLoader.exists(path, "Texture2D") or FileAccess.file_exists(path)
