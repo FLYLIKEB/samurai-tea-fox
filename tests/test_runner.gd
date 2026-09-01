@@ -18,7 +18,14 @@ func _init() -> void:
 		if script == null:
 			asserts.fail("Could not load test: %s" % path)
 			continue
+		var reload_error: Error = script.reload()
+		if reload_error != OK:
+			asserts.fail("Could not compile test: %s" % path)
+			continue
 		var test = script.new()
+		if test == null:
+			asserts.fail("Could not instantiate test: %s" % path)
+			continue
 		test.run(asserts)
 
 	if asserts.ok():
@@ -29,4 +36,3 @@ func _init() -> void:
 	for failure in asserts.failures:
 		push_error(failure)
 	quit(1)
-
