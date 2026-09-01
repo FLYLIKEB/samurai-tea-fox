@@ -40,6 +40,9 @@ func run(asserts) -> void:
 	_assert_snapshot_round_trips_active_action(asserts)
 	_assert_snapshot_roundtrip_preserves_action_idempotency(asserts)
 	_assert_malformed_snapshot_active_actions_are_rejected(asserts)
+	_assert_owner_only_snapshot_cannot_authorize_completion(asserts)
+	_assert_fabricated_snapshot_action_cannot_authorize_completion(asserts)
+	_assert_failed_snapshot_load_preserves_service_state(asserts)
 	_assert_invalid_data_is_rejected(asserts)
 
 func _assert_generated_catalog_configures_consumables(asserts) -> void:
@@ -268,6 +271,89 @@ func _assert_malformed_snapshot_active_actions_are_rejected(asserts) -> void:
 		var snapshot := service.to_snapshot(malformed.action)
 		var loaded := _fixture_service()
 		asserts.false_value(loaded.load_snapshot(snapshot).ok, "consumable snapshot rejects %s" % malformed.label)
+
+func _assert_owner_only_snapshot_cannot_authorize_completion(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(inventory.add_item("bandage", 1).ok, "bandage can be stocked for owner-only snapshot regression")
+	resources.apply_damage(60)
+	var start: Dictionary = service.start_use("bandage", inventory)
+	var owner_only_snapshot: Dictionary = service.to_snapshot(start.action)
+	owner_only_snapshot.active_action = {}
+
+	var loaded := _fixture_service()
+	var before_loaded: Dictionary = loaded.to_snapshot()
+	var load_result: Dictionary = loaded.load_snapshot(owner_only_snapshot)
+	asserts.false_value(load_result.ok, "owner-only consumable snapshot is rejected")
+	asserts.equal(loaded.to_snapshot(), before_loaded, "owner-only snapshot load leaves service state unchanged")
+
+	var fabricated_completion: Dictionary = loaded.complete_use(start.action, inventory, resources)
+	asserts.false_value(fabricated_completion.ok, "owner-only snapshot cannot fabricate completion authority")
+	asserts.equal(inventory.get_total_quantity("bandage"), 1, "fabricated completion preserves inventory")
+	asserts.equal(resources.hp, 40, "fabricated completion preserves HP")
+
+func _assert_fabricated_snapshot_action_cannot_authorize_completion(asserts) -> void:
+	var fabricated_action := {
+		"action_id": "consumable_action_000009",
+		"item_id": "bandage",
+		"elapsed_seconds": 0.5,
+		"use_seconds": 1.0,
+		"context": {},
+		"completed": false,
+		"interrupted": false
+	}
+	var fabricated_snapshot := {
+		"schema_version": ConsumableService.SNAPSHOT_SCHEMA_VERSION,
+		"data_version": "fixture-consumables",
+		"next_action_id": 2,
+		"active_action": fabricated_action,
+		"active_action_owners": {
+			"consumable_action_000009": {
+				"item_id": "bandage",
+				"use_seconds": 1.0
+			}
+		}
+	}
+	var loaded := _fixture_service()
+	var before_loaded: Dictionary = loaded.to_snapshot()
+	var load_result: Dictionary = loaded.load_snapshot(fabricated_snapshot)
+	asserts.false_value(load_result.ok, "fabricated consumable action sequence is rejected")
+	asserts.equal(loaded.to_snapshot(), before_loaded, "fabricated snapshot load leaves service state unchanged")
+
+	var inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(inventory.add_item("bandage", 1).ok, "bandage can be stocked for fabricated snapshot regression")
+	resources.apply_damage(60)
+	var fabricated_completion: Dictionary = loaded.complete_use(fabricated_action, inventory, resources)
+	asserts.false_value(fabricated_completion.ok, "fabricated snapshot cannot grant completion authority")
+	asserts.equal(inventory.get_total_quantity("bandage"), 1, "fabricated active action completion preserves inventory")
+	asserts.equal(resources.hp, 40, "fabricated active action completion preserves HP")
+
+func _assert_failed_snapshot_load_preserves_service_state(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	asserts.true_value(inventory.add_item("bandage", 1).ok, "bandage can be stocked before failed load atomicity regression")
+	var start: Dictionary = service.start_use("bandage", inventory)
+	var partial: Dictionary = service.tick_use(start.action, 0.25, inventory)
+	var before: Dictionary = service.to_snapshot(partial.action)
+	var malformed: Dictionary = before.duplicate(true)
+	malformed.data_version = "tampered-data-version"
+	malformed.next_action_id = 99
+	malformed.active_action_owners = {
+		String(partial.action.action_id): {
+			"item_id": "bandage",
+			"use_seconds": 1.0
+		},
+		"extra_action": {
+			"item_id": "bandage",
+			"use_seconds": 1.0
+		}
+	}
+
+	var load_result: Dictionary = service.load_snapshot(malformed)
+	asserts.false_value(load_result.ok, "malformed owner consistency rejects snapshot load")
+	asserts.equal(service.to_snapshot(partial.action), before, "failed consumable snapshot load is atomic")
 
 func _assert_invalid_data_is_rejected(asserts) -> void:
 	var missing_balance: Dictionary = ConsumableService.from_catalog(FakeCatalog.new({
