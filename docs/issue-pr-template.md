@@ -12,6 +12,29 @@ gh issue list --state all --search "DEV-7 in:title,body" --limit 20
 
 `DEV-7`은 실제 DEV ID로 바꾼다. 같은 작업을 다루는 Issue가 있으면 중복 생성하지 않고 기존 Issue를 재사용한다.
 
+검색된 Issue에 `status: in-progress`, `codex-working` 라벨, 열린 연결 PR, 또는 최근 `Codex 작업 시작` 코멘트가 있으면 다른 에이전트가 작업 중인 것으로 보고 새 작업을 시작하지 않는다.
+
+## 작업 시작 표시
+
+구현 파일을 수정하기 전에 GitHub Issue에 작업중 라벨을 붙이고 시작 코멘트를 남긴다.
+
+권장 라벨:
+
+- `status: in-progress`
+- 라벨 체계가 없으면 `codex-working`
+
+시작 코멘트:
+
+```markdown
+Codex 작업 시작
+
+- Notion: DEV-<id> <Notion URL>
+- Branch: <branch>
+- Worktree: <worktree path>
+- Started: <ISO-8601 datetime>
+- Agent: <가능하면 세션/에이전트 식별자>
+```
+
 ## Issue 제목
 
 가능하면 다음 형식을 사용한다.
