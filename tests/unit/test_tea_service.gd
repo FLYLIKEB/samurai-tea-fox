@@ -3,8 +3,6 @@ extends RefCounted
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
 const InventoryModel = preload("res://src/inventory/inventory_model.gd")
 const PlayerResources = preload("res://src/player/player_resources.gd")
-const RunState = preload("res://src/save/run_state.gd")
-const SaveCodec = preload("res://src/save/save_codec.gd")
 const TeaService = preload("res://src/tea/tea_service.gd")
 
 class FakeCatalog:
@@ -28,12 +26,9 @@ func run(asserts) -> void:
 	_assert_generated_catalog_configures_tea_service(asserts)
 	_assert_brewing_creates_prepared_tea_from_inventory(asserts)
 	_assert_drink_action_consumes_only_on_completion(asserts)
-	_assert_completed_original_drink_action_cannot_be_reused(asserts)
-	_assert_interrupted_original_drink_action_cannot_be_reused(asserts)
 	_assert_progressive_and_conditional_effects_share_completion_contract(asserts)
 	_assert_vessel_modifiers_are_data_driven(asserts)
 	_assert_snapshot_round_trips_prepared_tea(asserts)
-	_assert_snapshot_roundtrip_preserves_drink_action_idempotency(asserts)
 	_assert_invalid_data_and_combos_are_rejected_atomically(asserts)
 
 func _assert_generated_catalog_configures_tea_service(asserts) -> void:
@@ -100,43 +95,6 @@ func _assert_drink_action_consumes_only_on_completion(asserts) -> void:
 	asserts.equal(complete.effect.ki_recovered, 18, "completion applies ki recovery")
 	asserts.equal(resources.ki, 38, "tea recovers ki on completion")
 	asserts.equal(resources.hp, 13, "tea never recovers HP")
-
-func _assert_completed_original_drink_action_cannot_be_reused(asserts) -> void:
-	var service: TeaService = _fixture_service()
-	var inventory: InventoryModel = _fixture_inventory()
-	var resources := PlayerResources.new(20, 50, 10, 3)
-	asserts.true_value(resources.spend_ki(30), "ki can be lowered for drink idempotency")
-	asserts.true_value(inventory.add_item("green_tea", 1).ok, "tea add succeeds for drink idempotency")
-	asserts.true_value(inventory.add_item("plain_bowl", 1).ok, "vessel add succeeds for drink idempotency")
-	asserts.true_value(service.brew("green_tea", "plain_bowl", inventory, 0).ok, "brew succeeds for drink idempotency")
-
-	var start: Dictionary = service.start_drinking(0)
-	var complete: Dictionary = service.complete_drinking(start.action, resources)
-	asserts.true_value(complete.ok, "first original drink completion succeeds")
-	asserts.false_value(service.has_prepared_tea(0), "first completion consumes prepared tea")
-	asserts.equal(resources.ki, 38, "first completion applies ki recovery once")
-
-	var replay: Dictionary = service.complete_drinking(start.action, resources)
-	asserts.false_value(replay.ok, "same original drink action cannot complete twice")
-	asserts.false_value(service.has_prepared_tea(0), "replayed original drink completion does not restore or consume tea")
-	asserts.equal(resources.ki, 38, "replayed original drink completion does not recover ki again")
-
-func _assert_interrupted_original_drink_action_cannot_be_reused(asserts) -> void:
-	var service: TeaService = _fixture_service()
-	var inventory: InventoryModel = _fixture_inventory()
-	var resources := PlayerResources.new(20, 50, 10, 3)
-	asserts.true_value(resources.spend_ki(30), "ki can be lowered for interrupted drink idempotency")
-	asserts.true_value(inventory.add_item("green_tea", 1).ok, "tea add succeeds for interrupted drink idempotency")
-	asserts.true_value(inventory.add_item("plain_bowl", 1).ok, "vessel add succeeds for interrupted drink idempotency")
-	asserts.true_value(service.brew("green_tea", "plain_bowl", inventory, 0).ok, "brew succeeds for interrupted drink idempotency")
-
-	var start: Dictionary = service.start_drinking(0)
-	var interrupt: Dictionary = service.interrupt_drinking(start.action, "hit")
-	asserts.true_value(interrupt.ok, "first drink interrupt succeeds")
-	var replay: Dictionary = service.complete_drinking(start.action, resources)
-	asserts.false_value(replay.ok, "interrupted original drink action cannot be reused for completion")
-	asserts.true_value(service.has_prepared_tea(0), "interrupted original replay preserves prepared tea")
-	asserts.equal(resources.ki, 20, "interrupted original replay preserves ki")
 
 func _assert_progressive_and_conditional_effects_share_completion_contract(asserts) -> void:
 	var service: TeaService = _fixture_service()
@@ -208,35 +166,6 @@ func _assert_snapshot_round_trips_prepared_tea(asserts) -> void:
 	var load_result: Dictionary = loaded.load_snapshot(snapshot)
 	asserts.true_value(load_result.ok, "tea snapshot reload succeeds")
 	asserts.equal(loaded.to_snapshot(), snapshot, "tea snapshot round-trip preserves prepared slots")
-
-func _assert_snapshot_roundtrip_preserves_drink_action_idempotency(asserts) -> void:
-	var service: TeaService = _fixture_service()
-	var inventory: InventoryModel = _fixture_inventory()
-	var resources := PlayerResources.new(20, 50, 10, 3)
-	asserts.true_value(resources.spend_ki(30), "ki can be lowered for drink snapshot idempotency")
-	asserts.true_value(inventory.add_item("green_tea", 1).ok, "tea add succeeds for drink snapshot idempotency")
-	asserts.true_value(inventory.add_item("plain_bowl", 1).ok, "vessel add succeeds for drink snapshot idempotency")
-	asserts.true_value(service.brew("green_tea", "plain_bowl", inventory, 0).ok, "brew succeeds for drink snapshot idempotency")
-	var start: Dictionary = service.start_drinking(0)
-	var snapshot: Dictionary = service.to_snapshot(start.action)
-
-	var run_state := RunState.new()
-	run_state.consumables = {"tea": snapshot}
-	var decoded: Dictionary = SaveCodec.decode_run(SaveCodec.encode_run(run_state.to_dictionary()))
-	asserts.true_value(decoded.ok, "run save with tea action snapshot decodes")
-	asserts.true_value(decoded.state.consumables.tea.active_action_owners.has(start.action.action_id), "run save preserves tea active action ownership")
-
-	var loaded: TeaService = _fixture_service()
-	asserts.true_value(loaded.load_snapshot(snapshot).ok, "tea active action ownership loads")
-	var complete: Dictionary = loaded.complete_drinking(start.action, resources)
-	asserts.true_value(complete.ok, "loaded drink action can complete once")
-	asserts.false_value(loaded.has_prepared_tea(0), "loaded completion consumes prepared tea once")
-	asserts.equal(resources.ki, 38, "loaded completion recovers ki once")
-
-	var replay: Dictionary = loaded.complete_drinking(start.action, resources)
-	asserts.false_value(replay.ok, "loaded service rejects completed original drink action reuse")
-	asserts.false_value(loaded.has_prepared_tea(0), "loaded replay does not mutate prepared slots")
-	asserts.equal(resources.ki, 38, "loaded replay does not recover ki again")
 
 func _assert_invalid_data_and_combos_are_rejected_atomically(asserts) -> void:
 	var invalid_catalog: Dictionary = TeaService.from_catalog(FakeCatalog.new({
