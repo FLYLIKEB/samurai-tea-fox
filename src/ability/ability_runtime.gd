@@ -121,6 +121,9 @@ func effective_ki_cost(definition, context: Dictionary) -> int:
 		multiplier = float(time_state.ability_cost_multiplier_for(context.get("resources")))
 	return int(ceil(definition.ki_cost * multiplier))
 
+func definition_for_slot(slot: int) -> Dictionary:
+	return _ability_for_slot(slot)
+
 func equipped_ability_id(slot: int) -> String:
 	if slot < 0 or slot >= equip_slots.size():
 		return ""

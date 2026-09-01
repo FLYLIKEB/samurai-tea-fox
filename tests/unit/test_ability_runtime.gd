@@ -233,7 +233,9 @@ func _ability(id: String, type: String, tail_requirement: int, ki_cost: int, coo
 		"ki_cost": ki_cost,
 		"cooldown_seconds": cooldown_seconds,
 		"base_damage": base_damage,
-		"range": range
+		"range": range,
+		"duration_seconds": 0,
+		"status_effect": ""
 	}
 
 func _test_time_config() -> TimeConfig:

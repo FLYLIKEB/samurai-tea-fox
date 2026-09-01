@@ -41,6 +41,39 @@
         {"id": "late_night_kokoro_decay_per_second", "notion_id": "3ce37369-9e66-815b-872c-e2edbf7fcabd", "name": "심야 心 감소율", "status": "테스트", "category": "心", "unit": "point/초", "value": 0.1, "description": "심야의 心 감소율", "formula_note": "낮 0 < 해질녘 < 밤 < 심야 순으로 증가한다."},
         {"id": "safe_sleep_hp_recovery_ratio", "notion_id": "3ce37369-9e66-81f9-af8d-f2ba12d04d47", "name": "안전 수면 HP 회복 비율", "status": "확정", "category": "플레이어", "unit": "비율", "value": 0.2, "description": "해질녘·밤에 안전 지점에서 수면 시 최대 HP 기준 회복 비율", "formula_note": "sleep_heal = max_hp × 0.20. 心은 완전 회복하며 차·기운은 자동 회복하지 않는다."}
       ]
+    },
+    "abilities": {
+      "source": "collection://abilities",
+      "items": [
+        {
+          "id": "ember",
+          "notion_id": "fixture-ability-ember",
+          "name": "잔불",
+          "status": "초안",
+          "type": "공격",
+          "tail_requirement": 1,
+          "ki_cost": 14,
+          "cooldown_seconds": 4,
+          "base_damage": 20,
+          "range": 3,
+          "duration_seconds": 0,
+          "status_effect": ""
+        },
+        {
+          "id": "remaining_incense",
+          "notion_id": "fixture-ability-remaining-incense",
+          "name": "남은 향",
+          "status": "초안",
+          "type": "제어",
+          "tail_requirement": 2,
+          "ki_cost": 16,
+          "cooldown_seconds": 7,
+          "base_damage": 6,
+          "range": 2.5,
+          "duration_seconds": 2.5,
+          "status_effect": "slow"
+        }
+      ]
     }
   }
 }

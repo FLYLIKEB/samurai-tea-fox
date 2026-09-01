@@ -27,6 +27,9 @@ var resources
 var combat_config
 var combat_state
 var ability_runtime
+var ability_tail_query
+var ability_time_state
+var ability_target_query
 var _movement_command = GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO)
 var _pending_swing: Dictionary = {}
 var _attack_query_pending := false
@@ -129,10 +132,17 @@ func is_invulnerable() -> bool:
 func can_dodge() -> bool:
 	return combat_state != null and combat_state.is_dodge_ready()
 
-func equip_ability(slot: int, ability_id: String, tail_query) -> Dictionary:
+func configure_ability_context(tail_query = null, time_state = null, target_query = null) -> void:
+	ability_tail_query = tail_query
+	ability_time_state = time_state
+	ability_target_query = target_query
+
+func equip_ability(slot: int, ability_id: String, tail_query = null) -> Dictionary:
 	if ability_runtime == null:
 		return {"ok": false, "reason": "missing_ability_runtime"}
-	return ability_runtime.equip(slot, ability_id, {"tail_query": tail_query})
+	if tail_query != null:
+		ability_tail_query = tail_query
+	return ability_runtime.equip(slot, ability_id, {"tail_query": ability_tail_query})
 
 func _start_attack(direction: Vector2i) -> bool:
 	if combat_state == null or resources == null or _attack_query_pending:
@@ -178,12 +188,18 @@ func _start_dodge(direction: Vector2i) -> bool:
 func _cast_ability(slot: int, direction: Vector2i) -> bool:
 	if ability_runtime == null or resources == null:
 		return false
-	var result: Dictionary = ability_runtime.cast(slot, {
+	var action_direction := _resolved_action_direction(direction)
+	var context := {
 		"source_id": PLAYER_COMBAT_ID,
 		"resources": resources,
-		"tail_count": 1,
-		"direction": _resolved_action_direction(direction)
-	})
+		"tail_query": ability_tail_query,
+		"time_state": ability_time_state,
+		"direction": action_direction
+	}
+	var definition_result: Dictionary = ability_runtime.definition_for_slot(slot)
+	if definition_result.ok and ability_target_query != null and ability_target_query.has_method("targets_for_ability"):
+		context["targets"] = ability_target_query.targets_for_ability(self, definition_result.definition, action_direction)
+	var result: Dictionary = ability_runtime.cast(slot, context)
 	if not result.ok:
 		return false
 	ability_cast.emit(result)

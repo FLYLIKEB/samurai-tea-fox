@@ -5,7 +5,7 @@
   "profiles": {"confirmed": {"include_test": false}, "confirmed-test": {"include_test": true}},
   "datasets": {
     "abilities": {
-      "file": "abilities.json", "required_fields": ["id", "name", "status"],
+      "file": "abilities.json", "required_fields": ["id", "name", "status", "type", "tail_requirement", "ki_cost", "cooldown_seconds", "base_damage", "range", "duration_seconds"],
       "notion": {
         "source": "collection://011bff45-d1e8-4d8a-a52d-bbf6c06a3566", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "요술 ID", "id_prefix": "ability",
         "field_map": {"유형": "type", "꼬리 조건": "tail_requirement", "기운 소모": "ki_cost", "쿨타임(초)": "cooldown_seconds", "기본 피해": "base_damage", "범위": "range", "지속시간(초)": "duration_seconds", "설명": "description", "상태효과": "status_effect"}
