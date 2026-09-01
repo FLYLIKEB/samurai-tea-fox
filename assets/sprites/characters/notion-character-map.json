@@ -18,7 +18,28 @@
     },
     "runtime_canvas": "32x32",
     "canvas_normalization": "PixelLab transparent animation margins are center-cropped only when the returned canvas exceeds 32x32 and the non-transparent bounding box fits entirely inside the target canvas.",
-    "raw_candidates": "assets/source/imagegen/pixellab-npc-4dir-20260901/raw/"
+    "raw_candidates": "assets/source/imagegen/pixellab-npc-4dir-20260901/raw/",
+    "revisions": [
+      {
+        "task": "DEV-55",
+        "endpoint": "/edit-images-v2",
+        "acceptance_rule": "Promote only side and back frames that preserve the front sprite's defining silhouette cues, including tied hair, headgear, tails, carried objects, and supernatural effects.",
+        "promoted_characters": [
+          "CHR-1",
+          "CHR-2",
+          "CHR-3",
+          "CHR-4",
+          "CHR-5",
+          "CHR-6",
+          "CHR-7",
+          "CHR-9"
+        ],
+        "retained_existing": [
+          "ambient/robed-villager"
+        ],
+        "raw_candidates": "assets/source/imagegen/pixellab-npc-4dir-fix-20260902/raw/"
+      }
+    ]
   },
   "characters": [
     {
