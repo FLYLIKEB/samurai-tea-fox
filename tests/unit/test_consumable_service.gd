@@ -32,10 +32,13 @@ func run(asserts) -> void:
 	_assert_generated_catalog_configures_consumables(asserts)
 	_assert_use_action_consumes_and_heals_only_on_completion(asserts)
 	_assert_heal_requires_valid_resources_before_consuming(asserts)
+	_assert_completed_original_action_cannot_be_reused(asserts)
 	_assert_hit_interrupt_preserves_hp_and_quantity(asserts)
+	_assert_interrupted_original_action_cannot_be_reused(asserts)
 	_assert_hp_heal_clamps_and_stack_decrements(asserts)
 	_assert_insufficient_quantity_and_crafting_integration(asserts)
 	_assert_snapshot_round_trips_active_action(asserts)
+	_assert_snapshot_roundtrip_preserves_action_idempotency(asserts)
 	_assert_malformed_snapshot_active_actions_are_rejected(asserts)
 	_assert_invalid_data_is_rejected(asserts)
 
@@ -109,6 +112,24 @@ func _assert_heal_requires_valid_resources_before_consuming(asserts) -> void:
 	asserts.equal(inventory.get_total_quantity("bandage"), 2, "invalid resource failure does not consume inventory")
 	asserts.equal(resources.hp, 60, "invalid resource failure does not change HP")
 
+func _assert_completed_original_action_cannot_be_reused(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(inventory.add_item("bandage", 2).ok, "bandages can be stocked for completion idempotency")
+	resources.apply_damage(60)
+
+	var start: Dictionary = service.start_use("bandage", inventory)
+	var complete: Dictionary = service.complete_use(start.action, inventory, resources)
+	asserts.true_value(complete.ok, "first original action completion succeeds")
+	asserts.equal(inventory.get_total_quantity("bandage"), 1, "first completion consumes exactly one item")
+	asserts.equal(resources.hp, 65, "first completion applies HP healing once")
+
+	var replay: Dictionary = service.complete_use(start.action, inventory, resources)
+	asserts.false_value(replay.ok, "same original action cannot complete twice")
+	asserts.equal(inventory.get_total_quantity("bandage"), 1, "replayed original completion does not consume another item")
+	asserts.equal(resources.hp, 65, "replayed original completion does not heal again")
+
 func _assert_hit_interrupt_preserves_hp_and_quantity(asserts) -> void:
 	var service := _fixture_service()
 	var inventory := _fixture_inventory()
@@ -123,6 +144,21 @@ func _assert_hit_interrupt_preserves_hp_and_quantity(asserts) -> void:
 	asserts.equal(inventory.get_total_quantity("bandage"), 1, "interrupt preserves quantity")
 	asserts.equal(resources.hp, 70, "interrupt does not heal HP")
 	asserts.false_value(service.complete_use(interrupt.action, inventory, resources).ok, "interrupted action cannot complete later")
+
+func _assert_interrupted_original_action_cannot_be_reused(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(inventory.add_item("bandage", 1).ok, "bandage add succeeds for interrupt idempotency")
+	resources.apply_damage(30)
+
+	var start: Dictionary = service.start_use("bandage", inventory)
+	var interrupt: Dictionary = service.interrupt_use(start.action, "hit")
+	asserts.true_value(interrupt.ok, "first interrupt succeeds")
+	var replay: Dictionary = service.complete_use(start.action, inventory, resources)
+	asserts.false_value(replay.ok, "interrupted original action cannot be reused for completion")
+	asserts.equal(inventory.get_total_quantity("bandage"), 1, "interrupted original replay preserves quantity")
+	asserts.equal(resources.hp, 70, "interrupted original replay preserves HP")
 
 func _assert_hp_heal_clamps_and_stack_decrements(asserts) -> void:
 	var service := _fixture_service()
@@ -172,6 +208,7 @@ func _assert_snapshot_round_trips_active_action(asserts) -> void:
 	var load_result: Dictionary = loaded.load_snapshot(snapshot)
 	asserts.true_value(load_result.ok, "consumable snapshot reload succeeds")
 	asserts.equal(load_result.active_action, snapshot.active_action, "active action round-trip preserves progress")
+	asserts.equal(loaded.to_snapshot().active_action_owners, snapshot.active_action_owners, "active action ownership round-trip preserves authority")
 
 	var run_state := RunState.new()
 	run_state.inventory = inventory.to_snapshot()
@@ -180,6 +217,28 @@ func _assert_snapshot_round_trips_active_action(asserts) -> void:
 	var decoded: Dictionary = SaveCodec.decode_run(encoded)
 	asserts.true_value(decoded.ok, "run save with consumable snapshot decodes")
 	asserts.equal(decoded.state.consumables.active_action.elapsed_seconds, 0.5, "run save preserves consumable progress")
+	asserts.true_value(decoded.state.consumables.active_action_owners.has(start.action.action_id), "run save preserves consumable active action ownership")
+
+func _assert_snapshot_roundtrip_preserves_action_idempotency(asserts) -> void:
+	var service := _fixture_service()
+	var inventory := _fixture_inventory()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	asserts.true_value(inventory.add_item("bandage", 2).ok, "bandages can be stocked for snapshot idempotency")
+	resources.apply_damage(60)
+	var start: Dictionary = service.start_use("bandage", inventory)
+	var snapshot: Dictionary = service.to_snapshot(start.action)
+
+	var loaded := _fixture_service()
+	asserts.true_value(loaded.load_snapshot(snapshot).ok, "active action ownership loads")
+	var complete: Dictionary = loaded.complete_use(start.action, inventory, resources)
+	asserts.true_value(complete.ok, "loaded active action can complete once")
+	asserts.equal(inventory.get_total_quantity("bandage"), 1, "loaded completion consumes exactly one item")
+	asserts.equal(resources.hp, 65, "loaded completion heals once")
+
+	var replay: Dictionary = loaded.complete_use(start.action, inventory, resources)
+	asserts.false_value(replay.ok, "loaded service rejects completed original action reuse")
+	asserts.equal(inventory.get_total_quantity("bandage"), 1, "loaded replay preserves quantity")
+	asserts.equal(resources.hp, 65, "loaded replay preserves HP")
 
 func _assert_malformed_snapshot_active_actions_are_rejected(asserts) -> void:
 	var service := _fixture_service()

@@ -34,6 +34,7 @@ var vessel_definitions: Dictionary = {}
 var quick_slots: Array = []
 var next_prepared_id := 1
 var next_action_id := 1
+var active_action_owners: Dictionary = {}
 
 static func from_catalog(catalog) -> Dictionary:
 	var quickslot_result := _required_positive_integer_balance(catalog, BALANCE_QUICKSLOT_COUNT_ID)
@@ -82,6 +83,7 @@ func configure(
 	data_version = new_data_version
 	next_prepared_id = 1
 	next_action_id = 1
+	active_action_owners.clear()
 	quick_slots.clear()
 	for _index in range(quickslot_count):
 		quick_slots.append({})
@@ -207,6 +209,7 @@ func start_drinking(slot_index: int, context := {}) -> Dictionary:
 		"completed": false,
 		"interrupted": false
 	}
+	active_action_owners[action.action_id] = _action_owner(action)
 	drink_started.emit(_duplicate_dictionary(action))
 	return {"ok": true, "action": action}
 
@@ -249,6 +252,7 @@ func complete_drinking(action: Dictionary, resources = null) -> Dictionary:
 	var completed_action := _duplicate_dictionary(action)
 	completed_action.completed = true
 	completed_action.elapsed_seconds = float(completed_action.drink_seconds)
+	active_action_owners.erase(String(action.action_id))
 	var result := {
 		"ok": true,
 		"action": completed_action,
@@ -269,10 +273,11 @@ func interrupt_drinking(action: Dictionary, reason := "hit") -> Dictionary:
 	var interrupted_action := _duplicate_dictionary(action)
 	interrupted_action.interrupted = true
 	interrupted_action.interrupt_reason = reason
+	active_action_owners.erase(String(action.action_id))
 	drink_interrupted.emit(_duplicate_dictionary(interrupted_action))
 	return {"ok": true, "action": interrupted_action, "consumed": false}
 
-func to_snapshot() -> Dictionary:
+func to_snapshot(active_action := {}) -> Dictionary:
 	var slots_snapshot: Array = []
 	for slot in quick_slots:
 		slots_snapshot.append(_duplicate_dictionary(slot))
@@ -282,6 +287,8 @@ func to_snapshot() -> Dictionary:
 		"quickslot_count": quickslot_count,
 		"next_prepared_id": next_prepared_id,
 		"next_action_id": next_action_id,
+		"active_action_owners": _duplicate_dictionary(active_action_owners),
+		"active_action": _duplicate_dictionary(active_action),
 		"quick_slots": slots_snapshot
 	}
 
@@ -304,12 +311,20 @@ func load_snapshot(snapshot: Dictionary) -> Dictionary:
 	while normalized_slots.size() < quickslot_count:
 		normalized_slots.append({})
 
+	var action_result := _normalize_snapshot_action(snapshot.get("active_action", {}), normalized_slots)
+	if not action_result.ok:
+		return action_result
+	var owners_result := _normalize_snapshot_action_owners(snapshot.get("active_action_owners", {}), action_result.action, normalized_slots)
+	if not owners_result.ok:
+		return owners_result
+
 	quick_slots = normalized_slots
 	data_version = String(snapshot.get("data_version", data_version))
 	next_prepared_id = max(1, int(snapshot.get("next_prepared_id", next_prepared_id)))
 	next_action_id = max(1, int(snapshot.get("next_action_id", next_action_id)))
+	active_action_owners = owners_result.active_action_owners
 	_emit_changed()
-	return {"ok": true}
+	return {"ok": true, "active_action": action_result.action}
 
 static func _definitions_from_catalog(catalog) -> Dictionary:
 	var teas: Dictionary = {}
@@ -513,17 +528,101 @@ func _normalize_snapshot_slot(raw_slot) -> Dictionary:
 	return {"ok": true, "slot": _duplicate_dictionary(raw_slot)}
 
 func _validate_action(action: Dictionary) -> Dictionary:
+	var shape_result := _validate_action_shape(action, quick_slots)
+	if not shape_result.ok:
+		return shape_result
+	var ownership_result := _validate_action_ownership(action)
+	if not ownership_result.ok:
+		return ownership_result
+	return {"ok": true}
+
+func _validate_action_shape(action: Dictionary, slots: Array) -> Dictionary:
 	if action.get("completed", false):
 		return _fail("completed_drink_action", "Tea drinking action is already completed.")
 	if action.get("interrupted", false):
 		return _fail("interrupted_drink_action", "Tea drinking action is interrupted.")
+	if not action.has("action_id") or typeof(action.action_id) != TYPE_STRING or String(action.action_id).is_empty():
+		return _fail("invalid_drink_action", "Tea drinking action is missing identity.")
 	var slot_index := int(action.get("slot", -1))
 	var slot_result := _validate_quickslot_index(slot_index)
 	if not slot_result.ok:
 		return slot_result
+	if slot_index >= slots.size() or _is_empty_slot(slots[slot_index]):
+		return _fail("stale_drink_action", "Prepared tea no longer matches the drinking action.")
 	if not action.has("prepared_id") or String(action.prepared_id).is_empty():
 		return _fail("invalid_drink_action", "Tea drinking action is missing prepared tea identity.")
+	var prepared: Dictionary = slots[slot_index]
+	if String(prepared.prepared_id) != String(action.prepared_id):
+		return _fail("stale_drink_action", "Prepared tea no longer matches the drinking action.")
+	if not action.has("drink_seconds") or typeof(action.drink_seconds) not in [TYPE_INT, TYPE_FLOAT]:
+		return _fail("invalid_drink_action", "Tea drinking action drink seconds must be numeric.")
+	var drink_seconds := float(action.drink_seconds)
+	if drink_seconds <= 0.0 or not is_finite(drink_seconds):
+		return _fail("invalid_drink_action", "Tea drinking action drink seconds must be positive.")
+	if not is_equal_approx(drink_seconds, float(prepared.drink_seconds)):
+		return _fail("tea_timing_mismatch", "Tea drinking action timing does not match prepared tea.")
+	if not action.has("elapsed_seconds") or typeof(action.elapsed_seconds) not in [TYPE_INT, TYPE_FLOAT]:
+		return _fail("invalid_drink_action", "Tea drinking action elapsed seconds must be numeric.")
+	var elapsed_seconds := float(action.elapsed_seconds)
+	if elapsed_seconds < 0.0 or not is_finite(elapsed_seconds) or elapsed_seconds > drink_seconds:
+		return _fail("invalid_drink_action", "Tea drinking action elapsed seconds are out of range.")
 	return {"ok": true}
+
+func _validate_action_ownership(action: Dictionary) -> Dictionary:
+	var action_id := String(action.action_id)
+	if not active_action_owners.has(action_id):
+		return _fail("inactive_drink_action", "Tea drinking action is not active: %s" % action_id)
+	if active_action_owners[action_id] != _action_owner(action):
+		return _fail("drink_action_owner_mismatch", "Tea drinking action owner does not match active service state.")
+	return {"ok": true}
+
+func _normalize_snapshot_action(raw_action, slots: Array) -> Dictionary:
+	if raw_action == null or (typeof(raw_action) == TYPE_DICTIONARY and raw_action.is_empty()):
+		return {"ok": true, "action": {}}
+	if typeof(raw_action) != TYPE_DICTIONARY:
+		return _fail("invalid_drink_action", "Tea snapshot action must be a dictionary.")
+	var action: Dictionary = _duplicate_dictionary(raw_action)
+	var action_result := _validate_action_shape(action, slots)
+	if not action_result.ok:
+		return action_result
+	return {"ok": true, "action": action}
+
+func _action_owner(action: Dictionary) -> Dictionary:
+	return {
+		"slot": int(action.get("slot", -1)),
+		"prepared_id": String(action.get("prepared_id", "")),
+		"drink_seconds": float(action.get("drink_seconds", 0.0))
+	}
+
+func _normalize_snapshot_action_owners(raw_owners, active_action: Dictionary, slots: Array) -> Dictionary:
+	var owners: Dictionary = {}
+	if typeof(raw_owners) == TYPE_DICTIONARY:
+		owners = _duplicate_dictionary(raw_owners)
+	elif raw_owners != null:
+		return _fail("invalid_drink_action_owners", "Tea action owners snapshot must be a dictionary.")
+	if not active_action.is_empty():
+		owners[String(active_action.action_id)] = _action_owner(active_action)
+	for action_id in owners:
+		if typeof(action_id) != TYPE_STRING or String(action_id).is_empty():
+			return _fail("invalid_drink_action_owners", "Tea action owner id must be a non-empty string.")
+		var owner = owners[action_id]
+		if typeof(owner) != TYPE_DICTIONARY:
+			return _fail("invalid_drink_action_owners", "Tea action owner must be a dictionary.")
+		var slot_index := int(owner.get("slot", -1))
+		var slot_result := _validate_quickslot_index(slot_index)
+		if not slot_result.ok:
+			return slot_result
+		if slot_index >= slots.size() or _is_empty_slot(slots[slot_index]):
+			return _fail("stale_drink_action", "Prepared tea no longer matches the drinking action.")
+		var prepared: Dictionary = slots[slot_index]
+		if String(prepared.prepared_id) != String(owner.get("prepared_id", "")):
+			return _fail("stale_drink_action", "Prepared tea no longer matches the drinking action.")
+		var drink_seconds = owner.get("drink_seconds", null)
+		if typeof(drink_seconds) not in [TYPE_INT, TYPE_FLOAT]:
+			return _fail("invalid_drink_action_owners", "Tea action owner drink seconds must be numeric.")
+		if not is_equal_approx(float(drink_seconds), float(prepared.drink_seconds)):
+			return _fail("tea_timing_mismatch", "Tea action owner timing does not match prepared tea.")
+	return {"ok": true, "active_action_owners": owners}
 
 func _validate_quickslot_index(index: int) -> Dictionary:
 	if index < 0 or index >= quickslot_count:
