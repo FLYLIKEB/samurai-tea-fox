@@ -288,9 +288,9 @@
       "alpha_empty": false
     },
     {
-      "path": "assets/sprites/objects/crafting/bamboo_shelf_1x2_32x64.png",
+      "path": "assets/sprites/objects/crafting/bamboo_shelf_32x32.png",
       "width": 32,
-      "height": 64,
+      "height": 32,
       "mode": "RGBA",
       "alpha_empty": false
     },
