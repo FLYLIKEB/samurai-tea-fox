@@ -22,19 +22,35 @@ metadata:
 5. PR을 열기 전에 작업 브랜치를 현재 원격 main과 rebase하거나 그에 준해 정합성을 맞춘다. 그 다음 작업 worktree에서 필요한 검증을 실행한다.
 6. 작업 브랜치를 push하고 PR을 연다. 구현 요약, 검증 증거, 알려진 위험을 포함한다.
 7. PR이 준비되고 저장소의 check/review 조건을 만족한 뒤에만 머지한다. 저장소의 통상 머지 전략이 확인되면 그 방식을 사용하고, 확인되지 않으면 보수적인 merge commit 또는 명시된 사용자/프로젝트 관례를 따른다.
-8. 머지 후 관련 로컬 main checkout마다 `git fetch` 후 `git pull --ff-only`로 원격 main에 맞춘다. 작업 브랜치가 더 필요 없으면 오래된 worktree 메타데이터를 prune한다.
+8. 머지 후 관련 로컬 main checkout마다 `git fetch` 후 `git pull --ff-only`로 원격 main에 맞춘다. 작업 브랜치가 더 필요 없으면 작업 worktree 제거, 로컬 브랜치 삭제, 원격 브랜치 삭제, 오래된 worktree 메타데이터 prune을 수행한다.
+
+## PR 머지 후 안전 정리
+
+작업 worktree 안에서 `gh pr merge --delete-branch`를 직접 실행하지 않는다. GitHub CLI가 머지 후 현재 worktree를 base branch로 전환하거나 로컬 브랜치를 즉시 삭제하려고 하면서, 이미 다른 worktree가 `main`을 사용 중이면 `fatal: 'main' is already used by worktree` 오류가 날 수 있다.
+
+대신 다음 순서를 사용한다.
+
+1. 작업 worktree가 clean인지 확인한다.
+2. `gh pr merge <PR> --merge`처럼 `--delete-branch` 없이 원격 PR만 머지한다.
+3. 로컬 `main` worktree에서 `git fetch`와 `git pull --ff-only`를 수행한다.
+4. PR head 원격 브랜치를 삭제한다.
+5. `main` worktree에서 작업 worktree를 제거한다.
+6. 그 다음 로컬 작업 브랜치를 삭제하고 `git worktree prune`을 실행한다.
+
+가능하면 이 과정을 직접 명령으로 나누지 말고 `scripts/worktree_pr.sh finish-pr <PR>`를 사용한다. 이 명령은 현재 작업 브랜치와 PR head가 같은지 확인하고, main worktree를 찾아 동기화한 뒤, worktree 제거와 브랜치 정리를 순서대로 수행한다.
 
 ## 가드레일
 
 - 다른 작업의 브랜치나 worktree를 재사용하지 않는다.
 - 사용자가 명시적으로 요청하지 않는 한 force push, hard reset, 다른 에이전트의 브랜치 삭제, 다른 worktree 제거 같은 파괴적 작업을 하지 않는다.
 - 로컬 main checkout에 미커밋 변경이 있으면 덮어쓰지 않는다. 정확한 blocker를 보고하고, 사용자 변경을 위험에 빠뜨리지 않는 안전한 원격 측 정리만 계속한다.
+- 로컬 main checkout에 미커밋 변경이 있어도 incoming 변경 파일과 겹치지 않으면 fast-forward pull은 가능하다. 겹치는 파일이 있으면 동기화를 중단하고 정확한 파일 목록을 보고한다.
 - 작업 브랜치가 원격 main과 깔끔하게 rebase/merge되지 않으면 충돌 해결은 작업 worktree 안에서만 한다.
 - PR 생성, 머지, 원격 push에 자격 증명이나 보호 브랜치 권한이 없으면 마지막으로 검증된 로컬 상태에서 멈추고 정확한 blocker를 보고한다.
 - 로컬 검증 증거는 최신으로 유지한다. 먼저 변경 범위에 맞는 targeted test를 실행하고, 필요하면 lint/typecheck/build/smoke check를 실행한다.
 
 ## 헬퍼 스크립트
 
-일반적인 저장소에서는 독립 worktree 생성과 main 재동기화에 `scripts/worktree_pr.sh` 헬퍼를 우선 사용할 수 있다. 정확한 명령 형식이 필요하면 `scripts/worktree_pr.sh help`를 실행한다.
+일반적인 저장소에서는 독립 worktree 생성, PR 생성, 머지 후 정리에 `scripts/worktree_pr.sh` 헬퍼를 우선 사용할 수 있다. 정확한 명령 형식이 필요하면 `scripts/worktree_pr.sh help`를 실행한다.
 
 이 헬퍼는 안전한 setup/sync 작업과 PR 편의 명령으로 범위를 제한한다. 저장소별 테스트, 코드 리뷰 조건, 충돌 해결을 대체하지 않는다.
