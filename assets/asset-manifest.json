@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "art_assets_contract": {
+    "schema": "res://data/schemas/export_schema.json",
+    "dataset": "art_assets"
+  },
+  "style_tokens": "res://assets/style/art-style-tokens.json",
+  "promoted_assets": "res://assets/promoted-assets-manifest.json",
+  "runtime_roots": [
+    "res://assets/backgrounds/",
+    "res://assets/sprites/",
+    "res://assets/tiles/",
+    "res://assets/ui/"
+  ],
+  "resource_scan_roots": [
+    "res://scenes/",
+    "res://src/"
+  ],
+  "import_policy": {
+    "texture_filter": "nearest",
+    "godot_project_setting": "textures/canvas_textures/default_texture_filter",
+    "godot_nearest_value": 0
+  },
+  "placeholder_policy": {
+    "allow_runtime_placeholders": false,
+    "forbidden_path_segments": [
+      "placeholder",
+      "prototype",
+      "temp"
+    ]
+  },
+  "assets": [
+    {
+      "id": "fox_samurai_back_idle",
+      "name": "여우 사무라이 후면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/fox_samurai/fox_samurai_back_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {"columns": 1, "rows": 1, "frame_width": 32, "frame_height": 32},
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    },
+    {
+      "id": "fox_samurai_front_idle",
+      "name": "여우 사무라이 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/fox_samurai/fox_samurai_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {"columns": 1, "rows": 1, "frame_width": 32, "frame_height": 32},
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    },
+    {
+      "id": "fox_samurai_left_idle",
+      "name": "여우 사무라이 좌향 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/fox_samurai/fox_samurai_left_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {"columns": 1, "rows": 1, "frame_width": 32, "frame_height": 32},
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    },
+    {
+      "id": "fox_samurai_right_idle",
+      "name": "여우 사무라이 우향 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/fox_samurai/fox_samurai_right_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {"columns": 1, "rows": 1, "frame_width": 32, "frame_height": 32},
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    }
+  ]
+}

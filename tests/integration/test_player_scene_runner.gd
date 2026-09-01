@@ -22,7 +22,9 @@ func run() -> void:
 	root.add_child(player)
 	var sprite := player.get_node_or_null("Sprite2D") as Sprite2D
 	if sprite == null or sprite.texture == null:
-		failures.append("player scene loads the ART-8 sprite texture")
+		failures.append("player scene resolves the front sprite through the asset manifest")
+	elif sprite.texture.resource_path != "res://assets/sprites/characters/fox_samurai/fox_samurai_front_idle_32x32.png":
+		failures.append("player scene starts with the manifest front-facing asset")
 	var camera := player.get_node_or_null("Camera2D") as Camera2D
 	if camera == null or not camera.enabled:
 		failures.append("player owns an enabled camera")
@@ -38,7 +40,11 @@ func run() -> void:
 
 	player.position = Vector2.ZERO
 	player.submit_command(GameCommand.new(GameCommand.Type.MOVE, Vector2i.RIGHT))
-	for _index in 40:
+	await physics_frame
+	await physics_frame
+	if sprite.texture.resource_path != "res://assets/sprites/characters/fox_samurai/fox_samurai_right_idle_32x32.png":
+		failures.append("player movement resolves the right-facing stable asset ID")
+	for _index in 38:
 		await physics_frame
 
 	if player.position.x < 1.0:

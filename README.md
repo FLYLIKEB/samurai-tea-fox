@@ -98,6 +98,14 @@ godot --headless --path . --script res://tests/integration/test_player_scene_run
 godot --headless --path . --script res://tests/integration/test_player_combat_runner.gd
 ```
 
+런타임 PNG를 추가하거나 scene/resource 참조를 변경한 경우, prebuild 단계에서 정본 manifest와 PNG 규격·알파·프레임 grid·nearest 설정·누락 참조·placeholder 정책을 먼저 검사합니다.
+
+```sh
+tools/asset_pipeline/check.sh
+```
+
+런타임은 `assets/asset-manifest.json`의 stable ID를 `AssetCatalog`로 조회합니다. 승인된 PNG 경로를 scene에 직접 추가하기 전에 manifest에 규격과 함께 등록해야 합니다.
+
 현재 테스트 골격은 다음 경계를 확인합니다.
 
 - 같은 seed + 같은 data version은 같은 월드 데이터를 생성한다.
