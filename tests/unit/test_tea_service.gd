@@ -142,9 +142,17 @@ func _assert_vessel_modifiers_are_data_driven(asserts) -> void:
 
 	asserts.true_value(inventory.add_item("green_tea", 1).ok, "tea add succeeds for modifier query")
 	var modifier_query := service.get_vessel_modifier_query("travel_bottle")
+	modifier_query["vessel_instance_id"] = "inst_equipped_tea_ware"
+	modifier_query["attachment_description_key"] = "attachment.travel.fresh"
 	var brewed_from_query: Dictionary = service.brew_with_modifier_query("green_tea", modifier_query, inventory, 0)
 	asserts.true_value(brewed_from_query.ok, "tea service can brew from modifier query")
 	asserts.equal(brewed_from_query.prepared_tea.ki_recovery, 25, "modifier query preserves recovery behavior")
+	asserts.equal(brewed_from_query.prepared_tea.vessel_instance_id, "inst_equipped_tea_ware", "prepared tea preserves equipped vessel instance id")
+	asserts.equal(brewed_from_query.prepared_tea.attachment_description_key, "attachment.travel.fresh", "prepared tea preserves resolved attachment key")
+	var start: Dictionary = service.start_drinking(0)
+	asserts.equal(start.action.vessel_instance_id, "inst_equipped_tea_ware", "drink action carries vessel instance id")
+	var complete: Dictionary = service.complete_drinking(start.action)
+	asserts.equal(complete.vessel_instance_id, "inst_equipped_tea_ware", "completion result carries vessel instance id")
 
 func _assert_snapshot_round_trips_prepared_tea(asserts) -> void:
 	var service: TeaService = _fixture_service()
