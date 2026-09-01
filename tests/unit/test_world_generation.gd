@@ -18,4 +18,6 @@ func run(asserts) -> void:
 	asserts.true_value(a != c, "different seed changes generated world")
 	asserts.true_value(a.connectivity.valid, "required landmarks are connectivity-valid in scaffold")
 	asserts.equal(a.data_version, "notion-2026-09-01", "world stores data version")
-
+	asserts.true_value(a.has("world_data"), "generator exposes pure world data")
+	asserts.true_value(a.has("renderer_input"), "generator exposes renderer input contract")
+	asserts.equal(a.renderer_input.read_only, true, "renderer input is read-only projection")
