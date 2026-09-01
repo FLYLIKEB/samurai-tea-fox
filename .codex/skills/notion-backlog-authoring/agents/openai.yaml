@@ -1,0 +1,5 @@
+interface:
+  display_name: "Notion 백로그 작성"
+  short_description: "AI 실행 가능한 백로그 항목을 작성합니다."
+policy:
+  allow_implicit_invocation: true
