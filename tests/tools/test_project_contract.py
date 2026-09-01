@@ -7,6 +7,30 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class ProjectContractTests(unittest.TestCase):
+    def test_korean_product_name_is_muchau(self):
+        project = (ROOT / "project.godot").read_text(encoding="utf-8")
+        self.assertIn('config/name="무차우: 한 잔의 도"', project)
+
+        contract_files = (
+            ROOT / "AGENTS.md",
+            ROOT / "README.md",
+            ROOT / "assets/sprites/characters/notion-character-map.json",
+            ROOT / "assets/style/art-style-tokens.json",
+            ROOT / "data/generated/notion_sources.json",
+            ROOT / "docs/notion-source-map.md",
+            ROOT / "project.godot",
+        )
+        legacy_names = tuple(
+            left + separator + right
+            for left, right in (("무사", "여우"), ("여우", "무사"))
+            for separator in ("", " ")
+        )
+
+        for path in contract_files:
+            content = path.read_text(encoding="utf-8")
+            for legacy_name in legacy_names:
+                self.assertNotIn(legacy_name, content, f"{legacy_name} in {path}")
+
     def test_project_has_a_loadable_main_scene(self):
         project = (ROOT / "project.godot").read_text(encoding="utf-8")
         self.assertIn('run/main_scene="res://src/main/main.tscn"', project)

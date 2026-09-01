@@ -6,7 +6,7 @@ Fetched on 2026-09-01 from the current Notion workspace.
 
 | Responsibility | Notion source |
 | --- | --- |
-| Routing index | `무사여우: 한 잔의 도 — 게임 컨셉 바이블` |
+| Routing index | `무차우: 한 잔의 도 — 게임 컨셉 바이블` |
 | Information ownership | `00. 기획 아키텍처·정본 규칙` |
 | Technical architecture | `12. 기술 스펙·아키텍처` |
 | Gameplay prototype rules | `11. 상세 게임플레이 규칙` |

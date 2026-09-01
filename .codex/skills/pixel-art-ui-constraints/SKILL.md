@@ -1,6 +1,6 @@
 ---
 name: pixel-art-ui-constraints
-description: 무사여우의 32x32 픽셀아트, 정면 고정 탑뷰 에셋, 모바일 상태 표시, HP·기운·心 3자원 화면, 아트 에셋 데이터베이스 정본 규칙을 지켜야 할 때 사용한다.
+description: 무차우의 32x32 픽셀아트, 정면 고정 탑뷰 에셋, 모바일 상태 표시, HP·기운·心 3자원 화면, 아트 에셋 데이터베이스 정본 규칙을 지켜야 할 때 사용한다.
 metadata:
   short-description: 픽셀아트와 모바일 화면 규칙
 ---
