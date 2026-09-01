@@ -9,7 +9,7 @@ func run(asserts) -> void:
 	asserts.true_value(catalog.has("fox_samurai_front_idle"), "stable asset ID is registered")
 	asserts.equal(
 		catalog.path_for("fox_samurai_front_idle"),
-		"res://assets/sprites/characters/fox_samurai/fox_samurai_front_idle_32x32.png",
+		"res://assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_front_idle_32x32.png",
 		"stable asset ID resolves to the promoted runtime path"
 	)
 	asserts.true_value(catalog.load_texture("fox_samurai_front_idle") != null, "registered PNG loads as Texture2D")

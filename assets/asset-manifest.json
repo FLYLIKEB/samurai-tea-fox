@@ -35,7 +35,7 @@
       "name": "여우 사무라이 정면 대기",
       "status": "완료",
       "kind": "character_sprite",
-      "path": "res://assets/sprites/characters/fox_samurai/fox_samurai_front_idle_32x32.png",
+      "path": "res://assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_front_idle_32x32.png",
       "width": 32,
       "height": 32,
       "direction_count": 1,
