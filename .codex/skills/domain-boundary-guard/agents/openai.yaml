@@ -1,0 +1,5 @@
+interface:
+  display_name: "도메인 경계 가드"
+  short_description: "도메인 경계와 UI/입력 책임을 점검합니다."
+policy:
+  allow_implicit_invocation: true

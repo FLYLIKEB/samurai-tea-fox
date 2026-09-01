@@ -1,0 +1,5 @@
+interface:
+  display_name: "Run/Meta 저장 경계"
+  short_description: "run/meta 저장 경계와 런 종료 처리를 점검합니다."
+policy:
+  allow_implicit_invocation: true
