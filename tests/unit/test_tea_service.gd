@@ -138,6 +138,13 @@ func _assert_vessel_modifiers_are_data_driven(asserts) -> void:
 	asserts.equal(brewed.prepared_tea.remaining_uses, 3, "vessel carry bonus applies from data")
 	asserts.equal(brewed.prepared_tea.drink_seconds, 0.7, "vessel drink time modifiers apply from data")
 	asserts.equal(brewed.prepared_tea.sustain_modifier, 0.35, "tea and vessel sustain modifiers add from data")
+	asserts.false_value(brewed.prepared_tea.core_tea_ware, "non-core vessel stays non-core in prepared tea")
+
+	asserts.true_value(inventory.add_item("green_tea", 1).ok, "tea add succeeds for modifier query")
+	var modifier_query := service.get_vessel_modifier_query("travel_bottle")
+	var brewed_from_query: Dictionary = service.brew_with_modifier_query("green_tea", modifier_query, inventory, 0)
+	asserts.true_value(brewed_from_query.ok, "tea service can brew from modifier query")
+	asserts.equal(brewed_from_query.prepared_tea.ki_recovery, 25, "modifier query preserves recovery behavior")
 
 func _assert_snapshot_round_trips_prepared_tea(asserts) -> void:
 	var service: TeaService = _fixture_service()
@@ -221,12 +228,14 @@ func _item_rows() -> Array:
 			"name": "보온 차병",
 			"status": "테스트",
 			"type": "다구",
+			"effect_type": "차 운용",
+			"effect_value": 2,
 			"tea_recovery_multiplier": 1.25,
-			"tea_recovery_bonus": 2,
 			"carry_use_bonus": 2,
 			"drink_seconds_multiplier": 0.5,
 			"drink_seconds_bonus": 0.1,
-			"sustain_modifier": 0.25
+			"sustain_modifier": 0.25,
+			"core_tea_ware": false
 		},
 		{"id": "stone", "name": "돌", "status": "테스트", "type": "재료", "max_stack": 10}
 	]

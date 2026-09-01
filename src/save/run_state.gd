@@ -5,6 +5,7 @@ var data_version := ""
 var seed := 0
 var current_biome_id := ""
 var inventory := {}
+var equipment := {}
 var currency := 0
 var tails := 1
 var abilities := []
@@ -17,6 +18,7 @@ func to_dictionary() -> Dictionary:
 		"seed": seed,
 		"current_biome_id": current_biome_id,
 		"inventory": inventory,
+		"equipment": equipment,
 		"currency": currency,
 		"tails": tails,
 		"abilities": abilities,

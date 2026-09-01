@@ -37,10 +37,10 @@ class NotionExportPipelineTests(unittest.TestCase):
         confirmed = self.pipeline.build_snapshots(self.capture, "confirmed")
         confirmed_test = self.pipeline.build_snapshots(self.capture, "confirmed-test")
 
-        self.assertEqual([item["id"] for item in confirmed["items"]["items"]], ["wood"])
+        self.assertEqual([item["id"] for item in confirmed["items"]["items"]], ["oribe_bowl", "wood"])
         self.assertEqual(
             [item["id"] for item in confirmed_test["items"]["items"]],
-            ["clay", "wood"],
+            ["clay", "oribe_bowl", "wood"],
         )
         self.assertNotIn("day_phase_duration_seconds", [item["id"] for item in confirmed["balance"]["items"]])
         self.assertNotIn("player_hp_max", [item["id"] for item in confirmed["balance"]["items"]])
@@ -67,7 +67,8 @@ class NotionExportPipelineTests(unittest.TestCase):
 
     def test_missing_required_field_fails_with_dataset_and_item_context(self):
         invalid = copy.deepcopy(self.capture)
-        del invalid["datasets"]["items"]["items"][0]["name"]
+        wood = next(item for item in invalid["datasets"]["items"]["items"] if item["id"] == "wood")
+        del wood["name"]
 
         with self.assertRaisesRegex(ExportValidationError, "items.*wood.*name"):
             self.pipeline.build_snapshots(invalid, "confirmed")
@@ -119,6 +120,17 @@ class NotionExportPipelineTests(unittest.TestCase):
             validated = self.pipeline.validate_directory(Path(directory))
             self.assertEqual(validated["data_version"], "fixture-2026-09-01")
             self.assertEqual(validated["profile"], "confirmed-test")
+
+    def test_equipment_tea_ware_exports_canonical_effect_fields_only(self):
+        snapshots = self.pipeline.build_snapshots(self.capture, "confirmed-test")
+        item = next(item for item in snapshots["items"]["items"] if item["id"] == "oribe_bowl")
+
+        self.assertEqual(item["equipment_slot"], "다구")
+        self.assertEqual(item["effect_type"], "차 운용")
+        self.assertEqual(item["effect_value"], 10)
+        self.assertTrue(item["core_tea_ware"])
+        self.assertEqual(item["core_tea_ware_order"], 1)
+        self.assertNotIn("tea_recovery_bonus", item)
 
     def test_dev_4_static_combat_exports_are_present(self):
         generated = ROOT / "data/generated"
