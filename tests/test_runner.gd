@@ -23,6 +23,7 @@ const TESTS := [
 	preload("res://tests/unit/test_choice_runtime.gd"),
 	preload("res://tests/unit/test_save_codec.gd"),
 	preload("res://tests/unit/test_biome_progression.gd"),
+	preload("res://tests/unit/test_dungeon_runtime.gd"),
 	preload("res://tests/unit/test_world_data.gd"),
 	preload("res://tests/unit/test_world_generation.gd")
 ]
