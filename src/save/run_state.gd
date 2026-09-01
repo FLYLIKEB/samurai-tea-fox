@@ -10,6 +10,8 @@ var currency := 0
 var tails := 1
 var abilities := []
 var completed_dungeon_ids := []
+var completed_runtime_dungeon_ids := []
+var dungeon_runtime_state := {}
 var teleport_states := {}
 var repaired_teleports := []
 var crafting_unlocks := []
@@ -33,6 +35,8 @@ static func from_dictionary(data: Dictionary):
 	state.tails = int(data.get("tails", 1))
 	state.abilities = _array_value(data.get("abilities", []))
 	state.completed_dungeon_ids = _array_value(data.get("completed_dungeon_ids", []))
+	state.completed_runtime_dungeon_ids = _array_value(data.get("completed_runtime_dungeon_ids", []))
+	state.dungeon_runtime_state = _dictionary_value(data.get("dungeon_runtime_state", {}))
 	state.teleport_states = _dictionary_value(data.get("teleport_states", {}))
 	state.repaired_teleports = _array_value(data.get("repaired_teleports", []))
 	state.crafting_unlocks = _array_value(data.get("crafting_unlocks", []))
@@ -49,6 +53,8 @@ static func from_dictionary(data: Dictionary):
 func reset_biome_progression() -> void:
 	current_biome_id = ""
 	completed_dungeon_ids.clear()
+	completed_runtime_dungeon_ids.clear()
+	dungeon_runtime_state.clear()
 	teleport_states.clear()
 	repaired_teleports.clear()
 	crafting_unlocks.clear()
@@ -64,6 +70,8 @@ func to_dictionary() -> Dictionary:
 		"tails": tails,
 		"abilities": abilities.duplicate(true),
 		"completed_dungeon_ids": completed_dungeon_ids.duplicate(true),
+		"completed_runtime_dungeon_ids": completed_runtime_dungeon_ids.duplicate(true),
+		"dungeon_runtime_state": dungeon_runtime_state.duplicate(true),
 		"teleport_states": teleport_states.duplicate(true),
 		"repaired_teleports": repaired_teleports.duplicate(true),
 		"crafting_unlocks": crafting_unlocks.duplicate(true),

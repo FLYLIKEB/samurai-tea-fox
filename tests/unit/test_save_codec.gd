@@ -38,6 +38,15 @@ func run(asserts) -> void:
 	var state := RunState.new()
 	state.current_biome_id = "common_region"
 	state.completed_dungeon_ids = ["common_region"]
+	state.completed_runtime_dungeon_ids = ["fixture_dungeon"]
+	state.dungeon_runtime_state = {
+		"schema_version": 1,
+		"instance_id": "fixture_instance",
+		"dungeon_id": "fixture_dungeon",
+		"biome_id": "common_region",
+		"lifecycle_state": "active",
+		"return_context": {"biome_id": "common_region", "world_seed": 11037}
+	}
 	state.teleport_states = {"common_region": "repairable"}
 	state.repaired_teleports = ["mountain_region"]
 	state.crafting_unlocks = ["common_region"]
@@ -65,6 +74,8 @@ func run(asserts) -> void:
 	asserts.equal(progression.teleport_state_for("common_region"), BiomeProgressionState.TELEPORT_REPAIRABLE, "resumed progression preserves teleport state")
 	asserts.equal(progression.crafting_context().unlocked_biome_ids, ["common_region"], "resumed progression preserves crafting unlocks")
 	asserts.equal(decoded.run_state.completed_dungeon_ids, ["common_region"], "hydrated run state preserves dungeon completion")
+	asserts.equal(decoded.run_state.completed_runtime_dungeon_ids, ["fixture_dungeon"], "hydrated run state preserves canonical dungeon completion")
+	asserts.equal(decoded.run_state.dungeon_runtime_state.instance_id, "fixture_instance", "hydrated run state preserves active dungeon instance")
 	asserts.equal(decoded.run_state.repaired_teleports, ["mountain_region"], "hydrated run state preserves repaired teleport compatibility state")
 	asserts.equal(decoded.run_state.equipment.slots.tea_ware.metadata.tea_ware_use_count, 4, "hydrated run state preserves equipment attachment metadata")
 	asserts.equal(decoded.run_state.narrative_flags, ["met_sen_rikyu"], "hydrated run state preserves narrative flags")
@@ -79,6 +90,8 @@ func run(asserts) -> void:
 	state.reset_biome_progression()
 	asserts.equal(state.current_biome_id, "", "run state reset clears current biome")
 	asserts.equal(state.completed_dungeon_ids, [], "run state reset clears dungeon completion")
+	asserts.equal(state.completed_runtime_dungeon_ids, [], "run state reset clears canonical dungeon completion")
+	asserts.equal(state.dungeon_runtime_state, {}, "run state reset clears active dungeon runtime")
 	asserts.equal(state.teleport_states, {}, "run state reset clears teleport states")
 	asserts.equal(state.crafting_unlocks, [], "run state reset clears crafting unlocks")
 
