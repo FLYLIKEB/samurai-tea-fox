@@ -84,3 +84,9 @@ godot --headless --path . --script res://tests/test_runner.gd
 - 같은 seed + 같은 data version은 같은 월드 데이터를 생성한다.
 - 플랫폼 입력은 게임 명령으로만 변환된다.
 - run save와 meta save는 schema version과 kind를 분리한다.
+
+Godot 설치 전에도 프로젝트 진입점, 공통 입력 명령 경계, 데스크톱·모바일 export template을 정적으로 확인할 수 있습니다.
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest tests.tools.test_project_contract
+```

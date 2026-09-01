@@ -3,7 +3,7 @@ class_name MobileCommandAdapter
 
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 
-func command_for_button(button_id: String, direction := Vector2i.ZERO, slot := 0) -> GameCommand:
+func command_for_button(button_id: String, direction := Vector2i.ZERO, slot := 0):
 	match button_id:
 		"move":
 			return GameCommand.move(direction)
@@ -18,6 +18,4 @@ func command_for_button(button_id: String, direction := Vector2i.ZERO, slot := 0
 		"interact":
 			return GameCommand.interact()
 		_:
-			push_error("Unknown mobile command button: %s" % button_id)
-			return GameCommand.interact()
-
+			return null
