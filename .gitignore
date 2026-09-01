@@ -37,6 +37,9 @@ __pycache__/
 # Local asset tool backups
 tools/asset_browser/palette_backups/
 
+# Local ImageGen source drops
+assets/source/imagegen/
+
 # External asset browser checkout/build artifacts
 tools/asset_browser/.venv/
 tools/asset_browser/asset_browser/
