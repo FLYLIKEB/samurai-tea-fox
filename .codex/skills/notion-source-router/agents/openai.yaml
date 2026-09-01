@@ -1,0 +1,5 @@
+interface:
+  display_name: "Notion 정본 라우팅"
+  short_description: "Notion 정본 순서에 따라 필요한 문서만 읽습니다."
+policy:
+  allow_implicit_invocation: true
