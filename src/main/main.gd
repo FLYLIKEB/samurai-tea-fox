@@ -17,6 +17,7 @@ const WorldSceneRenderer = preload("res://src/world/rendering/world_scene_render
 @onready var player = $Player
 @onready var combat_dummy = $CombatDummy
 @onready var world_visuals: Node2D = $WorldVisuals
+@onready var game_hud = $GameHud
 
 var catalog
 var inventory
@@ -76,6 +77,7 @@ func _ready() -> void:
 	if not drop_connection.ok:
 		push_error(drop_connection.error)
 	_render_generated_world(generated_world)
+	game_hud.configure(player, generated_world, world_render_result)
 
 func _physics_process(_delta: float) -> void:
 	var desktop_command = _desktop_adapter.poll_movement_command()
