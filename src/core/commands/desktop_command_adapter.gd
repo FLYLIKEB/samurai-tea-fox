@@ -16,19 +16,19 @@ func movement_command_from_strengths(left: float, right: float, up: float, down:
 		int(signf(right - left)),
 		int(signf(down - up))
 	)
-	return GameCommand.move(direction)
+	return GameCommand.new(GameCommand.Type.MOVE, direction)
 
 func command_for_action(action: String, direction := Vector2i.ZERO, slot := 0):
 	match action:
 		"attack":
-			return GameCommand.attack(direction)
+			return GameCommand.new(GameCommand.Type.ATTACK, direction)
 		"dodge":
-			return GameCommand.dodge(direction)
+			return GameCommand.new(GameCommand.Type.DODGE, direction)
 		"drink_tea":
-			return GameCommand.drink_tea(slot)
+			return GameCommand.new(GameCommand.Type.DRINK_TEA, Vector2i.ZERO, slot)
 		"cast_ability":
-			return GameCommand.cast_ability(slot, direction)
+			return GameCommand.new(GameCommand.Type.CAST_ABILITY, direction, slot)
 		"interact":
-			return GameCommand.interact()
+			return GameCommand.new(GameCommand.Type.INTERACT)
 		_:
 			return null
