@@ -45,6 +45,25 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertNotIn("day_phase_duration_seconds", [item["id"] for item in confirmed["balance"]["items"]])
         self.assertNotIn("player_hp_max", [item["id"] for item in confirmed["balance"]["items"]])
         self.assertIn("player_hp_max", [item["id"] for item in confirmed_test["balance"]["items"]])
+        self.assertEqual([item["id"] for item in confirmed["abilities"]["items"]], [])
+        self.assertEqual(
+            [item["id"] for item in confirmed_test["abilities"]["items"]],
+            ["ember", "remaining_incense"],
+        )
+
+    def test_ability_export_preserves_duration_and_status_effect_mapping(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        ability_notion = schema["datasets"]["abilities"]["notion"]
+        self.assertEqual(ability_notion["field_map"]["지속시간(초)"], "duration_seconds")
+        self.assertEqual(ability_notion["field_map"]["상태효과"], "status_effect")
+        self.assertIn("duration_seconds", schema["datasets"]["abilities"]["required_fields"])
+
+        snapshots = self.pipeline.build_snapshots(self.capture, "confirmed-test")
+        abilities = {item["id"]: item for item in snapshots["abilities"]["items"]}
+        self.assertEqual(abilities["ember"]["duration_seconds"], 0)
+        self.assertEqual(abilities["ember"]["status_effect"], "")
+        self.assertEqual(abilities["remaining_incense"]["duration_seconds"], 2.5)
+        self.assertEqual(abilities["remaining_incense"]["status_effect"], "slow")
 
     def test_missing_required_field_fails_with_dataset_and_item_context(self):
         invalid = copy.deepcopy(self.capture)
@@ -120,6 +139,20 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(road_bandit["status"], "테스트")
         self.assertEqual(road_bandit["movement_speed"], 1.6)
         self.assertEqual(road_bandit["attack_period_seconds"], 1.8)
+
+    def test_dev_12_static_ability_exports_include_effect_contract_fields(self):
+        generated = ROOT / "data/generated"
+        self.pipeline.validate_directory(generated)
+
+        abilities = {
+            item["id"]: item
+            for item in json.loads((generated / "abilities.json").read_text(encoding="utf-8"))["items"]
+        }
+
+        self.assertEqual(abilities["ember"]["duration_seconds"], 0)
+        self.assertEqual(abilities["ember"]["status_effect"], "")
+        self.assertEqual(abilities["water_shadow"]["duration_seconds"], 0)
+        self.assertEqual(abilities["water_shadow"]["status_effect"], "")
 
     def test_dev_6_time_and_sleep_balance_exports_are_present(self):
         generated = ROOT / "data/generated"

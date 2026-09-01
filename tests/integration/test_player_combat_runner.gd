@@ -4,6 +4,38 @@ const GameCommand = preload("res://src/core/commands/game_command.gd")
 
 var failures: Array[String] = []
 
+class TailQuery:
+	extends RefCounted
+	var tail_count: int
+	var calls: Array = []
+
+	func _init(initial_tail_count: int) -> void:
+		tail_count = initial_tail_count
+
+	func can_use_ability(ability_id: String, tail_requirement: int) -> bool:
+		calls.append([ability_id, tail_requirement])
+		return tail_count >= tail_requirement
+
+class AbilityTimeProbe:
+	extends RefCounted
+	var calls := 0
+
+	func ability_cost_multiplier_for(resources) -> float:
+		calls += 1
+		return 1.25 if resources.is_kokoro_low() else 1.0
+
+class AbilityTargetQuery:
+	extends RefCounted
+	var target
+	var calls: Array = []
+
+	func _init(initial_target) -> void:
+		target = initial_target
+
+	func targets_for_ability(source, definition, direction: Vector2) -> Array:
+		calls.append([source.get_combat_id(), definition.id, direction])
+		return [target]
+
 func _init() -> void:
 	call_deferred("run")
 
@@ -27,16 +59,43 @@ func run() -> void:
 		finish()
 		return
 
+	var ability_tail_query := TailQuery.new(1)
+	var ability_time_probe := AbilityTimeProbe.new()
+	var ability_target_query := AbilityTargetQuery.new(dummy)
+	player.configure_ability_context(ability_tail_query, ability_time_probe, ability_target_query)
+	var equip_result: Dictionary = player.equip_ability(0, "ember")
+	if not equip_result.ok:
+		failures.append("player equips ability through injected tail query")
+	player.resources.reduce_kokoro(70)
+	player.resources.spend_ki(82)
+	var ability_hp_before: int = dummy.current_hp()
+	if not player.submit_command(GameCommand.new(GameCommand.Type.CAST_ABILITY, Vector2i.RIGHT, 0)):
+		failures.append("cast ability command is accepted with injected context")
+	if dummy.current_hp() != ability_hp_before - 20:
+		failures.append("cast ability target query passes a target to the damage strategy")
+	if player.resources.ki != 0:
+		failures.append("cast ability receives time-state low-kokoro cost multiplier")
+	if ability_tail_query.calls.size() < 2:
+		failures.append("injected tail query is used for both equip and cast")
+	if ability_time_probe.calls != 1:
+		failures.append("cast ability passes time_state into cost calculation")
+	if ability_target_query.calls.is_empty() or ability_target_query.calls[0][1] != "ember":
+		failures.append("public ability target query receives the selected definition")
+	player.ability_runtime.tick(4.0)
+	player.resources.recover_ki(player.resources.ki_max)
+	player.resources.restore_kokoro(player.resources.kokoro_max)
+
 	player.position = Vector2.ZERO
 	dummy.position = Vector2(32.0, 0.0)
 	var dummy_hp_before: int = dummy.current_hp()
+	var dummy_hit_count_before: int = dummy.received_hit_count()
 	if not player.submit_command(GameCommand.new(GameCommand.Type.ATTACK, Vector2i.RIGHT)):
 		failures.append("attack command is accepted")
 	await physics_frame
 	await physics_frame
 	if dummy.current_hp() >= dummy_hp_before:
 		failures.append("attack command damages a generic combat dummy")
-	if dummy.received_hit_count() != 1:
+	if dummy.received_hit_count() != dummy_hit_count_before + 1:
 		failures.append("one swing damages the same dummy only once")
 	var directional_cases := [
 		[Vector2i.UP, Vector2(0.0, -32.0)],
