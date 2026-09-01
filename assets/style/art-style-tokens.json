@@ -116,7 +116,7 @@
       {
         "id": "paper_warm",
         "name": "한지 온백색",
-        "hex": "#E7D9BE",
+        "hex": "#FFF7E7",
         "role": "warm_light",
         "usage": "UI 바탕, 밝은 흙길, 종이 느낌 하이라이트"
       },
@@ -130,7 +130,7 @@
       {
         "id": "tea_leaf",
         "name": "차잎 녹색",
-        "hex": "#6F8B5F",
+        "hex": "#979A47",
         "role": "nature_primary",
         "usage": "차, 풀, 회복 계열 UI"
       },
@@ -144,7 +144,7 @@
       {
         "id": "fox_russet",
         "name": "여우 적갈색",
-        "hex": "#B7653F",
+        "hex": "#D3802F",
         "role": "character_primary",
         "usage": "여우 귀, 꼬리, 주인공 포인트"
       },
@@ -179,14 +179,14 @@
       {
         "id": "heart_cinnabar",
         "name": "단사 심홍",
-        "hex": "#A94B4B",
+        "hex": "#A95F23",
         "role": "hp_and_warning",
         "usage": "HP, 경고, 피해 표시"
       },
       {
         "id": "ki_gold",
         "name": "기운 황금",
-        "hex": "#D6A84F",
+        "hex": "#D6A75D",
         "role": "ki_resource",
         "usage": "기운, 차 회복, 요술 사용 전 에너지"
       },
@@ -241,7 +241,543 @@
         "실사 질감",
         "금속 광택 위주의 판타지 렌더링"
       ]
-    }
+    },
+    "candidates": [
+      {
+        "id": "wabi_tea_current",
+        "name": "와비 차실 정본",
+        "description": "현재 정본에 가까운 저채도 한지, 차잎, 여우 적갈색 중심 팔레트.",
+        "global": [
+          {
+            "id": "ink_line",
+            "hex": "#2A271F"
+          },
+          {
+            "id": "charcoal_shadow",
+            "hex": "#4A4038"
+          },
+          {
+            "id": "paper_warm",
+            "hex": "#FFF7E7"
+          },
+          {
+            "id": "clay_path",
+            "hex": "#A88B62"
+          },
+          {
+            "id": "tea_leaf",
+            "hex": "#979A47"
+          },
+          {
+            "id": "moss_deep",
+            "hex": "#3F5F4A"
+          },
+          {
+            "id": "fox_russet",
+            "hex": "#D3802F"
+          },
+          {
+            "id": "fox_cream",
+            "hex": "#E6CFA4"
+          },
+          {
+            "id": "tea_steam",
+            "hex": "#C9D7C0"
+          },
+          {
+            "id": "river_muted",
+            "hex": "#5F8791"
+          },
+          {
+            "id": "night_indigo",
+            "hex": "#2F3E5C"
+          },
+          {
+            "id": "heart_cinnabar",
+            "hex": "#A95F23"
+          },
+          {
+            "id": "ki_gold",
+            "hex": "#D6A75D"
+          },
+          {
+            "id": "mind_violet",
+            "hex": "#7A668E"
+          }
+        ],
+        "biome_accents": [
+          {
+            "id": "white_country",
+            "colors": [
+              "#E7D9BE",
+              "#C9D7C0",
+              "#9FAF9A"
+            ]
+          },
+          {
+            "id": "red_country",
+            "colors": [
+              "#B7653F",
+              "#A94B4B",
+              "#D6A84F"
+            ]
+          },
+          {
+            "id": "night_memory",
+            "colors": [
+              "#2F3E5C",
+              "#7A668E",
+              "#C9D7C0"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "spring_moss_light",
+        "name": "봄 이끼 밝음",
+        "description": "초반 백국과 숲길이 읽기 쉽도록 밝은 한지, 연녹색, 부드러운 물색을 키운 팔레트.",
+        "global": [
+          {
+            "id": "ink_line",
+            "hex": "#24251F"
+          },
+          {
+            "id": "charcoal_shadow",
+            "hex": "#4A4A3F"
+          },
+          {
+            "id": "paper_warm",
+            "hex": "#EFE2C5"
+          },
+          {
+            "id": "clay_path",
+            "hex": "#B79A6B"
+          },
+          {
+            "id": "tea_leaf",
+            "hex": "#7FA36A"
+          },
+          {
+            "id": "moss_deep",
+            "hex": "#496E50"
+          },
+          {
+            "id": "fox_russet",
+            "hex": "#C06F43"
+          },
+          {
+            "id": "fox_cream",
+            "hex": "#EFD9AA"
+          },
+          {
+            "id": "tea_steam",
+            "hex": "#D5E1C9"
+          },
+          {
+            "id": "river_muted",
+            "hex": "#6F9AA0"
+          },
+          {
+            "id": "night_indigo",
+            "hex": "#344764"
+          },
+          {
+            "id": "heart_cinnabar",
+            "hex": "#B3544D"
+          },
+          {
+            "id": "ki_gold",
+            "hex": "#DEB85B"
+          },
+          {
+            "id": "mind_violet",
+            "hex": "#806D95"
+          }
+        ],
+        "biome_accents": [
+          {
+            "id": "white_country",
+            "colors": [
+              "#EFE2C5",
+              "#D5E1C9",
+              "#ADC19A"
+            ]
+          },
+          {
+            "id": "red_country",
+            "colors": [
+              "#C06F43",
+              "#B3544D",
+              "#DEB85B"
+            ]
+          },
+          {
+            "id": "night_memory",
+            "colors": [
+              "#344764",
+              "#806D95",
+              "#D5E1C9"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "autumn_fox_earth",
+        "name": "가을 여우 흙빛",
+        "description": "여우와 흙길 존재감을 강화한 따뜻한 갈색, 녹차색, 단사색 중심 팔레트.",
+        "global": [
+          {
+            "id": "ink_line",
+            "hex": "#2D241B"
+          },
+          {
+            "id": "charcoal_shadow",
+            "hex": "#514034"
+          },
+          {
+            "id": "paper_warm",
+            "hex": "#E3CFAB"
+          },
+          {
+            "id": "clay_path",
+            "hex": "#B07E4F"
+          },
+          {
+            "id": "tea_leaf",
+            "hex": "#718750"
+          },
+          {
+            "id": "moss_deep",
+            "hex": "#465C3E"
+          },
+          {
+            "id": "fox_russet",
+            "hex": "#C45F33"
+          },
+          {
+            "id": "fox_cream",
+            "hex": "#E9C990"
+          },
+          {
+            "id": "tea_steam",
+            "hex": "#C8D0B0"
+          },
+          {
+            "id": "river_muted",
+            "hex": "#557F87"
+          },
+          {
+            "id": "night_indigo",
+            "hex": "#303951"
+          },
+          {
+            "id": "heart_cinnabar",
+            "hex": "#B2473F"
+          },
+          {
+            "id": "ki_gold",
+            "hex": "#D59D3F"
+          },
+          {
+            "id": "mind_violet",
+            "hex": "#756080"
+          }
+        ],
+        "biome_accents": [
+          {
+            "id": "white_country",
+            "colors": [
+              "#E3CFAB",
+              "#C8D0B0",
+              "#9CAA7F"
+            ]
+          },
+          {
+            "id": "red_country",
+            "colors": [
+              "#C45F33",
+              "#B2473F",
+              "#D59D3F"
+            ]
+          },
+          {
+            "id": "night_memory",
+            "colors": [
+              "#303951",
+              "#756080",
+              "#C8D0B0"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "moon_river_calm",
+        "name": "달빛 강물 고요",
+        "description": "밤, 강, 기억차 연출을 위해 청록과 남색을 살리되 채도는 낮춘 팔레트.",
+        "global": [
+          {
+            "id": "ink_line",
+            "hex": "#202428"
+          },
+          {
+            "id": "charcoal_shadow",
+            "hex": "#384048"
+          },
+          {
+            "id": "paper_warm",
+            "hex": "#DCD3BA"
+          },
+          {
+            "id": "clay_path",
+            "hex": "#9F8862"
+          },
+          {
+            "id": "tea_leaf",
+            "hex": "#66866B"
+          },
+          {
+            "id": "moss_deep",
+            "hex": "#3E5F55"
+          },
+          {
+            "id": "fox_russet",
+            "hex": "#B96745"
+          },
+          {
+            "id": "fox_cream",
+            "hex": "#E1CBA2"
+          },
+          {
+            "id": "tea_steam",
+            "hex": "#C5D6CF"
+          },
+          {
+            "id": "river_muted",
+            "hex": "#5B93A0"
+          },
+          {
+            "id": "night_indigo",
+            "hex": "#273D5B"
+          },
+          {
+            "id": "heart_cinnabar",
+            "hex": "#9F4B4E"
+          },
+          {
+            "id": "ki_gold",
+            "hex": "#CFA954"
+          },
+          {
+            "id": "mind_violet",
+            "hex": "#746C9A"
+          }
+        ],
+        "biome_accents": [
+          {
+            "id": "white_country",
+            "colors": [
+              "#DCD3BA",
+              "#C5D6CF",
+              "#8FAE9E"
+            ]
+          },
+          {
+            "id": "red_country",
+            "colors": [
+              "#B96745",
+              "#9F4B4E",
+              "#CFA954"
+            ]
+          },
+          {
+            "id": "night_memory",
+            "colors": [
+              "#273D5B",
+              "#746C9A",
+              "#C5D6CF"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "temple_ink_minimal",
+        "name": "사찰 먹선 미니멀",
+        "description": "선명한 외곽선과 단색 UI 가독성을 우선한 더 절제된 명암 대비 팔레트.",
+        "global": [
+          {
+            "id": "ink_line",
+            "hex": "#1F1D19"
+          },
+          {
+            "id": "charcoal_shadow",
+            "hex": "#3B3630"
+          },
+          {
+            "id": "paper_warm",
+            "hex": "#E8DEC9"
+          },
+          {
+            "id": "clay_path",
+            "hex": "#9D8564"
+          },
+          {
+            "id": "tea_leaf",
+            "hex": "#657D58"
+          },
+          {
+            "id": "moss_deep",
+            "hex": "#384F42"
+          },
+          {
+            "id": "fox_russet",
+            "hex": "#AA5A3C"
+          },
+          {
+            "id": "fox_cream",
+            "hex": "#DDC9A2"
+          },
+          {
+            "id": "tea_steam",
+            "hex": "#C8D2C2"
+          },
+          {
+            "id": "river_muted",
+            "hex": "#587B86"
+          },
+          {
+            "id": "night_indigo",
+            "hex": "#29364D"
+          },
+          {
+            "id": "heart_cinnabar",
+            "hex": "#9D4442"
+          },
+          {
+            "id": "ki_gold",
+            "hex": "#C79B45"
+          },
+          {
+            "id": "mind_violet",
+            "hex": "#6F617F"
+          }
+        ],
+        "biome_accents": [
+          {
+            "id": "white_country",
+            "colors": [
+              "#E8DEC9",
+              "#C8D2C2",
+              "#98A78F"
+            ]
+          },
+          {
+            "id": "red_country",
+            "colors": [
+              "#AA5A3C",
+              "#9D4442",
+              "#C79B45"
+            ]
+          },
+          {
+            "id": "night_memory",
+            "colors": [
+              "#29364D",
+              "#6F617F",
+              "#C8D2C2"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "red_country_warflag",
+        "name": "홍국 전란 깃발",
+        "description": "홍국 전란 구간을 강하게 읽히게 하는 심홍, 황금, 탁한 흙색 중심 팔레트.",
+        "global": [
+          {
+            "id": "ink_line",
+            "hex": "#2B211E"
+          },
+          {
+            "id": "charcoal_shadow",
+            "hex": "#4C3832"
+          },
+          {
+            "id": "paper_warm",
+            "hex": "#E1D1B5"
+          },
+          {
+            "id": "clay_path",
+            "hex": "#AD7A54"
+          },
+          {
+            "id": "tea_leaf",
+            "hex": "#6B7F52"
+          },
+          {
+            "id": "moss_deep",
+            "hex": "#3F5944"
+          },
+          {
+            "id": "fox_russet",
+            "hex": "#C15A38"
+          },
+          {
+            "id": "fox_cream",
+            "hex": "#E5C58F"
+          },
+          {
+            "id": "tea_steam",
+            "hex": "#C4CEB9"
+          },
+          {
+            "id": "river_muted",
+            "hex": "#5A7E88"
+          },
+          {
+            "id": "night_indigo",
+            "hex": "#30384F"
+          },
+          {
+            "id": "heart_cinnabar",
+            "hex": "#B63D3D"
+          },
+          {
+            "id": "ki_gold",
+            "hex": "#D3A13B"
+          },
+          {
+            "id": "mind_violet",
+            "hex": "#765F83"
+          }
+        ],
+        "biome_accents": [
+          {
+            "id": "white_country",
+            "colors": [
+              "#E1D1B5",
+              "#C4CEB9",
+              "#98A17F"
+            ]
+          },
+          {
+            "id": "red_country",
+            "colors": [
+              "#C15A38",
+              "#B63D3D",
+              "#D3A13B"
+            ]
+          },
+          {
+            "id": "night_memory",
+            "colors": [
+              "#30384F",
+              "#765F83",
+              "#C4CEB9"
+            ]
+          }
+        ]
+      }
+    ]
   },
   "asset_profiles": {
     "character_sprite": {
