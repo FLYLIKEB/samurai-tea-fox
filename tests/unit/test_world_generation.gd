@@ -12,7 +12,7 @@ func run(asserts) -> void:
 
 	var biome := catalog.find_by_id("biomes", "common_region")
 	var generator := WorldGenerator.new()
-	var options := _generator_options()
+	var options := {}
 	var a := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
 	var b := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
 	var c := generator.generate(11038, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
@@ -26,6 +26,7 @@ func run(asserts) -> void:
 	asserts.true_value(a.resource_accessibility.valid, "resources have reachable access points")
 	asserts.equal(a.data_version, "notion-2026-09-01", "world stores data version")
 	asserts.true_value(a.chunks.size() > 0, "world records deterministic chunk composition")
+	asserts.equal(a.min_resource_nodes, 9, "minimum resource nodes come from balance data")
 	asserts.true_value(a.resource_nodes.size() >= a.min_resource_nodes, "world places minimum resources")
 	asserts.equal(a.connectivity.required_landmark_ids.size(), 3, "entry, teleport, and core dungeon are required")
 	asserts.true_value(a.has("world_data"), "generator exposes pure world data")
@@ -51,24 +52,27 @@ func run(asserts) -> void:
 	asserts.equal(failed.failure_reason, "connectivity_or_resource_validation_failed", "failure reason is explicit")
 
 	var missing_resource_biome := biome.duplicate(true)
-	missing_resource_biome.erase("resource_item_ids")
+	missing_resource_biome.erase("resources")
 	var missing_resource := generator.generate(11037, catalog.data_version, missing_resource_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
-	asserts.false_value(missing_resource.ok, "biome without stable resource ids fails")
-	asserts.equal(missing_resource.failure_reason, "missing_biome_resource_item_ids", "missing biome resource ids are explicit")
+	asserts.false_value(missing_resource.ok, "biome without resource text fails")
+	asserts.equal(missing_resource.failure_reason, "missing_biome_resources", "missing biome resources are explicit")
 
-	var missing_item_biome := biome.duplicate(true)
-	missing_item_biome.resource_item_ids = ["missing_item"]
-	var missing_item := generator.generate(11037, catalog.data_version, missing_item_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
-	asserts.false_value(missing_item.ok, "biome resource ids must exist in item definitions")
-	asserts.equal(missing_item.failure_reason, "missing_biome_resource_item_definition", "missing resource item definition is explicit")
-	asserts.equal(missing_item.missing_ids, ["missing_item"], "missing resource id is reported")
+	var non_material_items := []
+	for item in catalog.get_definitions("items"):
+		var copied: Dictionary = item.duplicate(true)
+		copied.type = "도구"
+		non_material_items.append(copied)
+	var missing_item := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), non_material_items, options)
+	asserts.false_value(missing_item.ok, "biome resource text must resolve to material item definitions")
+	asserts.equal(missing_item.failure_reason, "missing_biome_resource_item_definitions", "missing material item definitions are explicit")
 
-	var missing_minimum := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var balance_without_minimum := []
+	for item in catalog.get_definitions("balance"):
+		if item.get("id", "") != "biome_min_resource_nodes":
+			balance_without_minimum.append(item)
+	var missing_minimum := generator.generate(11037, catalog.data_version, biome, balance_without_minimum, catalog.get_definitions("items"))
 	asserts.false_value(missing_minimum.ok, "minimum resource count is not hidden behind production fallback")
 	asserts.equal(missing_minimum.failure_reason, "missing_min_resource_nodes_config", "missing minimum resource count is explicit")
-
-func _generator_options() -> Dictionary:
-	return {"min_resource_nodes": 9}
 
 func _assert_resource_accessibility(asserts, world: Dictionary) -> void:
 	var validator := ConnectivityValidator.new()

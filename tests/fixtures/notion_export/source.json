@@ -16,15 +16,15 @@
           "status": "확정",
           "type": "다구"
         },
-        {"id": "wood", "name": "목재", "status": "확정"},
-        {"id": "clay", "name": "점토", "status": "테스트"},
+        {"id": "wood", "name": "목재", "status": "확정", "type": "재료"},
+        {"id": "clay", "name": "점토", "status": "테스트", "type": "재료"},
         {"id": "obsolete_item", "name": "폐기 아이템", "status": "폐기"}
       ]
     },
     "biomes": {
       "source": "collection://biomes",
       "items": [
-        {"id": "common_region", "name": "일반 지역", "status": "확정"}
+        {"id": "common_region", "name": "일반 지역", "status": "확정", "resources": "목재, 점토"}
       ]
     },
     "recipes": {
@@ -43,6 +43,7 @@
       "source": "collection://balance",
       "items": [
         {"id": "player_hp_max", "name": "플레이어 HP 최대치", "status": "테스트", "value": 100},
+        {"id": "biome_min_resource_nodes", "notion_id": "3ce37369-9e66-81a1-8047-c02aad9c81dc", "name": "일반 바이옴 최소 자원 노드 수", "status": "테스트", "category": "월드", "unit": "개", "value": 9, "description": "일반 바이옴이 플레이 가능한 자원 접근성을 보장하기 위한 최소 배치 수", "formula_note": "일반 바이옴 생성 시 최소 resource node 수"},
         {"id": "day_phase_duration_seconds", "notion_id": "3ce37369-9e66-8142-bdd7-e6eaff3fe967", "name": "낮 지속시간", "status": "테스트", "category": "心", "unit": "초", "value": 300, "description": "낮 상태의 프로토타입 지속시간", "formula_note": "낮에는 心 감소가 없다. DEV-6 프로토타입 시간대 전이값."},
         {"id": "dusk_phase_duration_seconds", "notion_id": "3ce37369-9e66-8137-8069-e0b914681ae1", "name": "해질녘 지속시간", "status": "테스트", "category": "心", "unit": "초", "value": 120, "description": "해질녘 상태의 프로토타입 지속시간", "formula_note": "DEV-6 프로토타입 시간대 전이값."},
         {"id": "night_phase_duration_seconds", "notion_id": "3ce37369-9e66-8191-91c3-c04612c42293", "name": "밤 지속시간", "status": "테스트", "category": "心", "unit": "초", "value": 240, "description": "밤 상태의 프로토타입 지속시간", "formula_note": "DEV-6 프로토타입 시간대 전이값."},

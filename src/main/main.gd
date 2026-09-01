@@ -34,7 +34,7 @@ func _ready() -> void:
 		return
 
 	var generator := WorldGenerator.new()
-	generated_world = generator.generate(11037, catalog.data_version, common_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), {"min_resource_nodes": 9})
+	generated_world = generator.generate(11037, catalog.data_version, common_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
 
 func _physics_process(_delta: float) -> void:
 	var desktop_command = _desktop_adapter.poll_movement_command()

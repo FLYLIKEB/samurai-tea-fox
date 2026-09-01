@@ -235,30 +235,22 @@ func _reachable_access_position(position: Vector2i, reachable_cells: Dictionary,
 	return Vector2i(-1, -1)
 
 func _biome_resource_item_ids(biome_definition: Dictionary, item_definitions: Array) -> Dictionary:
-	var biome_resource_ids: Array = biome_definition.get("resource_item_ids", [])
-	if biome_resource_ids.is_empty():
-		return {"ok": false, "reason": "missing_biome_resource_item_ids", "ids": []}
-
-	var exported_ids := {}
-	for item in item_definitions:
-		var exported_id := String(item.get("id", ""))
-		if exported_id != "":
-			exported_ids[exported_id] = true
+	var resource_text := String(biome_definition.get("resources", ""))
+	if resource_text.strip_edges() == "":
+		return {"ok": false, "reason": "missing_biome_resources", "ids": []}
 
 	var ids := []
-	var missing_ids := []
-	for id in biome_resource_ids:
-		var resource_id := String(id)
-		if resource_id == "":
+	for item in item_definitions:
+		if String(item.get("type", "")) != "재료":
 			continue
-		if not exported_ids.is_empty() and not exported_ids.has(resource_id):
-			missing_ids.append(resource_id)
+		var item_id := String(item.get("id", ""))
+		var item_name := String(item.get("name", ""))
+		if item_id == "" or item_name == "":
 			continue
-		ids.append(resource_id)
-	if not missing_ids.is_empty():
-		return {"ok": false, "reason": "missing_biome_resource_item_definition", "ids": ids, "missing_ids": missing_ids}
+		if resource_text.contains(item_name):
+			ids.append(item_id)
 	if ids.is_empty():
-		return {"ok": false, "reason": "missing_biome_resource_item_ids", "ids": []}
+		return {"ok": false, "reason": "missing_biome_resource_item_definitions", "ids": []}
 	return {"ok": true, "ids": ids}
 
 func _minimum_resource_nodes(balance_definitions: Array, options: Dictionary) -> Dictionary:
