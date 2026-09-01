@@ -51,6 +51,25 @@ func validate_world_data(world_data: Dictionary) -> Dictionary:
 		"unreachable_required_landmarks": unreachable_landmarks
 	}
 
+func reachable_cell_keys_from_entry(world_data: Dictionary) -> Dictionary:
+	var entry := _entry_landmark(world_data)
+	if entry.is_empty():
+		return {}
+	return _reachable_cells(world_data, _vector_from_dictionary(entry.position), _cell_index(world_data))
+
+func validate_access_points(world_data: Dictionary, access_points: Array) -> Dictionary:
+	var reachable := reachable_cell_keys_from_entry(world_data)
+	var unreachable := []
+	for access_point in access_points:
+		var position := _vector_from_dictionary(access_point)
+		if not reachable.has(_key(position)):
+			unreachable.append(access_point.duplicate(true))
+	return {
+		"valid": unreachable.is_empty(),
+		"reachable_access_points": access_points.size() - unreachable.size(),
+		"unreachable_access_points": unreachable
+	}
+
 func _entry_landmark(world_data: Dictionary) -> Dictionary:
 	for landmark in world_data.get("required_landmarks", []):
 		if landmark.get("kind", landmark.get("type", "")) == WorldData.LANDMARK_ENTRY:

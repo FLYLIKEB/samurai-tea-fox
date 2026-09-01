@@ -1,5 +1,5 @@
 {
-  "content_hash": "2b289ce268d733444a9d9a2d13d34f1b64dfd9f19b5d0c50763d2f1c1caea7ac",
+  "content_hash": "ec5ce95314cefb8e50b9743befa982cbf3caaebb921c6c74fa6624fd72a49370",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -23,7 +23,12 @@
       "status": "확정",
       "teleport": true,
       "terrain": "풀밭, 흙길, 돌길, 작은 숲, 강, 다리, 논밭, 마을",
-      "type": "바이옴"
+      "type": "바이옴",
+      "resource_item_ids": [
+        "wood",
+        "stone",
+        "clay"
+      ]
     },
     {
       "difficulty": 1,

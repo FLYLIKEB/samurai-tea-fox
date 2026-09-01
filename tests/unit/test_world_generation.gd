@@ -1,6 +1,8 @@
 extends RefCounted
 
+const ConnectivityValidator = preload("res://src/world/generation/connectivity_validator.gd")
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
+const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 
 func run(asserts) -> void:
@@ -10,16 +12,18 @@ func run(asserts) -> void:
 
 	var biome := catalog.find_by_id("biomes", "common_region")
 	var generator := WorldGenerator.new()
-	var a := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	var b := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	var c := generator.generate(11038, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	var d := generator.generate(11037, "notion-2026-09-02", biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var options := _generator_options()
+	var a := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
+	var b := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
+	var c := generator.generate(11038, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
+	var d := generator.generate(11037, "notion-2026-09-02", biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
 
 	asserts.true_value(a.ok, "world generation succeeds")
-	asserts.equal(a, b, "same seed and data version generate same world")
-	asserts.true_value(a != c, "different seed changes generated world")
-	asserts.true_value(a != d, "different data version changes generated world")
+	asserts.equal(_canonical_world(a), _canonical_world(b), "same seed and data version generate same canonical world")
+	asserts.true_value(_canonical_world(a) != _canonical_world(c), "different seed changes generated canonical world")
+	asserts.true_value(_canonical_world(a) != _canonical_world(d), "different data version changes generated canonical world")
 	asserts.true_value(a.connectivity.valid, "required landmarks are connectivity-valid")
+	asserts.true_value(a.resource_accessibility.valid, "resources have reachable access points")
 	asserts.equal(a.data_version, "notion-2026-09-01", "world stores data version")
 	asserts.true_value(a.chunks.size() > 0, "world records deterministic chunk composition")
 	asserts.true_value(a.resource_nodes.size() >= a.min_resource_nodes, "world places minimum resources")
@@ -27,17 +31,72 @@ func run(asserts) -> void:
 	asserts.true_value(a.has("world_data"), "generator exposes pure world data")
 	asserts.true_value(a.has("renderer_input"), "generator exposes renderer input contract")
 	asserts.equal(a.renderer_input.read_only, true, "renderer input is read-only projection")
+	_assert_resource_accessibility(asserts, a)
 
-	for seed in range(11000, 11025):
-		var generated := generator.generate(seed, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	for seed in range(11000, 11125):
+		var generated := generator.generate(seed, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
+		var repeated := generator.generate(seed, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
 		asserts.true_value(generated.ok, "seed %d generates successfully" % seed)
+		asserts.equal(_canonical_world(generated), _canonical_world(repeated), "seed %d is canonically deterministic" % seed)
 		asserts.true_value(generated.connectivity.valid, "seed %d connects all required landmarks" % seed)
+		asserts.true_value(generated.resource_accessibility.valid, "seed %d keeps resources reachable" % seed)
 		asserts.true_value(generated.retry_attempt <= generated.retry_limit, "seed %d stays inside retry limit" % seed)
 		asserts.true_value(generated.resource_nodes.size() >= generated.min_resource_nodes, "seed %d places minimum resources" % seed)
+		_assert_resource_accessibility(asserts, generated)
 
-	var impossible_balance := catalog.get_definitions("balance").duplicate(true)
-	impossible_balance.append({"id": "biome_min_resource_nodes", "value": 5000})
-	var failed := generator.generate(11037, catalog.data_version, biome, impossible_balance, catalog.get_definitions("items"), {"retry_limit": 2, "max_resource_placement_attempts": 32})
+	var impossible_options := {"min_resource_nodes": 5000, "retry_limit": 2, "max_resource_placement_attempts": 32}
+	var failed := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), impossible_options)
 	asserts.false_value(failed.ok, "generator reports failure after retry cap")
 	asserts.equal(failed.retry_limit, 2, "failure records retry limit")
 	asserts.equal(failed.failure_reason, "connectivity_or_resource_validation_failed", "failure reason is explicit")
+
+	var missing_resource_biome := biome.duplicate(true)
+	missing_resource_biome.erase("resource_item_ids")
+	var missing_resource := generator.generate(11037, catalog.data_version, missing_resource_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
+	asserts.false_value(missing_resource.ok, "biome without stable resource ids fails")
+	asserts.equal(missing_resource.failure_reason, "missing_biome_resource_item_ids", "missing biome resource ids are explicit")
+
+	var missing_item_biome := biome.duplicate(true)
+	missing_item_biome.resource_item_ids = ["missing_item"]
+	var missing_item := generator.generate(11037, catalog.data_version, missing_item_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
+	asserts.false_value(missing_item.ok, "biome resource ids must exist in item definitions")
+	asserts.equal(missing_item.failure_reason, "missing_biome_resource_item_definition", "missing resource item definition is explicit")
+	asserts.equal(missing_item.missing_ids, ["missing_item"], "missing resource id is reported")
+
+	var missing_minimum := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	asserts.false_value(missing_minimum.ok, "minimum resource count is not hidden behind production fallback")
+	asserts.equal(missing_minimum.failure_reason, "missing_min_resource_nodes_config", "missing minimum resource count is explicit")
+
+func _generator_options() -> Dictionary:
+	return {"min_resource_nodes": 9}
+
+func _assert_resource_accessibility(asserts, world: Dictionary) -> void:
+	var validator := ConnectivityValidator.new()
+	var access_points := []
+	var interactable_owner_ids := _interactable_owner_ids(world.renderer_input)
+	for node in world.resource_nodes:
+		access_points.append(node.access_position)
+		asserts.true_value(bool(node.placement_was_entry_reachable), "%s was placed on an entry-reachable cell" % node.id)
+		asserts.true_value(bool(node.interactable), "%s is marked interactable" % node.id)
+		asserts.true_value(interactable_owner_ids.has(node.id), "%s appears in renderer interactables" % node.id)
+		asserts.equal(_manhattan_distance(node.position, node.access_position), 1, "%s has adjacent access cell" % node.id)
+	var access_validation := validator.validate_access_points(world.world_data, access_points)
+	asserts.true_value(access_validation.valid, "all resource access points are entry-reachable")
+
+func _interactable_owner_ids(renderer_input: Dictionary) -> Dictionary:
+	var owner_ids := {}
+	for layer in renderer_input.layers:
+		if layer.id != WorldData.LAYER_INTERACTABLES:
+			continue
+		for cell in layer.cells:
+			owner_ids[cell.owner_id] = true
+	return owner_ids
+
+func _manhattan_distance(a: Dictionary, b: Dictionary) -> int:
+	return abs(int(a.x) - int(b.x)) + abs(int(a.y) - int(b.y))
+
+func _canonical_world(world: Dictionary) -> Dictionary:
+	var canonical := world.duplicate(true)
+	canonical.erase("retry_attempt")
+	canonical.erase("retry_limit")
+	return canonical

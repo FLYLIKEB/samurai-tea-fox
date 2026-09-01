@@ -11,8 +11,6 @@ const MAP_HEIGHT := 36
 const CHUNK_WIDTH := 8
 const CHUNK_HEIGHT := 6
 const DEFAULT_RETRY_LIMIT := 8
-const DEFAULT_MIN_RESOURCE_NODES := 9
-
 const TERRAIN_GROUND := "common_ground"
 const TERRAIN_GRASS := "common_grass"
 const TERRAIN_PATH := "common_path"
@@ -27,11 +25,18 @@ const RENDER_FIELD := "assets/tiles/terrain/plains/flower_grass_01_32x32.png"
 const RENDER_FOREST := "assets/tiles/terrain/forest/forest_boundary_tree_tileset_8x32.png"
 const RENDER_WATER := "assets/tiles/terrain/river/river_water_00_32.png"
 
-const COMMON_RESOURCE_ITEM_IDS := ["clay", "stone", "wood"]
+const BALANCE_MIN_RESOURCE_NODES_ID := "biome_min_resource_nodes"
 
 func generate(seed: int, data_version: String, biome_definition: Dictionary, balance_definitions: Array, item_definitions := [], options := {}) -> Dictionary:
 	var retry_limit := int(options.get("retry_limit", DEFAULT_RETRY_LIMIT))
-	var min_resource_nodes := int(_balance_value(balance_definitions, "biome_min_resource_nodes", DEFAULT_MIN_RESOURCE_NODES))
+	var resource_result := _biome_resource_item_ids(biome_definition, item_definitions)
+	if not resource_result.ok:
+		return _failure(seed, data_version, biome_definition, retry_limit, resource_result.reason, resource_result)
+	var resource_ids: Array = resource_result.ids
+	var min_resource_result := _minimum_resource_nodes(balance_definitions, options)
+	if not min_resource_result.ok:
+		return _failure(seed, data_version, biome_definition, retry_limit, min_resource_result.reason)
+	var min_resource_nodes := int(min_resource_result.value)
 	var max_resource_placement_attempts := int(options.get("max_resource_placement_attempts", max(64, min_resource_nodes * 24)))
 	var core_dungeon_count := _balance_value(balance_definitions, "biome_core_dungeon_count", 1)
 	var teleport_zone_count := _balance_value(balance_definitions, "biome_teleport_zone_count", 1)
@@ -50,19 +55,24 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 			int(teleport_zone_count),
 			min_resource_nodes,
 			max_resource_placement_attempts,
-			item_definitions
+			resource_ids
 		)
 		if world.ok:
 			return world
 
 	return _failure(seed, data_version, biome_definition, retry_limit, "connectivity_or_resource_validation_failed")
 
-func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, item_definitions: Array) -> Dictionary:
+func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array) -> Dictionary:
 	var world_data := WorldData.new(MAP_WIDTH, MAP_HEIGHT, TERRAIN_GROUND, true)
 	var chunks := _compose_chunks(rng, world_data)
 	var landmarks := _place_required_landmarks(world_data, rng, core_dungeon_count, teleport_zone_count)
 	_carve_landmark_paths(world_data, landmarks)
-	var resource_nodes := _place_resource_nodes(world_data, rng, min_resource_nodes, max_resource_placement_attempts, _resource_item_ids(item_definitions))
+	var validator := ConnectivityValidator.new()
+	var reachable_cells := validator.reachable_cell_keys_from_entry(world_data.to_dictionary())
+	var resource_nodes := _place_resource_nodes(world_data, rng, min_resource_nodes, max_resource_placement_attempts, resource_ids, reachable_cells)
+	var access_points := []
+	for resource_node in resource_nodes:
+		access_points.append(resource_node.access_position)
 
 	var world := {
 		"schema_version": 1,
@@ -77,16 +87,17 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 		"min_resource_nodes": min_resource_nodes,
 		"retry_attempt": attempt,
 		"retry_limit": retry_limit,
+		"resource_accessibility": {},
 		"connectivity": {},
 		"world_data": world_data.to_dictionary()
 	}
 
-	var validator := ConnectivityValidator.new()
 	world.renderer_input = WorldRendererProjection.new().project(world.world_data)
 	world.connectivity = validator.validate(world)
-	world.ok = world.connectivity.valid and resource_nodes.size() >= min_resource_nodes
+	world.resource_accessibility = validator.validate_access_points(world.world_data, access_points)
+	world.ok = world.connectivity.valid and world.resource_accessibility.valid and resource_nodes.size() >= min_resource_nodes
 	if not world.ok:
-		world.failure_reason = "connectivity_failed" if not world.connectivity.valid else "minimum_resource_nodes_unmet"
+		world.failure_reason = _attempt_failure_reason(world.connectivity, world.resource_accessibility, resource_nodes.size(), min_resource_nodes)
 	return world
 
 func _compose_chunks(rng: DeterministicRng, world_data: WorldData) -> Array:
@@ -188,14 +199,18 @@ func _make_path_cell(world_data: WorldData, position: Vector2i) -> void:
 	var terrain := TERRAIN_BRIDGE if not world_data.is_walkable(position) else TERRAIN_PATH
 	world_data.set_terrain(position, terrain, true, RENDER_GROUND)
 
-func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array) -> Array:
+func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, reachable_cells: Dictionary) -> Array:
 	var nodes := []
 	var max_attempts: int = max(0, max_resource_placement_attempts)
+	var cardinal_offsets := [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]
 	for attempt in range(max_attempts):
 		if nodes.size() >= min_resource_nodes:
 			break
 		var position := Vector2i(rng.next_range(2, MAP_WIDTH - 3), rng.next_range(2, MAP_HEIGHT - 3))
-		if not world_data.is_walkable(position):
+		if not world_data.is_walkable(position) or not reachable_cells.has(_key(position)):
+			continue
+		var access_position := _reachable_access_position(position, reachable_cells, cardinal_offsets)
+		if access_position == Vector2i(-1, -1):
 			continue
 		var owner_id := "resource_%d" % nodes.size()
 		var resource_id: String = String(resource_ids[nodes.size() % resource_ids.size()])
@@ -205,11 +220,25 @@ func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_res
 		nodes.append({
 			"id": owner_id,
 			"resource_id": resource_id,
-			"position": _position_dictionary(position)
+			"position": _position_dictionary(position),
+			"access_position": _position_dictionary(access_position),
+			"placement_was_entry_reachable": true,
+			"interactable": true
 		})
 	return nodes
 
-func _resource_item_ids(item_definitions: Array) -> Array:
+func _reachable_access_position(position: Vector2i, reachable_cells: Dictionary, offsets: Array) -> Vector2i:
+	for offset in offsets:
+		var access_position: Vector2i = position + offset
+		if reachable_cells.has(_key(access_position)):
+			return access_position
+	return Vector2i(-1, -1)
+
+func _biome_resource_item_ids(biome_definition: Dictionary, item_definitions: Array) -> Dictionary:
+	var biome_resource_ids: Array = biome_definition.get("resource_item_ids", [])
+	if biome_resource_ids.is_empty():
+		return {"ok": false, "reason": "missing_biome_resource_item_ids", "ids": []}
+
 	var exported_ids := {}
 	for item in item_definitions:
 		var exported_id := String(item.get("id", ""))
@@ -217,15 +246,40 @@ func _resource_item_ids(item_definitions: Array) -> Array:
 			exported_ids[exported_id] = true
 
 	var ids := []
-	for id in COMMON_RESOURCE_ITEM_IDS:
-		if exported_ids.is_empty() or exported_ids.has(id):
-			ids.append(id)
+	var missing_ids := []
+	for id in biome_resource_ids:
+		var resource_id := String(id)
+		if resource_id == "":
+			continue
+		if not exported_ids.is_empty() and not exported_ids.has(resource_id):
+			missing_ids.append(resource_id)
+			continue
+		ids.append(resource_id)
+	if not missing_ids.is_empty():
+		return {"ok": false, "reason": "missing_biome_resource_item_definition", "ids": ids, "missing_ids": missing_ids}
 	if ids.is_empty():
-		return COMMON_RESOURCE_ITEM_IDS.duplicate()
-	return ids
+		return {"ok": false, "reason": "missing_biome_resource_item_ids", "ids": []}
+	return {"ok": true, "ids": ids}
 
-func _failure(seed: int, data_version: String, biome_definition: Dictionary, retry_limit: int, reason: String) -> Dictionary:
-	return {
+func _minimum_resource_nodes(balance_definitions: Array, options: Dictionary) -> Dictionary:
+	if options.has("min_resource_nodes"):
+		return {"ok": true, "value": max(0, int(options.min_resource_nodes))}
+	for item in balance_definitions:
+		if item.get("id", "") == BALANCE_MIN_RESOURCE_NODES_ID:
+			return {"ok": true, "value": max(0, int(item.get("value", 0)))}
+	return {"ok": false, "reason": "missing_min_resource_nodes_config"}
+
+func _attempt_failure_reason(connectivity: Dictionary, resource_accessibility: Dictionary, resource_count: int, min_resource_nodes: int) -> String:
+	if not connectivity.valid:
+		return "connectivity_failed"
+	if not resource_accessibility.valid:
+		return "resource_accessibility_failed"
+	if resource_count < min_resource_nodes:
+		return "minimum_resource_nodes_unmet"
+	return "unknown_generation_failure"
+
+func _failure(seed: int, data_version: String, biome_definition: Dictionary, retry_limit: int, reason: String, details := {}) -> Dictionary:
+	var failure := {
 		"schema_version": 1,
 		"ok": false,
 		"data_version": data_version,
@@ -234,6 +288,10 @@ func _failure(seed: int, data_version: String, biome_definition: Dictionary, ret
 		"retry_limit": retry_limit,
 		"failure_reason": reason
 	}
+	for key in details.keys():
+		if key != "ok" and key != "reason":
+			failure[key] = details[key]
+	return failure
 
 func _balance_value(balance_definitions: Array, id: String, fallback: float) -> float:
 	for item in balance_definitions:
@@ -252,3 +310,6 @@ func _position_dictionary(position: Vector2i) -> Dictionary:
 
 func _vector_from_dictionary(data: Dictionary) -> Vector2i:
 	return Vector2i(int(data.get("x", 0)), int(data.get("y", 0)))
+
+func _key(position: Vector2i) -> String:
+	return "%d,%d" % [position.x, position.y]
