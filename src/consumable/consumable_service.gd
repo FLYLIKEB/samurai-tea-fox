@@ -18,7 +18,7 @@ var data_version := ""
 var use_base_seconds := 0.0
 var consumable_definitions: Dictionary = {}
 var next_action_id := 1
-var active_action_owners: Dictionary = {}
+var _active_action: Dictionary = {}
 
 static func from_catalog(catalog) -> Dictionary:
 	var seconds_result := _required_positive_number_balance(catalog, BALANCE_USE_SECONDS_ID)
@@ -50,7 +50,7 @@ func configure(new_use_base_seconds: float, new_consumable_definitions: Dictiona
 	consumable_definitions = new_consumable_definitions.duplicate()
 	data_version = new_data_version
 	next_action_id = 1
-	active_action_owners.clear()
+	_active_action.clear()
 	return {"ok": true}
 
 func has_definition(item_id: String) -> bool:
@@ -63,8 +63,10 @@ func definition_for(item_id: String) -> Dictionary:
 	return definition.to_dictionary()
 
 func start_use(item_id: String, inventory, context := {}) -> Dictionary:
-	if not active_action_owners.is_empty():
+	if not _active_action.is_empty():
 		return _fail_and_emit(_fail("active_consumable_action", "A consumable use action is already active."))
+	if typeof(context) != TYPE_DICTIONARY:
+		return _fail_and_emit(_fail("invalid_consumable_action", "Consumable action context must be a dictionary."))
 	if not consumable_definitions.has(item_id):
 		return _fail_and_emit(_fail("unknown_consumable", "Unknown consumable definition: %s" % item_id))
 	if inventory == null or not inventory.has_method("get_total_quantity") or inventory.get_total_quantity(item_id) < 1:
@@ -79,32 +81,33 @@ func start_use(item_id: String, inventory, context := {}) -> Dictionary:
 		"completed": false,
 		"interrupted": false
 	}
-	active_action_owners[action.action_id] = _action_owner(action)
-	use_started.emit(_duplicate_dictionary(action))
-	return {"ok": true, "action": action}
+	_active_action = _duplicate_dictionary(action)
+	var action_copy := _duplicate_dictionary(_active_action)
+	use_started.emit(_duplicate_dictionary(action_copy))
+	return {"ok": true, "action": action_copy}
 
-func tick_use(action: Dictionary, delta_seconds: float, inventory, resources = null) -> Dictionary:
-	var action_result := _validate_action(action)
+func tick_use(delta_seconds: float, inventory, resources = null) -> Dictionary:
+	var action_result := _validate_active_action()
 	if not action_result.ok:
 		return _fail_and_emit(action_result)
 	if delta_seconds < 0.0 or not is_finite(delta_seconds):
 		return _fail_and_emit(_fail("invalid_delta", "Consumable use delta must be non-negative."))
-	var updated_action := _duplicate_dictionary(action)
-	updated_action.elapsed_seconds = min(
-		float(updated_action.use_seconds),
-		float(updated_action.elapsed_seconds) + delta_seconds
+	_active_action.elapsed_seconds = min(
+		float(_active_action.use_seconds),
+		float(_active_action.elapsed_seconds) + delta_seconds
 	)
-	if float(updated_action.elapsed_seconds) < float(updated_action.use_seconds):
-		return {"ok": true, "completed": false, "action": updated_action}
-	return complete_use(updated_action, inventory, resources)
+	if float(_active_action.elapsed_seconds) < float(_active_action.use_seconds):
+		return {"ok": true, "completed": false, "action": _duplicate_dictionary(_active_action)}
+	return complete_use(inventory, resources)
 
-func complete_use(action: Dictionary, inventory, resources = null) -> Dictionary:
-	var action_result := _validate_action(action)
+func complete_use(inventory, resources = null) -> Dictionary:
+	var action_result := _validate_active_action()
 	if not action_result.ok:
 		return _fail_and_emit(action_result)
 	if inventory == null or not inventory.has_method("get_total_quantity") or not inventory.has_method("remove_item"):
 		return _fail_and_emit(_fail("invalid_inventory", "Consumable use requires an inventory model."))
 
+	var action := _duplicate_dictionary(_active_action)
 	var item_id := String(action.item_id)
 	if inventory.get_total_quantity(item_id) < 1:
 		return _fail_and_emit(_fail("missing_consumable", "Consumable item is not available: %s" % item_id))
@@ -122,7 +125,7 @@ func complete_use(action: Dictionary, inventory, resources = null) -> Dictionary
 	var completed_action := _duplicate_dictionary(action)
 	completed_action.completed = true
 	completed_action.elapsed_seconds = float(completed_action.use_seconds)
-	active_action_owners.erase(String(action.action_id))
+	_active_action.clear()
 	var result := {
 		"ok": true,
 		"action": completed_action,
@@ -134,24 +137,23 @@ func complete_use(action: Dictionary, inventory, resources = null) -> Dictionary
 	use_completed.emit(_duplicate_dictionary(result))
 	return result
 
-func interrupt_use(action: Dictionary, reason := "hit") -> Dictionary:
-	var action_result := _validate_action(action)
+func interrupt_use(reason := "hit") -> Dictionary:
+	var action_result := _validate_active_action()
 	if not action_result.ok:
 		return _fail_and_emit(action_result)
-	var interrupted_action := _duplicate_dictionary(action)
+	var interrupted_action := _duplicate_dictionary(_active_action)
 	interrupted_action.interrupted = true
 	interrupted_action.interrupt_reason = reason
-	active_action_owners.erase(String(action.action_id))
+	_active_action.clear()
 	use_interrupted.emit(_duplicate_dictionary(interrupted_action))
 	return {"ok": true, "action": interrupted_action, "consumed": false}
 
-func to_snapshot(active_action := {}) -> Dictionary:
+func to_snapshot() -> Dictionary:
 	return {
 		"schema_version": SNAPSHOT_SCHEMA_VERSION,
 		"data_version": data_version,
 		"next_action_id": next_action_id,
-		"active_action_owners": _duplicate_dictionary(active_action_owners),
-		"active_action": _duplicate_dictionary(active_action)
+		"active_action": _duplicate_dictionary(_active_action)
 	}
 
 func load_snapshot(snapshot: Dictionary) -> Dictionary:
@@ -169,13 +171,13 @@ func load_snapshot(snapshot: Dictionary) -> Dictionary:
 	var sequence_result := _validate_snapshot_action_sequence(action_result.action, loaded_next_action_id_result.next_action_id)
 	if not sequence_result.ok:
 		return sequence_result
-	var owners_result := _normalize_snapshot_action_owners(snapshot.get("active_action_owners", {}), action_result.action)
-	if not owners_result.ok:
-		return owners_result
+	var legacy_owners_result := _validate_no_legacy_snapshot_authority(snapshot.get("active_action_owners", {}))
+	if not legacy_owners_result.ok:
+		return legacy_owners_result
 	data_version = loaded_data_version_result.data_version
 	next_action_id = loaded_next_action_id_result.next_action_id
-	active_action_owners = owners_result.active_action_owners
-	return {"ok": true, "active_action": action_result.action}
+	_active_action = _duplicate_dictionary(action_result.action)
+	return {"ok": true, "active_action": _duplicate_dictionary(_active_action)}
 
 static func _definitions_from_catalog(catalog, default_use_seconds: float) -> Dictionary:
 	var consumables: Dictionary = {}
@@ -209,13 +211,12 @@ func _validate_effect_target(definition: ConsumableDefinition, resources) -> Dic
 		return _fail("invalid_resources", "HP healing consumable requires a resource model with heal_hp.")
 	return {"ok": true}
 
-func _validate_action(action: Dictionary) -> Dictionary:
-	var shape_result := _validate_action_shape(action)
+func _validate_active_action() -> Dictionary:
+	if _active_action.is_empty():
+		return _fail("inactive_consumable_action", "No consumable use action is active.")
+	var shape_result := _validate_action_shape(_active_action)
 	if not shape_result.ok:
 		return shape_result
-	var ownership_result := _validate_action_ownership(action)
-	if not ownership_result.ok:
-		return ownership_result
 	return {"ok": true}
 
 func _normalize_snapshot_action(raw_action) -> Dictionary:
@@ -284,56 +285,18 @@ func _validate_action_shape(action: Dictionary) -> Dictionary:
 	var elapsed_seconds := float(action.elapsed_seconds)
 	if elapsed_seconds < 0.0 or not is_finite(elapsed_seconds) or elapsed_seconds > action_use_seconds:
 		return _fail("invalid_consumable_action", "Consumable action elapsed seconds are out of range.")
+	if action.has("context") and typeof(action.context) != TYPE_DICTIONARY:
+		return _fail("invalid_consumable_action", "Consumable action context must be a dictionary.")
 	return {"ok": true}
 
-func _validate_action_ownership(action: Dictionary) -> Dictionary:
-	var action_id := String(action.action_id)
-	if not active_action_owners.has(action_id):
-		return _fail("inactive_consumable_action", "Consumable action is not active: %s" % action_id)
-	if active_action_owners[action_id] != _action_owner(action):
-		return _fail("consumable_action_owner_mismatch", "Consumable action owner does not match active service state.")
-	return {"ok": true}
-
-func _action_owner(action: Dictionary) -> Dictionary:
-	return {
-		"item_id": String(action.get("item_id", "")),
-		"use_seconds": float(action.get("use_seconds", 0.0))
-	}
-
-func _normalize_snapshot_action_owners(raw_owners, active_action: Dictionary) -> Dictionary:
+func _validate_no_legacy_snapshot_authority(raw_owners) -> Dictionary:
 	if raw_owners == null:
-		raw_owners = {}
+		return {"ok": true}
 	if typeof(raw_owners) != TYPE_DICTIONARY:
 		return _fail("invalid_consumable_action_owners", "Consumable action owners snapshot must be a dictionary.")
-	var owners: Dictionary = _duplicate_dictionary(raw_owners)
-	if active_action.is_empty():
-		if not owners.is_empty():
-			return _fail("orphaned_consumable_action_owner", "Consumable action owner requires a matching active action.")
-		return {"ok": true, "active_action_owners": {}}
-	if owners.size() != 1:
-		return _fail("consumable_action_owner_mismatch", "Consumable action owner must match exactly one active action.")
-	var expected_action_id := String(active_action.action_id)
-	if not owners.has(expected_action_id):
-		return _fail("consumable_action_owner_mismatch", "Consumable action owner id does not match active action.")
-	for action_id in owners:
-		if typeof(action_id) != TYPE_STRING or String(action_id).is_empty():
-			return _fail("invalid_consumable_action_owners", "Consumable action owner id must be a non-empty string.")
-		var owner = owners[action_id]
-		if typeof(owner) != TYPE_DICTIONARY:
-			return _fail("invalid_consumable_action_owners", "Consumable action owner must be a dictionary.")
-		var item_id := String(owner.get("item_id", ""))
-		if item_id.is_empty() or not consumable_definitions.has(item_id):
-			return _fail("unknown_consumable", "Consumable action owner references unknown item: %s" % item_id)
-		var use_seconds = owner.get("use_seconds", null)
-		if typeof(use_seconds) not in [TYPE_INT, TYPE_FLOAT]:
-			return _fail("invalid_consumable_action_owners", "Consumable action owner use seconds must be numeric.")
-		if not is_equal_approx(float(use_seconds), float(consumable_definitions[item_id].use_seconds)):
-			return _fail("consumable_timing_mismatch", "Consumable action owner timing does not match current definition: %s" % item_id)
-	if owners[expected_action_id] != _action_owner(active_action):
-		return _fail("consumable_action_owner_mismatch", "Consumable action owner does not match active action.")
-	var normalized_owners := {}
-	normalized_owners[expected_action_id] = _action_owner(active_action)
-	return {"ok": true, "active_action_owners": normalized_owners}
+	if not raw_owners.is_empty():
+		return _fail("legacy_consumable_action_owners", "Consumable action owner snapshots are no longer authoritative.")
+	return {"ok": true}
 
 func _next_action_id() -> String:
 	var value := "consumable_action_%06d" % next_action_id
