@@ -32,6 +32,7 @@ func run(asserts) -> void:
 	asserts.true_value(a.has("world_data"), "generator exposes pure world data")
 	asserts.true_value(a.has("renderer_input"), "generator exposes renderer input contract")
 	asserts.equal(a.renderer_input.read_only, true, "renderer input is read-only projection")
+	_assert_renderer_source_paths_exist(asserts, a.renderer_input)
 	_assert_resource_accessibility(asserts, a)
 
 	for seed in range(11000, 11125):
@@ -43,6 +44,7 @@ func run(asserts) -> void:
 		asserts.true_value(generated.resource_accessibility.valid, "seed %d keeps resources reachable" % seed)
 		asserts.true_value(generated.retry_attempt <= generated.retry_limit, "seed %d stays inside retry limit" % seed)
 		asserts.true_value(generated.resource_nodes.size() >= generated.min_resource_nodes, "seed %d places minimum resources" % seed)
+		_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 		_assert_resource_accessibility(asserts, generated)
 
 	var impossible_options := {"min_resource_nodes": 5000, "retry_limit": 2, "max_resource_placement_attempts": 32}
@@ -95,6 +97,21 @@ func _interactable_owner_ids(renderer_input: Dictionary) -> Dictionary:
 		for cell in layer.cells:
 			owner_ids[cell.owner_id] = true
 	return owner_ids
+
+func _assert_renderer_source_paths_exist(asserts, renderer_input: Dictionary) -> void:
+	var seen := {}
+	for layer in renderer_input.layers:
+		for cell in layer.cells:
+			if not cell.has("source_id"):
+				continue
+			var source_id := String(cell.source_id)
+			if not source_id.begins_with("assets/"):
+				continue
+			seen[source_id] = true
+
+	for source_id in seen.keys():
+		var source_path := "res://%s" % source_id
+		asserts.true_value(FileAccess.file_exists(source_path), "renderer source path exists: %s" % source_id)
 
 func _manhattan_distance(a: Dictionary, b: Dictionary) -> int:
 	return abs(int(a.x) - int(b.x)) + abs(int(a.y) - int(b.y))

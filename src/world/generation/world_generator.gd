@@ -19,11 +19,11 @@ const TERRAIN_FOREST := "common_forest"
 const TERRAIN_WATER := "common_water"
 const TERRAIN_BRIDGE := "common_bridge"
 
-const RENDER_GROUND := "assets/tiles/art-9_common_flat_ground_32.png"
+const RENDER_GROUND := "assets/tiles/terrain/plains/grass_ground_01_32x32.png"
 const RENDER_GRASS := "assets/tiles/terrain/plains/grass_ground_01_32x32.png"
 const RENDER_FIELD := "assets/tiles/terrain/plains/flower_grass_01_32x32.png"
 const RENDER_FOREST := "assets/tiles/terrain/forest/forest_boundary_tree_tileset_8x32.png"
-const RENDER_WATER := "assets/tiles/terrain/river/river_water_00_32.png"
+const RENDER_WATER := "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_202_420_146x145_resize_32x32.png"
 
 const BALANCE_MIN_RESOURCE_NODES_ID := "biome_min_resource_nodes"
 
