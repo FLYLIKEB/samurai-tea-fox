@@ -19,3 +19,12 @@ exports/
 .idea/
 .vscode/
 
+# Local Codex/OMX runtime state
+.omx/
+
+# Python tooling caches
+__pycache__/
+*.py[cod]
+
+# Local asset tool backups
+tools/asset_browser/palette_backups/
