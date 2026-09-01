@@ -5,8 +5,8 @@ const DesktopCommandAdapter = preload("res://src/core/commands/desktop_command_a
 const MovementCommandSelector = preload("res://src/core/commands/movement_command_selector.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 
-@onready var player: PlayerController = $Player
-@onready var combat_dummy: CombatDummy = $CombatDummy
+@onready var player = $Player
+@onready var combat_dummy = $CombatDummy
 
 var catalog
 var generated_world: Dictionary = {}
