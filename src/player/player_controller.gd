@@ -11,7 +11,6 @@ const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
 
 const TILE_SIZE_PIXELS := 32.0
 const PLAYER_COMBAT_ID := "player"
-const PLAYER_SPRITE_ASSET_ID := "fox_samurai_front_idle"
 
 signal attack_started(swing: Dictionary)
 signal ability_cast(result: Dictionary)
@@ -236,9 +235,21 @@ func _position_attack_area(direction: Vector2, range_tiles: float) -> void:
 
 func _update_sprite_frame() -> void:
 	if sprite != null:
-		if PLAYER_SPRITE_ASSET_ID == _current_sprite_asset_id:
+		var sprite_asset_id := _sprite_asset_id_for_facing()
+		if sprite_asset_id == _current_sprite_asset_id:
 			return
-		var texture := asset_catalog.load_texture(PLAYER_SPRITE_ASSET_ID)
+		var texture := asset_catalog.load_texture(sprite_asset_id)
 		if texture != null:
 			sprite.texture = texture
-			_current_sprite_asset_id = PLAYER_SPRITE_ASSET_ID
+			_current_sprite_asset_id = sprite_asset_id
+
+func _sprite_asset_id_for_facing() -> String:
+	match movement_state.facing:
+		PlayerMovementState.Facing.UP:
+			return "fox_samurai_back_idle"
+		PlayerMovementState.Facing.LEFT:
+			return "fox_samurai_left_idle"
+		PlayerMovementState.Facing.RIGHT:
+			return "fox_samurai_right_idle"
+		_:
+			return "fox_samurai_front_idle"
