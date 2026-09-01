@@ -1,0 +1,1558 @@
+{
+  "description": "Promoted final raster assets available to the game runtime. Provenance folders and candidate names were removed after promotion.",
+  "source_cleanup": {
+    "status": "removed_after_promotion",
+    "source_folder_exists": false,
+    "remaining_source_files": 0,
+    "remaining_source_image_files": 0
+  },
+  "total_runtime_pngs": 220,
+  "runtime_roots": [
+    "assets/backgrounds",
+    "assets/sprites",
+    "assets/tiles",
+    "assets/ui"
+  ],
+  "assets": [
+    {
+      "path": "assets/backgrounds/interiors/mossy-ruins/mossy_dungeon_room.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/backgrounds/interiors/mossy-ruins/mossy_room_variation_set.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/backgrounds/interiors/mossy-ruins/mossy_ruined_teahouse_room.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/backgrounds/interiors/ruined-dojo-rooms/ruined_dark_dojo_interior.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/backgrounds/interiors/ruined-dojo-rooms/ruined_wood_dojo_room_variations.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/backgrounds/interiors/ruined-dojo-rooms/warm_wood_dojo_dungeon_room.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/backgrounds/interiors/snowy-interiors/snowy_large_dojo_interior.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/backgrounds/interiors/snowy-interiors/snowy_room_variation_set.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/backgrounds/interiors/snowy-interiors/snowy_teahouse_interior_map.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/backgrounds/interiors/teahouse-interiors/clean_warm_teahouse_interior.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/backgrounds/interiors/teahouse-interiors/clean_warm_teahouse_interior_layout.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/backgrounds/interiors/teahouse-interiors/lantern_lit_teahouse_interior.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/art-8_fox_samurai_base_4x32.png",
+      "width": 128,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/fox_samurai/fox_samurai_front_idle_4x32.png",
+      "width": 128,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/fox_samurai/fox_samurai_source_panel.png",
+      "width": 364,
+      "height": 238,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/fox_samurai_idle_32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/fox_samurai_idle_32_preview.png",
+      "width": 128,
+      "height": 128,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/fox_samurai_idle_source_panel.png",
+      "width": 364,
+      "height": 238,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/apothecary_cabinet_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/bamboo_shelf_1x2_32x64.png",
+      "width": 32,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/barrel_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/clay_jar_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/display_shelf_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/drying_rack_1x2_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/drying_shelf_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/flower_lantern_stand_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/kiln_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/large_chest_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/large_cutting_board_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/mortar_pestle_stone_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/mortar_pestle_white_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/round_iron_kettle_stove_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/stool_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/storage_chest_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/tea_leaf_worktable_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/tea_roasting_pan_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/tea_steamer_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/tea_table_2x2_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/wooden_chair_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/wooden_processing_stand_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/crafting/workbench_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/mining/clay_mine_entrance_1x2_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/mining/copper_ore_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/mining/crate_stack_1x2_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/mining/iron_ore_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/mining/loaded_minecart_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/mining/material_sacks_1x2_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/mining/minecart_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/mining/ore_sacks_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/mining/rail_corner_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/mining/rail_cross_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/mining/rail_horizontal_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/mining/rail_vertical_1x2_32x64.png",
+      "width": 32,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/mining/rock_cave_entrance_1x2_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/mining/silver_ore_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/mining/support_pillar_1x2_32x64.png",
+      "width": 32,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/mining/timber_support_1x2_32x64.png",
+      "width": 32,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/mining/wooden_crate_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/bamboo_cluster_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/bamboo_reeds_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/blue_crystal_cluster_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/broadleaf_tree_small_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/dead_tree_small_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/dense_shrub_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/flat_rock_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/low_grass_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/medium_grass_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/mossy_rock_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/mountain_rock_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/mountain_rock_02_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/mountain_rock_03_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/mountain_rock_04_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/mountain_rock_05_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/mud_patch_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/palm_tree_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/pebble_pile_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/pine_tree_small_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/red_flower_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/reed_clump_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/rock_pile_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/round_bush_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/round_tree_large_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/round_tree_small_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/small_rock_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/small_shrub_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/tall_grass_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/white_flower_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/natural-props/yellow_flower_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/nature/log_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/nature/short_log_pile_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/nature/small_grass_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/nature/tree_stump_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/nature/twig_pile_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/ruins/broken_wall_corner_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/shrine-props/altar_1x2_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/shrine-props/bell_1x2_32x64.png",
+      "width": 32,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/shrine-props/ema_board_1x2_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/shrine-props/hanging_lantern_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/shrine-props/incense_burner_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/shrine-props/omikuji_pillar_1x2_32x64.png",
+      "width": 32,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/shrine-props/ritual_bucket_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/shrine-props/stone_buddha_small_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/shrine-props/stone_guardian_statue_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/shrine-props/stone_lantern_1x2_32x64.png",
+      "width": 32,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/shrine-props/stone_pagoda_lantern_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/shrine-props/stone_steps_1x2_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/shrine-props/stone_water_basin_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/bamboo_fence_corner_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/bamboo_fence_horizontal_1x2_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/buddha_statue_1x2_32x64.png",
+      "width": 32,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/direction_signpost_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/dungeon_entry_small_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/fox_statue_1x2_32x64.png",
+      "width": 32,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/fox_statue_small_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/large_signboard_1x2_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/light_structure_group_96x64.png",
+      "width": 96,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/light_structure_pair_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/long_wooden_bridge_96x64.png",
+      "width": 96,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/red_torii_1x2_32x64.png",
+      "width": 32,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/roof_tile_wall_1x2_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/ruined_wall_1x2_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/shrine_torii_gate_2x2_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/small_signpost_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/small_storage_shed_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/small_wood_house_2x2_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/small_wooden_torii_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/stone_fox_statue_1x2_32x64.png",
+      "width": 32,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/stone_lantern_detail_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/wall_end_decoration_1x2_32x64.png",
+      "width": 32,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/warehouse_2x2_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/wood_fence_corner_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/wood_fence_horizontal_1x2_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/wooden_bridge_3x2_96x64.png",
+      "width": 96,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/wooden_entry_bridge_96x64.png",
+      "width": 96,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/wooden_ladder_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/wooden_notice_board_large_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/wooden_shop_front_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/structures/wooden_stage_platform_96x64.png",
+      "width": 96,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/village-props/cart_2x2_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/village-props/firewood_pile_1x2_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/village-props/grain_sack_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/village-props/handcart_1x2_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/village-props/laundry_line_1x2_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/village-props/red_treasure_chest_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/village-props/roofed_well_2x2_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/village-props/round_well_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/village-props/scarecrow_1x2_32x64.png",
+      "width": 32,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/village-props/stone_wall_cross_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/objects/village-props/wooden_treasure_chest_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/sheets/source-atlases/character-ui/fox_character_terrain_ui_atlas.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/sheets/source-atlases/interior-props/mossy_interior_prop_atlas.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/sheets/source-atlases/interior-props/snowy_interior_prop_atlas.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/sheets/source-atlases/interior-props/wabi_teahouse_interior_prop_atlas.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/sheets/source-atlases/interior-props/warm_interior_prop_atlas.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/sheets/source-atlases/mixed-object-map/comprehensive_object_map_atlas.png",
+      "width": 1324,
+      "height": 1188,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/sheets/source-atlases/mixed-object-map/full_tiles_object_map_atlas.png",
+      "width": 1322,
+      "height": 1190,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/sheets/source-atlases/mixed-object-map/object_sprite_map_examples_atlas.png",
+      "width": 1295,
+      "height": 1215,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/sheets/source-atlases/object-structure/light_object_structure_sprite_atlas.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/test_fox_idle.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/art-1_forest_boundary_tileset_8x32.png",
+      "width": 256,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/art-9_common_flat_ground_32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/sheets/biome-atlases/biome-tile-map/biome_tiles_objects_dungeon_spec_sheet.png",
+      "width": 1402,
+      "height": 1122,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/sheets/biome-atlases/biome-tile-map/dark_biome_object_tile_atlas.png",
+      "width": 1314,
+      "height": 1197,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/sheets/biome-atlases/biome-tile-map/light_biome_prop_map_atlas.png",
+      "width": 1314,
+      "height": 1197,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/sheets/biome-atlases/biome-tile-map/light_object_biome_map_atlas.png",
+      "width": 1402,
+      "height": 1122,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/bone_cross_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/bone_scatter_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/cactus_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/cracked_clay_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/dead_bush_patch_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/desert_bone_cross_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/dry_scrub_patch_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/dry_soil_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/dry_soil_02_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/dry_soil_03_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/dune_ground_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/palm_tree_oasis_64x32.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/rock_cluster_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/rock_cluster_02_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/sand_mound_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/sand_mound_02_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/sand_ripple_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/sandy_ground_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/sandy_ground_02_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/stacked_stones_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/desert/stacked_stones_02_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/forest/forest_boundary_tree_tileset_8x32.png",
+      "width": 256,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/plains/flower_grass_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/plains/flower_grass_02_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/plains/grass_ground_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/plains/grass_ground_02_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/plains/grass_ground_03_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/plains/grass_ground_04_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/river/river_water_00_32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/snow/snow_boulder_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/snow/snow_ground_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/snow/snow_ground_02_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/snow/snow_ground_03_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/snow/snow_ground_04_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/snow/snow_mound_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/snow/snow_rock_edge_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/snow/snow_rock_edge_02_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/snow/snowy_pine_tree_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/terrain/snow/snowy_pine_tree_02_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/test_grass_tile.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/tiles/test_water_tile.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/alert_mark_32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/coin_32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/hp_heart_32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/key_32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/map_pin_32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/question_mark_32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/scroll_32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/skull_32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/tea_cup_32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/icons/tea_leaf_32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/mockups/screens/fox_tea_ui_flow_mockups.png",
+      "width": 1448,
+      "height": 1086,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/mockups/screens/tea_fox_title_screen_mockup.png",
+      "width": 941,
+      "height": 1672,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/mockups/screens/world_ui_system_mockup_atlas.png",
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGB",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/ui/test_heart_icon.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    }
+  ]
+}
