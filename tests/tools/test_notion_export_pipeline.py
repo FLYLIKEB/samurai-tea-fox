@@ -76,6 +76,7 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(monster_notion["field_map"]["이동속도"], "movement_speed")
         self.assertEqual(monster_notion["field_map"]["공격력"], "attack")
         self.assertEqual(monster_notion["field_map"]["공격 주기(초)"], "attack_period_seconds")
+        self.assertEqual(monster_notion["field_map"]["행동 타입"], "behavior_type")
 
         rows = {
             "monsters": [
@@ -433,7 +434,7 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(road_bandit["status"], "테스트")
         self.assertEqual(road_bandit["movement_speed"], 1.6)
         self.assertEqual(road_bandit["attack_period_seconds"], 1.8)
-        self.assertEqual(road_bandit["stagger_resistance"], 2.0)
+        self.assertEqual(road_bandit["stagger_resistance"], 0.2)
         monsters_snapshot = json.loads((generated / "monsters.json").read_text(encoding="utf-8"))
         payload = {
             key: value

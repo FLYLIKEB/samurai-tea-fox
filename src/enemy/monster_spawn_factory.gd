@@ -3,6 +3,7 @@ class_name MonsterSpawnFactory
 
 const MonsterDefinition = preload("res://src/enemy/monster_definition.gd")
 const MonsterState = preload("res://src/enemy/monster_state.gd")
+const MonsterBehaviorRuntime = preload("res://src/enemy/behavior/monster_behavior_runtime.gd")
 
 var catalog
 var _sequence_by_definition: Dictionary = {}
@@ -18,9 +19,12 @@ func spawn(monster_id: String, spawn_context := {}) -> Dictionary:
 	if combat_id == "":
 		combat_id = _next_combat_id(monster_id)
 	var state := MonsterState.new(definition_result.definition, combat_id)
+	var behavior := MonsterBehaviorRuntime.new(definition_result.definition, combat_id)
+	state.staggered.connect(behavior.on_staggered)
 	return {
 		"ok": true,
 		"monster": state,
+		"behavior": behavior,
 		"definition": definition_result.definition
 	}
 

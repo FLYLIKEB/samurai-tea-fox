@@ -2,6 +2,7 @@ extends RefCounted
 class_name MonsterDefinition
 
 const REQUIRED_NUMERIC_FIELDS := ["hp", "stagger_resistance", "movement_speed", "attack", "attack_period_seconds"]
+const SUPPORTED_BEHAVIOR_TYPES := ["근접", "돌진", "원거리", "방해", "희귀"]
 
 var id: String
 var name: String
@@ -12,6 +13,7 @@ var stagger_resistance: float
 var movement_speed: float
 var attack: int
 var attack_period_seconds: float
+var behavior_type: String
 var data_snapshot: Dictionary
 
 func _init(values: Dictionary) -> void:
@@ -24,6 +26,7 @@ func _init(values: Dictionary) -> void:
 	movement_speed = float(values.movement_speed)
 	attack = int(values.attack)
 	attack_period_seconds = float(values.attack_period_seconds)
+	behavior_type = String(values.behavior_type)
 	data_snapshot = values.duplicate(true)
 
 static func from_catalog(catalog, monster_id: String) -> Dictionary:
@@ -42,6 +45,9 @@ static func validate_row(row: Dictionary) -> Dictionary:
 	var monster_id := String(row.get("id", ""))
 	if monster_id == "":
 		return {"ok": false, "error": "Monster definition is missing id."}
+	var behavior_type := String(row.get("behavior_type", ""))
+	if not SUPPORTED_BEHAVIOR_TYPES.has(behavior_type):
+		return {"ok": false, "error": "Monster behavior type is missing or unsupported: %s" % monster_id}
 	for field in REQUIRED_NUMERIC_FIELDS:
 		if not row.has(field):
 			return {"ok": false, "error": "Monster definition is missing required runtime field: %s.%s" % [monster_id, field]}
