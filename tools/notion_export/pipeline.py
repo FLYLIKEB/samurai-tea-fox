@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from pathlib import Path
 import re
 from typing import Any
@@ -159,6 +160,9 @@ class ExportPipeline:
         return sorted(included, key=lambda item: item["id"])
 
     def _validate_row_contract(self, dataset_name: str, row: dict[str, Any]) -> None:
+        if dataset_name == "drops":
+            self._validate_drop_contract(row)
+            return
         if dataset_name == "choices":
             self._validate_choice_contract(row)
             return
@@ -167,6 +171,39 @@ class ExportPipeline:
         if row.get("type") != "다구" or row.get("equipment_slot") != "다구":
             return
         self._validate_attachment_stage_data(row)
+
+    def _validate_drop_contract(self, row: dict[str, Any]) -> None:
+        drop_id = row.get("id", "")
+        item_id = row.get("item_id")
+        tea_id = row.get("tea_id")
+        if bool(item_id) == bool(tea_id):
+            raise ExportValidationError(
+                f"drops item {drop_id}: exactly one of item_id or tea_id is required"
+            )
+        minimum = row.get("min_quantity")
+        maximum = row.get("max_quantity")
+        if (
+            not isinstance(minimum, int)
+            or isinstance(minimum, bool)
+            or not isinstance(maximum, int)
+            or isinstance(maximum, bool)
+            or minimum <= 0
+            or maximum < minimum
+        ):
+            raise ExportValidationError(
+                f"drops item {drop_id}: quantity range must be positive ordered integers"
+            )
+        chance = row.get("chance")
+        if (
+            not isinstance(chance, (int, float))
+            or isinstance(chance, bool)
+            or not math.isfinite(float(chance))
+            or float(chance) < 0.0
+            or float(chance) > 1.0
+        ):
+            raise ExportValidationError(
+                f"drops item {drop_id}: chance must be between zero and one"
+            )
 
     def _validate_choice_contract(self, row: dict[str, Any]) -> None:
         choice_id = row.get("id", "")

@@ -82,6 +82,9 @@ func get_interactables(position: Vector2i) -> Array:
 		return []
 	return _cell(position).layers[LAYER_INTERACTABLES].duplicate(true)
 
+func get_reservation(owner_id: String) -> Dictionary:
+	return _reservations.get(owner_id, {}).duplicate(true)
+
 func can_reserve_footprint(origin: Vector2i, size: Vector2i) -> bool:
 	if not _is_valid_footprint_size(size):
 		return false

@@ -118,6 +118,8 @@ func _validate_event_result_references(events: Array, ids_by_dataset: Dictionary
 	return {"ok": true}
 
 func _validate_item_contract(dataset_name: String, item: Dictionary) -> Dictionary:
+	if dataset_name == "drops":
+		return _validate_drop_contract(item)
 	if dataset_name == "choices":
 		return _validate_choice_contract(item)
 	if dataset_name != "items":
@@ -125,6 +127,24 @@ func _validate_item_contract(dataset_name: String, item: Dictionary) -> Dictiona
 	if String(item.get("type", "")) != "다구" or String(item.get("equipment_slot", "")) != "다구":
 		return {"ok": true}
 	return _validate_attachment_stage_data(item)
+
+func _validate_drop_contract(item: Dictionary) -> Dictionary:
+	var has_item := not String(item.get("item_id", "")).is_empty()
+	var has_tea := not String(item.get("tea_id", "")).is_empty()
+	if has_item == has_tea:
+		return {"ok": false, "error": "drops item '%s' requires exactly one of item_id or tea_id." % item.id}
+	for field in ["min_quantity", "max_quantity"]:
+		var value = item.get(field)
+		if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)) or float(value) != floor(float(value)):
+			return {"ok": false, "error": "drops item '%s' field '%s' must be an integer." % [item.id, field]}
+	var minimum := int(item.min_quantity)
+	var maximum := int(item.max_quantity)
+	if minimum <= 0 or maximum < minimum:
+		return {"ok": false, "error": "drops item '%s' quantity range must be positive and ordered." % item.id}
+	var chance = item.get("chance")
+	if typeof(chance) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(chance)) or float(chance) < 0.0 or float(chance) > 1.0:
+		return {"ok": false, "error": "drops item '%s' chance must be between zero and one." % item.id}
+	return {"ok": true}
 
 func _validate_choice_contract(item: Dictionary) -> Dictionary:
 	for field in ["meta_record", "target_survives"]:

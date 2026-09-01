@@ -1,0 +1,31 @@
+{
+  "content_hash": "ee0c7e198fabcee03f074411e6be5d0709b2e1c393af517403cffe520f266aa1",
+  "data_version": "notion-2026-09-01",
+  "items": [
+    {
+      "chance": 0.8,
+      "condition": "항상",
+      "id": "drop_1",
+      "item_id": "item_33",
+      "max_quantity": 3,
+      "min_quantity": 1,
+      "monster_id": "road_bandit",
+      "name": "노상 도적 — 동전",
+      "status": "테스트"
+    },
+    {
+      "chance": 0.45,
+      "condition": "항상",
+      "id": "drop_2",
+      "item_id": "item_32",
+      "max_quantity": 2,
+      "min_quantity": 1,
+      "monster_id": "road_bandit",
+      "name": "노상 도적 — 천 조각",
+      "status": "테스트"
+    }
+  ],
+  "profile": "confirmed-test",
+  "schema_version": 1,
+  "source": "collection://362e7813-5332-420b-aca0-fb2824dbcce0"
+}

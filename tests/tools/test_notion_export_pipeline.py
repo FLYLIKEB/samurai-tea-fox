@@ -129,6 +129,68 @@ class NotionExportPipelineTests(unittest.TestCase):
             hashlib.sha256(canonical_json_bytes(payload)).hexdigest(),
         )
 
+    def test_drop_table_export_resolves_exact_relations_and_validates_contract(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        self.assertEqual(
+            schema["datasets"]["drops"]["notion"]["source"],
+            "collection://362e7813-5332-420b-aca0-fb2824dbcce0",
+        )
+        runtime_ids = json.loads(RUNTIME_ID_MAP.read_text(encoding="utf-8"))["notion_pages"]
+        self.assertEqual(runtime_ids["3ce37369-9e66-8168-b78c-db667f533c7d"], "drop_1")
+        self.assertEqual(runtime_ids["3ce37369-9e66-810a-8d02-d63e441bbfb6"], "drop_2")
+        self.assertEqual(runtime_ids["3ce37369-9e66-81d2-bb71-e90b844fe65d"], "item_33")
+        self.assertEqual(runtime_ids["3ce37369-9e66-81f0-a2d4-c3923da3a1b3"], "item_32")
+        rows = {
+            "monsters": [{
+                "_notion_id": "monster-road-bandit",
+                "몬스터 ID": {"prefix": "MON", "number": 9},
+                "이름": "노상 도적",
+                "설정 상태": "테스트",
+            }],
+            "items": [{
+                "_notion_id": "item-coin",
+                "아이템 ID": {"prefix": "ITM", "number": 33},
+                "이름": "동전",
+                "설정 상태": "확정",
+            }],
+            "drops": [{
+                "_notion_id": "drop-road-bandit-coin",
+                "드롭 ID": {"prefix": "DRT", "number": 1},
+                "이름": "노상 도적 — 동전",
+                "설정 상태": "테스트",
+                "몬스터": ["monster-road-bandit"],
+                "아이템": ["item-coin"],
+                "차": [],
+                "조건": "항상",
+                "최소 수량": 1,
+                "최대 수량": 3,
+                "확률": 0.8,
+            }],
+        }
+        capture = CaptureBuilder(schema).build_from_rows(rows, "notion-drop-fixture-v1")
+        snapshots = self.pipeline.build_snapshots(capture, "confirmed-test")
+        drop = snapshots["drops"]["items"][0]
+
+        self.assertEqual(drop["id"], "drop_1")
+        self.assertEqual(drop["monster_id"], "monster_9")
+        self.assertEqual(drop["item_id"], "item_33")
+        self.assertNotIn("tea_id", drop)
+        self.assertEqual((drop["min_quantity"], drop["max_quantity"], drop["chance"]), (1, 3, 0.8))
+
+        ambiguous = copy.deepcopy(capture)
+        ambiguous["datasets"]["teas"] = {
+            "source": "collection://teas",
+            "items": [{"id": "tea_8", "name": "들녘 덖음차", "status": "확정"}],
+        }
+        ambiguous["datasets"]["drops"]["items"][0]["tea_id"] = "tea_8"
+        with self.assertRaisesRegex(ExportValidationError, "exactly one of item_id or tea_id"):
+            self.pipeline.build_snapshots(ambiguous, "confirmed-test")
+
+        broken_relation = copy.deepcopy(capture)
+        broken_relation["datasets"]["drops"]["items"][0]["item_id"] = "missing_item"
+        with self.assertRaisesRegex(ExportValidationError, "drops.*drop_1.*item_id.*missing_item"):
+            self.pipeline.build_snapshots(broken_relation, "confirmed-test")
+
     def test_missing_required_field_fails_with_dataset_and_item_context(self):
         invalid = copy.deepcopy(self.capture)
         wood = next(item for item in invalid["datasets"]["items"]["items"] if item["id"] == "wood")

@@ -23,6 +23,7 @@ var choice_group_selections := {}
 var target_survival := {}
 var philosophy_marks := []
 var final_room_effects := []
+var acquisitions := {}
 
 static func from_dictionary(data: Dictionary):
 	var state: RunState = load("res://src/save/run_state.gd").new()
@@ -48,6 +49,7 @@ static func from_dictionary(data: Dictionary):
 	state.target_survival = _dictionary_value(data.get("target_survival", {}))
 	state.philosophy_marks = _array_value(data.get("philosophy_marks", []))
 	state.final_room_effects = _array_value(data.get("final_room_effects", []))
+	state.acquisitions = _dictionary_value(data.get("acquisitions", {}))
 	return state
 
 func reset_biome_progression() -> void:
@@ -82,7 +84,8 @@ func to_dictionary() -> Dictionary:
 		"choice_group_selections": choice_group_selections.duplicate(true),
 		"target_survival": target_survival.duplicate(true),
 		"philosophy_marks": philosophy_marks.duplicate(true),
-		"final_room_effects": final_room_effects.duplicate(true)
+		"final_room_effects": final_room_effects.duplicate(true),
+		"acquisitions": acquisitions.duplicate(true)
 	}
 
 static func _dictionary_value(value) -> Dictionary:

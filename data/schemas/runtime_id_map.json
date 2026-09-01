@@ -1,6 +1,10 @@
 {
   "map_version": 1,
   "notion_pages": {
+	"3ce37369-9e66-810a-8d02-d63e441bbfb6": "drop_2",
+	"3ce37369-9e66-8168-b78c-db667f533c7d": "drop_1",
+	"3ce37369-9e66-81d2-bb71-e90b844fe65d": "item_33",
+	"3ce37369-9e66-81f0-a2d4-c3923da3a1b3": "item_32",
     "3ce37369-9e66-81a1-8047-c02aad9c81dc": "biome_min_resource_nodes",
     "3ce37369-9e66-810d-a412-c015501c1281": "dusk_kokoro_decay_per_second",
     "3ce37369-9e66-8137-8069-e0b914681ae1": "dusk_phase_duration_seconds",

@@ -12,6 +12,8 @@ func run(asserts) -> void:
 	asserts.equal(catalog.find_by_id("biomes", "common_region").name, "일반 지역", "common biome is present")
 	asserts.equal(catalog.find_by_id("events", "roadside_teahouse_intro").get("replay_policy", ""), "once", "narrative event definitions are present")
 	asserts.equal(catalog.find_by_id("choices", "daimyo_relinquish_tea").get("choice_key", ""), "DAIMYO_RELINQUISH_TEA", "choice result definitions are present")
+	asserts.equal(catalog.sources.get("drops", ""), "collection://362e7813-5332-420b-aca0-fb2824dbcce0", "authoritative drop table source is registered")
+	asserts.equal(catalog.find_by_id("drops", "drop_1").get("item_id", ""), "item_33", "drop relation resolves to generated item stable ID")
 
 	var validator := DataSchemaValidator.new()
 	var duplicate_result := validator.validate_export_file({
@@ -97,6 +99,19 @@ func run(asserts) -> void:
 		"choices": {"required_fields": ["id", "name", "status", "choice_key", "run_flag", "display_text", "resolution", "meta_record", "target_survives", "philosophy_marks", "final_room_effect"]}
 	})
 	asserts.false_value(invalid_choice.ok, "choice definitions require the complete result contract")
+
+	var invalid_drop := validator.validate_catalog({
+		"monsters": [{"id": "road_bandit"}],
+		"items": [{"id": "item_33"}],
+		"teas": [{"id": "tea_8"}],
+		"drops": [{"id": "drop_broken", "name": "broken", "status": "테스트", "monster_id": "road_bandit", "item_id": "item_33", "tea_id": "tea_8", "condition": "항상", "min_quantity": 1, "max_quantity": 1, "chance": 1.0}]
+	}, {
+		"monsters": {"required_fields": ["id"]},
+		"items": {"required_fields": ["id"]},
+		"teas": {"required_fields": ["id"]},
+		"drops": {"required_fields": ["id"], "relations": {"monster_id": "monsters", "item_id": "items", "tea_id": "teas"}}
+	})
+	asserts.false_value(invalid_drop.ok, "drop definitions reject ambiguous item and tea targets")
 
 	var short_attachment_description_result := validator.validate_catalog({
 		"items": [{

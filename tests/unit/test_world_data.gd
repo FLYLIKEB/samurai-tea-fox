@@ -21,6 +21,7 @@ func _add_release_and_queries(asserts) -> void:
 	asserts.true_value(world.is_occupied(Vector2i(2, 1)), "reserved facility occupies full footprint")
 	asserts.false_value(world.is_walkable(Vector2i(1, 1)), "reserved facility blocks walkability")
 	asserts.equal(world.get_interactables(Vector2i(2, 1)), ["tea_table"], "interactable query returns footprint owner")
+	asserts.equal(world.get_reservation("tea_table").metadata, {}, "reservation query returns detached public snapshot")
 	asserts.true_value(world.release_footprint("tea_table"), "release removes reservation")
 	asserts.false_value(world.is_occupied(Vector2i(1, 1)), "released origin is not occupied")
 	asserts.true_value(world.is_walkable(Vector2i(1, 1)), "released cell is walkable again")
