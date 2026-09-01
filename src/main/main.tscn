@@ -1,7 +1,8 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://src/main/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/actors/player.tscn" id="2_player"]
+[ext_resource type="Script" path="res://src/combat/combat_dummy.gd" id="3_dummy"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_horizontal"]
 size = Vector2(1024, 16)
@@ -14,6 +15,9 @@ size = Vector2(24, 112)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_low_wall"]
 size = Vector2(144, 20)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_dummy"]
+size = Vector2(14, 18)
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main")
@@ -77,3 +81,30 @@ polygon = PackedVector2Array(-184, 86, -40, 86, -40, 106, -184, 106)
 color = Color(0.337255, 0.180392, 0.137255, 1)
 
 [node name="Player" parent="." instance=ExtResource("2_player")]
+
+[node name="CombatDummy" type="CharacterBody2D" parent="."]
+position = Vector2(32, 0)
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("3_dummy")
+
+[node name="Body" type="Polygon2D" parent="CombatDummy"]
+polygon = PackedVector2Array(-7, -9, 7, -9, 7, 9, -7, 9)
+color = Color(0.45, 0.23, 0.19, 1)
+
+[node name="Headband" type="Polygon2D" parent="CombatDummy"]
+polygon = PackedVector2Array(-7, -7, 7, -7, 7, -4, -7, -4)
+color = Color(0.18, 0.2, 0.22, 1)
+
+[node name="HealthBackground" type="Polygon2D" parent="CombatDummy"]
+position = Vector2(0, -14)
+polygon = PackedVector2Array(-8, -2, 8, -2, 8, 2, -8, 2)
+color = Color(0.12, 0.12, 0.12, 1)
+
+[node name="HealthFill" type="Polygon2D" parent="CombatDummy"]
+position = Vector2(0, -14)
+polygon = PackedVector2Array(-7, -1, 7, -1, 7, 1, -7, 1)
+color = Color(0.72, 0.18, 0.16, 1)
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="CombatDummy"]
+shape = SubResource("RectangleShape2D_dummy")

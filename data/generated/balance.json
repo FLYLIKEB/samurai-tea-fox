@@ -1,5 +1,5 @@
 {
-  "content_hash": "d21da4b9950609ac22772aa33c693d60a49f68d77a5c1145e8400af115eaac60",
+  "content_hash": "373b272edad0eec5fb32b4773e7332e023cb64e1c59cc3afbc5e70d834cc18b4",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -81,6 +81,17 @@
       "status": "테스트",
       "unit": "초",
       "value": 0.18
+    },
+    {
+      "category": "전투",
+      "description": "일반 피격 직후 연속 충돌 피해를 막는 짧은 무적시간",
+      "formula_note": "DEV-4 최소 전투 루프 테스트값. 공격 주기와 별개로 피격 대상에게 적용한다.",
+      "id": "hit_invulnerability_seconds",
+      "name": "피격 무적시간",
+      "notion_id": "3ce37369-9e66-81d7-b6b3-dbaadfce1d09",
+      "status": "테스트",
+      "unit": "초",
+      "value": 0.2
     },
     {
       "category": "인벤토리",

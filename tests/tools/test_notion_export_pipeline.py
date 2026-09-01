@@ -97,6 +97,26 @@ class NotionExportPipelineTests(unittest.TestCase):
             self.assertEqual(validated["data_version"], "fixture-2026-09-01")
             self.assertEqual(validated["profile"], "confirmed-test")
 
+    def test_dev_4_static_combat_exports_are_present(self):
+        generated = ROOT / "data/generated"
+        self.pipeline.validate_directory(generated)
+
+        items = json.loads((generated / "items.json").read_text(encoding="utf-8"))["items"]
+        monsters = json.loads((generated / "monsters.json").read_text(encoding="utf-8"))["items"]
+        sword = next(item for item in items if item["id"] == "short_travel_sword")
+        road_bandit = next(monster for monster in monsters if monster["id"] == "road_bandit")
+
+        self.assertEqual(sword["base_damage"], 14)
+        self.assertEqual(sword["attack_speed"], 1)
+        self.assertEqual(sword["range"], 1.15)
+        self.assertEqual(sword["status"], "확정")
+        self.assertFalse(sword["craftable"])
+        self.assertEqual(road_bandit["hp"], 70)
+        self.assertEqual(road_bandit["attack"], 10)
+        self.assertEqual(road_bandit["status"], "테스트")
+        self.assertEqual(road_bandit["movement_speed"], 1.6)
+        self.assertEqual(road_bandit["attack_period_seconds"], 1.8)
+
     def test_validate_directory_rejects_unsupported_schema_version(self):
         with tempfile.TemporaryDirectory() as directory:
             self.pipeline.export(self.capture, Path(directory), "confirmed")
