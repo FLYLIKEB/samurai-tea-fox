@@ -230,6 +230,64 @@ class NotionExportPipelineTests(unittest.TestCase):
 
         self.assertEqual(validated["datasets"], ["events"])
 
+    def test_event_result_apply_choice_requires_a_known_choice(self):
+        capture = self._minimal_event_capture()
+        capture["datasets"]["events"]["items"][0]["nodes"][0]["options"][0]["results"] = [
+            {"type": "apply_choice", "id": "daimyo_defeat"}
+        ]
+        with self.assertRaisesRegex(ExportValidationError, "apply_choice.*missing dataset choices"):
+            self.pipeline.build_snapshots(capture, "confirmed-test")
+
+        capture["datasets"]["choices"] = {
+            "source": "collection://choices",
+            "items": [self._choice_definition("daimyo_relinquish_tea")],
+        }
+        with self.assertRaisesRegex(ExportValidationError, "apply_choice.*missing choice id daimyo_defeat"):
+            self.pipeline.build_snapshots(capture, "confirmed-test")
+
+        capture["datasets"]["choices"]["items"].append(self._choice_definition("daimyo_defeat"))
+        snapshots = self.pipeline.build_snapshots(capture, "confirmed-test")
+        self.assertEqual(snapshots["events"]["items"][0]["nodes"][0]["options"][0]["results"][0]["id"], "daimyo_defeat")
+
+    def test_choice_contract_is_rejected_before_export(self):
+        for field, value, error in [
+            ("choice_key", "bad key", "choice_key"),
+            ("run_flag", "Bad Flag", "run_flag"),
+            ("meta_record", "yes", "meta_record"),
+            ("target_survives", 1, "target_survives"),
+            ("philosophy_marks", "和·공존", "philosophy_marks"),
+            ("philosophy_marks", [""], "philosophy_marks"),
+        ]:
+            capture = {
+                "schema_version": 1,
+                "data_version": "choice-contract-v1",
+                "datasets": {"choices": {"source": "collection://choices", "items": [self._choice_definition("daimyo_defeat")]}},
+            }
+            capture["datasets"]["choices"]["items"][0][field] = value
+            with self.subTest(field=field, value=value):
+                with self.assertRaisesRegex(ExportValidationError, error):
+                    self.pipeline.build_snapshots(capture, "confirmed-test")
+
+    def test_choice_conditions_and_multiple_results_are_rejected(self):
+        capture = {
+            "schema_version": 1,
+            "data_version": "choice-contract-v1",
+            "datasets": {"choices": {"source": "collection://choices", "items": [self._choice_definition("daimyo_defeat")]}},
+        }
+        capture["datasets"]["choices"]["items"][0]["conditions"] = "not-an-array"
+        with self.assertRaisesRegex(ExportValidationError, "conditions"):
+            self.pipeline.build_snapshots(capture, "confirmed-test")
+
+        events = self._minimal_event_capture()
+        events["datasets"]["choices"] = capture["datasets"]["choices"]
+        events["datasets"]["choices"]["items"][0]["conditions"] = []
+        events["datasets"]["events"]["items"][0]["nodes"][0]["options"][0]["results"] = [
+            {"type": "apply_choice", "id": "daimyo_defeat"},
+            {"type": "apply_choice", "id": "daimyo_defeat"},
+        ]
+        with self.assertRaisesRegex(ExportValidationError, "multiple apply_choice"):
+            self.pipeline.build_snapshots(events, "confirmed-test")
+
     def test_event_duplicate_ids_and_non_completing_paths_fail(self):
         duplicate_node = self._minimal_event_capture()
         duplicate_node["datasets"]["events"]["items"][0]["nodes"].append(
@@ -339,6 +397,21 @@ class NotionExportPipelineTests(unittest.TestCase):
         return {
             **payload,
             "content_hash": hashlib.sha256(canonical_json_bytes(payload)).hexdigest(),
+        }
+
+    def _choice_definition(self, choice_id):
+        return {
+            "id": choice_id,
+            "name": choice_id,
+            "status": "확정",
+            "choice_key": choice_id.upper(),
+            "run_flag": f"{choice_id}_flag",
+            "display_text": choice_id,
+            "resolution": "다도",
+            "meta_record": True,
+            "target_survives": True,
+            "philosophy_marks": [],
+            "final_room_effect": f"{choice_id} effect",
         }
 
     def test_equipment_tea_ware_exports_canonical_effect_fields_only(self):

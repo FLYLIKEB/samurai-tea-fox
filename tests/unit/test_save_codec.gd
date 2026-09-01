@@ -6,7 +6,16 @@ const RunState = preload("res://src/save/run_state.gd")
 
 func run(asserts) -> void:
 	var run_equipment := {"slots": {"tea_ware": {"item_id": "travel_bottle", "quantity": 1, "instance_id": "inst_tea_ware", "metadata": {"tea_ware_use_count": 4}}}}
-	var run_save := SaveCodec.encode_run({"seed": 11037, "inventory": ["wood"], "equipment": run_equipment})
+	var choice_state := {
+		"choice_history": ["daimyo_relinquish_tea"],
+		"choice_group_selections": {"daimyo_resolution": "daimyo_relinquish_tea"},
+		"target_survival": {"daimyo": true},
+		"philosophy_marks": ["和·공존"],
+		"final_room_effects": [{"choice_id": "daimyo_relinquish_tea", "effect": "관계형 지원 효과"}]
+	}
+	var run_payload := {"seed": 11037, "inventory": ["wood"], "equipment": run_equipment}
+	run_payload.merge(choice_state)
+	var run_save := SaveCodec.encode_run(run_payload)
 	var meta_save := SaveCodec.encode_meta({"run_count": 2, "discovered_records": ["oribe_bowl"], "unlocked_meta_flags": ["sen_rikyu_reunion_dialogue_1"]})
 
 	asserts.equal(run_save.kind, "run", "run save kind is separate")
@@ -16,6 +25,10 @@ func run(asserts) -> void:
 	asserts.true_value(SaveCodec.decode_run(run_save).ok, "run save decodes")
 	asserts.equal(SaveCodec.decode_run(run_save).state.equipment, run_equipment, "run save preserves equipment payload")
 	asserts.equal(SaveCodec.decode_run(run_save).state.equipment.slots.tea_ware.metadata.tea_ware_use_count, 4, "run save keeps per-run tea ware use metadata")
+	var decoded_choice: Dictionary = SaveCodec.decode_run(run_save)
+	for field in choice_state:
+		asserts.equal(decoded_choice.state[field], choice_state[field], "run save preserves choice field '%s'" % field)
+		asserts.equal(decoded_choice.run_state.get(field), choice_state[field], "hydrated RunState preserves choice field '%s'" % field)
 	asserts.true_value(SaveCodec.decode_meta(meta_save).ok, "meta save decodes")
 	asserts.false_value(SaveCodec.decode_meta(meta_save).state.has("tea_ware_use_count"), "meta save does not gain tea ware attachment state")
 	asserts.false_value(SaveCodec.decode_meta(run_save).ok, "run save cannot decode as meta")

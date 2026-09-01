@@ -94,7 +94,7 @@ class CaptureBuilder:
         if runtime_id is None and stable_id_field:
             candidate = row.get(stable_id_field)
             if isinstance(candidate, str) and candidate:
-                runtime_id = candidate
+                runtime_id = candidate.strip().lower()
         if runtime_id is None:
             unique_id = row.get(notion["unique_id_field"])
             number = unique_id.get("number") if isinstance(unique_id, dict) else None

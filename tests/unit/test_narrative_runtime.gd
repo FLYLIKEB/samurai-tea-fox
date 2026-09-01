@@ -166,6 +166,24 @@ func _assert_result_contracts_are_rejected(asserts) -> void:
 	}))
 	asserts.false_value(bad_item.ok, "grant_item targets must exist in catalog items when catalog items are available")
 	asserts.equal(bad_item.reason, "missing_result_item", "missing grant item returns explicit reason")
+	var missing_choices: Dictionary = _runtime_result_from_events([_single_result_event({"type": "apply_choice", "id": "daimyo_defeat"})])
+	asserts.false_value(missing_choices.ok, "apply_choice requires choice definitions")
+	asserts.equal(missing_choices.reason, "missing_choices_dataset", "missing choice definitions return explicit reason")
+	var known_choice: Dictionary = NarrativeRuntime.new().from_catalog(FakeCatalog.new({
+		"items": [{"id": "ash_stained_iron_kettle", "name": "재 묻은 철솥", "status": "초안"}],
+		"choices": [{"id": "daimyo_defeat"}],
+		"events": [_single_result_event({"type": "apply_choice", "id": "daimyo_defeat"})]
+	}))
+	asserts.true_value(known_choice.ok, "apply_choice accepts a defined choice id")
+	var multiple_choices: Dictionary = NarrativeRuntime.new().from_catalog(FakeCatalog.new({
+		"choices": [{"id": "daimyo_defeat"}],
+		"events": [{
+			"id": "multiple_choice_results", "name": "Multiple", "status": "확정", "replay_policy": "once", "start_node_id": "start",
+			"nodes": [{"id": "start", "options": [{"id": "done", "display_text": "Done", "results": [{"type": "apply_choice", "id": "daimyo_defeat"}, {"type": "apply_choice", "id": "daimyo_defeat"}], "next_node_id": "", "completes_event": true}]}]
+		}]
+	}))
+	asserts.false_value(multiple_choices.ok, "one narrative option cannot apply multiple choices")
+	asserts.equal(multiple_choices.reason, "multiple_choice_results", "multiple choice result rejection has a stable reason")
 
 func _assert_grant_item_requires_item_definitions(asserts) -> void:
 	var events_only_grant: Dictionary = NarrativeRuntime.new().from_catalog(FakeCatalog.new({

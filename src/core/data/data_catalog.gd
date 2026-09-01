@@ -12,7 +12,8 @@ const FILES := {
 	"monsters": "monsters.json",
 	"abilities": "abilities.json",
 	"meta_unlocks": "meta_unlocks.json",
-	"events": "events.json"
+	"events": "events.json",
+	"choices": "choices.json"
 }
 
 var data_version := ""

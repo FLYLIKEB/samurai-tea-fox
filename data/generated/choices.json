@@ -1,0 +1,43 @@
+{
+  "content_hash": "6756a09e3c3cc922d85a07c018f2f2578e395b74fb4997c09e7031a0ccaae75c",
+  "data_version": "notion-2026-09-01",
+  "items": [
+    {
+      "choice_key": "DAIMYO_RELINQUISH_TEA",
+      "display_text": "명물 다구를 권력의 표식이 아니라 나누는 도구로 되돌린다.",
+      "final_room_effect": "전란의 차입이 열린 채 놓이며 관계형 지원 효과가 생긴다.",
+      "id": "daimyo_relinquish_tea",
+      "meta_record": true,
+      "name": "다이묘의 차입을 사람들에게 돌려준다",
+      "notion_id": "3ce37369-9e66-81ce-b65b-e183fb1e0c2c",
+      "philosophy_marks": [
+        "和·공존",
+        "敬·마주봄"
+      ],
+      "resolution": "다도",
+      "run_flag": "daimyo_relinquished_tea",
+      "status": "확정",
+      "target_survives": true
+    },
+    {
+      "choice_key": "DAIMYO_DEFEAT",
+      "display_text": "명물과 충성의 질서를 전투로 무너뜨린다.",
+      "final_room_effect": "봉인이 갈라진 차입과 자원 압박형 Phase 3 효과가 나타난다.",
+      "id": "daimyo_defeat",
+      "meta_record": true,
+      "name": "다이묘의 권력을 검으로 해체한다",
+      "notion_id": "3ce37369-9e66-818e-93d0-c970a653c6cf",
+      "philosophy_marks": [
+        "清·절제",
+        "요괴성·힘"
+      ],
+      "resolution": "전투",
+      "run_flag": "daimyo_defeated",
+      "status": "확정",
+      "target_survives": true
+    }
+  ],
+  "profile": "confirmed-test",
+  "schema_version": 1,
+  "source": "collection://943e27c2-91e1-40ec-a5e9-30ef62737a40"
+}
