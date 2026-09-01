@@ -1,5 +1,5 @@
 {
-  "content_hash": "0c4fcfd42063f20867f294c70fa0fdf58d5169288b85160404813c1be3ed5497",
+  "content_hash": "b2ea96aa2bc067776e8b5243dcf886a9b2a5e0fbc1acf9beb615431056556230",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -83,14 +83,19 @@
       "status": "초안"
     },
     {
-      "behavior_note": "길목을 막고 한두 번 베고 물러난다.",
+      "attack": 10,
+      "attack_period_seconds": 1.8,
+      "behavior_note": "정면 압박보다 길목을 막고 한두 번 베고 물러난다. 여러 명이 동시에 몰리지 않도록 단순 패턴 유지.",
+      "behavior_type": "근접",
       "biome": "일반",
       "danger": 1,
-      "day_night": "낮",
+      "day_night": "둘 다",
+      "hp": 70,
       "id": "road_bandit",
       "kind": "도적·무사",
+      "movement_speed": 1.6,
       "name": "노상 도적",
-      "status": "초안"
+      "status": "테스트"
     },
     {
       "behavior_note": "눈더미 뒤에서 접근해 한 번 공격하고 다시 거리를 둔다.",

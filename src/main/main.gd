@@ -6,6 +6,7 @@ const MovementCommandSelector = preload("res://src/core/commands/movement_comman
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 
 @onready var player: PlayerController = $Player
+@onready var combat_dummy: CombatDummy = $CombatDummy
 
 var catalog
 var generated_world: Dictionary = {}
@@ -17,6 +18,14 @@ func _ready() -> void:
 	var result: Dictionary = catalog.load_from_directory("res://data/generated")
 	if not result.ok:
 		push_error(result.error)
+		return
+	var player_combat_result: Dictionary = player.configure_combat(catalog)
+	if not player_combat_result.ok:
+		push_error(player_combat_result.error)
+		return
+	var dummy_combat_result: Dictionary = combat_dummy.configure_combat(catalog, player, player.combat_config)
+	if not dummy_combat_result.ok:
+		push_error(dummy_combat_result.error)
 		return
 
 	var biomes: Array = catalog.get_definitions("biomes")
@@ -30,6 +39,13 @@ func _ready() -> void:
 func _physics_process(_delta: float) -> void:
 	var desktop_command = _desktop_adapter.poll_movement_command()
 	player.submit_command(_movement_selector.select(desktop_command))
+	if Input.is_action_just_pressed("attack"):
+		player.submit_command(_desktop_adapter.command_for_action("attack", desktop_command.direction))
+	if Input.is_action_just_pressed("dodge"):
+		player.submit_command(_desktop_adapter.command_for_action("dodge", desktop_command.direction))
 
 func submit_mobile_movement_command(command) -> bool:
 	return _movement_selector.submit_mobile_command(command)
+
+func submit_mobile_action_command(command) -> bool:
+	return player.submit_command(command)

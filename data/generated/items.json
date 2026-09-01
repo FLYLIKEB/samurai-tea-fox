@@ -1,5 +1,5 @@
 {
-  "content_hash": "2347fafaaf8d1d8bd8a656b4cc1287080ba10ecd3f73c992107b90e31a099379",
+  "content_hash": "bf838ba07fa10f3e4e8478541cc096f4904544b9bb6d3cd77e770a115b66413d",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -51,11 +51,14 @@
       "type": "다구"
     },
     {
-      "craftable": true,
+      "attack_speed": 1,
+      "base_damage": 14,
+      "craftable": false,
       "grade": "일반",
       "id": "short_travel_sword",
       "name": "짧은 여행검",
-      "status": "초안",
+      "range": 1.15,
+      "status": "확정",
       "type": "무기"
     },
     {
