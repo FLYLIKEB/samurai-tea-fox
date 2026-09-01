@@ -59,7 +59,16 @@ src/
   ui/
 tests/
 tools/
+  asset_browser/
   notion_export/
+```
+
+## 도구
+
+에셋 이미지를 로컬 앱에서 확인하고 선택한 경로나 Codex용 프롬프트를 복사하려면:
+
+```sh
+python3 tools/asset_browser/asset_browser.py
 ```
 
 ## 검증
@@ -75,4 +84,3 @@ godot --headless --path . --script res://tests/test_runner.gd
 - 같은 seed + 같은 data version은 같은 월드 데이터를 생성한다.
 - 플랫폼 입력은 게임 명령으로만 변환된다.
 - run save와 meta save는 schema version과 kind를 분리한다.
-

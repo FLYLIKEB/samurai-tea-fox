@@ -1,0 +1,7 @@
+아래 로컬 게임 에셋 이미지들을 한 번에 확인하고 수정해줘.
+
+먼저 assets/style/art-style-tokens.json을 읽고, 그 파일의 팔레트/공통 시각 컨셉/ImageGen positive·negative 토큰을 기준으로 작업해.
+색상 팔레트와 시각 제약은 다른 곳에 새로 복제하지 말고 해당 JSON을 단일 정본으로 유지해.
+
+이미지:
+{asset_list}
