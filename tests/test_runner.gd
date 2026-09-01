@@ -4,6 +4,7 @@ const TestAssert = preload("res://tests/support/test_assert.gd")
 
 const TESTS := [
 	preload("res://tests/unit/test_command_layer.gd"),
+	preload("res://tests/unit/test_bounded_resource.gd"),
 	preload("res://tests/unit/test_data_catalog.gd"),
 	preload("res://tests/unit/test_player_movement.gd"),
 	preload("res://tests/unit/test_player_resources.gd"),
