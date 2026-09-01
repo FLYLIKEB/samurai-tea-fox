@@ -30,21 +30,3 @@ func to_dictionary() -> Dictionary:
 		"slot": slot,
 		"payload": payload
 	}
-
-static func move(command_direction: Vector2i):
-	return GameCommand.new(Type.MOVE, command_direction)
-
-static func attack(command_direction: Vector2i):
-	return GameCommand.new(Type.ATTACK, command_direction)
-
-static func dodge(command_direction: Vector2i):
-	return GameCommand.new(Type.DODGE, command_direction)
-
-static func drink_tea(command_slot: int):
-	return GameCommand.new(Type.DRINK_TEA, Vector2i.ZERO, command_slot)
-
-static func cast_ability(command_slot: int, command_direction: Vector2i):
-	return GameCommand.new(Type.CAST_ABILITY, command_direction, command_slot)
-
-static func interact():
-	return GameCommand.new(Type.INTERACT)
