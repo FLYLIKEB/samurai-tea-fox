@@ -30,7 +30,7 @@ metadata:
 2. 관련 캐릭터, 지역, 몬스터, 아이템, 차, 요술, 던전 relation이 있으면 필요한 행만 fetch해서 실루엣과 용도를 확인한다.
 3. `assets/style/art-style-tokens.json`의 해당 `asset_profiles`와 기본 positive/negative 토큰을 읽는다.
 4. 프롬프트에는 목적, 캔버스 크기, 방향, 프레임 수, 배경 투명 여부, 실루엣 우선순위, 금지 요소를 명시한다. 움직임·방향 세트가 포함되면 `pixellab-animation-production`의 인증 확인, endpoint 선택, 비동기 job polling, 프레임 검수 기준을 따른다.
-5. 여러 후보를 생성하되, 최종 후보만 런타임 에셋 경로에 넣는다. 원본 후보 보관이 필요하면 런타임과 분리된 source 경로를 사용한다.
+5. 여러 후보를 생성하되, 최종 후보만 런타임 에셋 경로에 넣는다. AI 생성 원본 raw와 중간 후보는 모두 Git에서 제외된 `assets/source/imagegen/` 아래에 저장한다.
 6. Godot 또는 에셋 브라우저에서 실제 크기와 정수 배율로 확인한다.
 7. 통과한 파일 경로와 검수 메모를 `🎨 아트 에셋` DB의 `파일`, `제작 상태`, `비고`에 반영한다.
 
@@ -49,6 +49,7 @@ metadata:
 - 캐릭터와 오브젝트: `assets/sprites/`
 - 타일: `assets/tiles/`
 - UI와 아이콘: `assets/ui/`
+- AI 생성 raw와 중간 후보: `assets/source/imagegen/` (Git 제외)
 - 제작용 스타일 토큰: `assets/style/art-style-tokens.json`
 - 에셋 점검 도구: `tools/asset_browser/`
 

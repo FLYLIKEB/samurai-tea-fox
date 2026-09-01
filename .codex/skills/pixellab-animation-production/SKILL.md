@@ -56,7 +56,7 @@ metadata:
 4. `/balance` 인증 확인을 실행한다. 실패하면 생성 호출을 중단하고 환경변수, base URL, 토큰 설정만 점검한다.
 5. 액션 프롬프트에는 동작, 프레임 수, 반복 여부, 방향, 투명 배경, 실루엣 보존, 무기·꼬리·다구 같은 식별 요소를 명시한다.
 6. PixelLab 요청과 응답에서 prompt, endpoint, seed, job id, 후처리 내역만 아티팩트 메모로 남긴다. base64 이미지와 계정 정보는 redaction한다.
-7. 결과 프레임은 먼저 작업용 `artifacts/pixellab-<asset>-<yyyymmdd>/raw/`에 저장한다.
+7. 결과 프레임과 AI 생성 원본 raw는 먼저 Git에서 제외된 `assets/source/imagegen/pixellab-<asset>-<yyyymmdd>/raw/`에 저장한다.
 8. 최종 후보만 런타임 경로에 정규화한다. 캐릭터와 오브젝트는 기본적으로 `assets/sprites/`를 사용한다.
 9. `/correct-pixelart`, `/reduce-colors`, `/remove-background`, `/resize`는 결함이 확인된 경우에만 작은 강도로 적용한다.
 10. Godot 또는 에셋 브라우저에서 1x와 2x 정수 배율, 프레임 순서, 루프 이음, 투명 배경, nearest filtering을 확인한다.
