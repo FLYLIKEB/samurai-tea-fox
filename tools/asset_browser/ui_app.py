@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 import tkinter as tk
 
-from .constants import BG, ERROR, MUTED, SELECTED, SELECTED_TEXT, TEXT
+from .constants import BG, BORDER, ERROR, MUTED, SELECTED, SELECTED_TEXT, TEXT
 from .image_ops import Image, ImageTk, recolor_image_to_palette
 from .models import AssetImage
 from .prompting import load_prompt_template
