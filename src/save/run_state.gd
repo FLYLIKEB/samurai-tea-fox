@@ -31,6 +31,9 @@ static func from_dictionary(data: Dictionary):
 	state.teleport_states = _dictionary_value(data.get("teleport_states", {}))
 	state.repaired_teleports = _array_value(data.get("repaired_teleports", []))
 	state.crafting_unlocks = _array_value(data.get("crafting_unlocks", []))
+	state.narrative_flags = _array_value(data.get("narrative_flags", []))
+	state.narrative_event_counts = _dictionary_value(data.get("narrative_event_counts", {}))
+	state.consumables = _dictionary_value(data.get("consumables", {}))
 	return state
 
 func reset_biome_progression() -> void:
