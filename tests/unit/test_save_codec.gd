@@ -64,6 +64,13 @@ func run(asserts) -> void:
 			"context": {}
 		}
 	}
+	state.acquisitions = {
+		"schema_version": 1,
+		"next_pickup_id": 2,
+		"gatherables": [{"node_id": "tree_01", "definition_id": "fixture_tree_common", "position": {"x": 1, "y": 2}, "depleted": true}],
+		"pickups": [{"pickup_id": "pickup_000001", "item_id": "wood", "quantity": 1, "position": {"x": 1, "y": 2}, "source": {"source_kind": "gatherable"}}],
+		"processed_drop_request_ids": []
+	}
 	var progression_save := SaveCodec.encode_run(state.to_dictionary())
 	asserts.equal(SaveCodec.decode_run(progression_save).state.teleport_states.common_region, "repairable", "run save preserves teleport progression")
 	var decoded := SaveCodec.decode_run(progression_save)
@@ -81,12 +88,16 @@ func run(asserts) -> void:
 	asserts.equal(decoded.run_state.narrative_flags, ["met_sen_rikyu"], "hydrated run state preserves narrative flags")
 	asserts.equal(decoded.run_state.narrative_event_counts.sen_rikyu_intro, 2, "hydrated run state preserves narrative counts")
 	asserts.equal(decoded.run_state.consumables.active_action.elapsed_seconds, 0.5, "hydrated run state preserves active consumable progress")
+	asserts.true_value(decoded.run_state.acquisitions.gatherables[0].depleted, "hydrated run state preserves gatherable depletion")
+	asserts.equal(decoded.run_state.acquisitions.pickups[0].item_id, "wood", "hydrated run state preserves world pickups")
 	progression_save.run.equipment.slots.tea_ware.metadata.tea_ware_use_count = 99
 	progression_save.run.narrative_flags.append("mutated_after_decode")
 	progression_save.run.consumables.active_action.elapsed_seconds = 0.75
+	progression_save.run.acquisitions.pickups[0].quantity = 99
 	asserts.equal(decoded.run_state.equipment.slots.tea_ware.metadata.tea_ware_use_count, 4, "hydrated equipment state is detached from encoded payload")
 	asserts.equal(decoded.run_state.narrative_flags, ["met_sen_rikyu"], "hydrated narrative state is detached from encoded payload")
 	asserts.equal(decoded.run_state.consumables.active_action.elapsed_seconds, 0.5, "hydrated consumable state is detached from encoded payload")
+	asserts.equal(decoded.run_state.acquisitions.pickups[0].quantity, 1, "hydrated acquisition state is detached from encoded payload")
 	state.reset_biome_progression()
 	asserts.equal(state.current_biome_id, "", "run state reset clears current biome")
 	asserts.equal(state.completed_dungeon_ids, [], "run state reset clears dungeon completion")
