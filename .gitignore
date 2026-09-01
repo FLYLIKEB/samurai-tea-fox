@@ -19,6 +19,12 @@ exports/
 .idea/
 .vscode/
 
+# Local environment secrets
+.env
+.env.*
+!.env.example
+.pixellab.config.json
+
 # Local Codex/OMX runtime state
 .omx/
 
