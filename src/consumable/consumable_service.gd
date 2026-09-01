@@ -1,14 +1,13 @@
 extends RefCounted
 class_name ConsumableService
 
+const ConsumableDefinition = preload("res://src/consumable/consumable_definition.gd")
+
 const ITEM_SOURCE := "items"
 const BALANCE_USE_SECONDS_ID := "consumable_use_base_seconds"
 const SNAPSHOT_SCHEMA_VERSION := 1
-const CONSUMABLE_KIND := "소모품"
-const EFFECT_HEAL_HP := "heal_hp"
-const VALID_EFFECT_TYPES := {
-	EFFECT_HEAL_HP: true
-}
+const CONSUMABLE_KIND := ConsumableDefinition.KIND
+const EFFECT_HEAL_HP := ConsumableDefinition.EFFECT_HEAL_HP
 
 signal operation_failed(error: Dictionary)
 signal use_started(action: Dictionary)
@@ -24,7 +23,7 @@ static func from_catalog(catalog) -> Dictionary:
 	var seconds_result := _required_positive_number_balance(catalog, BALANCE_USE_SECONDS_ID)
 	if not seconds_result.ok:
 		return seconds_result
-	var definitions_result := _definitions_from_catalog(catalog)
+	var definitions_result := _definitions_from_catalog(catalog, seconds_result.value)
 	if not definitions_result.ok:
 		return definitions_result
 	var service: ConsumableService = load("res://src/consumable/consumable_service.gd").new()
@@ -42,8 +41,12 @@ func configure(new_use_base_seconds: float, new_consumable_definitions: Dictiona
 		return _fail("invalid_use_seconds", "Consumable use base seconds must be positive.")
 	if new_consumable_definitions.is_empty():
 		return _fail("missing_consumable_definitions", "Consumable definitions must not be empty.")
+	for item_id in new_consumable_definitions:
+		var definition = new_consumable_definitions[item_id]
+		if not definition is ConsumableDefinition or String(item_id) != definition.id:
+			return _fail("invalid_consumable_definition", "Consumable definitions must be keyed by their stable IDs.")
 	use_base_seconds = new_use_base_seconds
-	consumable_definitions = _duplicate_dictionary(new_consumable_definitions)
+	consumable_definitions = new_consumable_definitions.duplicate()
 	data_version = new_data_version
 	next_action_id = 1
 	return {"ok": true}
@@ -52,14 +55,17 @@ func has_definition(item_id: String) -> bool:
 	return consumable_definitions.has(item_id)
 
 func definition_for(item_id: String) -> Dictionary:
-	return _duplicate_dictionary(consumable_definitions.get(item_id, {}))
+	if not consumable_definitions.has(item_id):
+		return {}
+	var definition: ConsumableDefinition = consumable_definitions[item_id]
+	return definition.to_dictionary()
 
 func start_use(item_id: String, inventory, context := {}) -> Dictionary:
 	if not consumable_definitions.has(item_id):
 		return _fail_and_emit(_fail("unknown_consumable", "Unknown consumable definition: %s" % item_id))
 	if inventory == null or not inventory.has_method("get_total_quantity") or inventory.get_total_quantity(item_id) < 1:
 		return _fail_and_emit(_fail("missing_consumable", "Consumable item is not available: %s" % item_id))
-	var definition: Dictionary = consumable_definitions[item_id]
+	var definition: ConsumableDefinition = consumable_definitions[item_id]
 	var action := {
 		"action_id": _next_action_id(),
 		"item_id": item_id,
@@ -97,7 +103,7 @@ func complete_use(action: Dictionary, inventory, resources = null) -> Dictionary
 	var item_id := String(action.item_id)
 	if inventory.get_total_quantity(item_id) < 1:
 		return _fail_and_emit(_fail("missing_consumable", "Consumable item is not available: %s" % item_id))
-	var definition: Dictionary = consumable_definitions[item_id]
+	var definition: ConsumableDefinition = consumable_definitions[item_id]
 	var resource_result := _validate_effect_target(definition, resources)
 	if not resource_result.ok:
 		return _fail_and_emit(resource_result)
@@ -150,44 +156,21 @@ func load_snapshot(snapshot: Dictionary) -> Dictionary:
 	next_action_id = max(1, int(snapshot.get("next_action_id", next_action_id)))
 	return {"ok": true, "active_action": action_result.action}
 
-static func _definitions_from_catalog(catalog) -> Dictionary:
+static func _definitions_from_catalog(catalog, default_use_seconds: float) -> Dictionary:
 	var consumables: Dictionary = {}
 	for row in _catalog_definitions(catalog, ITEM_SOURCE):
 		if String(row.get("type", "")) != CONSUMABLE_KIND:
 			continue
-		var definition_result := _definition_from_row(row)
+		var definition_result := ConsumableDefinition.from_dictionary(row, default_use_seconds)
 		if not definition_result.ok:
 			return definition_result
-		consumables[definition_result.definition.id] = definition_result.definition
+		var definition: ConsumableDefinition = definition_result.definition
+		consumables[definition.id] = definition
 	if consumables.is_empty():
 		return _fail("missing_consumable_definitions", "No consumable item definitions were found.")
 	return {"ok": true, "consumables": consumables}
 
-static func _definition_from_row(row: Dictionary) -> Dictionary:
-	var effect_type := _normalized_effect_type(row)
-	if not VALID_EFFECT_TYPES.has(effect_type):
-		return _fail("invalid_effect_type", "Unknown consumable effect type: %s" % effect_type)
-	var effect_value_result := _required_non_negative_integer(row, "effect_value")
-	if not effect_value_result.ok:
-		return effect_value_result
-	var use_seconds_result := _optional_positive_number(row, "use_seconds", 0.0)
-	if not use_seconds_result.ok:
-		return use_seconds_result
-	var max_stack_result := _optional_positive_integer(row, "max_stack", 1)
-	if not max_stack_result.ok:
-		return max_stack_result
-	return {"ok": true, "definition": {
-		"id": String(row.id),
-		"name": String(row.get("name", row.id)),
-		"status": String(row.get("status", "")),
-		"kind": CONSUMABLE_KIND,
-		"effect_type": effect_type,
-		"effect_value": effect_value_result.value,
-		"use_seconds": use_seconds_result.value,
-		"max_stack": max_stack_result.value
-	}}
-
-func _apply_effect(definition: Dictionary, _context, resources) -> Dictionary:
+func _apply_effect(definition: ConsumableDefinition, _context, resources) -> Dictionary:
 	var effect := {
 		"type": String(definition.effect_type),
 		"hp_healed": 0,
@@ -203,18 +186,10 @@ func _apply_effect(definition: Dictionary, _context, resources) -> Dictionary:
 	effect.hp_healed = healed
 	return {"ok": true, "effect": effect}
 
-func _validate_effect_target(definition: Dictionary, resources) -> Dictionary:
+func _validate_effect_target(definition: ConsumableDefinition, resources) -> Dictionary:
 	if String(definition.effect_type) == EFFECT_HEAL_HP and resources != null and not resources.has_method("heal_hp"):
 		return _fail("invalid_resources", "HP healing consumable requires a resource model with heal_hp.")
 	return {"ok": true}
-
-static func _normalized_effect_type(row: Dictionary) -> String:
-	var raw := String(row.get("effect_type", row.get("effect", ""))).strip_edges()
-	match raw:
-		"HP 회복", "체력 회복", "heal_hp":
-			return EFFECT_HEAL_HP
-		_:
-			return raw
 
 func _validate_action(action: Dictionary) -> Dictionary:
 	if action.get("completed", false):
@@ -254,52 +229,6 @@ static func _required_positive_number_balance(catalog, id: String) -> Dictionary
 	if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)) or float(value) <= 0.0:
 		return _fail("invalid_balance", "Consumable balance value must be a positive number: %s" % id)
 	return {"ok": true, "value": float(value)}
-
-static func _required_non_negative_integer(row: Dictionary, field: String) -> Dictionary:
-	if not row.has(field) or row[field] == null:
-		return _fail("missing_definition_field", "Consumable definition is missing required field: %s.%s" % [row.get("id", ""), field])
-	var value = row[field]
-	if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)):
-		return _fail("invalid_definition", "Definition field must be numeric: %s.%s" % [row.get("id", ""), field])
-	if float(value) != floor(float(value)) or int(value) < 0:
-		return _fail("invalid_definition", "Definition field must be a non-negative integer: %s.%s" % [row.get("id", ""), field])
-	return {"ok": true, "value": int(value)}
-
-static func _optional_integer(row: Dictionary, field: String, fallback: int) -> Dictionary:
-	if not row.has(field) or row[field] == null:
-		return {"ok": true, "value": fallback}
-	var value = row[field]
-	if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)):
-		return _fail("invalid_definition", "Definition field must be numeric: %s.%s" % [row.get("id", ""), field])
-	if float(value) != floor(float(value)):
-		return _fail("invalid_definition", "Definition field must be an integer: %s.%s" % [row.get("id", ""), field])
-	return {"ok": true, "value": int(value)}
-
-static func _optional_positive_integer(row: Dictionary, field: String, fallback: int) -> Dictionary:
-	var value_result := _optional_integer(row, field, fallback)
-	if not value_result.ok:
-		return value_result
-	if int(value_result.value) <= 0:
-		return _fail("invalid_definition", "Definition field must be a positive integer: %s.%s" % [row.get("id", ""), field])
-	return value_result
-
-static func _optional_number(row: Dictionary, field: String, fallback: float) -> Dictionary:
-	if not row.has(field) or row[field] == null:
-		return {"ok": true, "value": fallback}
-	var value = row[field]
-	if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)):
-		return _fail("invalid_definition", "Definition field must be numeric: %s.%s" % [row.get("id", ""), field])
-	return {"ok": true, "value": float(value)}
-
-static func _optional_positive_number(row: Dictionary, field: String, fallback: float) -> Dictionary:
-	var value_result := _optional_number(row, field, fallback)
-	if not value_result.ok:
-		return value_result
-	if float(value_result.value) < 0.0:
-		return _fail("invalid_definition", "Definition field must be non-negative: %s.%s" % [row.get("id", ""), field])
-	if row.has(field) and row[field] != null and float(value_result.value) <= 0.0:
-		return _fail("invalid_definition", "Definition field must be positive: %s.%s" % [row.get("id", ""), field])
-	return value_result
 
 static func _catalog_definitions(catalog, dataset: String) -> Array:
 	if catalog.has_method("get_definitions"):

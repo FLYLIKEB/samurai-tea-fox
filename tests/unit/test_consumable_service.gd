@@ -1,6 +1,7 @@
 extends RefCounted
 
 const ConsumableService = preload("res://src/consumable/consumable_service.gd")
+const ConsumableDefinition = preload("res://src/consumable/consumable_definition.gd")
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
 const InventoryModel = preload("res://src/inventory/inventory_model.gd")
 const PlayerResources = preload("res://src/player/player_resources.gd")
@@ -43,9 +44,21 @@ func _assert_generated_catalog_configures_consumables(asserts) -> void:
 		return
 	var service: ConsumableService = service_result.consumable_service
 	asserts.true_value(service.has_definition("bandage"), "bandage definition comes from generated item data")
+	asserts.true_value(service.consumable_definitions["bandage"] is ConsumableDefinition, "runtime stores validated consumable definitions separately from action state")
 	asserts.equal(service.definition_for("bandage").effect_type, ConsumableService.EFFECT_HEAL_HP, "bandage effect is normalized from data")
 	asserts.equal(service.definition_for("bandage").effect_value, 25, "bandage heal amount comes from item data")
 	asserts.equal(service.definition_for("bandage").use_seconds, 1.0, "bandage use time comes from item data")
+	var exported_definition := service.definition_for("bandage")
+	exported_definition.effect_value = 999
+	asserts.equal(service.definition_for("bandage").effect_value, 25, "definition lookup cannot mutate immutable runtime definition data")
+
+	var fallback_result: Dictionary = ConsumableService.from_catalog(FakeCatalog.new({
+		"balance": _balance_rows(),
+		"items": [{"id": "field_dressing", "name": "응급 붕대", "status": "테스트", "type": "소모품", "max_stack": 5, "effect_type": "HP 회복", "effect_value": 10}]
+	}))
+	asserts.true_value(fallback_result.ok, "consumable without item use_seconds configures")
+	if fallback_result.ok:
+		asserts.equal(fallback_result.consumable_service.definition_for("field_dressing").use_seconds, 1.0, "missing item use time falls back to balance value")
 
 func _assert_use_action_consumes_and_heals_only_on_completion(asserts) -> void:
 	var service := _fixture_service()
