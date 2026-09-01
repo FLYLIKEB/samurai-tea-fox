@@ -10,6 +10,7 @@ const FILES := {
 	"items": "items.json",
 	"recipes": "recipes.json",
 	"monsters": "monsters.json",
+	"drops": "drops.json",
 	"abilities": "abilities.json",
 	"meta_unlocks": "meta_unlocks.json",
 	"events": "events.json",

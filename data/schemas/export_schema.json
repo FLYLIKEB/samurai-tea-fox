@@ -55,6 +55,19 @@
         "relation_map": {"지역 관계": {"field": "biome_ids", "target": "biomes", "many": true}, "보상 다구": {"field": "reward_item_ids", "target": "items", "many": true}, "선택 결과": {"field": "choice_ids", "target": "choices", "many": true}}
       }
     },
+    "drops": {
+      "file": "drops.json", "required_fields": ["id", "name", "status", "monster_id", "condition", "min_quantity", "max_quantity", "chance"],
+      "relations": {"monster_id": "monsters", "item_id": "items", "tea_id": "teas"},
+      "notion": {
+        "source": "collection://362e7813-5332-420b-aca0-fb2824dbcce0", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "드롭 ID", "id_prefix": "drop",
+        "field_map": {"조건": "condition", "최소 수량": "min_quantity", "최대 수량": "max_quantity", "확률": "chance"},
+        "relation_map": {
+          "몬스터": {"field": "monster_id", "target": "monsters", "many": false},
+          "아이템": {"field": "item_id", "target": "items", "many": false},
+          "차": {"field": "tea_id", "target": "teas", "many": false}
+        }
+      }
+    },
     "events": {
       "file": "events.json", "required_fields": ["id", "name", "status", "replay_policy", "start_node_id", "nodes"],
       "notion": {

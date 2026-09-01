@@ -1,5 +1,5 @@
 {
-  "content_hash": "e8d82e2fa7148418602051a0efb320204ac7fa82b7fb74a52d657c4ac8eb2ac2",
+  "content_hash": "925c274c419e05b4ac68012e122b6629038f195784e1012f6493475a678ecb83",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -72,6 +72,16 @@
       "name": "소박한 흙사발",
       "status": "초안",
       "type": "다구"
+    },
+    {
+      "id": "item_32",
+      "name": "천 조각",
+      "status": "확정"
+    },
+    {
+      "id": "item_33",
+      "name": "동전",
+      "status": "확정"
     },
     {
       "core_tea_ware": false,

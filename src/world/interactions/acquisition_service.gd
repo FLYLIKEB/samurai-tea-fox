@@ -154,12 +154,18 @@ func process_drop_request(event: Dictionary, position := Vector2i.ZERO) -> Dicti
 	var next_pickup_id_before := next_pickup_id
 	var results: Array = []
 	for grant in drop_definitions[monster_id].grants:
-		var grant_result := _deliver_grant(grant, origin, {"source_kind": "monster", "source_id": monster_id, "request_id": request_id})
+		var resolved: Dictionary = _resolve_drop_grant(grant, event, request_id)
+		if not resolved.ok:
+			return _fail_and_emit(resolved)
+		if not resolved.included:
+			continue
+		var grant_result := _deliver_grant(resolved.grant, origin, {"source_kind": "monster", "source_id": monster_id, "request_id": request_id, "drop_id": grant.drop_id})
 		if not grant_result.ok:
 			inventory.load_snapshot(inventory_before)
 			_rollback_new_pickups(pickup_ids_before)
 			next_pickup_id = next_pickup_id_before
 			return _fail_and_emit(grant_result)
+		grant_result.drop_id = grant.drop_id
 		results.append(grant_result)
 	if not request_id.is_empty():
 		processed_drop_request_ids.append(request_id)
@@ -388,15 +394,62 @@ func _normalize_grant(row, target_inventory) -> Dictionary:
 	if not row is Dictionary:
 		return _fail("invalid_grant", "Acquisition grant must be a dictionary.")
 	var item_id := String(row.get("item_id", ""))
-	var quantity := int(row.get("quantity", 0))
+	var min_quantity := int(row.get("min_quantity", row.get("quantity", 0)))
+	var max_quantity := int(row.get("max_quantity", row.get("quantity", 0)))
+	var chance := float(row.get("chance", 1.0))
+	var condition := String(row.get("condition", "항상"))
+	var drop_id := String(row.get("drop_id", item_id))
 	var policy := String(row.get("policy", POLICY_DIRECT))
 	if item_id.is_empty() or not target_inventory.has_definition(item_id):
 		return _fail("unknown_item", "Acquisition grant references unknown item: %s" % item_id)
-	if quantity <= 0:
-		return _fail("invalid_quantity", "Acquisition quantity must be positive.")
+	if min_quantity <= 0 or max_quantity < min_quantity:
+		return _fail("invalid_quantity", "Acquisition quantity range must be positive and ordered.")
+	if not is_finite(chance) or chance < 0.0 or chance > 1.0:
+		return _fail("invalid_chance", "Acquisition chance must be between zero and one.")
+	if condition.is_empty() or drop_id.is_empty():
+		return _fail("invalid_drop_rule", "Acquisition drop id and condition must be non-empty.")
 	if policy != POLICY_DIRECT and policy != POLICY_PICKUP:
 		return _fail("invalid_policy", "Acquisition policy must be direct or pickup.")
-	return {"ok": true, "grant": {"item_id": item_id, "quantity": quantity, "policy": policy}}
+	return {"ok": true, "grant": {
+		"drop_id": drop_id,
+		"item_id": item_id,
+		"quantity": min_quantity,
+		"min_quantity": min_quantity,
+		"max_quantity": max_quantity,
+		"chance": chance,
+		"condition": condition,
+		"policy": policy
+	}}
+
+func _resolve_drop_grant(grant: Dictionary, event: Dictionary, request_id: String) -> Dictionary:
+	if not _drop_condition_matches(grant.condition, event):
+		return {"ok": true, "included": false}
+	var seed_key := "%s|%s" % [request_id, grant.drop_id]
+	if _stable_unit_interval(seed_key + "|chance") >= float(grant.chance):
+		return {"ok": true, "included": false}
+	var quantity := int(grant.min_quantity)
+	var quantity_span := int(grant.max_quantity) - quantity + 1
+	if quantity_span > 1:
+		quantity += int(floor(_stable_unit_interval(seed_key + "|quantity") * quantity_span))
+	return {"ok": true, "included": true, "grant": {
+		"item_id": grant.item_id,
+		"quantity": quantity,
+		"policy": grant.policy
+	}}
+
+func _drop_condition_matches(condition: String, event: Dictionary) -> bool:
+	if condition == "항상":
+		return true
+	if String(event.get("condition", "")) == condition:
+		return true
+	var conditions = event.get("conditions", [])
+	return typeof(conditions) == TYPE_ARRAY and conditions.has(condition)
+
+func _stable_unit_interval(key: String) -> float:
+	var hash_value := 2166136261
+	for byte in key.to_utf8_buffer():
+		hash_value = ((hash_value ^ int(byte)) * 16777619) & 0x7fffffff
+	return float(hash_value % 1000000) / 1000000.0
 
 func _normalize_gatherable_snapshot(rows) -> Dictionary:
 	if typeof(rows) != TYPE_ARRAY:

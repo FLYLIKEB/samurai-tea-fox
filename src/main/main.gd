@@ -92,14 +92,32 @@ func submit_mobile_action_command(command) -> bool:
 func restore_run_state(state) -> Dictionary:
 	if not state is RunState:
 		return {"ok": false, "reason": "invalid_run_state", "error": "Main runtime requires a RunState."}
+	var inventory_before: Dictionary = inventory.to_snapshot() if inventory != null else {}
+	var acquisitions_before: Dictionary = acquisition_service.to_snapshot() if acquisition_service != null else {}
+	if inventory != null and not state.inventory.is_empty():
+		var inventory_result: Dictionary = inventory.load_snapshot(state.inventory)
+		if not inventory_result.ok:
+			return inventory_result
+	if acquisition_service != null and not state.acquisitions.is_empty():
+		var acquisition_result: Dictionary = acquisition_service.load_snapshot(state.acquisitions)
+		if not acquisition_result.ok:
+			if inventory != null and not inventory_before.is_empty():
+				inventory.load_snapshot(inventory_before)
+			if not acquisitions_before.is_empty():
+				acquisition_service.load_snapshot(acquisitions_before)
+			return acquisition_result
 	run_state = state
-	if acquisition_service == null or run_state.acquisitions.is_empty():
-		return {"ok": true}
-	return acquisition_service.load_snapshot(run_state.acquisitions)
+	if inventory != null:
+		run_state.inventory = inventory.to_snapshot()
+	if acquisition_service != null:
+		run_state.acquisitions = acquisition_service.to_snapshot()
+	return {"ok": true}
 
 func snapshot_run_state() -> Dictionary:
 	if run_state == null:
 		run_state = RunState.new()
+	if inventory != null:
+		run_state.inventory = inventory.to_snapshot()
 	if acquisition_service != null:
 		run_state.acquisitions = acquisition_service.to_snapshot()
 	return run_state.to_dictionary()
@@ -115,6 +133,10 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	if not tea_result.ok:
 		return tea_result
 	inventory = inventory_result.inventory
+	if run_state != null and not run_state.inventory.is_empty():
+		var inventory_load_result: Dictionary = inventory.load_snapshot(run_state.inventory)
+		if not inventory_load_result.ok:
+			return inventory_load_result
 	equipment = equipment_result.equipment
 	tea_service = tea_result.tea_service
 	tea_service.drink_completed.connect(_on_tea_drink_completed)
@@ -127,7 +149,7 @@ func _configure_acquisition_for_generated_world() -> Dictionary:
 	world_data = WorldData.from_dictionary(generated_world.world_data)
 	acquisition_service = AcquisitionService.new()
 	var definitions := _confirmed_generated_resource_definitions(generated_world.get("resource_nodes", []))
-	var configured: Dictionary = acquisition_service.configure(inventory, world_data, definitions, _confirmed_drop_definitions())
+	var configured: Dictionary = acquisition_service.configure(inventory, world_data, definitions, _generated_drop_definitions())
 	if not configured.ok:
 		return configured
 	var definition_ids := {}
@@ -166,12 +188,27 @@ func _confirmed_generated_resource_definitions(resource_nodes: Array) -> Array:
 		seen[resource_id] = true
 	return definitions
 
-func _confirmed_drop_definitions() -> Array:
+func _generated_drop_definitions() -> Array:
+	var grants_by_monster := {}
+	for drop in catalog.get_definitions("drops"):
+		var monster_id := String(drop.get("monster_id", ""))
+		var target_id := String(drop.get("item_id", drop.get("tea_id", "")))
+		if not grants_by_monster.has(monster_id):
+			grants_by_monster[monster_id] = []
+		grants_by_monster[monster_id].append({
+			"drop_id": String(drop.get("id", "")),
+			"item_id": target_id,
+			"min_quantity": int(drop.get("min_quantity", 0)),
+			"max_quantity": int(drop.get("max_quantity", 0)),
+			"chance": float(drop.get("chance", 0.0)),
+			"condition": String(drop.get("condition", "")),
+			"policy": AcquisitionService.POLICY_DIRECT
+		})
 	var definitions := []
-	for monster in catalog.get_definitions("monsters"):
-		if String(monster.get("status", "")) != "확정" or typeof(monster.get("drop_grants")) != TYPE_ARRAY:
-			continue
-		definitions.append({"monster_id": String(monster.get("id", "")), "grants": monster.drop_grants.duplicate(true)})
+	var monster_ids: Array = grants_by_monster.keys()
+	monster_ids.sort()
+	for monster_id in monster_ids:
+		definitions.append({"monster_id": monster_id, "grants": grants_by_monster[monster_id]})
 	return definitions
 
 func _connect_acquisition_combat_source(source) -> Dictionary:
@@ -196,7 +233,7 @@ func _on_combat_drop_requested(event: Dictionary) -> void:
 			"y": int(round(combat_dummy.global_position.y / 32.0))
 		}
 	var result: Dictionary = acquisition_service.process_drop_request(normalized)
-	if not result.ok and String(result.get("reason", "")) != "unknown_drop_definition":
+	if not result.ok:
 		push_error(result.error)
 
 func _vector_from_dictionary(data: Dictionary) -> Vector2i:
