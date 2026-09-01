@@ -88,21 +88,43 @@ class LayoutMixin:
         )
         preview_toggle.pack(side=tk.RIGHT)
 
-        bottom_panel = tk.Frame(self, bg=PANEL, padx=10, pady=8)
-        bottom_panel.pack(side=tk.BOTTOM, fill=tk.X)
+        self.bottom_panel = tk.Frame(self, bg=PANEL, padx=8, pady=4)
+        self.bottom_panel.pack(side=tk.BOTTOM, fill=tk.X)
 
-        notebook = ttk.Notebook(bottom_panel)
+        bottom_bar = tk.Frame(self.bottom_panel, bg=PANEL)
+        bottom_bar.pack(side=tk.BOTTOM, fill=tk.X)
+        self.bottom_toggle_button = self._button(
+            bottom_bar,
+            "작업 패널 열기",
+            self.toggle_bottom_panel,
+        )
+        self.bottom_toggle_button.pack(side=tk.LEFT, padx=(0, 8))
+
+        status = tk.Label(
+            bottom_bar,
+            textvariable=self.status_var,
+            anchor="w",
+            bg=PANEL,
+            fg=MUTED,
+            padx=0,
+            pady=4,
+        )
+        status.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        self.bottom_content = tk.Frame(self.bottom_panel, bg=PANEL)
+
+        notebook = ttk.Notebook(self.bottom_content)
         notebook.pack(side=tk.TOP, fill=tk.X)
 
-        prompt_panel = tk.Frame(notebook, bg=PANEL, padx=8, pady=8)
-        template_panel = tk.Frame(notebook, bg=PANEL, padx=8, pady=8)
-        style_panel = tk.Frame(notebook, bg=PANEL, padx=8, pady=8)
+        prompt_panel = tk.Frame(notebook, bg=PANEL, padx=6, pady=6)
+        template_panel = tk.Frame(notebook, bg=PANEL, padx=6, pady=6)
+        style_panel = tk.Frame(notebook, bg=PANEL, padx=6, pady=6)
         notebook.add(prompt_panel, text="복사 프롬프트")
         notebook.add(template_panel, text="기본 템플릿")
         notebook.add(style_panel, text="스타일 토큰")
 
         prompt_header = tk.Frame(prompt_panel, bg=PANEL)
-        prompt_header.pack(side=tk.TOP, fill=tk.X, pady=(0, 6))
+        prompt_header.pack(side=tk.TOP, fill=tk.X, pady=(0, 4))
 
         tk.Label(
             prompt_header,
@@ -115,21 +137,21 @@ class LayoutMixin:
 
         self.prompt_text = tk.Text(
             prompt_panel,
-            height=8,
+            height=4,
             bg=BG,
             fg=TEXT,
             insertbackground=TEXT,
             relief=tk.FLAT,
             wrap=tk.WORD,
-            padx=8,
-            pady=8,
+            padx=6,
+            pady=6,
             undo=True,
         )
         self.prompt_text.pack(side=tk.TOP, fill=tk.X)
         self.prompt_text.bind("<<Modified>>", self._prompt_modified)
 
         template_header = tk.Frame(template_panel, bg=PANEL)
-        template_header.pack(side=tk.TOP, fill=tk.X, pady=(0, 6))
+        template_header.pack(side=tk.TOP, fill=tk.X, pady=(0, 4))
 
         tk.Label(
             template_header,
@@ -147,7 +169,7 @@ class LayoutMixin:
         self._button(template_header, "템플릿 저장", self.save_template).pack(side=tk.RIGHT)
 
         template_path_row = tk.Frame(template_panel, bg=PANEL)
-        template_path_row.pack(side=tk.TOP, fill=tk.X, pady=(0, 6))
+        template_path_row.pack(side=tk.TOP, fill=tk.X, pady=(0, 4))
         tk.Label(
             template_path_row,
             text=f"파일: {template_path()}",
@@ -166,14 +188,14 @@ class LayoutMixin:
 
         self.template_text = tk.Text(
             template_panel,
-            height=7,
+            height=4,
             bg=BG,
             fg=TEXT,
             insertbackground=TEXT,
             relief=tk.FLAT,
             wrap=tk.WORD,
-            padx=8,
-            pady=8,
+            padx=6,
+            pady=6,
             undo=True,
         )
         self.template_text.pack(side=tk.TOP, fill=tk.X)
@@ -181,7 +203,7 @@ class LayoutMixin:
         self.set_template_text(self.prompt_template, dirty=False)
 
         style_header = tk.Frame(style_panel, bg=PANEL)
-        style_header.pack(side=tk.TOP, fill=tk.X, pady=(0, 6))
+        style_header.pack(side=tk.TOP, fill=tk.X, pady=(0, 4))
 
         tk.Label(
             style_header,
@@ -196,7 +218,7 @@ class LayoutMixin:
         self._button(style_header, "다시 읽기", self.reload_art_style_tokens).pack(side=tk.RIGHT)
 
         style_path_row = tk.Frame(style_panel, bg=PANEL)
-        style_path_row.pack(side=tk.TOP, fill=tk.X, pady=(0, 6))
+        style_path_row.pack(side=tk.TOP, fill=tk.X, pady=(0, 4))
         self.style_file_path = self.project_root / ART_STYLE_TOKENS_PATH
         tk.Label(
             style_path_row,
@@ -214,21 +236,21 @@ class LayoutMixin:
             side=tk.RIGHT
         )
 
-        self.palette_frame = tk.Frame(style_panel, bg=BG, padx=8, pady=6)
-        self.palette_frame.pack(side=tk.TOP, fill=tk.X, pady=(0, 6))
+        self.palette_frame = tk.Frame(style_panel, bg=BG, padx=6, pady=4)
+        self.palette_frame.pack(side=tk.TOP, fill=tk.X, pady=(0, 4))
 
         style_text_frame = tk.Frame(style_panel, bg=PANEL)
         style_text_frame.pack(side=tk.TOP, fill=tk.X)
         self.style_text = tk.Text(
             style_text_frame,
-            height=7,
+            height=4,
             bg=BG,
             fg=TEXT,
             insertbackground=TEXT,
             relief=tk.FLAT,
             wrap=tk.WORD,
-            padx=8,
-            pady=8,
+            padx=6,
+            pady=6,
         )
         style_scrollbar = tk.Scrollbar(style_text_frame, orient=tk.VERTICAL, command=self.style_text.yview)
         self.style_text.configure(yscrollcommand=style_scrollbar.set)
@@ -236,16 +258,7 @@ class LayoutMixin:
         style_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.reload_art_style_tokens()
 
-        status = tk.Label(
-            bottom_panel,
-            textvariable=self.status_var,
-            anchor="w",
-            bg=PANEL,
-            fg=MUTED,
-            padx=0,
-            pady=6,
-        )
-        status.pack(side=tk.BOTTOM, fill=tk.X)
+        self._set_bottom_panel_visible(False)
 
         image_area = tk.Frame(self, bg=BG)
         image_area.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
@@ -278,6 +291,18 @@ class LayoutMixin:
             highlightthickness=1,
             highlightbackground=BORDER,
         )
+
+    def toggle_bottom_panel(self) -> None:
+        self._set_bottom_panel_visible(not self.bottom_panel_visible.get())
+
+    def _set_bottom_panel_visible(self, visible: bool) -> None:
+        self.bottom_panel_visible.set(visible)
+        if visible:
+            self.bottom_content.pack(side=tk.TOP, fill=tk.X, before=self.bottom_panel.winfo_children()[-1])
+            self.bottom_toggle_button.configure(text="작업 패널 닫기")
+        else:
+            self.bottom_content.pack_forget()
+            self.bottom_toggle_button.configure(text="작업 패널 열기")
 
     def _update_scroll_region(self, _event: tk.Event) -> None:
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))

@@ -7,6 +7,7 @@ from pathlib import Path
 import tkinter as tk
 
 from .constants import BG, BORDER, ERROR, MUTED, SELECTED, SELECTED_TEXT, TEXT
+from .constants import GRID_CELL_HEIGHT, GRID_CELL_PITCH, GRID_CELL_WIDTH, THUMBNAIL_BOX_SIZE
 from .image_ops import Image, ImageTk, recolor_image_to_palette
 from .models import AssetImage
 from .prompting import load_prompt_template
@@ -22,6 +23,7 @@ class AssetBrowser(LayoutMixin, PalettePanelMixin, ActionsMixin, tk.Tk):
         self.asset_root = asset_root
         self.scale_var = tk.IntVar(value=scale)
         self.palette_preview_var = tk.BooleanVar(value=False)
+        self.bottom_panel_visible = tk.BooleanVar(value=False)
         self.filter_var = tk.StringVar()
         self.status_var = tk.StringVar()
         self.path_var = tk.StringVar(value=str(asset_root))
@@ -63,8 +65,7 @@ class AssetBrowser(LayoutMixin, PalettePanelMixin, ActionsMixin, tk.Tk):
             return
 
         width = max(self.canvas.winfo_width(), 720)
-        cell_width = 168
-        columns = max(1, width // cell_width)
+        columns = max(1, width // GRID_CELL_PITCH)
 
         for index, item in enumerate(self.filtered_images):
             row = index // columns
@@ -82,23 +83,32 @@ class AssetBrowser(LayoutMixin, PalettePanelMixin, ActionsMixin, tk.Tk):
         cell = tk.Frame(
             self.grid_frame,
             bg=bg,
-            padx=8,
-            pady=8,
+            padx=6,
+            pady=6,
             highlightthickness=1,
             highlightbackground=SELECTED if is_selected else BORDER,
-            width=150,
-            height=190,
+            width=GRID_CELL_WIDTH,
+            height=GRID_CELL_HEIGHT,
         )
-        cell.grid(row=row, column=column, padx=6, pady=6, sticky="n")
+        cell.grid(row=row, column=column, padx=4, pady=4, sticky="n")
         cell.grid_propagate(False)
+
+        image_box = tk.Frame(
+            cell,
+            bg=bg,
+            width=THUMBNAIL_BOX_SIZE,
+            height=THUMBNAIL_BOX_SIZE,
+        )
+        image_box.pack(side=tk.TOP)
+        image_box.pack_propagate(False)
 
         thumb, meta = self._load_thumbnail(item.path)
         if thumb is not None:
             self.thumbnail_refs.append(thumb)
-            image_label = tk.Label(cell, image=thumb, bg=bg)
+            image_label = tk.Label(image_box, image=thumb, bg=bg)
         else:
             image_label = tk.Label(
-                cell,
+                image_box,
                 text="미리보기\n불가",
                 bg=bg,
                 fg=ERROR if not is_selected else SELECTED_TEXT,
@@ -106,15 +116,16 @@ class AssetBrowser(LayoutMixin, PalettePanelMixin, ActionsMixin, tk.Tk):
                 height=6,
                 justify=tk.CENTER,
             )
-        image_label.pack(side=tk.TOP, pady=(0, 6))
+        image_label.pack(expand=True)
 
         name_label = tk.Label(
             cell,
             text=item.relative_path.name,
             bg=bg,
             fg=fg,
-            wraplength=130,
+            wraplength=124,
             justify=tk.CENTER,
+            height=2,
         )
         name_label.pack(side=tk.TOP)
 
@@ -125,13 +136,14 @@ class AssetBrowser(LayoutMixin, PalettePanelMixin, ActionsMixin, tk.Tk):
             text=detail,
             bg=bg,
             fg=meta_fg,
-            wraplength=130,
+            wraplength=124,
             justify=tk.CENTER,
             font=("TkDefaultFont", 9),
+            height=2,
         )
-        detail_label.pack(side=tk.BOTTOM, pady=(4, 0))
+        detail_label.pack(side=tk.BOTTOM)
 
-        for widget in (cell, image_label, name_label, detail_label):
+        for widget in (cell, image_box, image_label, name_label, detail_label):
             widget.bind("<Button-1>", lambda _event, asset=item: self.toggle_selection(asset))
             widget.bind("<Double-Button-1>", lambda _event, asset=item: self.copy_single_prompt(asset))
 
@@ -184,5 +196,5 @@ class AssetBrowser(LayoutMixin, PalettePanelMixin, ActionsMixin, tk.Tk):
         if max_dimension <= 64:
             return max(1, width * scale), max(1, height * scale)
 
-        fit_scale = min(1.0, 192 / max_dimension)
+        fit_scale = min(1.0, THUMBNAIL_BOX_SIZE / max_dimension)
         return max(1, int(width * fit_scale)), max(1, int(height * fit_scale))
