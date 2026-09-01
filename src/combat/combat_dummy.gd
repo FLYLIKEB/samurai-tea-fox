@@ -1,11 +1,12 @@
 extends CharacterBody2D
 class_name CombatDummy
 
-const CombatantState = preload("res://src/combat/combatant_state.gd")
+const MonsterSpawnFactory = preload("res://src/enemy/monster_spawn_factory.gd")
 const TILE_SIZE_PIXELS := 32.0
 
 signal damaged(event: Dictionary, applied_damage: int)
-signal defeated
+signal defeated(event: Dictionary)
+signal drop_requested(event: Dictionary)
 
 @export var monster_id := "road_bandit"
 @export var automatic_attacks := true
@@ -22,15 +23,13 @@ var _pending_knockback := Vector2.ZERO
 @onready var health_fill: Polygon2D = $HealthFill
 
 func configure_combat(catalog, attack_target = null, config = null) -> Dictionary:
-	var result: Dictionary = CombatantState.from_catalog(catalog, monster_id, "%s_%d" % [monster_id, get_instance_id()])
+	var result: Dictionary = MonsterSpawnFactory.new(catalog).spawn(monster_id, {"combat_id": "%s_%d" % [monster_id, get_instance_id()]})
 	if not result.ok:
 		return result
-	var definition: Dictionary = catalog.find_by_id("monsters", monster_id)
-	var raw_period = definition.get("attack_period_seconds")
-	if typeof(raw_period) not in [TYPE_INT, TYPE_FLOAT] or float(raw_period) <= 0.0:
-		return {"ok": false, "error": "Monster attack period must be a positive number: %s" % monster_id}
-	combatant = result.combatant
-	attack_period_seconds = float(raw_period)
+	combatant = result.monster
+	combatant.defeated.connect(_on_monster_defeated)
+	combatant.drop_requested.connect(_on_monster_drop_requested)
+	attack_period_seconds = combatant.attack_period_seconds
 	if config == null:
 		return {"ok": false, "error": "Combat config is required for dummy hit invulnerability"}
 	hit_invulnerability_seconds = config.hit_invulnerability_seconds
@@ -64,8 +63,6 @@ func apply_damage_event(event: Dictionary) -> int:
 			_pending_knockback = direction.normalized() * knockback_tiles * TILE_SIZE_PIXELS
 		damaged.emit(event, applied)
 		_update_health_bar()
-	if combatant.is_defeated():
-		defeated.emit()
 	return applied
 
 func attack_target(attack_target, hit_invulnerability_seconds := 0.0) -> int:
@@ -93,3 +90,9 @@ func _update_health_bar() -> void:
 	var ratio := float(combatant.hp) / float(combatant.hp_max)
 	health_fill.scale.x = ratio
 	health_fill.position.x = -7.0 + 7.0 * ratio
+
+func _on_monster_defeated(event: Dictionary) -> void:
+	defeated.emit(event)
+
+func _on_monster_drop_requested(event: Dictionary) -> void:
+	drop_requested.emit(event)
