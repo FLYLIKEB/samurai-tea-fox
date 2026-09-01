@@ -83,6 +83,8 @@ func get_interactables(position: Vector2i) -> Array:
 	return _cell(position).layers[LAYER_INTERACTABLES].duplicate(true)
 
 func can_reserve_footprint(origin: Vector2i, size: Vector2i) -> bool:
+	if not _is_valid_footprint_size(size):
+		return false
 	return _first_blocking_cell(origin, size) == Vector2i(-1, -1)
 
 func reserve_entity(owner_id: String, origin: Vector2i, size := Vector2i.ONE, interactable := false, metadata := {}) -> Dictionary:
@@ -96,7 +98,7 @@ func reserve_footprint(owner_id: String, kind: String, origin: Vector2i, size: V
 		return {"ok": false, "reason": "missing_owner_id"}
 	if _reservations.has(owner_id):
 		return {"ok": false, "reason": "owner_already_reserved"}
-	if size.x <= 0 or size.y <= 0:
+	if not _is_valid_footprint_size(size):
 		return {"ok": false, "reason": "invalid_size"}
 	if layer != LAYER_ENTITIES and layer != LAYER_FACILITIES:
 		return {"ok": false, "reason": "invalid_layer"}
@@ -199,6 +201,9 @@ func _first_blocking_cell(origin: Vector2i, size: Vector2i) -> Vector2i:
 		if is_occupied(position):
 			return position
 	return Vector2i(-1, -1)
+
+func _is_valid_footprint_size(size: Vector2i) -> bool:
+	return size.x > 0 and size.y > 0
 
 func _footprint_cells(origin: Vector2i, size: Vector2i) -> Array:
 	var cells := []

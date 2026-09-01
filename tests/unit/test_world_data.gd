@@ -7,6 +7,7 @@ const WorldRendererProjection = preload("res://src/world/rendering/world_rendere
 func run(asserts) -> void:
 	_add_release_and_queries(asserts)
 	_walkability_and_footprint_collision(asserts)
+	_invalid_footprint_size_rejected(asserts)
 	_connected_required_landmarks(asserts)
 	_disconnected_required_landmarks(asserts)
 	_renderer_projection_boundaries(asserts)
@@ -38,6 +39,23 @@ func _walkability_and_footprint_collision(asserts) -> void:
 	asserts.equal(collision.reason, "blocked", "collision reports blocked reason")
 	asserts.false_value(outside.ok, "footprint cannot reserve outside bounds")
 	asserts.equal(outside.position, {"x": 5, "y": 4}, "out-of-bounds collision reports first blocked cell")
+
+func _invalid_footprint_size_rejected(asserts) -> void:
+	var world := WorldData.new(5, 5, "grass", true)
+	var zero_width := world.reserve_entity("zero_width", Vector2i(1, 1), Vector2i(0, 1))
+	var zero_height := world.reserve_entity("zero_height", Vector2i(1, 1), Vector2i(1, 0))
+	var negative_width := world.reserve_entity("negative_width", Vector2i(1, 1), Vector2i(-1, 1))
+	var negative_height := world.reserve_entity("negative_height", Vector2i(1, 1), Vector2i(1, -1))
+
+	asserts.false_value(world.can_reserve_footprint(Vector2i(1, 1), Vector2i.ZERO), "can_reserve_footprint rejects zero size")
+	asserts.false_value(world.can_reserve_footprint(Vector2i(1, 1), Vector2i(0, 1)), "can_reserve_footprint rejects zero width")
+	asserts.false_value(world.can_reserve_footprint(Vector2i(1, 1), Vector2i(1, 0)), "can_reserve_footprint rejects zero height")
+	asserts.false_value(world.can_reserve_footprint(Vector2i(1, 1), Vector2i(-1, 1)), "can_reserve_footprint rejects negative width")
+	asserts.false_value(world.can_reserve_footprint(Vector2i(1, 1), Vector2i(1, -1)), "can_reserve_footprint rejects negative height")
+	asserts.equal(zero_width.reason, "invalid_size", "reserve rejects zero width")
+	asserts.equal(zero_height.reason, "invalid_size", "reserve rejects zero height")
+	asserts.equal(negative_width.reason, "invalid_size", "reserve rejects negative width")
+	asserts.equal(negative_height.reason, "invalid_size", "reserve rejects negative height")
 
 func _connected_required_landmarks(asserts) -> void:
 	var world := WorldData.new(5, 3, "grass", true)
