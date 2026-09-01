@@ -1,0 +1,5 @@
+interface:
+  display_name: "차·전투 자원 루프"
+  short_description: "차와 전투 자원 루프 규칙을 점검합니다."
+policy:
+  allow_implicit_invocation: true
