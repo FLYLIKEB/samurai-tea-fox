@@ -63,6 +63,12 @@ static func encode_meta(meta_state) -> Dictionary:
 		"meta": MetaState.from_dictionary(snapshot).to_dictionary()
 	}
 
+static func validate_run_snapshot(run_state) -> Dictionary:
+	return _validate_snapshot(run_state, RUN_KIND, RUN_FIELD_TYPES)
+
+static func validate_meta_snapshot(meta_state) -> Dictionary:
+	return _validate_snapshot(meta_state, META_KIND, META_FIELD_TYPES)
+
 static func decode_run(save_data: Dictionary) -> Dictionary:
 	var result := _decode_payload(save_data, RUN_KIND, RUN_FIELD_TYPES)
 	if not result.ok:
@@ -124,15 +130,38 @@ static func _migrate_payload(schema_version: int, kind: String, payload: Diction
 			return {"ok": true, "state": migrated}
 	return _failure("Unsupported save schema version %d." % schema_version)
 
+static func _validate_snapshot(state, kind: String, field_types: Dictionary) -> Dictionary:
+	var snapshot_result := _snapshot_result_for(state, kind)
+	if not snapshot_result.ok:
+		return snapshot_result
+	var snapshot: Dictionary = snapshot_result.snapshot
+	for required_field in REQUIRED_FIELDS[kind]:
+		if not snapshot.has(required_field):
+			return _failure("Missing required %s field '%s'." % [kind, required_field])
+	for field in snapshot:
+		if not field_types.has(field):
+			continue
+		if field_types[field] == TYPE_INT and _is_integer_value(snapshot[field]):
+			continue
+		if typeof(snapshot[field]) != field_types[field]:
+			return _failure("Malformed %s field '%s'." % [kind, field])
+	return {"ok": true, "snapshot": snapshot.duplicate(true)}
+
 static func _snapshot_for(state, kind: String) -> Dictionary:
+	var result := _snapshot_result_for(state, kind)
+	if result.ok:
+		return result.snapshot
+	push_error(result.error)
+	return {}
+
+static func _snapshot_result_for(state, kind: String) -> Dictionary:
 	if state is Dictionary:
-		return state.duplicate(true)
+		return {"ok": true, "snapshot": state.duplicate(true)}
 	if state is Object and state.has_method("to_dictionary"):
 		var snapshot = state.to_dictionary()
 		if snapshot is Dictionary:
-			return snapshot.duplicate(true)
-	push_error("Cannot encode malformed %s state." % kind)
-	return {}
+			return {"ok": true, "snapshot": snapshot.duplicate(true)}
+	return _failure("Cannot encode malformed %s state." % kind)
 
 static func _failure(message: String) -> Dictionary:
 	return {"ok": false, "error": message}

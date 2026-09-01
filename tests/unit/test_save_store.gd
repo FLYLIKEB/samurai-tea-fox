@@ -37,6 +37,20 @@ func run(asserts) -> void:
 	asserts.equal(raw_meta.kind, "meta", "meta file contains only a meta envelope")
 	asserts.false_value(raw_meta.has("run"), "meta file does not contain run payload")
 
+	var prior_run_bytes := FileAccess.get_file_as_bytes(RUN_PATH)
+	var empty_run_result := store.save_run({})
+	asserts.false_value(empty_run_result.ok, "empty run snapshot is rejected before canonicalization")
+	asserts.equal(FileAccess.get_file_as_bytes(RUN_PATH), prior_run_bytes, "empty run snapshot preserves the prior target byte-for-byte")
+
+	var malformed_run_result := store.save_run({"seed": "invalid"})
+	asserts.false_value(malformed_run_result.ok, "wrongly typed run snapshot is rejected before canonicalization")
+	asserts.equal(FileAccess.get_file_as_bytes(RUN_PATH), prior_run_bytes, "wrongly typed run snapshot preserves the prior target byte-for-byte")
+
+	var prior_meta_bytes := FileAccess.get_file_as_bytes(META_PATH)
+	var malformed_meta_result := store.save_meta({"run_count": "invalid"})
+	asserts.false_value(malformed_meta_result.ok, "malformed meta snapshot is rejected before canonicalization")
+	asserts.equal(FileAccess.get_file_as_bytes(META_PATH), prior_meta_bytes, "malformed meta snapshot preserves the prior target byte-for-byte")
+
 	_write_text(RUN_PATH, "{not valid json")
 	var corrupt_result := store.load_run()
 	asserts.false_value(corrupt_result.ok, "corrupt JSON is rejected")

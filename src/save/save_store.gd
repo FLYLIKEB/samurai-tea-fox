@@ -20,10 +20,16 @@ func _init(
 	_replace_operation = replace_operation
 
 func save_run(run_state) -> Dictionary:
-	return _write_envelope(run_path, SaveCodec.encode_run(run_state))
+	var validation := SaveCodec.validate_run_snapshot(run_state)
+	if not validation.ok:
+		return validation
+	return _write_envelope(run_path, SaveCodec.encode_run(validation.snapshot))
 
 func save_meta(meta_state) -> Dictionary:
-	return _write_envelope(meta_path, SaveCodec.encode_meta(meta_state))
+	var validation := SaveCodec.validate_meta_snapshot(meta_state)
+	if not validation.ok:
+		return validation
+	return _write_envelope(meta_path, SaveCodec.encode_meta(validation.snapshot))
 
 func load_run() -> Dictionary:
 	var loaded := _read_envelope(run_path)
