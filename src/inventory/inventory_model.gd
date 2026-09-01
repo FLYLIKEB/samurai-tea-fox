@@ -188,6 +188,38 @@ func move_slot(from_index: int, to_index: int) -> Dictionary:
 	_emit_changed()
 	return {"ok": true}
 
+func extract_slot(index: int) -> Dictionary:
+	var index_result := _validate_slot_index(index)
+	if not index_result.ok:
+		return _fail_and_emit(index_result)
+	var slot: Dictionary = slots[index]
+	if _is_empty_slot(slot):
+		return _fail_and_emit({"ok": false, "reason": "empty_slot", "error": "Inventory slot is empty: %d" % index})
+	slots[index] = {}
+	_emit_changed()
+	return {"ok": true, "slot": _duplicate_dictionary(slot), "slot_index": index}
+
+func insert_slot(slot: Dictionary, to_index := -1) -> Dictionary:
+	var slot_result := _normalize_snapshot_slot(slot)
+	if not slot_result.ok:
+		return _fail_and_emit(slot_result)
+	var normalized_slot: Dictionary = slot_result.slot
+	if _is_empty_slot(normalized_slot):
+		return _fail_and_emit({"ok": false, "reason": "empty_slot", "error": "Cannot insert an empty inventory slot."})
+
+	var target_index := to_index
+	if target_index == -1:
+		target_index = _first_empty_slot_index(slots)
+	var index_result := _validate_slot_index(target_index)
+	if not index_result.ok:
+		return _fail_and_emit(index_result)
+	if not _is_empty_slot(slots[target_index]):
+		return _fail_and_emit({"ok": false, "reason": "occupied_slot", "error": "Inventory slot is occupied: %d" % target_index})
+
+	slots[target_index] = normalized_slot
+	_emit_changed()
+	return {"ok": true, "slot_index": target_index, "slot": _duplicate_dictionary(normalized_slot)}
+
 func sort_slots() -> Dictionary:
 	var occupied: Array = []
 	for slot in slots:

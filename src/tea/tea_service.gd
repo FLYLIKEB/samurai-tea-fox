@@ -89,7 +89,7 @@ func configure(
 	return {"ok": true}
 
 func brew(tea_id: String, vessel_id: String, inventory, slot_index := -1, context := {}) -> Dictionary:
-	var definition_result := _build_prepared_tea(tea_id, vessel_id, context)
+	var definition_result := _build_prepared_tea(tea_id, get_vessel_modifier_query(vessel_id), context)
 	if not definition_result.ok:
 		return _fail_and_emit(definition_result)
 	var prepared: Dictionary = definition_result.prepared_tea
@@ -119,6 +119,53 @@ func brew(tea_id: String, vessel_id: String, inventory, slot_index := -1, contex
 	tea_prepared.emit(_duplicate_dictionary(prepared))
 	_emit_changed()
 	return {"ok": true, "slot": target_slot, "prepared_tea": _duplicate_dictionary(prepared)}
+
+func brew_with_modifier_query(tea_id: String, modifier_query: Dictionary, inventory, slot_index := -1, context := {}) -> Dictionary:
+	var definition_result := _build_prepared_tea(tea_id, modifier_query, context)
+	if not definition_result.ok:
+		return _fail_and_emit(definition_result)
+	var prepared: Dictionary = definition_result.prepared_tea
+	var serving_size := int(prepared.serving_size)
+	if inventory == null or not inventory.has_method("get_total_quantity") or not inventory.has_method("remove_item"):
+		return _fail_and_emit(_fail("invalid_inventory", "Tea brewing requires an inventory model."))
+	if inventory.get_total_quantity(tea_id) < serving_size:
+		return _fail_and_emit(_fail("missing_tea_leaf", "Brewing requires tea leaf units: %s" % tea_id))
+
+	var target_slot := slot_index
+	if target_slot == -1:
+		target_slot = first_empty_quickslot()
+	var slot_result := _validate_quickslot_index(target_slot)
+	if not slot_result.ok:
+		return _fail_and_emit(slot_result)
+	if not _is_empty_slot(quick_slots[target_slot]):
+		return _fail_and_emit(_fail("quickslot_occupied", "Tea quickslot is already occupied: %d" % target_slot))
+
+	var remove_result: Dictionary = inventory.remove_item(tea_id, serving_size)
+	if not remove_result.ok:
+		return _fail_and_emit(remove_result)
+
+	prepared["prepared_id"] = _next_prepared_id()
+	quick_slots[target_slot] = prepared
+	tea_prepared.emit(_duplicate_dictionary(prepared))
+	_emit_changed()
+	return {"ok": true, "slot": target_slot, "prepared_tea": _duplicate_dictionary(prepared)}
+
+func get_vessel_modifier_query(vessel_id: String) -> Dictionary:
+	if not vessel_definitions.has(vessel_id):
+		return {}
+	var vessel: Dictionary = vessel_definitions[vessel_id]
+	return {
+		"vessel_id": vessel_id,
+		"vessel_name": vessel.name,
+		"tea_recovery_multiplier": float(vessel.tea_recovery_multiplier),
+		"tea_recovery_bonus": int(vessel.tea_recovery_bonus),
+		"carry_use_bonus": int(vessel.carry_use_bonus),
+		"drink_seconds_multiplier": float(vessel.drink_seconds_multiplier),
+		"drink_seconds_bonus": float(vessel.drink_seconds_bonus),
+		"sustain_modifier": float(vessel.sustain_modifier),
+		"core_tea_ware": _checkbox_value(vessel.get("core_tea_ware", false)),
+		"core_tea_ware_order": int(vessel.get("core_tea_ware_order", 0))
+	}
 
 func has_prepared_tea(slot_index: int) -> bool:
 	if slot_index < 0 or slot_index >= quickslot_count:
@@ -336,6 +383,8 @@ static func _vessel_definition_from_row(row: Dictionary) -> Dictionary:
 	return {"ok": true, "definition": {
 		"id": String(row.id),
 		"name": String(row.get("name", row.id)),
+		"core_tea_ware": _checkbox_value(row.get("core_tea_ware", false)),
+		"core_tea_ware_order": int(row.get("core_tea_ware_order", 0)),
 		"tea_recovery_multiplier": recovery_multiplier_result.value,
 		"tea_recovery_bonus": recovery_bonus_result.value,
 		"carry_use_bonus": carry_bonus_result.value,
@@ -344,16 +393,17 @@ static func _vessel_definition_from_row(row: Dictionary) -> Dictionary:
 		"sustain_modifier": sustain_result.value
 	}}
 
-func _build_prepared_tea(tea_id: String, vessel_id: String, context: Dictionary) -> Dictionary:
+func _build_prepared_tea(tea_id: String, modifier_query: Dictionary, context: Dictionary) -> Dictionary:
 	if not tea_definitions.has(tea_id):
 		return _fail("unknown_tea", "Unknown tea definition: %s" % tea_id)
-	if not vessel_definitions.has(vessel_id):
-		return _fail("unknown_vessel", "Unknown tea vessel definition: %s" % vessel_id)
+	var modifier_result := _validate_modifier_query(modifier_query)
+	if not modifier_result.ok:
+		return modifier_result
 	if bool(tea_definitions[tea_id].get("requires_brewing_location", false)) and not bool(context.get("has_brewing_location", false)):
 		return _fail("missing_brewing_location", "Tea requires a valid brewing location: %s" % tea_id)
 
 	var tea: Dictionary = tea_definitions[tea_id]
-	var vessel: Dictionary = vessel_definitions[vessel_id]
+	var vessel: Dictionary = modifier_result.modifier
 	var raw_recovery := float(tea.ki_recovery) * float(vessel.tea_recovery_multiplier) + float(vessel.tea_recovery_bonus)
 	var ki_recovery: int = max(0, int(round(raw_recovery)))
 	var remaining_uses: int = max(1, int(tea.carry_uses) + int(vessel.carry_use_bonus))
@@ -368,16 +418,43 @@ func _build_prepared_tea(tea_id: String, vessel_id: String, context: Dictionary)
 	return {"ok": true, "prepared_tea": {
 		"prepared_id": "",
 		"tea_id": tea_id,
-		"vessel_id": vessel_id,
+		"vessel_id": vessel.vessel_id,
 		"tea_name": tea.name,
-		"vessel_name": vessel.name,
+		"vessel_name": vessel.vessel_name,
 		"remaining_uses": remaining_uses,
 		"drink_seconds": drink_seconds,
 		"ki_recovery": ki_recovery,
 		"serving_size": int(tea.serving_size),
 		"recovery_mode": tea.recovery_mode,
 		"condition_key": tea.condition_key,
-		"sustain_modifier": sustain_modifier
+		"sustain_modifier": sustain_modifier,
+		"core_tea_ware": bool(vessel.get("core_tea_ware", false)),
+		"core_tea_ware_order": int(vessel.get("core_tea_ware_order", 0))
+	}}
+
+func _validate_modifier_query(query: Dictionary) -> Dictionary:
+	var vessel_id := String(query.get("vessel_id", ""))
+	if vessel_id == "":
+		return _fail("unknown_vessel", "Unknown tea vessel definition: %s" % vessel_id)
+	for field in ["tea_recovery_multiplier", "drink_seconds_multiplier"]:
+		var value = query.get(field)
+		if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)) or float(value) <= 0.0:
+			return _fail("invalid_modifier_query", "Tea modifier field must be a positive number: %s.%s" % [vessel_id, field])
+	for field in ["tea_recovery_bonus", "carry_use_bonus", "drink_seconds_bonus", "sustain_modifier"]:
+		var value = query.get(field, 0)
+		if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)):
+			return _fail("invalid_modifier_query", "Tea modifier field must be numeric: %s.%s" % [vessel_id, field])
+	return {"ok": true, "modifier": {
+		"vessel_id": vessel_id,
+		"vessel_name": String(query.get("vessel_name", vessel_id)),
+		"tea_recovery_multiplier": float(query.tea_recovery_multiplier),
+		"tea_recovery_bonus": int(query.get("tea_recovery_bonus", 0)),
+		"carry_use_bonus": int(query.get("carry_use_bonus", 0)),
+		"drink_seconds_multiplier": float(query.drink_seconds_multiplier),
+		"drink_seconds_bonus": float(query.get("drink_seconds_bonus", 0.0)),
+		"sustain_modifier": float(query.get("sustain_modifier", 0.0)),
+		"core_tea_ware": _checkbox_value(query.get("core_tea_ware", false)),
+		"core_tea_ware_order": int(query.get("core_tea_ware_order", 0))
 	}}
 
 func _apply_effect(prepared: Dictionary, context, resources) -> Dictionary:
@@ -549,6 +626,13 @@ static func _duplicate_dictionary(value) -> Dictionary:
 	if typeof(value) != TYPE_DICTIONARY:
 		return {}
 	return value.duplicate(true)
+
+static func _checkbox_value(value) -> bool:
+	if typeof(value) == TYPE_BOOL:
+		return value
+	if typeof(value) == TYPE_STRING:
+		return String(value) == "__YES__"
+	return bool(value)
 
 static func _fail(reason: String, message: String) -> Dictionary:
 	return {"ok": false, "reason": reason, "error": message}

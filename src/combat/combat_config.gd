@@ -26,6 +26,8 @@ var weapon_id: String
 var weapon_base_damage: int
 var weapon_range_tiles: float
 var weapon_attack_speed: float
+var armor_id: String
+var armor_defense: int
 
 func _init(values := {}) -> void:
 	basic_attack_combo_hits = int(values.basic_attack_combo_hits)
@@ -41,6 +43,8 @@ func _init(values := {}) -> void:
 	weapon_base_damage = int(values.weapon_base_damage)
 	weapon_range_tiles = float(values.weapon_range_tiles)
 	weapon_attack_speed = float(values.weapon_attack_speed)
+	armor_id = String(values.get("armor_id", ""))
+	armor_defense = int(values.get("armor_defense", 0))
 
 static func from_catalog(catalog) -> Dictionary:
 	var values := {}
@@ -83,6 +87,34 @@ func damage_for_ki(current_ki: float) -> int:
 	var multiplier := lerpf(ki_attack_multiplier_0, ki_attack_multiplier_100, ratio)
 	return int(round(weapon_base_damage * multiplier))
 
+func apply_weapon_query(query: Dictionary) -> Dictionary:
+	var weapon := _weapon_values_from_definition(query, String(query.get("weapon_id", "")))
+	if not weapon.ok:
+		return weapon
+	weapon_id = String(query.weapon_id)
+	weapon_base_damage = int(weapon.base_damage)
+	weapon_range_tiles = float(weapon.range_tiles)
+	weapon_attack_speed = float(weapon.attack_speed)
+	return {"ok": true}
+
+func apply_armor_query(query: Dictionary) -> Dictionary:
+	var armor := _armor_values_from_definition(query, String(query.get("armor_id", "")))
+	if not armor.ok:
+		return armor
+	armor_id = String(query.armor_id)
+	armor_defense = int(armor.defense)
+	return {"ok": true}
+
+func get_combat_query() -> Dictionary:
+	return {
+		"weapon_id": weapon_id,
+		"base_damage": weapon_base_damage,
+		"range": weapon_range_tiles,
+		"attack_speed": weapon_attack_speed,
+		"armor_id": armor_id,
+		"defense": armor_defense
+	}
+
 func to_dictionary() -> Dictionary:
 	return {
 		"basic_attack_combo_hits": basic_attack_combo_hits,
@@ -97,7 +129,9 @@ func to_dictionary() -> Dictionary:
 		"weapon_id": weapon_id,
 		"weapon_base_damage": weapon_base_damage,
 		"weapon_range_tiles": weapon_range_tiles,
-		"weapon_attack_speed": weapon_attack_speed
+		"weapon_attack_speed": weapon_attack_speed,
+		"armor_id": armor_id,
+		"armor_defense": armor_defense
 	}
 
 static func _required_balance_value(catalog, id: String) -> Dictionary:
@@ -116,6 +150,9 @@ static func _weapon_values(catalog, weapon_id: String) -> Dictionary:
 	var definition: Dictionary = catalog.find_by_id("items", weapon_id)
 	if definition.is_empty():
 		return {"ok": false, "error": "Missing weapon definition: %s" % weapon_id}
+	return _weapon_values_from_definition(definition, weapon_id)
+
+static func _weapon_values_from_definition(definition: Dictionary, weapon_id: String) -> Dictionary:
 	for field in ["base_damage", "range", "attack_speed"]:
 		var value = definition.get(field)
 		if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)) or float(value) <= 0.0:
@@ -128,3 +165,13 @@ static func _weapon_values(catalog, weapon_id: String) -> Dictionary:
 		"range_tiles": float(definition.range),
 		"attack_speed": float(definition.attack_speed)
 	}
+
+static func _armor_values_from_definition(definition: Dictionary, armor_id: String) -> Dictionary:
+	if armor_id == "":
+		return {"ok": false, "error": "Missing armor id."}
+	var value = definition.get("defense")
+	if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)) or float(value) < 0.0:
+		return {"ok": false, "error": "Armor defense must be a non-negative number: %s" % armor_id}
+	if float(value) != floor(float(value)):
+		return {"ok": false, "error": "Armor defense must be an integer: %s" % armor_id}
+	return {"ok": true, "defense": int(value)}

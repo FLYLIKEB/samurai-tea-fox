@@ -67,6 +67,12 @@ func _assert_catalog_uses_explicit_weapon_and_monster_values(asserts) -> void:
 		asserts.equal(config.weapon_base_damage, 20, "weapon base damage is data-driven")
 		asserts.equal(config.weapon_range_tiles, 1.5, "weapon range is data-driven")
 		asserts.equal(config.weapon_attack_speed, 1.25, "weapon attack speed is data-driven")
+		var weapon_query := {"weapon_id": "stone_sword", "base_damage": 18, "range": 1.4, "attack_speed": 1.2}
+		asserts.true_value(config.apply_weapon_query(weapon_query).ok, "combat config accepts equipment weapon query")
+		asserts.equal(config.weapon_id, "stone_sword", "equipment weapon query changes weapon id")
+		asserts.equal(config.weapon_base_damage, 18, "equipment weapon query changes damage")
+		asserts.true_value(config.apply_armor_query({"armor_id": "linen_armor", "defense": 5}).ok, "combat config accepts equipment armor query")
+		asserts.equal(config.armor_defense, 5, "equipment armor query changes defense")
 
 	var monster_result: Dictionary = CombatantState.from_catalog(FakeCatalog.new({
 		"monsters": [{"id": "road_bandit", "hp": 44, "attack": 9}]
