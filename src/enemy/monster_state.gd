@@ -15,6 +15,7 @@ var stagger_resistance: float
 var movement_speed: float
 var attack: int
 var attack_period_seconds: float
+var behavior_type: String
 var received_damage_events: Array = []
 var received_stagger_events: Array = []
 var death_events: Array = []
@@ -31,6 +32,7 @@ func _init(definition, initial_combat_id: String) -> void:
 	movement_speed = definition.movement_speed
 	attack = definition.attack
 	attack_period_seconds = definition.attack_period_seconds
+	behavior_type = definition.behavior_type
 
 func get_combat_id() -> String:
 	return combat_id
@@ -75,7 +77,8 @@ func to_dictionary() -> Dictionary:
 		"stagger_resistance": stagger_resistance,
 		"movement_speed": movement_speed,
 		"attack": attack,
-		"attack_period_seconds": attack_period_seconds
+		"attack_period_seconds": attack_period_seconds,
+		"behavior_type": behavior_type
 	}
 
 func _apply_stagger_from_damage(event: Dictionary) -> void:

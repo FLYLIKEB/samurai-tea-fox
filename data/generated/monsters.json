@@ -1,5 +1,5 @@
 {
-  "content_hash": "89713084609bf34ff9e9481b6b4bc79e355f5971a1517c05231ed4c077e5e0fa",
+  "content_hash": "6b1b69f3e91ea2f46941bd7c3cb2d53a3fb0ac47ac215477898fd42ed047bd4c",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -23,14 +23,20 @@
       "status": "초안"
     },
     {
+      "attack": 15,
+      "attack_period_seconds": 1.5,
       "behavior_note": "짧게 시야를 가리고 다른 적 주변으로 흩어진다.",
+      "behavior_type": "방해",
       "biome": "황무지",
       "danger": 3,
       "day_night": "낮",
+      "hp": 75,
       "id": "ash_crow_flock",
       "kind": "야생동물",
+      "movement_speed": 2.7,
       "name": "잿빛 까마귀떼",
-      "status": "초안"
+      "stagger_resistance": 0,
+      "status": "테스트"
     },
     {
       "behavior_note": "느리지만 정면 공격을 잘 버틴다.",
@@ -95,7 +101,7 @@
       "kind": "도적·무사",
       "movement_speed": 1.6,
       "name": "노상 도적",
-      "stagger_resistance": 2.0,
+      "stagger_resistance": 0.2,
       "status": "테스트"
     },
     {
@@ -149,19 +155,20 @@
       "status": "초안"
     },
     {
+      "attack": 8,
+      "attack_period_seconds": 1.4,
       "behavior_note": "짧게 거리를 두고 빙글 돌다가 직선으로 달려든다.",
+      "behavior_type": "돌진",
       "biome": "일반",
       "danger": 1,
       "day_night": "둘 다",
-      "hp": 42,
+      "hp": 45,
       "id": "wild_dog",
       "kind": "야생동물",
-      "movement_speed": 2.2,
+      "movement_speed": 2.4,
       "name": "들개",
-      "attack": 7,
-      "attack_period_seconds": 1.25,
-      "stagger_resistance": 0.5,
-      "status": "초안"
+      "stagger_resistance": 0.1,
+      "status": "테스트"
     }
   ],
   "profile": "confirmed-test",

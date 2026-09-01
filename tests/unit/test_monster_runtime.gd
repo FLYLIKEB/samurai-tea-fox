@@ -72,7 +72,7 @@ func _assert_generated_definitions_load(asserts) -> void:
 	if bandit_result.ok:
 		var bandit: MonsterDefinition = bandit_result.definition
 		asserts.equal(bandit.hp, 70, "monster HP loads from data")
-		asserts.equal(bandit.stagger_resistance, 2.0, "monster stagger resistance loads from data")
+		asserts.equal(bandit.stagger_resistance, 0.2, "monster stagger resistance loads from data")
 		asserts.equal(bandit.movement_speed, 1.6, "monster movement speed loads from data")
 		asserts.equal(bandit.attack, 10, "monster attack loads from data")
 		asserts.equal(bandit.attack_period_seconds, 1.8, "monster attack period loads from data")
@@ -88,8 +88,8 @@ func _assert_spawn_factory_uses_same_runtime_for_two_monsters(asserts) -> void:
 		asserts.equal(bandit_result.monster.definition_id, "road_bandit", "bandit runtime keeps definition stable ID")
 		asserts.equal(dog_result.monster.definition_id, "wild_dog", "dog runtime keeps definition stable ID")
 		asserts.equal(bandit_result.monster.hp_max, 70, "bandit runtime HP comes from definition")
-		asserts.equal(dog_result.monster.hp_max, 42, "dog runtime HP comes from definition")
-		asserts.equal(dog_result.monster.movement_speed, 2.2, "dog runtime movement speed comes from definition")
+		asserts.equal(dog_result.monster.hp_max, 45, "dog runtime HP comes from definition")
+		asserts.equal(dog_result.monster.movement_speed, 2.4, "dog runtime movement speed comes from definition")
 
 func _assert_data_snapshot_changes_runtime_stats(asserts) -> void:
 	var base_catalog := _runtime_catalog()
@@ -126,11 +126,11 @@ func _assert_damage_stagger_death_and_drop_hooks(asserts) -> void:
 		"stagger": 1.25
 	})
 	asserts.equal(applied, 10, "monster applies incoming damage")
-	asserts.equal(monster.hp, 32, "monster HP decreases")
+	asserts.equal(monster.hp, 35, "monster HP decreases")
 	asserts.equal(probe.damage_events.size(), 1, "monster emits damage hook")
 	asserts.equal(probe.stagger_events.size(), 1, "monster emits stagger hook when stagger exceeds resistance")
 	if not probe.stagger_events.is_empty():
-		asserts.equal(probe.stagger_events[0].applied_stagger, 0.75, "stagger resistance reduces incoming stagger")
+		asserts.equal(probe.stagger_events[0].applied_stagger, 1.15, "stagger resistance reduces incoming stagger")
 
 	var combat := CombatState.new(_test_combat_config())
 	var swing := combat.start_basic_attack("player", 100.0)
@@ -139,10 +139,10 @@ func _assert_damage_stagger_death_and_drop_hooks(asserts) -> void:
 		var hit: Dictionary = combat.apply_swing_hit(swing, monster)
 		asserts.true_value(hit.ok, "combat hit contract damages MonsterState")
 		asserts.equal(hit.applied_damage, 26, "common combat state reports damage applied to monster")
-		asserts.equal(monster.hp, 6, "combat hit reduces MonsterState HP")
+		asserts.equal(monster.hp, 9, "combat hit reduces MonsterState HP")
 
 	var killing_damage: int = monster.apply_damage_event({"type": "damage", "source_id": "player", "damage": 99})
-	asserts.equal(killing_damage, 6, "killing damage clamps to remaining HP")
+	asserts.equal(killing_damage, 9, "killing damage clamps to remaining HP")
 	asserts.equal(probe.death_events.size(), 1, "monster emits one standard death event")
 	asserts.equal(probe.drop_events.size(), 1, "monster emits one drop request hook")
 	if not probe.death_events.is_empty():
@@ -177,7 +177,7 @@ func _assert_damage_ignores_dead_and_zero_applied_hits(asserts) -> void:
 		"stagger": 99.0
 	})
 	asserts.equal(zero_damage, 0, "zero damage applies no monster damage")
-	asserts.equal(monster.hp, 42, "zero damage leaves monster HP unchanged")
+	asserts.equal(monster.hp, 45, "zero damage leaves monster HP unchanged")
 	asserts.equal(monster.received_damage_events.size(), 0, "zero applied damage is not recorded")
 	asserts.equal(monster.received_stagger_events.size(), 0, "zero applied damage does not create stagger history")
 	asserts.equal(probe.damage_events.size(), 0, "zero applied damage emits no damage hook")
@@ -188,7 +188,7 @@ func _assert_damage_ignores_dead_and_zero_applied_hits(asserts) -> void:
 		"source_id": "player",
 		"damage": 99
 	})
-	asserts.equal(killing_damage, 42, "killing hit defeats monster")
+	asserts.equal(killing_damage, 45, "killing hit defeats monster")
 	asserts.equal(monster.received_damage_events.size(), 1, "killing hit is the only recorded damage event")
 	asserts.equal(probe.death_events.size(), 1, "killing hit emits one death event")
 	asserts.equal(probe.drop_events.size(), 1, "killing hit emits one drop request")
@@ -238,12 +238,12 @@ func _assert_invalid_data_is_rejected(asserts) -> void:
 func _runtime_catalog() -> FakeCatalog:
 	return FakeCatalog.new({
 		"monsters": [
-			_monster("road_bandit", 70, 2.0, 1.6, 10, 1.8),
-			_monster("wild_dog", 42, 0.5, 2.2, 7, 1.25)
+			_monster("road_bandit", 70, 0.2, 1.6, 10, 1.8, "근접"),
+			_monster("wild_dog", 45, 0.1, 2.4, 8, 1.4, "돌진")
 		]
 	})
 
-func _monster(id: String, hp, stagger_resistance, movement_speed, attack, attack_period_seconds) -> Dictionary:
+func _monster(id: String, hp, stagger_resistance, movement_speed, attack, attack_period_seconds, behavior_type := "근접") -> Dictionary:
 	return {
 		"id": id,
 		"name": id,
@@ -253,7 +253,8 @@ func _monster(id: String, hp, stagger_resistance, movement_speed, attack, attack
 		"stagger_resistance": stagger_resistance,
 		"movement_speed": movement_speed,
 		"attack": attack,
-		"attack_period_seconds": attack_period_seconds
+		"attack_period_seconds": attack_period_seconds,
+		"behavior_type": behavior_type
 	}
 
 func _test_combat_config() -> CombatConfig:
