@@ -112,6 +112,7 @@ func run() -> void:
 	root.add_child(knockback_wall)
 	for directional_case in directional_cases:
 		player.combat_state.tick(1.0)
+		dummy.combatant.hp = dummy.combatant.hp_max
 		dummy.position = directional_case[1]
 		var position_before: Vector2 = dummy.position
 		await physics_frame

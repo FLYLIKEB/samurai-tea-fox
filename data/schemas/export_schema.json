@@ -75,7 +75,7 @@
       "file": "monsters.json", "required_fields": ["id", "name", "status"], "relations": {"biome_ids": "biomes"},
       "notion": {
         "source": "collection://8058308e-e875-45aa-929c-49fd8575601a", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "몬스터 ID", "id_prefix": "monster",
-        "field_map": {"종류": "kind", "바이옴": "biome", "낮·밤": "day_night", "위험도": "danger", "HP": "hp", "공격력": "attack", "이동속도": "movement_speed", "공격 주기(초)": "attack_period_seconds", "행동 타입": "behavior_type", "행동 패턴": "behavior_note"},
+        "field_map": {"종류": "kind", "바이옴": "biome", "낮·밤": "day_night", "위험도": "danger", "HP": "hp", "경직 저항": "stagger_resistance", "공격력": "attack", "이동속도": "movement_speed", "공격 주기(초)": "attack_period_seconds", "행동 타입": "behavior_type", "행동 패턴": "behavior_note"},
         "relation_map": {"지역 관계": {"field": "biome_ids", "target": "biomes", "many": true}}
       }
     },

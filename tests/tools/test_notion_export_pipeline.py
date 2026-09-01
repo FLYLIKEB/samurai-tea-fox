@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
+from tools.notion_export.capture import CaptureBuilder
 from tools.notion_export.pipeline import (
     ExportPipeline,
     ExportValidationError,
@@ -66,6 +67,66 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(abilities["ember"]["status_effect"], "")
         self.assertEqual(abilities["remaining_incense"]["duration_seconds"], 2.5)
         self.assertEqual(abilities["remaining_incense"]["status_effect"], "slow")
+
+    def test_monster_export_preserves_runtime_stat_mapping(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        monster_notion = schema["datasets"]["monsters"]["notion"]
+        self.assertEqual(monster_notion["field_map"]["HP"], "hp")
+        self.assertEqual(monster_notion["field_map"]["경직 저항"], "stagger_resistance")
+        self.assertEqual(monster_notion["field_map"]["이동속도"], "movement_speed")
+        self.assertEqual(monster_notion["field_map"]["공격력"], "attack")
+        self.assertEqual(monster_notion["field_map"]["공격 주기(초)"], "attack_period_seconds")
+
+        rows = {
+            "monsters": [
+                {
+                    "_notion_id": "page-road-bandit",
+                    "몬스터 ID": {"prefix": None, "number": 1},
+                    "이름": "노상 도적",
+                    "설정 상태": "테스트",
+                    "HP": 70,
+                    "경직 저항": 2.0,
+                    "이동속도": 1.6,
+                    "공격력": 10,
+                    "공격 주기(초)": 1.8,
+                }
+            ]
+        }
+        capture = CaptureBuilder(schema, {"page-road-bandit": "road_bandit"}).build_from_rows(
+            rows,
+            "notion-fixture-v1",
+        )
+        snapshots = self.pipeline.build_snapshots(capture, "confirmed-test")
+        road_bandit = snapshots["monsters"]["items"][0]
+
+        self.assertEqual(road_bandit["hp"], 70)
+        self.assertEqual(road_bandit["stagger_resistance"], 2.0)
+        self.assertEqual(road_bandit["movement_speed"], 1.6)
+        self.assertEqual(road_bandit["attack"], 10)
+        self.assertEqual(road_bandit["attack_period_seconds"], 1.8)
+
+    def test_fixture_monsters_export_regenerates_runtime_stats_and_hash(self):
+        snapshots = self.pipeline.build_snapshots(self.capture, "confirmed-test")
+        monsters = {item["id"]: item for item in snapshots["monsters"]["items"]}
+        road_bandit = monsters["road_bandit"]
+        wild_dog = monsters["wild_dog"]
+
+        self.assertEqual(road_bandit["hp"], 70)
+        self.assertEqual(road_bandit["stagger_resistance"], 2.0)
+        self.assertEqual(road_bandit["movement_speed"], 1.6)
+        self.assertEqual(road_bandit["attack"], 10)
+        self.assertEqual(road_bandit["attack_period_seconds"], 1.8)
+        self.assertEqual(wild_dog["hp"], 42)
+        self.assertEqual(wild_dog["stagger_resistance"], 0.5)
+        self.assertEqual(wild_dog["movement_speed"], 2.2)
+        self.assertEqual(wild_dog["attack"], 7)
+        self.assertEqual(wild_dog["attack_period_seconds"], 1.25)
+
+        payload = {key: value for key, value in snapshots["monsters"].items() if key != "content_hash"}
+        self.assertEqual(
+            snapshots["monsters"]["content_hash"],
+            hashlib.sha256(canonical_json_bytes(payload)).hexdigest(),
+        )
 
     def test_missing_required_field_fails_with_dataset_and_item_context(self):
         invalid = copy.deepcopy(self.capture)
@@ -153,6 +214,17 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(road_bandit["status"], "테스트")
         self.assertEqual(road_bandit["movement_speed"], 1.6)
         self.assertEqual(road_bandit["attack_period_seconds"], 1.8)
+        self.assertEqual(road_bandit["stagger_resistance"], 2.0)
+        monsters_snapshot = json.loads((generated / "monsters.json").read_text(encoding="utf-8"))
+        payload = {
+            key: value
+            for key, value in monsters_snapshot.items()
+            if key != "content_hash"
+        }
+        self.assertEqual(
+            monsters_snapshot["content_hash"],
+            hashlib.sha256(canonical_json_bytes(payload)).hexdigest(),
+        )
 
     def test_dev_12_static_ability_exports_include_effect_contract_fields(self):
         generated = ROOT / "data/generated"

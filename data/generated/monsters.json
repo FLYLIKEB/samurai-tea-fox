@@ -1,5 +1,5 @@
 {
-  "content_hash": "b2ea96aa2bc067776e8b5243dcf886a9b2a5e0fbc1acf9beb615431056556230",
+  "content_hash": "89713084609bf34ff9e9481b6b4bc79e355f5971a1517c05231ed4c077e5e0fa",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -95,6 +95,7 @@
       "kind": "도적·무사",
       "movement_speed": 1.6,
       "name": "노상 도적",
+      "stagger_resistance": 2.0,
       "status": "테스트"
     },
     {
@@ -152,9 +153,14 @@
       "biome": "일반",
       "danger": 1,
       "day_night": "둘 다",
+      "hp": 42,
       "id": "wild_dog",
       "kind": "야생동물",
+      "movement_speed": 2.2,
       "name": "들개",
+      "attack": 7,
+      "attack_period_seconds": 1.25,
+      "stagger_resistance": 0.5,
       "status": "초안"
     }
   ],
