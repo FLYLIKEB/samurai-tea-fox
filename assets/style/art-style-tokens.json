@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "samurai-tea-fox-art-style-tokens",
-  "title": "무사여우: 한 잔의 도 아트 스타일 토큰",
+  "title": "무차우: 한 잔의 도 아트 스타일 토큰",
   "management_rule": {
     "priority": "이미지 생성, PixelLab, 스프라이트 제작 프롬프트는 이 파일을 최우선으로 읽는다.",
     "single_source": "색상 팔레트, 공통 시각 컨셉, 이미지 생성용 positive/negative 토큰은 다른 문서에 복제하지 않는다.",

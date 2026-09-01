@@ -4,7 +4,7 @@ config_version=5
 
 [application]
 
-config/name="무사여우: 한 잔의 도"
+config/name="무차우: 한 잔의 도"
 config/description="Top-down 32x32 pixel-art roguelike RPG. Notion is the planning source of truth; runtime uses exported static data."
 run/main_scene="res://src/main/main.tscn"
 config/features=PackedStringArray("4.x")

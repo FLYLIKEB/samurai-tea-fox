@@ -1,12 +1,12 @@
-# 무사여우: 한 잔의 도
+# 무차우: 한 잔의 도
 
 Godot 4.x + GDScript 기반의 top-down 32x32 pixel-art roguelike RPG입니다.
 
-이 저장소는 Notion 문서 **무사여우: 한 잔의 도 — 게임 컨셉 바이블**을 기획 정본으로 사용합니다. 게임 런타임은 Notion API를 직접 호출하지 않고, `data/generated/` 아래에 export된 정적 데이터를 읽습니다.
+이 저장소는 Notion 문서 **무차우: 한 잔의 도 — 게임 컨셉 바이블**을 기획 정본으로 사용합니다. 게임 런타임은 Notion API를 직접 호출하지 않고, `data/generated/` 아래에 export된 정적 데이터를 읽습니다.
 
 ## 정본
 
-- 기획 라우팅 인덱스: `무사여우: 한 잔의 도 — 게임 컨셉 바이블`
+- 기획 라우팅 인덱스: `무차우: 한 잔의 도 — 게임 컨셉 바이블`
 - 정보 책임: `00. 기획 아키텍처·정본 규칙`
 - 기술 선택과 구현 경계: `12. 기술 스펙·아키텍처`
 - 개별 콘텐츠와 수치: Notion 콘텐츠 DB와 `⚖️ 밸런스 상수`
@@ -75,7 +75,7 @@ tools/asset_browser/run.sh
 ```
 
 앱 본체는 별도 레포 `https://github.com/FLYLIKEB/samurai-tea-fox-asset-browser`에서 관리하고,
-현재 레포에는 무사여우 전용 프롬프트 템플릿과 launcher만 둡니다.
+현재 레포에는 무차우 전용 프롬프트 템플릿과 launcher만 둡니다.
 
 ## 게임 실행
 
