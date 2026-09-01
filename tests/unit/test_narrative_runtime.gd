@@ -24,6 +24,7 @@ func run(asserts) -> void:
 	_assert_bad_references_are_rejected(asserts)
 	_assert_bad_graph_shapes_are_rejected(asserts)
 	_assert_result_contracts_are_rejected(asserts)
+	_assert_grant_item_requires_item_definitions(asserts)
 	_assert_run_meta_boundary(asserts)
 	_assert_read_model_does_not_mutate_state(asserts)
 
@@ -165,6 +166,25 @@ func _assert_result_contracts_are_rejected(asserts) -> void:
 	}))
 	asserts.false_value(bad_item.ok, "grant_item targets must exist in catalog items when catalog items are available")
 	asserts.equal(bad_item.reason, "missing_result_item", "missing grant item returns explicit reason")
+
+func _assert_grant_item_requires_item_definitions(asserts) -> void:
+	var events_only_grant: Dictionary = NarrativeRuntime.new().from_catalog(FakeCatalog.new({
+		"events": [_single_result_event({"type": "grant_item", "id": "ash_stained_iron_kettle", "quantity": 1})]
+	}))
+	asserts.false_value(events_only_grant.ok, "events-only catalog with grant_item is rejected")
+	asserts.equal(events_only_grant.reason, "missing_items_dataset", "missing item definitions return explicit reason")
+
+	var empty_items_grant: Dictionary = NarrativeRuntime.new().from_catalog(FakeCatalog.new({
+		"items": [],
+		"events": [_single_result_event({"type": "grant_item", "id": "ash_stained_iron_kettle", "quantity": 1})]
+	}))
+	asserts.false_value(empty_items_grant.ok, "grant_item result id membership is always checked")
+	asserts.equal(empty_items_grant.reason, "missing_result_item", "empty item definitions cannot satisfy grant_item membership")
+
+	var events_only_flag: Dictionary = NarrativeRuntime.new().from_catalog(FakeCatalog.new({
+		"events": [_single_result_event({"type": "set_run_flag", "id": "accepted_roadside_kettle"})]
+	}))
+	asserts.true_value(events_only_flag.ok, "set_run_flag-only events do not require item definitions")
 
 func _assert_run_meta_boundary(asserts) -> void:
 	var runtime: NarrativeRuntime = _fixture_runtime(asserts)

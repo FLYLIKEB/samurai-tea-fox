@@ -207,9 +207,13 @@ class ExportPipeline:
                                 f"{dataset_name} item {item['id']} relation {field} targets {target_dataset} missing id {value}"
                             )
         if "events" in snapshots:
-            self._validate_events(snapshots["events"]["items"], ids_by_dataset.get("items", set()))
+            self._validate_events(
+                snapshots["events"]["items"],
+                ids_by_dataset.get("items", set()),
+                "items" in ids_by_dataset,
+            )
 
-    def _validate_events(self, events: list[dict[str, Any]], item_ids: set[str]) -> None:
+    def _validate_events(self, events: list[dict[str, Any]], item_ids: set[str], items_available: bool) -> None:
         stable_id = re.compile(self.schema["stable_id_pattern"])
         for event in events:
             replay_policy = event.get("replay_policy")
@@ -259,7 +263,7 @@ class ExportPipeline:
                         raise ExportValidationError(
                             f"events item {event['id']} node {node_id} option {option_id}: results must be an array"
                         )
-                    self._validate_event_results(event["id"], node_id, option_id, results, item_ids, stable_id)
+                    self._validate_event_results(event["id"], node_id, option_id, results, item_ids, items_available, stable_id)
                 nodes_by_id[node_id] = node
 
             if start_node_id not in nodes_by_id:
@@ -282,6 +286,7 @@ class ExportPipeline:
         option_id: str,
         results: list[Any],
         item_ids: set[str],
+        items_available: bool,
         stable_id: re.Pattern[str],
     ) -> None:
         for result_index, result in enumerate(results):
@@ -300,12 +305,16 @@ class ExportPipeline:
                     f"events item {event_id} node {node_id} option {option_id}: invalid result id {result_id}"
                 )
             if result_type == "grant_item":
+                if not items_available:
+                    raise ExportValidationError(
+                        f"events item {event_id} node {node_id} option {option_id}: grant_item targets missing dataset items"
+                    )
                 quantity = result.get("quantity")
                 if not isinstance(quantity, int) or isinstance(quantity, bool) or quantity <= 0:
                     raise ExportValidationError(
                         f"events item {event_id} node {node_id} option {option_id}: grant_item quantity must be a positive integer"
                     )
-                if item_ids and result_id not in item_ids:
+                if result_id not in item_ids:
                     raise ExportValidationError(
                         f"events item {event_id} node {node_id} option {option_id}: grant_item targets missing item id {result_id}"
                     )

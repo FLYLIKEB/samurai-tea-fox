@@ -71,4 +71,35 @@ func validate_catalog(definitions: Dictionary, dataset_rules: Dictionary) -> Dic
 				for target_id in values:
 					if not ids_by_dataset[target_dataset].has(target_id):
 						return {"ok": false, "error": "%s item '%s' relation '%s' targets missing id '%s'." % [dataset_name, item.id, field, target_id]}
+	if definitions.has("events"):
+		var event_result := _validate_event_result_items(definitions.events, ids_by_dataset)
+		if not event_result.ok:
+			return event_result
+	return {"ok": true}
+
+func _validate_event_result_items(events: Array, ids_by_dataset: Dictionary) -> Dictionary:
+	for event in events:
+		var nodes = event.get("nodes", [])
+		if typeof(nodes) != TYPE_ARRAY:
+			continue
+		for node in nodes:
+			if typeof(node) != TYPE_DICTIONARY:
+				continue
+			var options = node.get("options", [])
+			if typeof(options) != TYPE_ARRAY:
+				continue
+			for option in options:
+				if typeof(option) != TYPE_DICTIONARY:
+					continue
+				var results = option.get("results", [])
+				if typeof(results) != TYPE_ARRAY:
+					continue
+				for result in results:
+					if typeof(result) != TYPE_DICTIONARY or String(result.get("type", "")) != "grant_item":
+						continue
+					if not ids_by_dataset.has("items"):
+						return {"ok": false, "error": "events item '%s' option '%s' grant_item targets missing dataset 'items'." % [event.get("id", ""), option.get("id", "")]}
+					var result_id := String(result.get("id", ""))
+					if not ids_by_dataset.items.has(result_id):
+						return {"ok": false, "error": "events item '%s' option '%s' grant_item targets missing item id '%s'." % [event.get("id", ""), option.get("id", ""), result_id]}
 	return {"ok": true}

@@ -17,13 +17,14 @@ var condition_resolver := NarrativeConditionResolver.new()
 func from_catalog(catalog) -> Dictionary:
 	if not catalog.has_method("get_definitions"):
 		return _fail("invalid_catalog", "Catalog cannot provide narrative event definitions.")
+	var items_available := _catalog_has_dataset(catalog, "items")
 	var item_ids: Dictionary = {}
 	for item in catalog.get_definitions("items"):
 		if typeof(item) == TYPE_DICTIONARY:
 			item_ids[String(item.get("id", ""))] = true
 	var definitions: Dictionary = {}
 	for row in catalog.get_definitions("events"):
-		var result := _event_definition_from_row(row, item_ids)
+		var result := _event_definition_from_row(row, item_ids, items_available)
 		if not result.ok:
 			return result
 		if definitions.has(result.definition.id):
@@ -33,6 +34,13 @@ func from_catalog(catalog) -> Dictionary:
 	var catalog_data_version = catalog.get("data_version") if catalog.has_method("get") else ""
 	data_version = String(catalog_data_version)
 	return {"ok": true, "runtime": self}
+
+func _catalog_has_dataset(catalog, dataset: String) -> bool:
+	if catalog.has_method("get"):
+		var catalog_definitions = catalog.get("definitions")
+		if typeof(catalog_definitions) == TYPE_DICTIONARY:
+			return catalog_definitions.has(dataset)
+	return not catalog.get_definitions(dataset).is_empty()
 
 func can_start_event(event_id: String, run_state) -> Dictionary:
 	if not event_definitions.has(event_id):
@@ -116,11 +124,11 @@ func select_option(event_id: String, node_id: String, option_id: String, run_sta
 		return result
 	return _fail("missing_option", "Narrative option '%s' is not defined on node '%s'." % [option_id, node_id])
 
-func _event_definition_from_row(row: Dictionary, item_ids: Dictionary) -> Dictionary:
+func _event_definition_from_row(row: Dictionary, item_ids: Dictionary, items_available: bool) -> Dictionary:
 	var replay_policy := String(row.get("replay_policy", ""))
 	if not [REPLAY_ONCE, REPLAY_REPEAT].has(replay_policy):
 		return _fail("invalid_replay_policy", "Narrative event '%s' has invalid replay_policy '%s'." % [row.get("id", ""), replay_policy])
-	var nodes_result := _nodes_from_row(row, item_ids)
+	var nodes_result := _nodes_from_row(row, item_ids, items_available)
 	if not nodes_result.ok:
 		return nodes_result
 	var start_node_id := String(row.get("start_node_id", ""))
@@ -138,7 +146,7 @@ func _event_definition_from_row(row: Dictionary, item_ids: Dictionary) -> Dictio
 		"nodes": nodes_result.nodes
 	}}
 
-func _nodes_from_row(row: Dictionary, item_ids: Dictionary) -> Dictionary:
+func _nodes_from_row(row: Dictionary, item_ids: Dictionary, items_available: bool) -> Dictionary:
 	var raw_nodes = row.get("nodes", [])
 	if typeof(raw_nodes) != TYPE_ARRAY:
 		return _fail("invalid_nodes", "Narrative event '%s' nodes must be an array." % row.get("id", ""))
@@ -152,7 +160,7 @@ func _nodes_from_row(row: Dictionary, item_ids: Dictionary) -> Dictionary:
 			return _fail("missing_node_id", "Narrative event '%s' contains a node without an id." % row.get("id", ""))
 		if nodes.has(node_id):
 			return _fail("duplicate_node_id", "Narrative event '%s' contains duplicate node id '%s'." % [row.get("id", ""), node_id])
-		var options_result := _options_from_node(row, raw_node, item_ids)
+		var options_result := _options_from_node(row, raw_node, item_ids, items_available)
 		if not options_result.ok:
 			return options_result
 		for option in options_result.options:
@@ -172,7 +180,7 @@ func _nodes_from_row(row: Dictionary, item_ids: Dictionary) -> Dictionary:
 				return _fail("missing_next_node", "Narrative event '%s' option '%s' references missing node '%s'." % [row.get("id", ""), option.id, next_node_id])
 	return {"ok": true, "nodes": nodes}
 
-func _options_from_node(row: Dictionary, raw_node: Dictionary, item_ids: Dictionary) -> Dictionary:
+func _options_from_node(row: Dictionary, raw_node: Dictionary, item_ids: Dictionary, items_available: bool) -> Dictionary:
 	var raw_options = raw_node.get("options", [])
 	if typeof(raw_options) != TYPE_ARRAY:
 		return _fail("invalid_options", "Narrative node '%s' options must be an array." % raw_node.get("id", ""))
@@ -190,7 +198,7 @@ func _options_from_node(row: Dictionary, raw_node: Dictionary, item_ids: Diction
 		var results = raw_option.get("results", [])
 		if typeof(results) != TYPE_ARRAY:
 			return _fail("invalid_results", "Narrative option '%s' results must be an array." % option_id)
-		var results_result := _validate_results(row, raw_node, option_id, results, item_ids)
+		var results_result := _validate_results(row, raw_node, option_id, results, item_ids, items_available)
 		if not results_result.ok:
 			return results_result
 		options.append({
@@ -203,7 +211,7 @@ func _options_from_node(row: Dictionary, raw_node: Dictionary, item_ids: Diction
 		})
 	return {"ok": true, "options": options}
 
-func _validate_results(row: Dictionary, raw_node: Dictionary, option_id: String, results: Array, item_ids: Dictionary) -> Dictionary:
+func _validate_results(row: Dictionary, raw_node: Dictionary, option_id: String, results: Array, item_ids: Dictionary, items_available: bool) -> Dictionary:
 	for result in results:
 		if typeof(result) != TYPE_DICTIONARY:
 			return _fail("invalid_result", "Narrative option '%s' contains a non-object result." % option_id)
@@ -216,12 +224,14 @@ func _validate_results(row: Dictionary, raw_node: Dictionary, option_id: String,
 		if not _is_stable_id(result_id):
 			return _fail("invalid_result_id", "Narrative option '%s' result '%s' has invalid stable id '%s'." % [option_id, result_type, result_id])
 		if result_type == RESULT_GRANT_ITEM:
+			if not items_available:
+				return _fail("missing_items_dataset", "Narrative option '%s' grant_item requires catalog item definitions." % option_id)
 			if not result.has("quantity"):
 				return _fail("missing_result_quantity", "Narrative option '%s' grant_item result is missing quantity." % option_id)
 			var quantity = result.quantity
 			if not [TYPE_INT, TYPE_FLOAT].has(typeof(quantity)) or int(quantity) != float(quantity) or int(quantity) <= 0:
 				return _fail("invalid_result_quantity", "Narrative option '%s' grant_item quantity must be a positive integer." % option_id)
-			if not item_ids.is_empty() and not item_ids.has(result_id):
+			if not item_ids.has(result_id):
 				return _fail("missing_result_item", "Narrative option '%s' grant_item targets missing item id '%s'." % [option_id, result_id])
 	return {"ok": true}
 
