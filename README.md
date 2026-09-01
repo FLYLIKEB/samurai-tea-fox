@@ -77,18 +77,31 @@ tools/asset_browser/run.sh
 앱 본체는 별도 레포 `https://github.com/FLYLIKEB/samurai-tea-fox-asset-browser`에서 관리하고,
 현재 레포에는 무사여우 전용 프롬프트 템플릿과 launcher만 둡니다.
 
+## 게임 실행
+
+Godot 편집기에서 프로젝트를 연 뒤 `F6`이 아닌 `F5`를 누르거나, 저장소 루트에서 다음 명령을 실행합니다.
+
+```sh
+godot --path .
+```
+
+플레이어는 `W`, `A`, `S`, `D`로 이동하며 벽과 장애물을 통과하지 않습니다. 카메라는 플레이어를 따라갑니다.
+
 ## 검증
 
 Godot가 설치된 환경에서:
 
 ```sh
 godot --headless --path . --script res://tests/test_runner.gd
+godot --headless --path . --editor --quit
+godot --headless --path . --script res://tests/integration/test_player_scene_runner.gd
 ```
 
 현재 테스트 골격은 다음 경계를 확인합니다.
 
 - 같은 seed + 같은 data version은 같은 월드 데이터를 생성한다.
 - 플랫폼 입력은 게임 명령으로만 변환된다.
+- 플레이어 이동 방향, 대각선 속도, 벽 충돌, 카메라 연결을 확인한다.
 - run save와 meta save는 schema version과 kind를 분리한다.
 
 Godot 설치 전에도 프로젝트 진입점, 공통 입력 명령 경계, 데스크톱·모바일 export template을 정적으로 확인할 수 있습니다.
