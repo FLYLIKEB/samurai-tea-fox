@@ -6,10 +6,11 @@ const DataSchemaValidator = preload("res://src/core/data/data_schema_validator.g
 func run(asserts) -> void:
 	var catalog := DataCatalog.new()
 	var result := catalog.load_from_directory("res://data/generated")
-	asserts.true_value(result.ok, "generated Notion export files load")
+	asserts.true_value(result.ok, "generated Notion export files load: %s" % result.get("error", ""))
 	asserts.equal(catalog.data_version, "notion-2026-09-01", "data version is pinned")
 	asserts.equal(int(catalog.find_balance_value("player_hp_max")), 100, "player HP max comes from balance data")
 	asserts.equal(catalog.find_by_id("biomes", "common_region").name, "일반 지역", "common biome is present")
+	asserts.equal(catalog.find_by_id("events", "roadside_teahouse_intro").get("replay_policy", ""), "once", "narrative event definitions are present")
 
 	var validator := DataSchemaValidator.new()
 	var duplicate_result := validator.validate_export_file({
@@ -54,3 +55,44 @@ func run(asserts) -> void:
 	if not required_result.ok:
 		asserts.true_value("player_hp_max" in required_result.error, "required field error names the item")
 		asserts.true_value("value" in required_result.error, "required field error names the field")
+
+	var grant_without_items := validator.validate_catalog({
+		"events": [_event_with_result({"type": "grant_item", "id": "tea_bowl", "quantity": 1})]
+	}, {
+		"events": {"required_fields": ["id"]}
+	})
+	asserts.false_value(grant_without_items.ok, "grant_item requires the items dataset in runtime catalog validation")
+	if not grant_without_items.ok:
+		asserts.true_value("items" in grant_without_items.error, "missing items dataset error names the dataset")
+
+	var grant_missing_item := validator.validate_catalog({
+		"items": [],
+		"events": [_event_with_result({"type": "grant_item", "id": "tea_bowl", "quantity": 1})]
+	}, {
+		"items": {"required_fields": ["id"]},
+		"events": {"required_fields": ["id"]}
+	})
+	asserts.false_value(grant_missing_item.ok, "grant_item result IDs must exist in runtime item definitions")
+	if not grant_missing_item.ok:
+		asserts.true_value("tea_bowl" in grant_missing_item.error, "missing grant item error names the result id")
+
+	var flag_without_items := validator.validate_catalog({
+		"events": [_event_with_result({"type": "set_run_flag", "id": "met_old_keeper"})]
+	}, {
+		"events": {"required_fields": ["id"]}
+	})
+	asserts.true_value(flag_without_items.ok, "set_run_flag-only events do not require items definitions")
+
+func _event_with_result(result: Dictionary) -> Dictionary:
+	return {
+		"id": "fixture_event",
+		"nodes": [{
+			"id": "start",
+			"options": [{
+				"id": "take",
+				"results": [result],
+				"next_node_id": "",
+				"completes_event": true
+			}]
+		}]
+	}

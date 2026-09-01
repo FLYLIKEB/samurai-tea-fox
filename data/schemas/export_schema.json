@@ -55,6 +55,13 @@
         "relation_map": {"지역 관계": {"field": "biome_ids", "target": "biomes", "many": true}, "보상 다구": {"field": "reward_item_ids", "target": "items", "many": true}, "선택 결과": {"field": "choice_ids", "target": "choices", "many": true}}
       }
     },
+    "events": {
+      "file": "events.json", "required_fields": ["id", "name", "status", "replay_policy", "start_node_id", "nodes"],
+      "notion": {
+        "source": "fixture://dev_25_story_events", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "이벤트 ID", "id_prefix": "event",
+        "field_map": {"재실행 정책": "replay_policy", "시작 노드": "start_node_id", "노드": "nodes", "설명": "description"}
+      }
+    },
     "items": {
       "file": "items.json", "required_fields": ["id", "name", "status"], "relations": {"biome_ids": "biomes"},
       "notion": {

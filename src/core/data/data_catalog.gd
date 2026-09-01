@@ -11,7 +11,8 @@ const FILES := {
 	"recipes": "recipes.json",
 	"monsters": "monsters.json",
 	"abilities": "abilities.json",
-	"meta_unlocks": "meta_unlocks.json"
+	"meta_unlocks": "meta_unlocks.json",
+	"events": "events.json"
 }
 
 var data_version := ""

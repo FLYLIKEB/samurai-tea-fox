@@ -16,6 +16,9 @@ def canonical_json_bytes(value: Any) -> bytes:
 
 
 class ExportPipeline:
+    EVENT_REPLAY_POLICIES = {"once", "repeat"}
+    EVENT_RESULT_TYPES = {"set_run_flag", "grant_item"}
+
     def __init__(self, schema: dict[str, Any]):
         self.schema = schema
 
@@ -203,6 +206,144 @@ class ExportPipeline:
                             raise ExportValidationError(
                                 f"{dataset_name} item {item['id']} relation {field} targets {target_dataset} missing id {value}"
                             )
+        if "events" in snapshots:
+            self._validate_events(
+                snapshots["events"]["items"],
+                ids_by_dataset.get("items", set()),
+                "items" in ids_by_dataset,
+            )
+
+    def _validate_events(self, events: list[dict[str, Any]], item_ids: set[str], items_available: bool) -> None:
+        stable_id = re.compile(self.schema["stable_id_pattern"])
+        for event in events:
+            replay_policy = event.get("replay_policy")
+            if replay_policy not in self.EVENT_REPLAY_POLICIES:
+                raise ExportValidationError(
+                    f"events item {event['id']}: invalid replay_policy {replay_policy}"
+                )
+            start_node_id = event.get("start_node_id")
+            nodes = event.get("nodes")
+            if not isinstance(start_node_id, str) or not start_node_id:
+                raise ExportValidationError(f"events item {event['id']}: missing start_node_id")
+            if not isinstance(nodes, list):
+                raise ExportValidationError(f"events item {event['id']}: nodes must be an array")
+
+            nodes_by_id: dict[str, dict[str, Any]] = {}
+            event_option_ids: set[str] = set()
+            for node_index, node in enumerate(nodes):
+                if not isinstance(node, dict):
+                    raise ExportValidationError(f"events item {event['id']}: nodes[{node_index}] must be an object")
+                node_id = node.get("id")
+                if not isinstance(node_id, str) or not node_id:
+                    raise ExportValidationError(f"events item {event['id']}: nodes[{node_index}] missing id")
+                if node_id in nodes_by_id:
+                    raise ExportValidationError(f"events item {event['id']}: duplicate node id {node_id}")
+                options = node.get("options", [])
+                if not isinstance(options, list):
+                    raise ExportValidationError(f"events item {event['id']} node {node_id}: options must be an array")
+                seen_options: set[str] = set()
+                for option_index, option in enumerate(options):
+                    if not isinstance(option, dict):
+                        raise ExportValidationError(
+                            f"events item {event['id']} node {node_id}: options[{option_index}] must be an object"
+                        )
+                    option_id = option.get("id")
+                    if not isinstance(option_id, str) or not option_id:
+                        raise ExportValidationError(f"events item {event['id']} node {node_id}: option missing id")
+                    if option_id in seen_options:
+                        raise ExportValidationError(
+                            f"events item {event['id']} node {node_id}: duplicate option id {option_id}"
+                        )
+                    if option_id in event_option_ids:
+                        raise ExportValidationError(f"events item {event['id']}: duplicate option id {option_id}")
+                    seen_options.add(option_id)
+                    event_option_ids.add(option_id)
+                    results = option.get("results", [])
+                    if not isinstance(results, list):
+                        raise ExportValidationError(
+                            f"events item {event['id']} node {node_id} option {option_id}: results must be an array"
+                        )
+                    self._validate_event_results(event["id"], node_id, option_id, results, item_ids, items_available, stable_id)
+                nodes_by_id[node_id] = node
+
+            if start_node_id not in nodes_by_id:
+                raise ExportValidationError(
+                    f"events item {event['id']}: start_node_id targets missing node {start_node_id}"
+                )
+            for node_id, node in nodes_by_id.items():
+                for option in node.get("options", []):
+                    next_node_id = option.get("next_node_id", "")
+                    if next_node_id and next_node_id not in nodes_by_id:
+                        raise ExportValidationError(
+                            f"events item {event['id']} node {node_id} option {option['id']}: next_node_id targets missing node {next_node_id}"
+                        )
+            self._validate_event_completion_paths(event["id"], start_node_id, nodes_by_id)
+
+    def _validate_event_results(
+        self,
+        event_id: str,
+        node_id: str,
+        option_id: str,
+        results: list[Any],
+        item_ids: set[str],
+        items_available: bool,
+        stable_id: re.Pattern[str],
+    ) -> None:
+        for result_index, result in enumerate(results):
+            if not isinstance(result, dict):
+                raise ExportValidationError(
+                    f"events item {event_id} node {node_id} option {option_id}: results[{result_index}] must be an object"
+                )
+            result_type = result.get("type")
+            if result_type not in self.EVENT_RESULT_TYPES:
+                raise ExportValidationError(
+                    f"events item {event_id} node {node_id} option {option_id}: invalid result type {result_type}"
+                )
+            result_id = result.get("id")
+            if not isinstance(result_id, str) or not stable_id.fullmatch(result_id):
+                raise ExportValidationError(
+                    f"events item {event_id} node {node_id} option {option_id}: invalid result id {result_id}"
+                )
+            if result_type == "grant_item":
+                if not items_available:
+                    raise ExportValidationError(
+                        f"events item {event_id} node {node_id} option {option_id}: grant_item targets missing dataset items"
+                    )
+                quantity = result.get("quantity")
+                if not isinstance(quantity, int) or isinstance(quantity, bool) or quantity <= 0:
+                    raise ExportValidationError(
+                        f"events item {event_id} node {node_id} option {option_id}: grant_item quantity must be a positive integer"
+                    )
+                if result_id not in item_ids:
+                    raise ExportValidationError(
+                        f"events item {event_id} node {node_id} option {option_id}: grant_item targets missing item id {result_id}"
+                    )
+
+    def _validate_event_completion_paths(
+        self,
+        event_id: str,
+        start_node_id: str,
+        nodes_by_id: dict[str, dict[str, Any]],
+    ) -> None:
+        def visit(node_id: str, visiting: set[str]) -> None:
+            if node_id in visiting:
+                raise ExportValidationError(f"events item {event_id}: reachable dialogue cycle at node {node_id}")
+            node = nodes_by_id[node_id]
+            options = node.get("options", [])
+            if not options:
+                raise ExportValidationError(f"events item {event_id} node {node_id}: no completing path")
+            next_visiting = {*visiting, node_id}
+            for option in options:
+                if option.get("completes_event") is True:
+                    continue
+                next_node_id = option.get("next_node_id", "")
+                if not next_node_id:
+                    raise ExportValidationError(
+                        f"events item {event_id} node {node_id} option {option['id']}: neither completes nor advances"
+                    )
+                visit(next_node_id, next_visiting)
+
+        visit(start_node_id, set())
 
 
 def copy_json_value(value: Any) -> Any:
