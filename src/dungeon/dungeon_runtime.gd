@@ -17,7 +17,9 @@ var _instance: DungeonInstanceState
 func configure(run_state, progression_state, completion_resolver: Callable, reward_hook := Callable()) -> Dictionary:
 	if not run_state is RunState:
 		return _fail("invalid_run_state", "Dungeon runtime requires a RunState.")
-	if progression_state == null or not progression_state.has_method("complete_dungeon"):
+	if progression_state == null \
+		or not progression_state.has_method("complete_dungeon") \
+		or not progression_state.has_method("current_biome_id"):
 		return _fail("invalid_progression_state", "Dungeon runtime requires a biome progression boundary.")
 	if not completion_resolver.is_valid():
 		return _fail("invalid_completion_resolver", "Dungeon runtime requires a completion resolver.")
@@ -48,7 +50,7 @@ func enter_dungeon(instance_id: String, dungeon_definition: Dictionary, layout, 
 	var world_snapshot := _world_snapshot(layout)
 	if world_snapshot.is_empty():
 		return _fail("invalid_world_data", "Dungeon entry requires injected WorldData or a fixed layout dictionary.")
-	if not _valid_return_context(return_context):
+	if not _valid_return_context(return_context, biome_id):
 		return _fail("invalid_return_context", "Return context requires biome_id and world identity.")
 
 	_instance = DungeonInstanceState.new()
@@ -141,10 +143,23 @@ func _world_snapshot(layout) -> Dictionary:
 			return snapshot.duplicate(true)
 	return {}
 
-func _valid_return_context(context: Dictionary) -> bool:
-	if String(context.get("biome_id", "")).is_empty():
+func _valid_return_context(context: Dictionary, expected_biome_id: String) -> bool:
+	var return_biome_id := String(context.get("biome_id", ""))
+	if return_biome_id.is_empty() or return_biome_id != expected_biome_id:
 		return false
-	return context.has("world_seed") or not String(context.get("world_id", "")).is_empty()
+	if _valid_world_id(context.get("world_id")):
+		return true
+	return _valid_world_seed(context.get("world_seed"))
+
+func _valid_world_id(value) -> bool:
+	return typeof(value) == TYPE_STRING and not String(value).strip_edges().is_empty()
+
+func _valid_world_seed(value) -> bool:
+	if typeof(value) == TYPE_INT:
+		return true
+	if typeof(value) == TYPE_FLOAT:
+		return is_finite(float(value)) and float(value) == floor(float(value))
+	return typeof(value) == TYPE_STRING and not String(value).strip_edges().is_empty()
 
 func _validate_hydrated_instance() -> Dictionary:
 	if _instance.instance_id.is_empty() or _instance.dungeon_id.is_empty() or _instance.biome_id.is_empty():
@@ -157,6 +172,11 @@ func _validate_hydrated_instance() -> Dictionary:
 		DungeonInstanceState.STATE_RETURNED
 	].has(_instance.lifecycle_state):
 		return _fail("invalid_saved_dungeon_state", "Saved dungeon runtime has an unknown lifecycle state.")
+	if _instance.world_data.is_empty() or not _valid_return_context(_instance.return_context, _instance.biome_id):
+		return _fail("invalid_saved_dungeon_state", "Saved dungeon runtime has invalid world or return context.")
+	if _instance.lifecycle_state != DungeonInstanceState.STATE_RETURNED \
+		and _instance.biome_id != String(_progression_state.current_biome_id()):
+		return _fail("invalid_saved_dungeon_state", "Saved dungeon runtime does not match the current progression biome.")
 	return {"ok": true}
 
 func _require_state(expected_state: String, reason: String) -> Dictionary:

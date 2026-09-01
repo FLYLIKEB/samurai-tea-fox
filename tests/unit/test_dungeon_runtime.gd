@@ -7,10 +7,18 @@ const RunState = preload("res://src/save/run_state.gd")
 const SaveCodec = preload("res://src/save/save_codec.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 
+class IncompleteProgressionBoundary:
+	extends RefCounted
+
+	func complete_dungeon(_biome_id: String) -> Dictionary:
+		return {"ok": true}
+
 func run(asserts) -> void:
 	_lifecycle_clear_and_duplicate_guards(asserts)
 	_save_round_trip_resumes_active_instance(asserts)
+	_invalid_saved_return_context_is_rejected(asserts)
 	_invalid_entry_boundaries(asserts)
+	_incomplete_progression_boundary_is_rejected(asserts)
 
 func _lifecycle_clear_and_duplicate_guards(asserts) -> void:
 	var context := _runtime_context()
@@ -104,6 +112,38 @@ func _save_round_trip_resumes_active_instance(asserts) -> void:
 	asserts.equal(resumed.to_projection().instance_id, "fixture_saved_instance", "resumed runtime preserves instance identity")
 	asserts.equal(resumed.to_projection().world_data.bounds, {"width": 4, "height": 2}, "resumed runtime preserves fixed layout")
 
+func _invalid_saved_return_context_is_rejected(asserts) -> void:
+	var mismatched_context := _runtime_context()
+	mismatched_context.run_state.dungeon_runtime_state = _saved_instance({"biome_id": "mountain_region", "world_seed": 11037})
+	var mismatched_result: Dictionary = mismatched_context.runtime.configure(
+		mismatched_context.run_state,
+		mismatched_context.progression,
+		func(_payload: Dictionary, _projection: Dictionary) -> bool: return true
+	)
+	asserts.false_value(mismatched_result.ok, "saved return context rejects a mismatched biome")
+	asserts.equal(mismatched_result.reason, "invalid_saved_dungeon_state", "saved biome mismatch exposes stable reason")
+
+	var malformed_context := _runtime_context()
+	malformed_context.run_state.dungeon_runtime_state = _saved_instance({"biome_id": "common_region", "world_seed": null})
+	var malformed_result: Dictionary = malformed_context.runtime.configure(
+		malformed_context.run_state,
+		malformed_context.progression,
+		func(_payload: Dictionary, _projection: Dictionary) -> bool: return true
+	)
+	asserts.false_value(malformed_result.ok, "saved return context rejects malformed world identity")
+	asserts.equal(malformed_result.reason, "invalid_saved_dungeon_state", "saved world identity failure exposes stable reason")
+
+	var stale_biome_context := _runtime_context()
+	stale_biome_context.run_state.dungeon_runtime_state = _saved_instance({"biome_id": "mountain_region", "world_seed": 11037})
+	stale_biome_context.run_state.dungeon_runtime_state.biome_id = "mountain_region"
+	var stale_biome_result: Dictionary = stale_biome_context.runtime.configure(
+		stale_biome_context.run_state,
+		stale_biome_context.progression,
+		func(_payload: Dictionary, _projection: Dictionary) -> bool: return true
+	)
+	asserts.false_value(stale_biome_result.ok, "saved active dungeon rejects a stale progression biome")
+	asserts.equal(stale_biome_result.reason, "invalid_saved_dungeon_state", "saved progression mismatch exposes stable reason")
+
 func _invalid_entry_boundaries(asserts) -> void:
 	var context := _runtime_context()
 	var runtime: DungeonRuntime = context.runtime
@@ -115,9 +155,34 @@ func _invalid_entry_boundaries(asserts) -> void:
 	asserts.equal(runtime.enter_dungeon("", _fixture_definition(), WorldData.new(2, 2), _return_context()).reason, "missing_stable_id", "entry rejects missing instance id")
 	asserts.equal(runtime.enter_dungeon("fixture_instance", _fixture_definition(), null, _return_context()).reason, "invalid_world_data", "entry rejects missing layout")
 	asserts.equal(runtime.enter_dungeon("fixture_instance", _fixture_definition(), WorldData.new(2, 2), {"biome_id": "common_region"}).reason, "invalid_return_context", "entry rejects missing world identity")
+	asserts.equal(runtime.enter_dungeon("fixture_instance", _fixture_definition(), WorldData.new(2, 2), {"biome_id": "mountain_region", "world_seed": 11037}).reason, "invalid_return_context", "entry rejects return context for another biome")
+	asserts.equal(runtime.enter_dungeon("fixture_instance", _fixture_definition(), WorldData.new(2, 2), {"biome_id": "common_region", "world_id": null}).reason, "invalid_return_context", "entry rejects null world identity")
+	asserts.equal(runtime.enter_dungeon("fixture_instance", _fixture_definition(), WorldData.new(2, 2), {"biome_id": "common_region", "world_id": {"id": "not_stable"}}).reason, "invalid_return_context", "entry rejects malformed world id")
+	asserts.equal(runtime.enter_dungeon("fixture_instance", _fixture_definition(), WorldData.new(2, 2), {"biome_id": "common_region", "world_id": "   "}).reason, "invalid_return_context", "entry rejects blank world id")
+	asserts.equal(runtime.enter_dungeon("fixture_instance", _fixture_definition(), WorldData.new(2, 2), {"biome_id": "common_region", "world_seed": null}).reason, "invalid_return_context", "entry rejects null world seed")
+	asserts.equal(runtime.enter_dungeon("fixture_instance", _fixture_definition(), WorldData.new(2, 2), {"biome_id": "common_region", "world_seed": 11037.5}).reason, "invalid_return_context", "entry rejects a fractional numeric world seed")
 	var wrong_biome := _fixture_definition()
 	wrong_biome.biome_id = "mountain_region"
 	asserts.equal(runtime.enter_dungeon("fixture_instance", wrong_biome, WorldData.new(2, 2), _return_context()).reason, "invalid_biome", "entry rejects non-current biome")
+	asserts.true_value(runtime.enter_dungeon("fixture_instance", _fixture_definition(), WorldData.new(2, 2), {"biome_id": "common_region", "world_id": "stable_world"}).ok, "entry accepts a non-empty stable world id")
+
+	var string_seed_context := _runtime_context()
+	asserts.true_value(string_seed_context.runtime.configure(
+		string_seed_context.run_state,
+		string_seed_context.progression,
+		func(_payload: Dictionary, _projection: Dictionary) -> bool: return true
+	).ok, "string seed fixture configures")
+	asserts.true_value(string_seed_context.runtime.enter_dungeon("string_seed_instance", _fixture_definition(), WorldData.new(2, 2), {"biome_id": "common_region", "world_seed": "11037"}).ok, "entry accepts a non-empty string world seed")
+
+func _incomplete_progression_boundary_is_rejected(asserts) -> void:
+	var runtime := DungeonRuntime.new()
+	var result := runtime.configure(
+		RunState.new(),
+		IncompleteProgressionBoundary.new(),
+		func(_payload: Dictionary, _projection: Dictionary) -> bool: return true
+	)
+	asserts.false_value(result.ok, "configure rejects an incomplete progression boundary")
+	asserts.equal(result.reason, "invalid_progression_state", "incomplete progression boundary exposes stable reason")
 
 func _runtime_context() -> Dictionary:
 	var run_state := RunState.new()
@@ -130,6 +195,17 @@ func _fixture_definition() -> Dictionary:
 
 func _return_context() -> Dictionary:
 	return {"biome_id": "common_region", "world_seed": 11037, "landmark_id": "fixture_entry"}
+
+func _saved_instance(return_context: Dictionary) -> Dictionary:
+	return {
+		"schema_version": 1,
+		"instance_id": "saved_instance",
+		"dungeon_id": "fixture_dungeon",
+		"biome_id": "common_region",
+		"lifecycle_state": DungeonInstanceState.STATE_ACTIVE,
+		"world_data": WorldData.new(2, 2).to_dictionary(),
+		"return_context": return_context
+	}
 
 func _fixture_biomes() -> Array:
 	return [
