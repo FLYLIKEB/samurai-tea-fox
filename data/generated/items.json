@@ -1,19 +1,105 @@
 {
+  "content_hash": "2347fafaaf8d1d8bd8a656b4cc1287080ba10ecd3f73c992107b90e31a099379",
   "data_version": "notion-2026-09-01",
-  "source": "collection://cc4817d1-bb64-45b0-9193-b3c742327064",
   "items": [
-    {"id": "wood", "name": "목재", "type": "재료", "grade": "일반", "craftable": false, "status": "확정"},
-    {"id": "stone", "name": "돌", "type": "재료", "grade": "일반", "craftable": false, "status": "확정"},
-    {"id": "clay", "name": "점토", "type": "재료", "grade": "일반", "craftable": false, "status": "확정"},
-    {"id": "short_travel_sword", "name": "짧은 여행검", "type": "무기", "grade": "일반", "craftable": true, "status": "초안"},
-    {"id": "humble_clay_bowl", "name": "소박한 흙사발", "type": "다구", "grade": "일반", "craftable": true, "status": "초안"},
-    {"id": "wooden_workbench", "name": "목재 작업대", "type": "도구", "grade": "일반", "craftable": true, "status": "초안"},
-    {"id": "oribe_green_glazed_bowl", "name": "오리베 녹유 찻사발", "type": "다구", "grade": "명물", "craftable": false, "status": "초안"},
-    {"id": "unbroken_failure", "name": "깨지지 않은 실패작", "type": "다구", "grade": "명물", "craftable": false, "status": "초안"},
-    {"id": "war_tea_caddy", "name": "전란의 차입", "type": "다구", "grade": "명물", "craftable": false, "status": "초안"},
-    {"id": "ash_stained_iron_kettle", "name": "재 묻은 철솥", "type": "다구", "grade": "명물", "craftable": false, "status": "초안"},
-    {"id": "old_incense_box", "name": "오래된 향합", "type": "다구", "grade": "명물", "craftable": false, "status": "초안"},
-    {"id": "black_bamboo_tea_scoop", "name": "검은 대나무 찻숟가락", "type": "다구", "grade": "명물", "craftable": false, "status": "초안"}
-  ]
+    {
+      "craftable": false,
+      "grade": "명물",
+      "id": "ash_stained_iron_kettle",
+      "name": "재 묻은 철솥",
+      "status": "초안",
+      "type": "다구"
+    },
+    {
+      "craftable": false,
+      "grade": "명물",
+      "id": "black_bamboo_tea_scoop",
+      "name": "검은 대나무 찻숟가락",
+      "status": "초안",
+      "type": "다구"
+    },
+    {
+      "craftable": false,
+      "grade": "일반",
+      "id": "clay",
+      "name": "점토",
+      "status": "확정",
+      "type": "재료"
+    },
+    {
+      "craftable": true,
+      "grade": "일반",
+      "id": "humble_clay_bowl",
+      "name": "소박한 흙사발",
+      "status": "초안",
+      "type": "다구"
+    },
+    {
+      "craftable": false,
+      "grade": "명물",
+      "id": "old_incense_box",
+      "name": "오래된 향합",
+      "status": "초안",
+      "type": "다구"
+    },
+    {
+      "craftable": false,
+      "grade": "명물",
+      "id": "oribe_green_glazed_bowl",
+      "name": "오리베 녹유 찻사발",
+      "status": "초안",
+      "type": "다구"
+    },
+    {
+      "craftable": true,
+      "grade": "일반",
+      "id": "short_travel_sword",
+      "name": "짧은 여행검",
+      "status": "초안",
+      "type": "무기"
+    },
+    {
+      "craftable": false,
+      "grade": "일반",
+      "id": "stone",
+      "name": "돌",
+      "status": "확정",
+      "type": "재료"
+    },
+    {
+      "craftable": false,
+      "grade": "명물",
+      "id": "unbroken_failure",
+      "name": "깨지지 않은 실패작",
+      "status": "초안",
+      "type": "다구"
+    },
+    {
+      "craftable": false,
+      "grade": "명물",
+      "id": "war_tea_caddy",
+      "name": "전란의 차입",
+      "status": "초안",
+      "type": "다구"
+    },
+    {
+      "craftable": false,
+      "grade": "일반",
+      "id": "wood",
+      "name": "목재",
+      "status": "확정",
+      "type": "재료"
+    },
+    {
+      "craftable": true,
+      "grade": "일반",
+      "id": "wooden_workbench",
+      "name": "목재 작업대",
+      "status": "초안",
+      "type": "도구"
+    }
+  ],
+  "profile": "confirmed-test",
+  "schema_version": 1,
+  "source": "collection://cc4817d1-bb64-45b0-9193-b3c742327064"
 }
-

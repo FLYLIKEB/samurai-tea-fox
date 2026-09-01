@@ -1,13 +1,63 @@
 {
+  "content_hash": "e2fa80d6d3c7d397c304881de44737a88c6653615e2b6505da2467fcd5bf93aa",
   "data_version": "notion-2026-09-01",
-  "source": "collection://7927bdc1-70eb-4fe7-82c5-971c74caa5d3",
   "items": [
-    {"id": "common_biome_first_entry", "name": "일반 바이옴 최초 진입 기록", "condition_type": "바이옴 진입", "condition": "일반 바이옴에 처음 진입", "reward_type": "정보·기록", "cumulative": false, "status": "확정"},
-    {"id": "sen_rikyu_reunion_dialogue_1", "name": "센리큐 재회 대사 I", "condition_type": "반복 횟수", "condition": "런 종료 후 센리큐를 다시 만남", "reward_type": "특수 대사", "cumulative": true, "status": "확정"},
-    {"id": "gumiho_father_loop_dialogue_1", "name": "구미호 아버지 반복 대사 I", "condition_type": "반복 횟수", "condition": "새 런 시작 후 아버지와 다시 대화", "reward_type": "특수 대사", "cumulative": true, "status": "확정"},
-    {"id": "memory_tea_first_record", "name": "기억차 최초 발견 기록", "condition_type": "기억 발견", "condition": "기억이 담긴 차를 최초로 마셔 픽셀 컷신 확인", "reward_type": "도감", "cumulative": true, "status": "확정"},
-    {"id": "tail_stage_3_record", "name": "꼬리 3단계 경험 기록", "condition_type": "꼬리 단계", "condition": "한 런에서 꼬리 3단계에 최초 도달", "reward_type": "시작 선택지", "cumulative": false, "status": "확정"},
-    {"id": "final_tea_room_first_record", "name": "최종 다실 최초 도달 기록", "condition_type": "최종 다실", "condition": "한 런에서 모든 핵심 보스 다구를 모아 최종 다실에 최초 도달", "reward_type": "정보·기록", "cumulative": false, "status": "확정"}
-  ]
+    {
+      "condition": "일반 바이옴에 처음 진입",
+      "condition_type": "바이옴 진입",
+      "cumulative": false,
+      "id": "common_biome_first_entry",
+      "name": "일반 바이옴 최초 진입 기록",
+      "reward_type": "정보·기록",
+      "status": "확정"
+    },
+    {
+      "condition": "한 런에서 모든 핵심 보스 다구를 모아 최종 다실에 최초 도달",
+      "condition_type": "최종 다실",
+      "cumulative": false,
+      "id": "final_tea_room_first_record",
+      "name": "최종 다실 최초 도달 기록",
+      "reward_type": "정보·기록",
+      "status": "확정"
+    },
+    {
+      "condition": "새 런 시작 후 아버지와 다시 대화",
+      "condition_type": "반복 횟수",
+      "cumulative": true,
+      "id": "gumiho_father_loop_dialogue_1",
+      "name": "구미호 아버지 반복 대사 I",
+      "reward_type": "특수 대사",
+      "status": "확정"
+    },
+    {
+      "condition": "기억이 담긴 차를 최초로 마셔 픽셀 컷신 확인",
+      "condition_type": "기억 발견",
+      "cumulative": true,
+      "id": "memory_tea_first_record",
+      "name": "기억차 최초 발견 기록",
+      "reward_type": "도감",
+      "status": "확정"
+    },
+    {
+      "condition": "런 종료 후 센리큐를 다시 만남",
+      "condition_type": "반복 횟수",
+      "cumulative": true,
+      "id": "sen_rikyu_reunion_dialogue_1",
+      "name": "센리큐 재회 대사 I",
+      "reward_type": "특수 대사",
+      "status": "확정"
+    },
+    {
+      "condition": "한 런에서 꼬리 3단계에 최초 도달",
+      "condition_type": "꼬리 단계",
+      "cumulative": false,
+      "id": "tail_stage_3_record",
+      "name": "꼬리 3단계 경험 기록",
+      "reward_type": "시작 선택지",
+      "status": "확정"
+    }
+  ],
+  "profile": "confirmed-test",
+  "schema_version": 1,
+  "source": "collection://7927bdc1-70eb-4fe7-82c5-971c74caa5d3"
 }
-
