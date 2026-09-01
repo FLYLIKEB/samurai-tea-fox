@@ -6,11 +6,13 @@ const PlayerMovementState = preload("res://src/player/player_movement_state.gd")
 const PlayerResources = preload("res://src/player/player_resources.gd")
 const CombatConfig = preload("res://src/combat/combat_config.gd")
 const CombatState = preload("res://src/combat/combat_state.gd")
+const AbilityRuntime = preload("res://src/ability/ability_runtime.gd")
 
 const TILE_SIZE_PIXELS := 32.0
 const PLAYER_COMBAT_ID := "player"
 
 signal attack_started(swing: Dictionary)
+signal ability_cast(result: Dictionary)
 signal damage_received(event: Dictionary, applied_damage: int)
 signal dodge_started(direction: Vector2, distance_pixels: float)
 
@@ -24,6 +26,7 @@ var movement_state := PlayerMovementState.new()
 var resources
 var combat_config
 var combat_state
+var ability_runtime
 var _movement_command = GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO)
 var _pending_swing: Dictionary = {}
 var _attack_query_pending := false
@@ -37,6 +40,8 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if combat_state != null:
 		combat_state.tick(delta)
+	if ability_runtime != null:
+		ability_runtime.tick(delta)
 	if _dodge_time_remaining > 0.0:
 		_dodge_time_remaining = maxf(0.0, _dodge_time_remaining - delta)
 		velocity = _dodge_direction * _dodge_speed_pixels_per_second
@@ -57,6 +62,10 @@ func configure_combat(catalog) -> Dictionary:
 	resources = resource_result.resources
 	combat_config = config_result.config
 	combat_state = CombatState.new(combat_config)
+	var ability_result: Dictionary = AbilityRuntime.from_catalog(catalog)
+	if not ability_result.ok:
+		return ability_result
+	ability_runtime = ability_result.runtime
 	return {"ok": true}
 
 func submit_command(command) -> bool:
@@ -70,6 +79,8 @@ func submit_command(command) -> bool:
 			return _start_attack(command.direction)
 		GameCommand.Type.DODGE:
 			return _start_dodge(command.direction)
+		GameCommand.Type.CAST_ABILITY:
+			return _cast_ability(command.slot, command.direction)
 		_:
 			return false
 
@@ -118,6 +129,11 @@ func is_invulnerable() -> bool:
 func can_dodge() -> bool:
 	return combat_state != null and combat_state.is_dodge_ready()
 
+func equip_ability(slot: int, ability_id: String, tail_query) -> Dictionary:
+	if ability_runtime == null:
+		return {"ok": false, "reason": "missing_ability_runtime"}
+	return ability_runtime.equip(slot, ability_id, {"tail_query": tail_query})
+
 func _start_attack(direction: Vector2i) -> bool:
 	if combat_state == null or resources == null or _attack_query_pending:
 		return false
@@ -157,6 +173,20 @@ func _start_dodge(direction: Vector2i) -> bool:
 	var distance_pixels := float(dodge.distance_tiles) * TILE_SIZE_PIXELS
 	_dodge_speed_pixels_per_second = distance_pixels / maxf(_dodge_time_remaining, 0.001)
 	dodge_started.emit(_dodge_direction, distance_pixels)
+	return true
+
+func _cast_ability(slot: int, direction: Vector2i) -> bool:
+	if ability_runtime == null or resources == null:
+		return false
+	var result: Dictionary = ability_runtime.cast(slot, {
+		"source_id": PLAYER_COMBAT_ID,
+		"resources": resources,
+		"tail_count": 1,
+		"direction": _resolved_action_direction(direction)
+	})
+	if not result.ok:
+		return false
+	ability_cast.emit(result)
 	return true
 
 func _resolved_action_direction(direction: Vector2i) -> Vector2:
