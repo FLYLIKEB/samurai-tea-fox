@@ -1,5 +1,5 @@
 {
-  "content_hash": "9c6b810a53064d750b0ea52a1032ce2807adeff667310cfea142c130880abeeb",
+  "content_hash": "e8d82e2fa7148418602051a0efb320204ac7fa82b7fb74a52d657c4ac8eb2ac2",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -27,6 +27,18 @@
       "type": "다구"
     },
     {
+      "craftable": true,
+      "effect_type": "HP 회복",
+      "effect_value": 25,
+      "grade": "일반",
+      "id": "bandage",
+      "max_stack": 5,
+      "name": "붕대",
+      "status": "테스트",
+      "type": "소모품",
+      "use_seconds": 1
+    },
+    {
       "craftable": false,
       "grade": "명물",
       "id": "black_bamboo_tea_scoop",
@@ -40,6 +52,15 @@
       "id": "clay",
       "name": "점토",
       "status": "확정",
+      "type": "재료"
+    },
+    {
+      "craftable": false,
+      "grade": "일반",
+      "id": "cloth",
+      "max_stack": 20,
+      "name": "천",
+      "status": "테스트",
       "type": "재료"
     },
     {

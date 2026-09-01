@@ -52,6 +52,9 @@ func _assert_generated_catalog_configures_crafting(asserts) -> void:
 		asserts.true_value(inventory.add_item("wood", 6).ok, "generated wood can be stocked")
 		asserts.true_value(inventory.add_item("stone", 3).ok, "generated stone can be stocked")
 		asserts.true_value(service.craft("wooden_workbench", inventory).ok, "generated handcraft recipe executes")
+		asserts.true_value(inventory.add_item("cloth", 2).ok, "generated cloth can be stocked")
+		asserts.true_value(service.craft("bandage", inventory).ok, "generated bandage recipe executes")
+		asserts.equal(inventory.get_total_quantity("bandage"), 1, "cloth-to-bandage crafting grants bandage")
 
 	var placement_result: Dictionary = FacilityPlacementService.from_catalog(catalog)
 	asserts.true_value(placement_result.ok, "placement service initializes from generated catalog")

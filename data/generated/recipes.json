@@ -1,7 +1,24 @@
 {
-  "content_hash": "e66b065557583eb3c279aa4d95f1597819f9c73adb0a5dc0d3947de91c3ab199",
+  "content_hash": "aeef46bbbc31fcdd47fe067cbf5a15a7c5472bc22cc78aec0a491ce6b42e72e3",
   "data_version": "notion-2026-09-01",
   "items": [
+    {
+      "category": "소모품",
+      "facility": "손제작",
+      "id": "bandage",
+      "materials": [
+        {
+          "item_id": "cloth",
+          "quantity": 2
+        }
+      ],
+      "materials_note": "천 2",
+      "name": "붕대 제작",
+      "result_item_id": "bandage",
+      "result_quantity": 1,
+      "status": "테스트",
+      "unlock_biome": "일반"
+    },
     {
       "category": "다구",
       "facility": "목재 작업대",
