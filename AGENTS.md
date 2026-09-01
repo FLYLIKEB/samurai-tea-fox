@@ -56,6 +56,7 @@ Codex와 기타 AI 코딩 에이전트는 이 문서를 저장소의 최상위 �
 - UI는 game logic을 소유하지 않는다. UI는 상태를 관찰하고 command를 보낸다.
 - 콘텐츠 이름별 조건문 성장을 피하고 stable ID와 data-driven definition을 사용한다.
 - 색상 팔레트, 공통 시각 컨셉, 이미지 생성용 prompt token은 `assets/style/art-style-tokens.json`에서만 관리한다.
+- 모든 캐릭터, 맵, 맵 내 사물 에셋은 정사각형 타일 기반 탑뷰 로그라이크 가독성을 위해 정면을 보게 제작한다. 측면, 후면, 3/4, 아이소메트릭 시점 에셋을 만들지 않는다.
 
 ## 구현 규칙
 

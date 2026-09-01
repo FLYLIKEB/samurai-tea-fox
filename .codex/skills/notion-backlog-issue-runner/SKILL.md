@@ -1,6 +1,6 @@
 ---
 name: notion-backlog-issue-runner
-description: 이 프로젝트에서 Notion AI 구현 백로그 한 건을 선택하거나 지정받아 GitHub Issue, 구현, 검증, PR까지 한 작업 단위로 처리할 때 사용한다.
+description: 이 프로젝트에서 Notion AI 구현 백로그 한 건을 선택하거나 지정받아 GitHub 이슈, 구현, 검증, 풀 리퀘스트까지 한 작업 단위로 처리할 때 사용한다.
 metadata:
   short-description: Notion 백로그 한 건 실행 흐름
 ---

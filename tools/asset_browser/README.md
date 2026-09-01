@@ -26,6 +26,7 @@ python3 tools/asset_browser/asset_browser.py --list-images
 - 하단 편집창에서 복사될 Codex 프롬프트를 확인하고 직접 수정할 수 있습니다.
 - 기본 프롬프트는 `default_prompt_template.txt`에서 관리하며 앱 안에서 수정/저장할 수 있습니다.
 - `assets/style/art-style-tokens.json`의 팔레트, 컨셉, 이미지 생성 토큰을 앱 안에서 요약 확인하고 원본 JSON을 복사할 수 있습니다.
+- 기본 프롬프트와 스타일 토큰은 정사각형 타일 기반 탑뷰 로그라이크에 맞춰 캐릭터, 맵, 맵 내 사물을 모두 정면 시점으로 유지하도록 안내합니다.
 - 전역 팔레트와 바이옴 포인트 색을 실제 색상 스와치로 볼 수 있습니다.
 - 팔레트 색상칩을 클릭해 시스템 색상 선택기로 색을 수정하고 JSON에 바로 저장할 수 있습니다.
 - `팔레트 테스트 보기`를 켜면 원본 파일을 수정하지 않고 현재 팔레트로 이미지가 어떻게 바뀌는지 썸네일에서 미리볼 수 있습니다.
@@ -43,3 +44,16 @@ python3 tools/asset_browser/asset_browser.py --list-images
 Pillow는 선택 사항입니다. 설치되어 있으면 JPG, BMP, WEBP, TGA, TIFF 같은
 포맷도 미리볼 수 있습니다. Pillow가 없어도 Tkinter 기본 지원 포맷인 PNG,
 GIF 등은 미리볼 수 있습니다.
+
+## 코드 구조
+
+- `asset_browser.py`: 기존 실행 경로를 유지하는 호환 래퍼입니다.
+- `cli.py`: 인자 파싱과 CLI 실행 흐름입니다.
+- `ui_app.py`: `AssetBrowser` 상태와 이미지 그리드 렌더링입니다.
+- `ui_layout.py`: Tkinter 레이아웃 구성입니다.
+- `ui_actions.py`: 선택, 복사, 템플릿 저장, Finder 열기, 실제 팔레트 변환 액션입니다.
+- `ui_palette.py`: 스타일 토큰 표시와 팔레트 색상 편집 패널입니다.
+- `scanner.py`: `assets/` 이미지 검색입니다.
+- `prompting.py`: Codex 프롬프트 템플릿 로드와 렌더링입니다.
+- `style_tokens.py`: `assets/style/art-style-tokens.json` 로드, 저장, 요약, 팔레트 추출입니다.
+- `image_ops.py`: Pillow 기반 팔레트 미리보기와 실제 이미지 변환입니다.

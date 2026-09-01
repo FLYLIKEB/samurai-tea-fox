@@ -1,6 +1,6 @@
 ---
 name: notion-backlog-authoring
-description: Notion AI 구현 백로그 항목을 새로 작성하거나 보강할 때 목표, 범위, 비범위, 완료 조건, 검증 방법, PR 원칙을 빠짐없이 구성하기 위해 사용한다.
+description: Notion AI 구현 백로그 항목을 새로 작성하거나 보강할 때 목표, 범위, 비범위, 완료 조건, 검증 방법, 풀 리퀘스트 원칙을 빠짐없이 구성하기 위해 사용한다.
 metadata:
   short-description: Notion 백로그 항목 작성 규칙
 ---

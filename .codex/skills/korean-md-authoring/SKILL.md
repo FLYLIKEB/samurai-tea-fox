@@ -1,8 +1,8 @@
 ---
 name: korean-md-authoring
-description: 이 프로젝트에서 Markdown 문서나 Codex 스킬을 만들거나 수정할 때 본문과 사용자-facing 설명을 한국어 기반으로 작성하도록 한다.
+description: 이 프로젝트에서 마크다운 문서나 Codex 스킬을 만들거나 수정할 때 본문과 사용자에게 보이는 설명을 한국어 기반으로 작성하도록 한다.
 metadata:
-  short-description: Markdown과 스킬 한국어 작성 규칙
+  short-description: 마크다운과 스킬 한국어 작성 규칙
 ---
 
 # Markdown 한국어 작성

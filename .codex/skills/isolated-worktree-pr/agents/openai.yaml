@@ -1,5 +1,5 @@
 interface:
-  display_name: "독립 Worktree PR"
-  short_description: "독립 브랜치와 worktree 기반 PR 흐름."
+  display_name: "독립 작업 트리 PR"
+  short_description: "독립 브랜치와 작업 트리 기반 PR 흐름입니다."
 policy:
   allow_implicit_invocation: true

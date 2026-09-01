@@ -51,6 +51,9 @@
   "pixel_rules": {
     "base_tile_size_px": 32,
     "sprite_base_size_px": 32,
+    "view_model": "square_tile_top_view",
+    "orientation": "front_facing_only",
+    "orientation_rule": "모든 캐릭터, 맵, 맵 내 사물은 정사각형 타일 기반 탑뷰 로그라이크 가독성을 위해 정면을 보게 제작한다.",
     "texture_filter": "nearest",
     "scale": "integer_preferred",
     "anti_aliasing": "avoid",
@@ -87,6 +90,11 @@
       "id": "minimal_readability",
       "name": "미니멀 가독성",
       "rule": "언더테일처럼 단순하고 읽기 쉬운 화면 구성을 우선한다."
+    },
+    {
+      "id": "front_facing_top_view",
+      "name": "정면 고정 탑뷰",
+      "rule": "정사각형 타일 기반 탑뷰 로그라이크이므로 캐릭터, 맵, 맵 내 사물은 모두 정면을 보며, 측면·후면·3/4·아이소메트릭 시점으로 제작하지 않는다."
     }
   ],
   "palette": {
@@ -240,6 +248,9 @@
       "positive_tokens": [
         "32x32 pixel art",
         "cute fox samurai",
+        "front-facing character",
+        "faces directly forward",
+        "square tile top-view roguelike readability",
         "large fox ears",
         "readable tail silhouette",
         "small sword",
@@ -253,6 +264,10 @@
         "high detail illustration",
         "smooth gradient",
         "anti-aliased edges",
+        "side view",
+        "back view",
+        "three-quarter view",
+        "isometric view",
         "glossy lighting",
         "oversized weapon",
         "aggressive dark fantasy"
@@ -261,6 +276,8 @@
     "connected_tileset": {
       "positive_tokens": [
         "32x32 connected tiles",
+        "top-down square tile view",
+        "front-facing map objects and props",
         "tileable edges",
         "clear terrain silhouette",
         "simple outline",
@@ -271,6 +288,9 @@
       "negative_tokens": [
         "single decorative icon",
         "non-tileable border",
+        "side-scrolling perspective",
+        "three-quarter object view",
+        "isometric perspective",
         "realistic texture",
         "complex lighting",
         "overcrowded detail"
@@ -298,6 +318,8 @@
     "background_concept": {
       "positive_tokens": [
         "low resolution pixel art background",
+        "top-down square tile map readability",
+        "front-facing in-map objects",
         "quiet tea road",
         "forest and river",
         "wabi-sabi wear",
@@ -308,6 +330,9 @@
       "negative_tokens": [
         "cinematic realism",
         "busy composition",
+        "side-view scene",
+        "three-quarter perspective",
+        "isometric view",
         "dramatic lens flare",
         "neon atmosphere",
         "high fantasy castle"
@@ -321,6 +346,7 @@
       "minimal shading",
       "low saturation",
       "cute fox samurai tea ceremony mood",
+      "front-facing assets for square-tile top-view roguelike",
       "wabi-sabi worn but warm details"
     ],
     "default_negative_suffix": [
@@ -331,6 +357,10 @@
       "glossy",
       "neon",
       "crowded composition",
+      "side view",
+      "back view",
+      "three-quarter view",
+      "isometric perspective",
       "extra RPG resource bars"
     ],
     "required_ui_resources": [

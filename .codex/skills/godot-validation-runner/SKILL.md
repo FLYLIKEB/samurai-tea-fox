@@ -1,6 +1,6 @@
 ---
 name: godot-validation-runner
-description: 이 Godot 4.x 프로젝트에서 변경 후 관련 테스트, headless Godot 검증, 빌드·import smoke check 결과를 확인하고 보고할 때 사용한다.
+description: 이 Godot 4.x 프로젝트에서 변경 후 관련 테스트, 창 없는 Godot 검증, 빌드·가져오기 기본 확인 결과를 확인하고 보고할 때 사용한다.
 metadata:
   short-description: Godot 테스트와 검증 실행
 ---

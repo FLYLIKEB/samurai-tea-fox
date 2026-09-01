@@ -1,6 +1,6 @@
 ---
 name: domain-boundary-guard
-description: Godot 도메인 모듈, UI, 입력 어댑터, 데이터 계층 변경에서 무사여우 기술 정본의 책임 경계를 지켜야 할 때 사용한다.
+description: Godot 도메인 모듈, 화면 구성, 입력 어댑터, 데이터 계층 변경에서 무사여우 기술 정본의 책임 경계를 지켜야 할 때 사용한다.
 metadata:
   short-description: 도메인 경계 위반 방지
 ---

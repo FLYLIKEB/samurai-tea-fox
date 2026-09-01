@@ -1,5 +1,5 @@
 interface:
   display_name: "AI 스프라이트 제작"
-  short_description: "노션 아트 DB 기준으로 AI 스프라이트를 생성·검수합니다."
+  short_description: "Notion 아트 데이터베이스 기준으로 AI 그림 조각을 생성·검수합니다."
 policy:
   allow_implicit_invocation: true

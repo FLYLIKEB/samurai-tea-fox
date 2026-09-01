@@ -1,5 +1,5 @@
 interface:
   display_name: "Notion 백로그 실행"
-  short_description: "Notion 백로그 한 건을 Issue와 PR로 실행합니다."
+  short_description: "Notion 백로그 한 건을 이슈와 PR로 실행합니다."
 policy:
   allow_implicit_invocation: true
