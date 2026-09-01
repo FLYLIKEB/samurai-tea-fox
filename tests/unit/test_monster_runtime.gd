@@ -3,6 +3,7 @@ extends RefCounted
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
 const CombatState = preload("res://src/combat/combat_state.gd")
 const CombatConfig = preload("res://src/combat/combat_config.gd")
+const CombatDummy = preload("res://src/combat/combat_dummy.gd")
 const MonsterDefinition = preload("res://src/enemy/monster_definition.gd")
 const MonsterSpawnFactory = preload("res://src/enemy/monster_spawn_factory.gd")
 
@@ -38,11 +39,28 @@ class HookProbe:
 	func on_drop_requested(event: Dictionary) -> void:
 		drop_events.append(event)
 
+class DummySignalProbe:
+	extends RefCounted
+	var defeated_no_arg_count := 0
+	var monster_defeat_events: Array = []
+	var defeat_events: Array = []
+
+	func on_defeated() -> void:
+		defeated_no_arg_count += 1
+
+	func on_monster_defeated(event: Dictionary) -> void:
+		monster_defeat_events.append(event)
+
+	func on_defeat_event(event: Dictionary) -> void:
+		defeat_events.append(event)
+
 func run(asserts) -> void:
 	_assert_generated_definitions_load(asserts)
 	_assert_spawn_factory_uses_same_runtime_for_two_monsters(asserts)
 	_assert_data_snapshot_changes_runtime_stats(asserts)
 	_assert_damage_stagger_death_and_drop_hooks(asserts)
+	_assert_damage_ignores_dead_and_zero_applied_hits(asserts)
+	_assert_combat_dummy_preserves_no_arg_defeated_signal(asserts)
 	_assert_invalid_data_is_rejected(asserts)
 
 func _assert_generated_definitions_load(asserts) -> void:
@@ -136,6 +154,74 @@ func _assert_damage_stagger_death_and_drop_hooks(asserts) -> void:
 	monster.apply_damage_event({"type": "damage", "source_id": "player", "damage": 1})
 	asserts.equal(probe.death_events.size(), 1, "monster death hook emits once")
 	asserts.equal(probe.drop_events.size(), 1, "monster drop request emits once")
+
+func _assert_damage_ignores_dead_and_zero_applied_hits(asserts) -> void:
+	var spawn_result: Dictionary = MonsterSpawnFactory.new(_runtime_catalog()).spawn(
+		"wild_dog",
+		{"combat_id": "wild_dog_zero"}
+	)
+	asserts.true_value(spawn_result.ok, "wild dog spawns for zero damage lifecycle")
+	if not spawn_result.ok:
+		return
+	var monster = spawn_result.monster
+	var probe := HookProbe.new()
+	monster.damaged.connect(probe.on_damaged)
+	monster.staggered.connect(probe.on_staggered)
+	monster.defeated.connect(probe.on_defeated)
+	monster.drop_requested.connect(probe.on_drop_requested)
+
+	var zero_damage: int = monster.apply_damage_event({
+		"type": "damage",
+		"source_id": "player",
+		"damage": 0,
+		"stagger": 99.0
+	})
+	asserts.equal(zero_damage, 0, "zero damage applies no monster damage")
+	asserts.equal(monster.hp, 42, "zero damage leaves monster HP unchanged")
+	asserts.equal(monster.received_damage_events.size(), 0, "zero applied damage is not recorded")
+	asserts.equal(monster.received_stagger_events.size(), 0, "zero applied damage does not create stagger history")
+	asserts.equal(probe.damage_events.size(), 0, "zero applied damage emits no damage hook")
+	asserts.equal(probe.stagger_events.size(), 0, "zero applied damage emits no stagger hook")
+
+	var killing_damage: int = monster.apply_damage_event({
+		"type": "damage",
+		"source_id": "player",
+		"damage": 99
+	})
+	asserts.equal(killing_damage, 42, "killing hit defeats monster")
+	asserts.equal(monster.received_damage_events.size(), 1, "killing hit is the only recorded damage event")
+	asserts.equal(probe.death_events.size(), 1, "killing hit emits one death event")
+	asserts.equal(probe.drop_events.size(), 1, "killing hit emits one drop request")
+
+	var dead_rehit: int = monster.apply_damage_event({
+		"type": "damage",
+		"source_id": "player",
+		"damage": 4,
+		"stagger": 99.0
+	})
+	asserts.equal(dead_rehit, 0, "dead monster re-hit returns zero early")
+	asserts.equal(monster.received_damage_events.size(), 1, "dead monster re-hit is not recorded")
+	asserts.equal(monster.received_stagger_events.size(), 0, "dead monster re-hit does not create stagger history")
+	asserts.equal(probe.death_events.size(), 1, "dead monster re-hit does not re-emit death")
+	asserts.equal(probe.drop_events.size(), 1, "dead monster re-hit does not re-request drops")
+
+func _assert_combat_dummy_preserves_no_arg_defeated_signal(asserts) -> void:
+	var dummy := CombatDummy.new()
+	var probe := DummySignalProbe.new()
+	dummy.defeated.connect(probe.on_defeated)
+	dummy.monster_defeated.connect(probe.on_monster_defeated)
+	dummy.defeat_event.connect(probe.on_defeat_event)
+	var event := {"type": "monster_defeated", "combat_id": "dummy_test", "definition_id": "wild_dog"}
+
+	dummy._on_monster_defeated(event)
+
+	asserts.equal(probe.defeated_no_arg_count, 1, "CombatDummy defeated remains no-arg compatible")
+	asserts.equal(probe.monster_defeat_events.size(), 1, "CombatDummy emits event-bearing monster_defeated signal")
+	asserts.equal(probe.defeat_events.size(), 1, "CombatDummy emits event-bearing defeat_event signal")
+	if not probe.monster_defeat_events.is_empty():
+		asserts.equal(probe.monster_defeat_events[0].combat_id, "dummy_test", "monster_defeated carries event")
+	if not probe.defeat_events.is_empty():
+		asserts.equal(probe.defeat_events[0].definition_id, "wild_dog", "defeat_event carries event")
 
 func _assert_invalid_data_is_rejected(asserts) -> void:
 	var missing: Dictionary = MonsterDefinition.from_dictionary({"id": "broken", "hp": 10, "attack": 1, "movement_speed": 1.0, "attack_period_seconds": 1.0})

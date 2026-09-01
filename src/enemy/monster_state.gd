@@ -36,8 +36,12 @@ func get_combat_id() -> String:
 	return combat_id
 
 func apply_damage_event(event: Dictionary) -> int:
+	if is_defeated():
+		return 0
 	var amount := maxi(int(event.get("damage", 0)), 0)
 	var applied := mini(amount, hp)
+	if applied <= 0:
+		return 0
 	var recorded := event.duplicate(true)
 	recorded["applied_damage"] = applied
 	received_damage_events.append(recorded)

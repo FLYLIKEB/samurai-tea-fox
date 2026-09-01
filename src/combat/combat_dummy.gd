@@ -5,7 +5,9 @@ const MonsterSpawnFactory = preload("res://src/enemy/monster_spawn_factory.gd")
 const TILE_SIZE_PIXELS := 32.0
 
 signal damaged(event: Dictionary, applied_damage: int)
-signal defeated(event: Dictionary)
+signal defeated()
+signal monster_defeated(event: Dictionary)
+signal defeat_event(event: Dictionary)
 signal drop_requested(event: Dictionary)
 
 @export var monster_id := "road_bandit"
@@ -92,7 +94,9 @@ func _update_health_bar() -> void:
 	health_fill.position.x = -7.0 + 7.0 * ratio
 
 func _on_monster_defeated(event: Dictionary) -> void:
-	defeated.emit(event)
+	defeated.emit()
+	monster_defeated.emit(event)
+	defeat_event.emit(event)
 
 func _on_monster_drop_requested(event: Dictionary) -> void:
 	drop_requested.emit(event)

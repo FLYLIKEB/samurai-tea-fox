@@ -39,6 +39,42 @@
         }
       ]
     },
+    "monsters": {
+      "source": "collection://monsters",
+      "items": [
+        {
+          "id": "road_bandit",
+          "name": "노상 도적",
+          "status": "테스트",
+          "kind": "도적·무사",
+          "biome": "일반",
+          "day_night": "둘 다",
+          "danger": 1,
+          "hp": 70,
+          "stagger_resistance": 2.0,
+          "attack": 10,
+          "movement_speed": 1.6,
+          "attack_period_seconds": 1.8,
+          "behavior_type": "근접",
+          "behavior_note": "정면 압박보다 길목을 막고 한두 번 베고 물러난다."
+        },
+        {
+          "id": "wild_dog",
+          "name": "들개",
+          "status": "초안",
+          "kind": "야생동물",
+          "biome": "일반",
+          "day_night": "둘 다",
+          "danger": 1,
+          "hp": 42,
+          "stagger_resistance": 0.5,
+          "attack": 7,
+          "movement_speed": 2.2,
+          "attack_period_seconds": 1.25,
+          "behavior_note": "짧게 거리를 두고 빙글 돌다가 직선으로 달려든다."
+        }
+      ]
+    },
     "balance": {
       "source": "collection://balance",
       "items": [
