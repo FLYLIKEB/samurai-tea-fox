@@ -11,7 +11,7 @@ metadata:
 
 ## 목표 결과
 
-각 작업은 전용 브랜치와 전용 git worktree에서 완료한다. 변경사항은 PR로 검토·머지하고, 이후 로컬 main worktree를 원격 main 상태로 fast-forward 동기화한다.
+각 작업은 전용 브랜치와 전용 git worktree에서 완료한다. 변경사항은 PR로 검토·머지하고, 이후 로컬 main worktree를 원격 main 상태로 fast-forward 동기화한다. 완료 보고 직전의 기준 checkout은 항상 `main` 브랜치여야 한다.
 
 ## 필수 워크플로
 
@@ -23,6 +23,7 @@ metadata:
 6. 작업 브랜치를 push하고 PR을 연다. 구현 요약, 검증 증거, 알려진 위험을 포함한다.
 7. PR이 준비되고 저장소의 check/review 조건을 만족한 뒤에만 머지한다. 저장소의 통상 머지 전략이 확인되면 그 방식을 사용하고, 확인되지 않으면 보수적인 merge commit 또는 명시된 사용자/프로젝트 관례를 따른다.
 8. 머지 후 관련 로컬 main checkout마다 `git fetch` 후 `git pull --ff-only`로 원격 main에 맞춘다. 작업 브랜치가 더 필요 없으면 작업 worktree 제거, 로컬 브랜치 삭제, 원격 브랜치 삭제, 오래된 worktree 메타데이터 prune을 수행한다.
+9. 마지막 검증과 완료 보고는 `main` worktree에서 수행한다. `git branch --show-current`가 `main`이 아니면 완료로 보고하지 않는다.
 
 ## PR 머지 후 안전 정리
 
@@ -39,6 +40,14 @@ metadata:
 
 가능하면 이 과정을 직접 명령으로 나누지 말고 `scripts/worktree_pr.sh finish-pr <PR>`를 사용한다. 이 명령은 현재 작업 브랜치와 PR head가 같은지 확인하고, main worktree를 찾아 동기화한 뒤, worktree 제거와 브랜치 정리를 순서대로 수행한다.
 
+## Main 복귀 규칙
+
+- 작업이 끝나면 항상 로컬 기준 checkout을 `main`으로 돌려놓는다.
+- PR 작업은 `scripts/worktree_pr.sh finish-pr <PR>`로 끝낸다. 이 명령은 main worktree가 없으면 기본 worktree를 안전하게 `main`으로 전환한 뒤 정리한다.
+- PR 없이 중단되거나 문서/검증만 수행한 작업도 마지막에 `scripts/worktree_pr.sh return-main [target-worktree]` 또는 동등한 안전 절차로 `main` 복귀를 확인한다.
+- `return-main`은 로컬 변경 파일과 `origin/main`으로 전환될 때 바뀌는 파일이 겹치면 중단한다. 이 경우 변경을 덮어쓰거나 stash하지 말고, 겹치는 파일 목록과 현재 브랜치를 보고한다.
+- 완료 보고에는 최종 브랜치가 `main`인지, `origin/main`과 동기화됐는지, 남아 있는 로컬 변경이 사용자의 기존 변경인지 구분해 적는다.
+
 ## 가드레일
 
 - 다른 작업의 브랜치나 worktree를 재사용하지 않는다.
@@ -51,6 +60,6 @@ metadata:
 
 ## 헬퍼 스크립트
 
-일반적인 저장소에서는 독립 worktree 생성, PR 생성, 머지 후 정리에 `scripts/worktree_pr.sh` 헬퍼를 우선 사용할 수 있다. 정확한 명령 형식이 필요하면 `scripts/worktree_pr.sh help`를 실행한다.
+일반적인 저장소에서는 독립 worktree 생성, PR 생성, 머지 후 정리, main 복귀에 `scripts/worktree_pr.sh` 헬퍼를 우선 사용할 수 있다. 정확한 명령 형식이 필요하면 `scripts/worktree_pr.sh help`를 실행한다.
 
 이 헬퍼는 안전한 setup/sync 작업과 PR 편의 명령으로 범위를 제한한다. 저장소별 테스트, 코드 리뷰 조건, 충돌 해결을 대체하지 않는다.

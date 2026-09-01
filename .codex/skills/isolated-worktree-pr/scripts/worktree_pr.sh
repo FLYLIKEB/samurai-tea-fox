@@ -7,6 +7,7 @@ Usage:
   worktree_pr.sh start <task-slug> [base-dir]
   worktree_pr.sh pr [title] [body-file]
   worktree_pr.sh finish-pr [pr-number|pr-url|branch] [main-worktree] [merge|squash|rebase]
+  worktree_pr.sh return-main [target-worktree]
   worktree_pr.sh sync-main [main-worktree]
   worktree_pr.sh help
 
@@ -53,6 +54,11 @@ worktree_for_branch() {
     '
 }
 
+primary_worktree() {
+  git worktree list --porcelain |
+    awk '/^worktree / { print substr($0, 10); exit }'
+}
+
 status_paths() {
   local target="$1"
   git -C "$target" status --porcelain --untracked-files=all |
@@ -61,16 +67,44 @@ status_paths() {
     sort -u
 }
 
-incoming_paths() {
+changed_paths_between_head_and_main() {
   local target="$1" remote="$2" main="$3"
-  git -C "$target" diff --name-only "HEAD..$remote/$main" | sort -u
+  git -C "$target" diff --name-only "HEAD...$remote/$main" | sort -u
 }
 
 ensure_pull_will_not_overlap_local_changes() {
   local target="$1" remote="$2" main="$3" overlap
-  overlap="$(comm -12 <(status_paths "$target") <(incoming_paths "$target" "$remote" "$main") || true)"
+  overlap="$(comm -12 <(status_paths "$target") <(changed_paths_between_head_and_main "$target" "$remote" "$main") || true)"
   if [[ -n "$overlap" ]]; then
     printf 'Refusing to sync: local changes would overlap incoming %s/%s files in %s:\n%s\n' "$remote" "$main" "$target" "$overlap" >&2
+    exit 2
+  fi
+}
+
+cmd_return_main() {
+  local target remote main current_branch
+  remote="$(remote_name)"
+  main="$(main_branch)"
+  target="${1:-$(repo_root)}"
+
+  git -C "$target" fetch "$remote" "$main" --prune
+  current_branch="$(git -C "$target" branch --show-current)"
+
+  if [[ "$current_branch" != "$main" ]]; then
+    ensure_pull_will_not_overlap_local_changes "$target" "$remote" "$main"
+    if git -C "$target" show-ref --verify --quiet "refs/heads/$main"; then
+      git -C "$target" switch "$main"
+    else
+      git -C "$target" switch -c "$main" --track "$remote/$main"
+    fi
+  fi
+
+  ensure_pull_will_not_overlap_local_changes "$target" "$remote" "$main"
+  git -C "$target" pull --ff-only "$remote" "$main"
+
+  current_branch="$(git -C "$target" branch --show-current)"
+  if [[ "$current_branch" != "$main" ]]; then
+    printf 'Return-to-main failed: target worktree is on %s, expected %s: %s\n' "$current_branch" "$main" "$target" >&2
     exit 2
   fi
 }
@@ -197,11 +231,15 @@ cmd_finish_pr() {
     main_worktree="$(worktree_for_branch "$main")"
   fi
   if [[ -z "$main_worktree" ]]; then
-    printf 'Could not find a local worktree for %s. Pass it explicitly as the second argument.\n' "$main" >&2
-    exit 2
+    main_worktree="$(primary_worktree)"
+    if [[ -z "$main_worktree" || "$main_worktree" == "$root" ]]; then
+      printf 'Could not find or prepare a local worktree for %s. Pass it explicitly as the second argument.\n' "$main" >&2
+      exit 2
+    fi
+    cmd_return_main "$main_worktree"
+  else
+    cmd_sync_main "$main_worktree"
   fi
-
-  cmd_sync_main "$main_worktree"
 
   if git ls-remote --exit-code --heads "$remote" "$head_ref" >/dev/null 2>&1; then
     git push "$remote" --delete "$head_ref"
@@ -254,6 +292,10 @@ case "${1:-help}" in
   finish-pr)
     shift
     cmd_finish_pr "$@"
+    ;;
+  return-main)
+    shift
+    cmd_return_main "$@"
     ;;
   sync-main)
     shift
