@@ -44,7 +44,9 @@ class NotionExportPipelineTests(unittest.TestCase):
         )
         self.assertNotIn("day_phase_duration_seconds", [item["id"] for item in confirmed["balance"]["items"]])
         self.assertNotIn("player_hp_max", [item["id"] for item in confirmed["balance"]["items"]])
+        self.assertNotIn("biome_min_resource_nodes", [item["id"] for item in confirmed["balance"]["items"]])
         self.assertIn("player_hp_max", [item["id"] for item in confirmed_test["balance"]["items"]])
+        self.assertIn("biome_min_resource_nodes", [item["id"] for item in confirmed_test["balance"]["items"]])
         self.assertEqual([item["id"] for item in confirmed["abilities"]["items"]], [])
         self.assertEqual(
             [item["id"] for item in confirmed_test["abilities"]["items"]],
@@ -272,6 +274,36 @@ class NotionExportPipelineTests(unittest.TestCase):
             with self.subTest(page_id=page_id):
                 self.assertEqual(runtime_id_map["notion_pages"][page_id], stable_id)
                 self.assertEqual(runtime_id_map["legacy_names"]["balance"][korean_name], stable_id)
+
+    def test_dev_9_general_biome_balance_export_is_present(self):
+        generated = ROOT / "data/generated"
+        self.pipeline.validate_directory(generated)
+
+        balance = {
+            item["id"]: item
+            for item in json.loads((generated / "balance.json").read_text(encoding="utf-8"))["items"]
+        }
+        minimum = balance["biome_min_resource_nodes"]
+
+        self.assertEqual(minimum["name"], "일반 바이옴 최소 자원 노드 수")
+        self.assertEqual(minimum["notion_id"], "3ce37369-9e66-81a1-8047-c02aad9c81dc")
+        self.assertEqual(minimum["status"], "테스트")
+        self.assertEqual(minimum["category"], "월드")
+        self.assertEqual(minimum["unit"], "개")
+        self.assertEqual(minimum["value"], 9)
+
+    def test_dev_9_biome_export_uses_sot_resource_field_only(self):
+        generated = ROOT / "data/generated"
+        self.pipeline.validate_directory(generated)
+
+        biomes = {
+            item["id"]: item
+            for item in json.loads((generated / "biomes.json").read_text(encoding="utf-8"))["items"]
+        }
+        common = biomes["common_region"]
+
+        self.assertEqual(common["resources"], "목재, 돌, 점토, 기본 식재료, 일반 찻잎")
+        self.assertNotIn("resource_item_ids", common)
 
     def test_validate_directory_rejects_unsupported_schema_version(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -28,13 +28,13 @@ func _ready() -> void:
 		push_error(dummy_combat_result.error)
 		return
 
-	var biomes: Array = catalog.get_definitions("biomes")
-	if biomes.is_empty():
-		push_error("No biome data loaded.")
+	var common_biome: Dictionary = catalog.find_by_id("biomes", "common_region")
+	if common_biome.is_empty():
+		push_error("No common biome data loaded.")
 		return
 
 	var generator := WorldGenerator.new()
-	generated_world = generator.generate(11037, catalog.data_version, biomes[0], catalog.get_definitions("balance"))
+	generated_world = generator.generate(11037, catalog.data_version, common_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
 
 func _physics_process(_delta: float) -> void:
 	var desktop_command = _desktop_adapter.poll_movement_command()
