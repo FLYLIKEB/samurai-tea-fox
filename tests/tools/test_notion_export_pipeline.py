@@ -135,42 +135,66 @@ class NotionExportPipelineTests(unittest.TestCase):
                 "notion_id": "3ce37369-9e66-8142-bdd7-e6eaff3fe967",
                 "unit": "초",
                 "value": 300,
+                "description": "낮 상태의 프로토타입 지속시간",
+                "formula_note": "낮에는 心 감소가 없다. DEV-6 프로토타입 시간대 전이값.",
             },
             "dusk_phase_duration_seconds": {
                 "name": "해질녘 지속시간",
                 "notion_id": "3ce37369-9e66-8137-8069-e0b914681ae1",
                 "unit": "초",
                 "value": 120,
+                "description": "해질녘 상태의 프로토타입 지속시간",
+                "formula_note": "DEV-6 프로토타입 시간대 전이값.",
             },
             "night_phase_duration_seconds": {
                 "name": "밤 지속시간",
                 "notion_id": "3ce37369-9e66-8191-91c3-c04612c42293",
                 "unit": "초",
                 "value": 240,
+                "description": "밤 상태의 프로토타입 지속시간",
+                "formula_note": "DEV-6 프로토타입 시간대 전이값.",
             },
             "late_night_phase_duration_seconds": {
                 "name": "심야 지속시간",
                 "notion_id": "3ce37369-9e66-817b-a89d-e63126a7d7e3",
                 "unit": "초",
                 "value": 180,
+                "description": "심야 상태의 프로토타입 지속시간",
+                "formula_note": "완료 후 낮으로 순환한다. DEV-6 프로토타입 시간대 전이값.",
             },
             "dusk_kokoro_decay_per_second": {
                 "name": "해질녘 心 감소율",
                 "notion_id": "3ce37369-9e66-810d-a412-c015501c1281",
                 "unit": "point/초",
                 "value": 0.02,
+                "description": "해질녘부터 적용되는 心 감소율",
+                "formula_note": "낮 0 < 해질녘 < 밤 < 심야 순으로 증가한다.",
             },
             "night_kokoro_decay_per_second": {
                 "name": "밤 心 감소율",
                 "notion_id": "3ce37369-9e66-81c2-a7e6-fd48e5eb07d9",
                 "unit": "point/초",
                 "value": 0.05,
+                "description": "밤의 心 감소율",
+                "formula_note": "낮 0 < 해질녘 < 밤 < 심야 순으로 증가한다.",
             },
             "late_night_kokoro_decay_per_second": {
                 "name": "심야 心 감소율",
                 "notion_id": "3ce37369-9e66-815b-872c-e2edbf7fcabd",
                 "unit": "point/초",
                 "value": 0.1,
+                "description": "심야의 心 감소율",
+                "formula_note": "낮 0 < 해질녘 < 밤 < 심야 순으로 증가한다.",
+            },
+            "safe_sleep_hp_recovery_ratio": {
+                "name": "안전 수면 HP 회복 비율",
+                "notion_id": "3ce37369-9e66-81f9-af8d-f2ba12d04d47",
+                "category": "플레이어",
+                "unit": "비율",
+                "status": "확정",
+                "value": 0.2,
+                "description": "해질녘·밤에 안전 지점에서 수면 시 최대 HP 기준 회복 비율",
+                "formula_note": "sleep_heal = max_hp × 0.20. 心은 완전 회복하며 차·기운은 자동 회복하지 않는다.",
             },
         }
 
@@ -179,11 +203,12 @@ class NotionExportPipelineTests(unittest.TestCase):
                 self.assertEqual(balance[item_id]["id"], item_id)
                 self.assertEqual(balance[item_id]["name"], expected["name"])
                 self.assertEqual(balance[item_id]["notion_id"], expected["notion_id"])
-                self.assertEqual(balance[item_id]["status"], "테스트")
-                self.assertEqual(balance[item_id]["category"], "心")
+                self.assertEqual(balance[item_id]["status"], expected.get("status", "테스트"))
+                self.assertEqual(balance[item_id]["category"], expected.get("category", "心"))
                 self.assertEqual(balance[item_id]["unit"], expected["unit"])
                 self.assertEqual(balance[item_id]["value"], expected["value"])
-        self.assertEqual(balance["safe_sleep_hp_recovery_ratio"]["value"], 0.2)
+                self.assertEqual(balance[item_id]["description"], expected["description"])
+                self.assertEqual(balance[item_id]["formula_note"], expected["formula_note"])
 
     def test_dev_6_runtime_id_map_preserves_exact_notion_rows(self):
         runtime_id_map = json.loads(RUNTIME_ID_MAP.read_text(encoding="utf-8"))
@@ -195,6 +220,7 @@ class NotionExportPipelineTests(unittest.TestCase):
             "3ce37369-9e66-810d-a412-c015501c1281": ("해질녘 心 감소율", "dusk_kokoro_decay_per_second"),
             "3ce37369-9e66-81c2-a7e6-fd48e5eb07d9": ("밤 心 감소율", "night_kokoro_decay_per_second"),
             "3ce37369-9e66-815b-872c-e2edbf7fcabd": ("심야 心 감소율", "late_night_kokoro_decay_per_second"),
+            "3ce37369-9e66-81f9-af8d-f2ba12d04d47": ("안전 수면 HP 회복 비율", "safe_sleep_hp_recovery_ratio"),
         }
 
         for page_id, (korean_name, stable_id) in expected.items():

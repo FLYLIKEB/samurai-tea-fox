@@ -6,6 +6,7 @@
     "3ce37369-9e66-8142-bdd7-e6eaff3fe967": "day_phase_duration_seconds",
     "3ce37369-9e66-815b-872c-e2edbf7fcabd": "late_night_kokoro_decay_per_second",
     "3ce37369-9e66-817b-a89d-e63126a7d7e3": "late_night_phase_duration_seconds",
+    "3ce37369-9e66-81f9-af8d-f2ba12d04d47": "safe_sleep_hp_recovery_ratio",
     "3ce37369-9e66-8191-91c3-c04612c42293": "night_phase_duration_seconds",
     "3ce37369-9e66-81c2-a7e6-fd48e5eb07d9": "night_kokoro_decay_per_second"
   },
