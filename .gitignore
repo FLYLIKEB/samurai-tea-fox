@@ -36,6 +36,7 @@ __pycache__/
 
 # Local asset tool backups
 tools/asset_browser/palette_backups/
+tools/asset_browser/paint_backups/
 
 # Local ImageGen source drops
 assets/source/imagegen/
