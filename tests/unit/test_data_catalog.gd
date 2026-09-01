@@ -11,6 +11,7 @@ func run(asserts) -> void:
 	asserts.equal(int(catalog.find_balance_value("player_hp_max")), 100, "player HP max comes from balance data")
 	asserts.equal(catalog.find_by_id("biomes", "common_region").name, "일반 지역", "common biome is present")
 	asserts.equal(catalog.find_by_id("events", "roadside_teahouse_intro").get("replay_policy", ""), "once", "narrative event definitions are present")
+	asserts.equal(catalog.find_by_id("choices", "daimyo_relinquish_tea").get("choice_key", ""), "DAIMYO_RELINQUISH_TEA", "choice result definitions are present")
 
 	var validator := DataSchemaValidator.new()
 	var duplicate_result := validator.validate_export_file({
@@ -82,6 +83,20 @@ func run(asserts) -> void:
 		"events": {"required_fields": ["id"]}
 	})
 	asserts.true_value(flag_without_items.ok, "set_run_flag-only events do not require items definitions")
+
+	var choice_without_definitions := validator.validate_catalog({
+		"events": [_event_with_result({"type": "apply_choice", "id": "missing_choice"})]
+	}, {
+		"events": {"required_fields": ["id"]}
+	})
+	asserts.false_value(choice_without_definitions.ok, "apply_choice requires the choices dataset")
+
+	var invalid_choice := validator.validate_catalog({
+		"choices": [{"id": "broken_choice", "name": "Broken", "status": "확정", "choice_key": "BROKEN_CHOICE"}]
+	}, {
+		"choices": {"required_fields": ["id", "name", "status", "choice_key", "run_flag", "display_text", "resolution", "meta_record", "target_survives", "philosophy_marks", "final_room_effect"]}
+	})
+	asserts.false_value(invalid_choice.ok, "choice definitions require the complete result contract")
 
 	var short_attachment_description_result := validator.validate_catalog({
 		"items": [{

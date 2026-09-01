@@ -16,6 +16,11 @@ var crafting_unlocks := []
 var narrative_flags := []
 var narrative_event_counts := {}
 var consumables := {}
+var choice_history := []
+var choice_group_selections := {}
+var target_survival := {}
+var philosophy_marks := []
+var final_room_effects := []
 
 static func from_dictionary(data: Dictionary):
 	var state: RunState = load("res://src/save/run_state.gd").new()
@@ -34,6 +39,11 @@ static func from_dictionary(data: Dictionary):
 	state.narrative_flags = _array_value(data.get("narrative_flags", []))
 	state.narrative_event_counts = _dictionary_value(data.get("narrative_event_counts", {}))
 	state.consumables = _dictionary_value(data.get("consumables", {}))
+	state.choice_history = _array_value(data.get("choice_history", []))
+	state.choice_group_selections = _dictionary_value(data.get("choice_group_selections", {}))
+	state.target_survival = _dictionary_value(data.get("target_survival", {}))
+	state.philosophy_marks = _array_value(data.get("philosophy_marks", []))
+	state.final_room_effects = _array_value(data.get("final_room_effects", []))
 	return state
 
 func reset_biome_progression() -> void:
@@ -59,7 +69,12 @@ func to_dictionary() -> Dictionary:
 		"crafting_unlocks": crafting_unlocks.duplicate(true),
 		"narrative_flags": narrative_flags.duplicate(true),
 		"narrative_event_counts": narrative_event_counts.duplicate(true),
-		"consumables": consumables.duplicate(true)
+		"consumables": consumables.duplicate(true),
+		"choice_history": choice_history.duplicate(true),
+		"choice_group_selections": choice_group_selections.duplicate(true),
+		"target_survival": target_survival.duplicate(true),
+		"philosophy_marks": philosophy_marks.duplicate(true),
+		"final_room_effects": final_room_effects.duplicate(true)
 	}
 
 static func _dictionary_value(value) -> Dictionary:

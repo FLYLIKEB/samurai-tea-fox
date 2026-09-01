@@ -17,7 +17,7 @@ def canonical_json_bytes(value: Any) -> bytes:
 
 class ExportPipeline:
     EVENT_REPLAY_POLICIES = {"once", "repeat"}
-    EVENT_RESULT_TYPES = {"set_run_flag", "grant_item"}
+    EVENT_RESULT_TYPES = {"set_run_flag", "grant_item", "apply_choice"}
 
     def __init__(self, schema: dict[str, Any]):
         self.schema = schema
@@ -159,11 +159,38 @@ class ExportPipeline:
         return sorted(included, key=lambda item: item["id"])
 
     def _validate_row_contract(self, dataset_name: str, row: dict[str, Any]) -> None:
+        if dataset_name == "choices":
+            self._validate_choice_contract(row)
+            return
         if dataset_name != "items":
             return
         if row.get("type") != "다구" or row.get("equipment_slot") != "다구":
             return
         self._validate_attachment_stage_data(row)
+
+    def _validate_choice_contract(self, row: dict[str, Any]) -> None:
+        choice_id = row.get("id", "")
+        choice_key = row.get("choice_key")
+        if not isinstance(choice_key, str) or not re.fullmatch(r"[A-Z][A-Z0-9_]*", choice_key):
+            raise ExportValidationError(f"choices item {choice_id}: invalid choice_key {choice_key}")
+        run_flag = row.get("run_flag")
+        if not isinstance(run_flag, str) or not re.fullmatch(self.schema["stable_id_pattern"], run_flag):
+            raise ExportValidationError(f"choices item {choice_id}: invalid run_flag {run_flag}")
+        for field in ("meta_record", "target_survives"):
+            if not isinstance(row.get(field), bool):
+                raise ExportValidationError(f"choices item {choice_id}: {field} must be a boolean")
+        philosophy_marks = row.get("philosophy_marks")
+        if not isinstance(philosophy_marks, list) or any(
+            not isinstance(mark, str) or not mark.strip() for mark in philosophy_marks
+        ):
+            raise ExportValidationError(
+                f"choices item {choice_id}: philosophy_marks must contain non-empty strings"
+            )
+        conditions = row.get("conditions", [])
+        if not isinstance(conditions, list) or any(not isinstance(condition, dict) for condition in conditions):
+            raise ExportValidationError(
+                f"choices item {choice_id}: conditions must be an array of objects"
+            )
 
     def _validate_attachment_stage_data(self, row: dict[str, Any]) -> None:
         item_id = row.get("id", "")
@@ -245,9 +272,18 @@ class ExportPipeline:
                 snapshots["events"]["items"],
                 ids_by_dataset.get("items", set()),
                 "items" in ids_by_dataset,
+                ids_by_dataset.get("choices", set()),
+                "choices" in ids_by_dataset,
             )
 
-    def _validate_events(self, events: list[dict[str, Any]], item_ids: set[str], items_available: bool) -> None:
+    def _validate_events(
+        self,
+        events: list[dict[str, Any]],
+        item_ids: set[str],
+        items_available: bool,
+        choice_ids: set[str],
+        choices_available: bool,
+    ) -> None:
         stable_id = re.compile(self.schema["stable_id_pattern"])
         for event in events:
             replay_policy = event.get("replay_policy")
@@ -297,7 +333,7 @@ class ExportPipeline:
                         raise ExportValidationError(
                             f"events item {event['id']} node {node_id} option {option_id}: results must be an array"
                         )
-                    self._validate_event_results(event["id"], node_id, option_id, results, item_ids, items_available, stable_id)
+                    self._validate_event_results(event["id"], node_id, option_id, results, item_ids, items_available, choice_ids, choices_available, stable_id)
                 nodes_by_id[node_id] = node
 
             if start_node_id not in nodes_by_id:
@@ -321,8 +357,11 @@ class ExportPipeline:
         results: list[Any],
         item_ids: set[str],
         items_available: bool,
+        choice_ids: set[str],
+        choices_available: bool,
         stable_id: re.Pattern[str],
     ) -> None:
+        choice_result_count = 0
         for result_index, result in enumerate(results):
             if not isinstance(result, dict):
                 raise ExportValidationError(
@@ -351,6 +390,20 @@ class ExportPipeline:
                 if result_id not in item_ids:
                     raise ExportValidationError(
                         f"events item {event_id} node {node_id} option {option_id}: grant_item targets missing item id {result_id}"
+                    )
+            if result_type == "apply_choice":
+                choice_result_count += 1
+                if choice_result_count > 1:
+                    raise ExportValidationError(
+                        f"events item {event_id} node {node_id} option {option_id}: multiple apply_choice results are not allowed"
+                    )
+                if not choices_available:
+                    raise ExportValidationError(
+                        f"events item {event_id} node {node_id} option {option_id}: apply_choice targets missing dataset choices"
+                    )
+                if result_id not in choice_ids:
+                    raise ExportValidationError(
+                        f"events item {event_id} node {node_id} option {option_id}: apply_choice targets missing choice id {result_id}"
                     )
 
     def _validate_event_completion_paths(

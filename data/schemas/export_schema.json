@@ -40,7 +40,7 @@
       }
     },
     "choices": {
-      "file": "choices.json", "required_fields": ["id", "name", "status"],
+      "file": "choices.json", "required_fields": ["id", "name", "status", "choice_key", "run_flag", "display_text", "resolution", "meta_record", "target_survives", "philosophy_marks", "final_room_effect"],
       "notion": {
         "source": "collection://943e27c2-91e1-40ec-a5e9-30ef62737a40", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "선택 ID", "id_prefix": "choice", "stable_id_field": "선택 키",
         "field_map": {"선택 키": "choice_key", "Run Flag": "run_flag", "표시 문구": "display_text", "해결 방식": "resolution", "Meta 기록": "meta_record", "대상 생존": "target_survives", "철학 흔적": "philosophy_marks", "최종 다실 영향": "final_room_effect"}

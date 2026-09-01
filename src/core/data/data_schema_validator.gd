@@ -75,12 +75,12 @@ func validate_catalog(definitions: Dictionary, dataset_rules: Dictionary) -> Dic
 					if not ids_by_dataset[target_dataset].has(target_id):
 						return {"ok": false, "error": "%s item '%s' relation '%s' targets missing id '%s'." % [dataset_name, item.id, field, target_id]}
 	if definitions.has("events"):
-		var event_result := _validate_event_result_items(definitions.events, ids_by_dataset)
+		var event_result := _validate_event_result_references(definitions.events, ids_by_dataset)
 		if not event_result.ok:
 			return event_result
 	return {"ok": true}
 
-func _validate_event_result_items(events: Array, ids_by_dataset: Dictionary) -> Dictionary:
+func _validate_event_result_references(events: Array, ids_by_dataset: Dictionary) -> Dictionary:
 	for event in events:
 		var nodes = event.get("nodes", [])
 		if typeof(nodes) != TYPE_ARRAY:
@@ -98,7 +98,17 @@ func _validate_event_result_items(events: Array, ids_by_dataset: Dictionary) -> 
 				if typeof(results) != TYPE_ARRAY:
 					continue
 				for result in results:
-					if typeof(result) != TYPE_DICTIONARY or String(result.get("type", "")) != "grant_item":
+					if typeof(result) != TYPE_DICTIONARY:
+						continue
+					var result_type := String(result.get("type", ""))
+					if result_type == "apply_choice":
+						if not ids_by_dataset.has("choices"):
+							return {"ok": false, "error": "events item '%s' option '%s' apply_choice targets missing dataset 'choices'." % [event.get("id", ""), option.get("id", "")]}
+						var choice_id := String(result.get("id", ""))
+						if not ids_by_dataset.choices.has(choice_id):
+							return {"ok": false, "error": "events item '%s' option '%s' apply_choice targets missing choice id '%s'." % [event.get("id", ""), option.get("id", ""), choice_id]}
+						continue
+					if result_type != "grant_item":
 						continue
 					if not ids_by_dataset.has("items"):
 						return {"ok": false, "error": "events item '%s' option '%s' grant_item targets missing dataset 'items'." % [event.get("id", ""), option.get("id", "")]}
@@ -108,11 +118,26 @@ func _validate_event_result_items(events: Array, ids_by_dataset: Dictionary) -> 
 	return {"ok": true}
 
 func _validate_item_contract(dataset_name: String, item: Dictionary) -> Dictionary:
+	if dataset_name == "choices":
+		return _validate_choice_contract(item)
 	if dataset_name != "items":
 		return {"ok": true}
 	if String(item.get("type", "")) != "다구" or String(item.get("equipment_slot", "")) != "다구":
 		return {"ok": true}
 	return _validate_attachment_stage_data(item)
+
+func _validate_choice_contract(item: Dictionary) -> Dictionary:
+	for field in ["meta_record", "target_survives"]:
+		if typeof(item.get(field)) != TYPE_BOOL:
+			return {"ok": false, "error": "choices item '%s' field '%s' must be a boolean." % [item.id, field]}
+	if typeof(item.get("philosophy_marks")) != TYPE_ARRAY:
+		return {"ok": false, "error": "choices item '%s' philosophy_marks must be an array." % item.id}
+	var run_flag := String(item.get("run_flag", ""))
+	var id_pattern := RegEx.new()
+	id_pattern.compile("^[a-z][a-z0-9_]*$")
+	if id_pattern.search(run_flag) == null:
+		return {"ok": false, "error": "choices item '%s' has invalid run_flag '%s'." % [item.id, run_flag]}
+	return {"ok": true}
 
 func _validate_attachment_stage_data(item: Dictionary) -> Dictionary:
 	for field in ["attachment_stage_thresholds", "attachment_description_keys"]:

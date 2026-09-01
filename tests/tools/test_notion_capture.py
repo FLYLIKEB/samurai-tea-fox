@@ -108,6 +108,31 @@ class NotionCaptureTests(unittest.TestCase):
         self.assertEqual(recipe["unlock_biome_id"], "biome_2")
         self.assertEqual(snapshots["recipes"]["items"][0]["id"], "recipe_3")
 
+    def test_stable_id_field_is_normalized_for_runtime_id(self):
+        schema = {
+            **self.schema,
+            "datasets": {
+                "choices": {
+                    "file": "choices.json",
+                    "required_fields": ["id", "name", "status", "choice_key"],
+                    "notion": {
+                        "source": "collection://choices",
+                        "title_field": "이름",
+                        "status_field": "설정 상태",
+                        "unique_id_field": "선택 ID",
+                        "id_prefix": "choice",
+                        "stable_id_field": "선택 키",
+                        "field_map": {"선택 키": "choice_key"},
+                    },
+                }
+            },
+        }
+        rows = {"choices": [{"_notion_id": "choice-page", "선택 ID": {"number": 5}, "이름": "선택", "설정 상태": "확정", "선택 키": "DAIMYO_RELINQUISH_TEA"}]}
+        capture = CaptureBuilder(schema).build_from_rows(rows, "choice-v1")
+        item = capture["datasets"]["choices"]["items"][0]
+        self.assertEqual(item["id"], "daimyo_relinquish_tea")
+        self.assertEqual(item["choice_key"], "DAIMYO_RELINQUISH_TEA")
+
     def test_missing_relation_target_fails_during_capture(self):
         self.rows["recipes"][0]["결과 아이템"] = ["missing-page"]
         with self.assertRaisesRegex(ExportValidationError, "recipes.*result_item_id.*missing-page"):
