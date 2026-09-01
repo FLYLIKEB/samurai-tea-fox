@@ -22,21 +22,16 @@ class LayoutMixin:
         style.configure("TNotebook", background=PANEL, borderwidth=0)
         style.configure("TNotebook.Tab", padding=(12, 5))
 
-        toolbar = tk.Frame(self, bg=PANEL, padx=10, pady=8)
+        toolbar = tk.Frame(self, bg=PANEL, padx=8, pady=5)
         toolbar.pack(side=tk.TOP, fill=tk.X)
 
-        tk.Label(toolbar, text="폴더", bg=PANEL, fg=TEXT).grid(row=0, column=0, sticky="w")
         path_entry = tk.Entry(toolbar, textvariable=self.path_var, bg=BG, fg=TEXT, relief=tk.FLAT)
-        path_entry.grid(row=0, column=1, sticky="ew", padx=(6, 6))
+        path_entry.grid(row=0, column=0, sticky="ew", padx=(0, 6))
 
-        self._button(toolbar, "찾기", self.choose_root).grid(row=0, column=2, padx=2)
-        self._button(toolbar, "새로고침", self.rescan).grid(row=0, column=3, padx=2)
+        self._button(toolbar, "찾기", self.choose_root).grid(row=0, column=1, padx=1)
+        self._button(toolbar, "새로고침", self.rescan).grid(row=0, column=2, padx=1)
         self._button(toolbar, "Finder에서 폴더 보기", self.reveal_asset_root).grid(
-            row=0, column=4, padx=2
-        )
-
-        tk.Label(toolbar, text="필터", bg=PANEL, fg=TEXT).grid(
-            row=1, column=0, sticky="w", pady=(8, 0)
+            row=0, column=3, padx=(1, 8)
         )
         filter_entry = tk.Entry(
             toolbar,
@@ -46,32 +41,30 @@ class LayoutMixin:
             relief=tk.FLAT,
             insertbackground=TEXT,
         )
-        filter_entry.grid(row=1, column=1, sticky="ew", padx=(6, 6), pady=(8, 0))
+        filter_entry.grid(row=0, column=4, sticky="ew", padx=(0, 6))
         filter_entry.bind("<KeyRelease>", lambda _event: self.apply_filter())
 
         scale_box = tk.OptionMenu(toolbar, self.scale_var, *SCALE_CHOICES, command=self._scale_changed)
         scale_box.configure(bg=BG, fg=TEXT, activebackground=PANEL, relief=tk.FLAT, width=6)
         scale_box["menu"].configure(bg=BG, fg=TEXT)
-        scale_box.grid(row=1, column=2, padx=2, pady=(8, 0))
-        tk.Label(toolbar, text="배율", bg=PANEL, fg=MUTED).grid(
-            row=1, column=3, sticky="w", pady=(8, 0)
-        )
+        scale_box.grid(row=0, column=5, padx=(0, 2))
 
-        toolbar.columnconfigure(1, weight=1)
+        toolbar.columnconfigure(0, weight=3)
+        toolbar.columnconfigure(4, weight=2)
 
-        actions = tk.Frame(self, bg=BG, padx=10, pady=8)
+        actions = tk.Frame(self, bg=BG, padx=8, pady=5)
         actions.pack(side=tk.TOP, fill=tk.X)
 
-        self._button(actions, "전체 선택", self.select_all).pack(side=tk.LEFT, padx=(0, 6))
-        self._button(actions, "선택 해제", self.clear_selection).pack(side=tk.LEFT, padx=(0, 14))
-        self._button(actions, "상대경로 복사", self.copy_relative_paths).pack(side=tk.LEFT, padx=(0, 6))
-        self._button(actions, "절대경로 복사", self.copy_absolute_paths).pack(side=tk.LEFT, padx=(0, 6))
+        self._button(actions, "전체 선택", self.select_all).pack(side=tk.LEFT, padx=(0, 4))
+        self._button(actions, "선택 해제", self.clear_selection).pack(side=tk.LEFT, padx=(0, 8))
+        self._button(actions, "상대경로 복사", self.copy_relative_paths).pack(side=tk.LEFT, padx=(0, 4))
+        self._button(actions, "절대경로 복사", self.copy_absolute_paths).pack(side=tk.LEFT, padx=(0, 4))
         self._button(actions, "Codex 프롬프트 복사", self.copy_codex_prompt).pack(
-            side=tk.LEFT, padx=(0, 6)
+            side=tk.LEFT, padx=(0, 4)
         )
         self._button(actions, "TXT 저장", self.save_txt).pack(side=tk.LEFT)
         self._button(actions, "표시 이미지 실제 변환", self.apply_palette_to_shown_images).pack(
-            side=tk.LEFT, padx=(14, 0)
+            side=tk.LEFT, padx=(8, 0)
         )
         preview_toggle = tk.Checkbutton(
             actions,
@@ -84,11 +77,11 @@ class LayoutMixin:
             activeforeground=TEXT,
             selectcolor=PANEL,
             relief=tk.FLAT,
-            padx=10,
+            padx=6,
         )
         preview_toggle.pack(side=tk.RIGHT)
 
-        self.bottom_panel = tk.Frame(self, bg=PANEL, padx=8, pady=4)
+        self.bottom_panel = tk.Frame(self, bg=PANEL, padx=8, pady=3)
         self.bottom_panel.pack(side=tk.BOTTOM, fill=tk.X)
 
         self.bottom_bar = tk.Frame(self.bottom_panel, bg=PANEL)
@@ -107,7 +100,7 @@ class LayoutMixin:
             bg=PANEL,
             fg=MUTED,
             padx=0,
-            pady=4,
+            pady=3,
         )
         status.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
@@ -116,9 +109,9 @@ class LayoutMixin:
         notebook = ttk.Notebook(self.bottom_content)
         notebook.pack(side=tk.TOP, fill=tk.X)
 
-        prompt_panel = tk.Frame(notebook, bg=PANEL, padx=6, pady=6)
-        template_panel = tk.Frame(notebook, bg=PANEL, padx=6, pady=6)
-        style_panel = tk.Frame(notebook, bg=PANEL, padx=6, pady=6)
+        prompt_panel = tk.Frame(notebook, bg=PANEL, padx=5, pady=5)
+        template_panel = tk.Frame(notebook, bg=PANEL, padx=5, pady=5)
+        style_panel = tk.Frame(notebook, bg=PANEL, padx=5, pady=5)
         notebook.add(prompt_panel, text="복사 프롬프트")
         notebook.add(template_panel, text="기본 템플릿")
         notebook.add(style_panel, text="스타일 토큰")
@@ -137,7 +130,7 @@ class LayoutMixin:
 
         self.prompt_text = tk.Text(
             prompt_panel,
-            height=4,
+            height=3,
             bg=BG,
             fg=TEXT,
             insertbackground=TEXT,
@@ -188,7 +181,7 @@ class LayoutMixin:
 
         self.template_text = tk.Text(
             template_panel,
-            height=4,
+            height=3,
             bg=BG,
             fg=TEXT,
             insertbackground=TEXT,
@@ -243,7 +236,7 @@ class LayoutMixin:
         style_text_frame.pack(side=tk.TOP, fill=tk.X)
         self.style_text = tk.Text(
             style_text_frame,
-            height=4,
+            height=3,
             bg=BG,
             fg=TEXT,
             insertbackground=TEXT,
@@ -286,9 +279,9 @@ class LayoutMixin:
             activebackground=PANEL,
             activeforeground=TEXT,
             relief=tk.FLAT,
-            padx=10,
-            pady=5,
-            highlightthickness=1,
+            padx=8,
+            pady=3,
+            highlightthickness=0,
             highlightbackground=BORDER,
         )
 

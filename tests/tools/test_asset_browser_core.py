@@ -40,6 +40,13 @@ class AssetBrowserCoreTest(unittest.TestCase):
             [("sprites", ["fox.png"]), ("tiles", ["grass.png", "water.png"])],
         )
 
+    def test_thumbnail_scale_keeps_32px_assets_at_4x_inside_128px_box(self) -> None:
+        scaled_size = core.AssetBrowser._scaled_size
+
+        self.assertEqual(scaled_size(None, 32, 32, 4), (128, 128))
+        self.assertEqual(scaled_size(None, 64, 64, 4), (128, 128))
+        self.assertEqual(scaled_size(None, 128, 64, 4), (128, 64))
+
     def test_render_prompt_template_replaces_known_placeholders(self) -> None:
         prompt = core.render_prompt_template(
             "개수: {asset_count}\n루트: {project_root}\n이미지:\n{asset_list}",

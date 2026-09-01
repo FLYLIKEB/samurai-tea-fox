@@ -88,21 +88,18 @@ class AssetBrowser(LayoutMixin, PalettePanelMixin, ActionsMixin, tk.Tk):
         self._set_status()
 
     def _add_group_header(self, label: str, count: int, row: int, columns: int) -> None:
-        header = tk.Frame(self.grid_frame, bg=BG, pady=6)
-        header.grid(row=row, column=0, columnspan=columns, sticky="ew", padx=4, pady=(10, 2))
+        header = tk.Frame(self.grid_frame, bg=BG, pady=2)
+        header.grid(row=row, column=0, columnspan=columns, sticky="w", padx=3, pady=(8, 1))
 
         title = tk.Label(
             header,
             text=f"{label}  {count}개",
             bg=BG,
-            fg=TEXT,
+            fg=MUTED,
             anchor="w",
-            font=("TkDefaultFont", 12, "bold"),
+            font=("TkDefaultFont", 10, "bold"),
         )
         title.pack(side=tk.LEFT)
-
-        line = tk.Frame(header, bg=BORDER, height=1)
-        line.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(10, 0), pady=(9, 0))
 
     def _add_cell(self, item: AssetImage, row: int, column: int) -> None:
         is_selected = item.path in self.selected
@@ -113,14 +110,14 @@ class AssetBrowser(LayoutMixin, PalettePanelMixin, ActionsMixin, tk.Tk):
         cell = tk.Frame(
             self.grid_frame,
             bg=bg,
-            padx=6,
-            pady=6,
-            highlightthickness=1,
+            padx=2,
+            pady=2,
+            highlightthickness=0,
             highlightbackground=SELECTED if is_selected else BORDER,
             width=GRID_CELL_WIDTH,
             height=GRID_CELL_HEIGHT,
         )
-        cell.grid(row=row, column=column, padx=4, pady=4, sticky="n")
+        cell.grid(row=row, column=column, padx=3, pady=3, sticky="n")
         cell.grid_propagate(False)
 
         image_box = tk.Frame(
@@ -150,26 +147,25 @@ class AssetBrowser(LayoutMixin, PalettePanelMixin, ActionsMixin, tk.Tk):
 
         name_label = tk.Label(
             cell,
-            text=item.relative_path.name,
+            text=self._short_name(item.relative_path.name),
             bg=bg,
             fg=fg,
             wraplength=124,
             justify=tk.CENTER,
-            height=2,
+            height=1,
+            font=("TkDefaultFont", 10),
         )
         name_label.pack(side=tk.TOP)
 
-        rel_parent = item.relative_path.parent.as_posix()
-        detail = f"{meta} | {rel_parent}"
         detail_label = tk.Label(
             cell,
-            text=detail,
+            text=meta,
             bg=bg,
             fg=meta_fg,
             wraplength=124,
             justify=tk.CENTER,
             font=("TkDefaultFont", 9),
-            height=2,
+            height=1,
         )
         detail_label.pack(side=tk.BOTTOM)
 
@@ -223,8 +219,16 @@ class AssetBrowser(LayoutMixin, PalettePanelMixin, ActionsMixin, tk.Tk):
 
     def _scaled_size(self, width: int, height: int, scale: int) -> tuple[int, int]:
         max_dimension = max(width, height)
-        if max_dimension <= 64:
-            return max(1, width * scale), max(1, height * scale)
+        if max_dimension <= 0:
+            return 1, 1
 
-        fit_scale = min(1.0, THUMBNAIL_BOX_SIZE / max_dimension)
+        fit_scale = min(float(scale), THUMBNAIL_BOX_SIZE / max_dimension)
         return max(1, int(width * fit_scale)), max(1, int(height * fit_scale))
+
+    def _short_name(self, name: str) -> str:
+        if len(name) <= 20:
+            return name
+        stem, dot, suffix = name.rpartition(".")
+        if dot and len(suffix) <= 5:
+            return f"{stem[:13]}...{suffix}"
+        return f"{name[:17]}..."
