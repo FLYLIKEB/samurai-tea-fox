@@ -36,3 +36,8 @@ __pycache__/
 
 # Local asset tool backups
 tools/asset_browser/palette_backups/
+
+# External asset browser checkout/build artifacts
+tools/asset_browser/.venv/
+tools/asset_browser/asset_browser/
+tools/asset_browser/*.egg-info/

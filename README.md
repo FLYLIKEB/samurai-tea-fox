@@ -68,8 +68,11 @@ tools/
 에셋 이미지를 로컬 앱에서 확인하고 선택한 경로나 Codex용 프롬프트를 복사하려면:
 
 ```sh
-python3 tools/asset_browser/asset_browser.py
+tools/asset_browser/run.sh
 ```
+
+앱 본체는 별도 레포 `https://github.com/FLYLIKEB/samurai-tea-fox-asset-browser`에서 관리하고,
+현재 레포에는 무사여우 전용 프롬프트 템플릿과 launcher만 둡니다.
 
 ## 검증
 
