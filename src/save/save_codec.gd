@@ -38,4 +38,6 @@ static func _validate(save_data: Dictionary, expected_kind: String) -> Dictionar
 		return {"ok": false, "error": "Expected %s save." % expected_kind}
 	if not save_data.has(expected_kind):
 		return {"ok": false, "error": "Missing %s payload." % expected_kind}
+	if not (save_data[expected_kind] is Dictionary):
+		return {"ok": false, "error": "Malformed %s payload." % expected_kind}
 	return {"ok": true}

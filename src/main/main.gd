@@ -47,7 +47,10 @@ func _ready() -> void:
 
 	var generator := WorldGenerator.new()
 	var progression_result := BiomeProgressionState.from_catalog(catalog, RunState.new())
-	var projection: Dictionary = progression_result.progression_state.to_projection() if progression_result.ok else {}
+	if not progression_result.ok:
+		push_error(progression_result.error)
+		return
+	var projection: Dictionary = progression_result.progression_state.to_projection()
 	generated_world = generator.generate(11037, catalog.data_version, common_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), {"progression_projection": projection})
 
 func _physics_process(_delta: float) -> void:

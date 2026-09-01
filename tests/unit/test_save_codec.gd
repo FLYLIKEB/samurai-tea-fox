@@ -19,6 +19,8 @@ func run(asserts) -> void:
 	asserts.true_value(SaveCodec.decode_meta(meta_save).ok, "meta save decodes")
 	asserts.false_value(SaveCodec.decode_meta(meta_save).state.has("tea_ware_use_count"), "meta save does not gain tea ware attachment state")
 	asserts.false_value(SaveCodec.decode_meta(run_save).ok, "run save cannot decode as meta")
+	asserts.false_value(SaveCodec.decode_run({"schema_version": SaveCodec.CURRENT_SCHEMA_VERSION, "kind": "run", "run": []}).ok, "run save rejects non-dictionary payload")
+	asserts.false_value(SaveCodec.decode_meta({"schema_version": SaveCodec.CURRENT_SCHEMA_VERSION, "kind": "meta", "meta": []}).ok, "meta save rejects non-dictionary payload")
 
 	var state := RunState.new()
 	state.current_biome_id = "common_region"
