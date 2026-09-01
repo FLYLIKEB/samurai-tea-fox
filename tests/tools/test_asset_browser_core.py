@@ -24,6 +24,22 @@ class AssetBrowserCoreTest(unittest.TestCase):
             ["assets/sprites/a.png", "assets/tiles/b.PNG"],
         )
 
+    def test_group_images_by_folder_uses_current_scan_root(self) -> None:
+        project_root = Path("/project")
+        asset_root = project_root / "assets"
+        images = [
+            core.AssetImage(project_root / "assets" / "sprites" / "fox.png", Path("assets/sprites/fox.png")),
+            core.AssetImage(project_root / "assets" / "tiles" / "grass.png", Path("assets/tiles/grass.png")),
+            core.AssetImage(project_root / "assets" / "tiles" / "water.png", Path("assets/tiles/water.png")),
+        ]
+
+        groups = core.group_images_by_folder(images, asset_root, project_root)
+
+        self.assertEqual(
+            [(label, [item.relative_path.name for item in items]) for label, items in groups],
+            [("sprites", ["fox.png"]), ("tiles", ["grass.png", "water.png"])],
+        )
+
     def test_render_prompt_template_replaces_known_placeholders(self) -> None:
         prompt = core.render_prompt_template(
             "개수: {asset_count}\n루트: {project_root}\n이미지:\n{asset_list}",

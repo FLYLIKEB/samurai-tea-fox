@@ -11,6 +11,7 @@ from .constants import GRID_CELL_HEIGHT, GRID_CELL_PITCH, GRID_CELL_WIDTH, THUMB
 from .image_ops import Image, ImageTk, recolor_image_to_palette
 from .models import AssetImage
 from .prompting import load_prompt_template
+from .scanner import group_images_by_folder
 from .style_tokens import extract_palette_colors
 from .ui_actions import ActionsMixin
 from .ui_layout import LayoutMixin
@@ -67,12 +68,41 @@ class AssetBrowser(LayoutMixin, PalettePanelMixin, ActionsMixin, tk.Tk):
         width = max(self.canvas.winfo_width(), 720)
         columns = max(1, width // GRID_CELL_PITCH)
 
-        for index, item in enumerate(self.filtered_images):
-            row = index // columns
-            column = index % columns
-            self._add_cell(item, row, column)
+        for column in range(columns):
+            self.grid_frame.columnconfigure(column, minsize=GRID_CELL_PITCH, uniform="asset_cells")
+
+        row = 0
+        for label, images in group_images_by_folder(
+            self.filtered_images,
+            self.asset_root,
+            self.project_root,
+        ):
+            self._add_group_header(label, len(images), row, columns)
+            row += 1
+            for index, item in enumerate(images):
+                cell_row = row + index // columns
+                column = index % columns
+                self._add_cell(item, cell_row, column)
+            row += math.ceil(len(images) / columns)
 
         self._set_status()
+
+    def _add_group_header(self, label: str, count: int, row: int, columns: int) -> None:
+        header = tk.Frame(self.grid_frame, bg=BG, pady=6)
+        header.grid(row=row, column=0, columnspan=columns, sticky="ew", padx=4, pady=(10, 2))
+
+        title = tk.Label(
+            header,
+            text=f"{label}  {count}개",
+            bg=BG,
+            fg=TEXT,
+            anchor="w",
+            font=("TkDefaultFont", 12, "bold"),
+        )
+        title.pack(side=tk.LEFT)
+
+        line = tk.Frame(header, bg=BORDER, height=1)
+        line.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(10, 0), pady=(9, 0))
 
     def _add_cell(self, item: AssetImage, row: int, column: int) -> None:
         is_selected = item.path in self.selected

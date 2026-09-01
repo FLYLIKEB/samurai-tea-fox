@@ -22,6 +22,7 @@ python3 tools/asset_browser/asset_browser.py --list-images
 - 선택한 폴더 아래의 일반 이미지 포맷을 재귀적으로 스캔합니다.
 - 작은 픽셀아트 이미지를 정수 배율과 nearest-neighbor 방식으로 보여줍니다.
 - 단색 중심의 미니멀 격자 UI에서 여러 이미지를 선택할 수 있습니다.
+- 스캔 루트 안의 내부 폴더별로 이미지를 묶어 보여줍니다.
 - 이미지 셀과 썸네일 박스 크기를 고정해 파일별 영역이 흔들리지 않습니다.
 - 선택한 이미지의 상대경로, 절대경로, Codex용 배치 프롬프트를 복사합니다.
 - 하단 작업 패널은 접었다 펼 수 있으며, 접힌 상태에서는 이미지 그리드가 화면을 최대한 차지합니다.
@@ -55,7 +56,7 @@ GIF 등은 미리볼 수 있습니다.
 - `ui_layout.py`: Tkinter 레이아웃 구성입니다.
 - `ui_actions.py`: 선택, 복사, 템플릿 저장, Finder 열기, 실제 팔레트 변환 액션입니다.
 - `ui_palette.py`: 스타일 토큰 표시와 팔레트 색상 편집 패널입니다.
-- `scanner.py`: `assets/` 이미지 검색입니다.
+- `scanner.py`: `assets/` 이미지 검색과 폴더별 그룹 분류입니다.
 - `prompting.py`: Codex 프롬프트 템플릿 로드와 렌더링입니다.
 - `style_tokens.py`: `assets/style/art-style-tokens.json` 로드, 저장, 요약, 팔레트 추출입니다.
 - `image_ops.py`: Pillow 기반 팔레트 미리보기와 실제 이미지 변환입니다.

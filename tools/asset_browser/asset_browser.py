@@ -48,7 +48,7 @@ from tools.asset_browser.prompting import (
     render_prompt_template,
     save_prompt_template,
 )
-from tools.asset_browser.scanner import find_images
+from tools.asset_browser.scanner import find_images, folder_group_label, group_images_by_folder
 from tools.asset_browser.style_tokens import (
     extract_palette_colors,
     format_art_style_tokens,
@@ -81,7 +81,9 @@ __all__ = [
     "codex_prompt_for",
     "extract_palette_colors",
     "find_images",
+    "folder_group_label",
     "format_art_style_tokens",
+    "group_images_by_folder",
     "hex_to_rgb",
     "load_art_style_tokens",
     "load_prompt_template",
