@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 class ProjectContractTests(unittest.TestCase):
     def test_korean_product_name_is_muchau(self):
         project = (ROOT / "project.godot").read_text(encoding="utf-8")
-        self.assertIn('config/name="무차우: 한 잔의 도"', project)
+        self.assertIn('config/name="무차우"', project)
 
         contract_files = (
             ROOT / "AGENTS.md",
@@ -34,7 +34,8 @@ class ProjectContractTests(unittest.TestCase):
 
     def test_project_has_a_loadable_main_scene(self):
         project = (ROOT / "project.godot").read_text(encoding="utf-8")
-        self.assertIn('run/main_scene="res://src/main/main.tscn"', project)
+        self.assertIn('run/main_scene="res://scenes/ui/start_screen.tscn"', project)
+        self.assertTrue((ROOT / "scenes/ui/start_screen.tscn").is_file())
         self.assertTrue((ROOT / "src/main/main.tscn").is_file())
 
     def test_export_template_covers_desktop_and_mobile_targets(self):
