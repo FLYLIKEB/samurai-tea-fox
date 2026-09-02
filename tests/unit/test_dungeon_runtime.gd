@@ -19,6 +19,7 @@ func run(asserts) -> void:
 	_invalid_saved_return_context_is_rejected(asserts)
 	_invalid_entry_boundaries(asserts)
 	_incomplete_progression_boundary_is_rejected(asserts)
+	_reward_failure_keeps_dungeon_retryable(asserts)
 
 func _lifecycle_clear_and_duplicate_guards(asserts) -> void:
 	var context := _runtime_context()
@@ -183,6 +184,36 @@ func _incomplete_progression_boundary_is_rejected(asserts) -> void:
 	)
 	asserts.false_value(result.ok, "configure rejects an incomplete progression boundary")
 	asserts.equal(result.reason, "invalid_progression_state", "incomplete progression boundary exposes stable reason")
+
+func _reward_failure_keeps_dungeon_retryable(asserts) -> void:
+	var context := _runtime_context()
+	var runtime: DungeonRuntime = context.runtime
+	var reward_calls := {"count": 0}
+	asserts.true_value(runtime.configure(
+		context.run_state,
+		context.progression,
+		func(payload: Dictionary, _projection: Dictionary) -> bool: return bool(payload.get("objective_complete", false)),
+		func(_event: Dictionary) -> Dictionary:
+			reward_calls.count += 1
+			if reward_calls.count == 1:
+				return {"ok": false, "reason": "inventory_full", "error": "fixture reward rejected"}
+			return {"ok": true}
+	).ok, "reward failure fixture configures")
+	asserts.true_value(runtime.enter_dungeon("reward_retry_instance", _fixture_definition(), WorldData.new(2, 2), _return_context()).ok, "reward retry fixture enters")
+
+	var rejected := runtime.complete_dungeon({"objective_complete": true, "reward_item_ids": ["fixture_reward"]})
+	asserts.false_value(rejected.ok, "reward hook failure rejects top-level completion")
+	asserts.equal(rejected.reason, "reward_hook_rejected", "reward failure exposes stable retry reason")
+	asserts.equal(runtime.to_projection().lifecycle_state, DungeonInstanceState.STATE_ACTIVE, "reward failure leaves dungeon active for retry")
+	asserts.false_value(context.run_state.completed_runtime_dungeon_ids.has("fixture_dungeon"), "reward failure does not record canonical completion")
+	asserts.equal(reward_calls.count, 1, "failed reward hook runs once")
+
+	var completed := runtime.complete_dungeon({"objective_complete": true, "reward_item_ids": ["fixture_reward"]})
+	asserts.true_value(completed.ok, "retry completes after reward boundary succeeds")
+	asserts.equal(runtime.to_projection().lifecycle_state, DungeonInstanceState.STATE_COMPLETED, "successful retry records terminal completion")
+	asserts.equal(reward_calls.count, 2, "retry invokes reward exactly once more")
+	asserts.equal(runtime.complete_dungeon({"objective_complete": true}).reason, "invalid_completion_transition", "completed dungeon cannot duplicate reward")
+	asserts.equal(reward_calls.count, 2, "duplicate guard prevents a third reward grant")
 
 func _runtime_context() -> Dictionary:
 	var run_state := RunState.new()

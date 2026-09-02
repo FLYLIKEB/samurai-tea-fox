@@ -72,23 +72,27 @@ func complete_dungeon(completion_payload: Dictionary) -> Dictionary:
 	if not _resolver_passed(resolution):
 		return _fail("completion_condition_not_met", "Dungeon completion resolver rejected the payload.")
 
+	var clear_event := _build_clear_event(completion_payload)
+	var reward_result := {"ok": true}
+	if _reward_hook.is_valid():
+		var hook_value = _reward_hook.call(clear_event.duplicate(true))
+		reward_result = _normalize_hook_result(hook_value)
+		if not bool(reward_result.get("ok", false)):
+			return _fail("reward_hook_rejected", String(reward_result.get("error", "Dungeon reward hook rejected completion.")))
+
 	var progression_result: Dictionary = _progression_state.complete_dungeon(_instance.biome_id)
 	if not progression_result.ok:
 		return _fail(String(progression_result.get("reason", "progression_rejected")), String(progression_result.get("error", "Biome progression rejected dungeon completion.")))
 
 	_instance.lifecycle_state = DungeonInstanceState.STATE_COMPLETED
 	_instance.completion_payload = completion_payload.duplicate(true)
-	_instance.clear_event = _build_clear_event(completion_payload)
+	_instance.clear_event = clear_event.duplicate(true)
 	_instance.clear_event_emitted = true
 	if not _run_state.completed_runtime_dungeon_ids.has(_instance.dungeon_id):
 		_run_state.completed_runtime_dungeon_ids.append(_instance.dungeon_id)
-
-	var reward_result := {"ok": true}
 	if _reward_hook.is_valid():
 		_instance.reward_hook_invoked = true
-		var hook_value = _reward_hook.call(_instance.clear_event.duplicate(true))
-		reward_result = _normalize_hook_result(hook_value)
-		_instance.reward_claimed = bool(reward_result.ok)
+		_instance.reward_claimed = true
 	_persist()
 	dungeon_cleared.emit(_instance.clear_event.duplicate(true))
 	return {

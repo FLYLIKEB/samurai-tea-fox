@@ -87,8 +87,6 @@ func tick(delta_seconds: float) -> Dictionary:
 	if not bool(selection.get("ok", false)):
 		return selection
 	var pattern: Dictionary = selection.pattern.duplicate(true)
-	_state.pattern_cursor = int(selection.next_cursor)
-	_state.pattern_cooldown_remaining = float(pattern.interval_seconds)
 	var event := {
 		"event_type": EVENT_PATTERN,
 		"encounter_id": _state.encounter_id,
@@ -110,7 +108,15 @@ func tick(delta_seconds: float) -> Dictionary:
 		}
 		if _summon_hook.is_valid():
 			summon_result = _normalize_hook_result(_summon_hook.call(summon_event.duplicate(true)))
+			if not bool(summon_result.get("ok", false)):
+				var failure := _fail("summon_hook_rejected", String(summon_result.get("error", "Boss summon hook rejected the request.")))
+				failure["pattern_id"] = String(pattern.id)
+				failure["summon_result"] = summon_result
+				failure["projection"] = to_projection()
+				return failure
 		summons_requested.emit(summon_event.duplicate(true))
+	_state.pattern_cursor = int(selection.next_cursor)
+	_state.pattern_cooldown_remaining = float(pattern.interval_seconds)
 	pattern_scheduled.emit(event.duplicate(true))
 	return {"ok": true, "scheduled": true, "event": event, "summon_result": summon_result, "projection": to_projection()}
 

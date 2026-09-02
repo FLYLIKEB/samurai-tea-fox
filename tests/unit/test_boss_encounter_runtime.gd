@@ -15,6 +15,7 @@ func run(asserts) -> void:
 	_combat_resolution_completes_dungeon_once(asserts)
 	_peaceful_resolution_uses_common_contract(asserts)
 	_abort_does_not_complete_dungeon(asserts)
+	_summon_failure_keeps_pattern_retryable(asserts)
 
 func _definition_loader_and_samples(asserts) -> void:
 	var catalog := DataCatalog.new()
@@ -128,6 +129,39 @@ func _abort_does_not_complete_dungeon(asserts) -> void:
 	asserts.equal(aborted.projection.lifecycle_state, BossEncounterState.STATE_ABORTED, "abort leaves an explicit terminal state")
 	asserts.equal(completion_calls.count, 0, "abort does not invoke dungeon completion")
 	asserts.equal(boss.tick(1.0).reason, "encounter_not_active", "aborted encounter stops scheduling patterns")
+
+func _summon_failure_keeps_pattern_retryable(asserts) -> void:
+	var definition = BossDefinition.from_dictionary(_boss_row()).definition
+	var calls := {"count": 0}
+	var summons := []
+	var runtime := BossEncounterRuntime.new()
+	asserts.true_value(runtime.configure(
+		definition,
+		null,
+		func(event: Dictionary) -> Dictionary:
+			calls.count += 1
+			summons.append(event.duplicate(true))
+			if calls.count == 1:
+				return {"ok": false, "reason": "spawn_capacity_full", "error": "fixture summon rejected"}
+			return {"ok": true}
+	).ok, "summon retry fixture configures")
+	asserts.true_value(runtime.start("encounter_retry", "fixture_dungeon").ok, "summon retry boss starts")
+	asserts.equal(runtime.tick(0.0).event.pattern_id, "opening_strike", "first non-summon pattern schedules")
+
+	var rejected := runtime.tick(1.0)
+	asserts.false_value(rejected.ok, "summon hook failure rejects the top-level tick")
+	asserts.equal(rejected.reason, "summon_hook_rejected", "summon failure exposes stable reason")
+	asserts.equal(rejected.pattern_id, "summon_bandit", "failure reports the rejected pattern")
+	asserts.equal(runtime.to_projection().pattern_cursor, 1, "summon failure does not advance the pattern cursor")
+	asserts.equal(runtime.to_projection().pattern_cooldown_remaining, 0.0, "summon failure does not commit cooldown")
+	asserts.equal(calls.count, 1, "failed summon hook is attempted once")
+
+	var retried := runtime.tick(0.0)
+	asserts.true_value(retried.ok, "summon retry succeeds")
+	asserts.equal(retried.event.pattern_id, "summon_bandit", "retry preserves deterministic pattern order")
+	asserts.equal(runtime.to_projection().pattern_cursor, 2, "successful retry advances cursor exactly once")
+	asserts.equal(calls.count, 2, "successful retry invokes summon once more")
+	asserts.equal(summons.size(), 2, "only failed attempt and successful retry request summons")
 
 func _boss_row() -> Dictionary:
 	return {
