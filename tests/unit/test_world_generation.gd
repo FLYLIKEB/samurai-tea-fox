@@ -31,12 +31,14 @@ func run(asserts) -> void:
 	asserts.equal(a.min_resource_nodes, 9, "minimum resource nodes come from balance data")
 	asserts.true_value(a.resource_nodes.size() >= a.min_resource_nodes, "world places minimum resources")
 	asserts.equal(a.connectivity.required_landmark_ids.size(), 3, "entry, teleport, and core dungeon are required")
+	asserts.equal(a.biome_generation_rule_id, "common_region", "common biome uses its own generation ruleset")
 	asserts.true_value(a.has("world_data"), "generator exposes pure world data")
 	asserts.true_value(a.has("renderer_input"), "generator exposes renderer input contract")
 	asserts.equal(a.renderer_input.read_only, true, "renderer input is read-only projection")
 	_assert_teleport_landmark_metadata(asserts, a.world_data, "common_region")
 	_assert_renderer_source_paths_exist(asserts, a.renderer_input)
 	_assert_resource_accessibility(asserts, a)
+	_assert_mountain_generation(asserts, catalog, generator)
 
 	var progression_result: Dictionary = BiomeProgressionState.from_catalog(catalog, RunState.new())
 	asserts.true_value(progression_result.ok, "progression state configures for renderer projection")
@@ -93,6 +95,57 @@ func run(asserts) -> void:
 	asserts.false_value(missing_minimum.ok, "minimum resource count is not hidden behind production fallback")
 	asserts.equal(missing_minimum.failure_reason, "missing_min_resource_nodes_config", "missing minimum resource count is explicit")
 
+	var unknown_biome := biome.duplicate(true)
+	unknown_biome.id = "unimplemented_region"
+	var unsupported := generator.generate(11037, catalog.data_version, unknown_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	asserts.false_value(unsupported.ok, "unknown biome rules are not silently treated as common terrain")
+	asserts.equal(unsupported.failure_reason, "unsupported_biome_generation_rules", "unsupported biome rules fail explicitly")
+
+func _assert_mountain_generation(asserts, catalog, generator: WorldGenerator) -> void:
+	var mountain: Dictionary = catalog.find_by_id("biomes", "mountain_region")
+	asserts.false_value(mountain.is_empty(), "mountain biome definition exists")
+	var generated := generator.generate(22033, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var repeated := generator.generate(22033, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var alternate := generator.generate(22034, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	asserts.true_value(generated.ok, "mountain world generation succeeds")
+	asserts.equal(_canonical_world(generated), _canonical_world(repeated), "mountain generation is deterministic for the same seed")
+	asserts.true_value(_canonical_world(generated) != _canonical_world(alternate), "mountain generation varies by seed")
+	asserts.equal(generated.biome_generation_rule_id, "mountain_region", "mountain biome records its generation ruleset")
+	asserts.equal(generated.biome_progression_order, 2, "mountain generation preserves data-driven progression order")
+	asserts.true_value(generated.connectivity.valid, "mountain landmarks are connectivity-valid")
+	asserts.true_value(generated.facility_accessibility.valid, "mountain facilities have reachable access points")
+	asserts.true_value(generated.resource_accessibility.valid, "mountain resources have reachable access points")
+	asserts.equal(generated.facility_nodes.size(), 4, "mountain places every canonical facility term")
+	asserts.true_value(generated.resource_nodes.size() >= generated.min_resource_nodes, "mountain places minimum resources")
+	_assert_teleport_landmark_metadata(asserts, generated.world_data, "mountain_region")
+	_assert_resource_accessibility(asserts, generated)
+	_assert_facility_accessibility(asserts, generated)
+	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
+	_assert_mountain_terrain_profile(asserts, generated.world_data)
+	_assert_mountain_renderer_sources(asserts, generated.renderer_input)
+	_assert_landmark_terrain_terms(asserts, generated.landmarks)
+	_assert_resource_ids_resolve_to_mountain_materials(asserts, generated.resource_nodes, mountain, catalog.get_definitions("items"))
+
+	for seed in range(22000, 22020):
+		var sampled := generator.generate(seed, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+		asserts.true_value(sampled.ok, "mountain seed %d generates successfully" % seed)
+		asserts.equal(_canonical_world(sampled), _canonical_world(generator.generate(seed, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"))), "mountain seed %d remains deterministic" % seed)
+		asserts.true_value(sampled.connectivity.valid, "mountain seed %d keeps landmarks connected" % seed)
+		asserts.true_value(sampled.facility_accessibility.valid, "mountain seed %d keeps facilities accessible" % seed)
+		asserts.true_value(sampled.resource_accessibility.valid, "mountain seed %d keeps resources accessible" % seed)
+
+	var missing_term_biome: Dictionary = mountain.duplicate(true)
+	missing_term_biome.terrain = "산길, 절벽, 바위지대, 계곡, 폭포, 침엽수림"
+	var missing_term := generator.generate(22033, catalog.data_version, missing_term_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	asserts.false_value(missing_term.ok, "mountain rules require every canonical terrain term")
+	asserts.equal(missing_term.failure_reason, "missing_biome_generation_terms", "missing mountain terrain term fails explicitly")
+
+	var missing_facility_biome: Dictionary = mountain.duplicate(true)
+	missing_facility_biome.facilities = "광산, 산사, 폐광"
+	var missing_facility := generator.generate(22033, catalog.data_version, missing_facility_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	asserts.false_value(missing_facility.ok, "mountain rules require every canonical facility term")
+	asserts.equal(missing_facility.failure_reason, "missing_biome_facility_terms", "missing mountain facility term fails explicitly")
+
 func _assert_resource_accessibility(asserts, world: Dictionary) -> void:
 	var validator := ConnectivityValidator.new()
 	var access_points := []
@@ -105,6 +158,27 @@ func _assert_resource_accessibility(asserts, world: Dictionary) -> void:
 		asserts.equal(_manhattan_distance(node.position, node.access_position), 1, "%s has adjacent access cell" % node.id)
 	var access_validation := validator.validate_access_points(world.world_data, access_points)
 	asserts.true_value(access_validation.valid, "all resource access points are entry-reachable")
+
+func _assert_facility_accessibility(asserts, world: Dictionary) -> void:
+	var validator := ConnectivityValidator.new()
+	var access_points := []
+	var interactable_owner_ids := _interactable_owner_ids(world.renderer_input)
+	var facility_owner_ids := _layer_owner_ids(world.renderer_input, WorldData.LAYER_FACILITIES)
+	var expected_terms := {"광산": true, "산사": true, "폐광": true, "산중 찻집": true}
+	var seen_terms := {}
+	for node in world.facility_nodes:
+		access_points.append(node.access_position)
+		seen_terms[String(node.facility_term)] = true
+		asserts.true_value(bool(node.placement_was_entry_reachable), "%s facility has a reachable access cell" % node.id)
+		asserts.true_value(bool(node.interactable), "%s facility is marked interactable" % node.id)
+		asserts.true_value(interactable_owner_ids.has(node.id), "%s appears in renderer interactables" % node.id)
+		asserts.true_value(facility_owner_ids.has(node.id), "%s appears in renderer facilities" % node.id)
+		asserts.equal(_manhattan_distance(node.position, node.access_position), 1, "%s has adjacent facility access cell" % node.id)
+		asserts.true_value(FileAccess.file_exists("res://%s" % String(node.source_id)), "%s source path exists" % node.id)
+	for term in expected_terms.keys():
+		asserts.true_value(seen_terms.has(term), "mountain facility term is placed: %s" % term)
+	var access_validation := validator.validate_access_points(world.world_data, access_points)
+	asserts.true_value(access_validation.valid, "all facility access points are entry-reachable")
 
 func _assert_teleport_landmark_metadata(asserts, world_data: Dictionary, biome_id: String) -> void:
 	var teleports := []
@@ -126,9 +200,12 @@ func _assert_projected_teleport_state(asserts, renderer_input: Dictionary, biome
 		asserts.equal(teleports[0].teleport_state, expected_state, "renderer projection uses progression teleport state")
 
 func _interactable_owner_ids(renderer_input: Dictionary) -> Dictionary:
+	return _layer_owner_ids(renderer_input, WorldData.LAYER_INTERACTABLES)
+
+func _layer_owner_ids(renderer_input: Dictionary, layer_id: String) -> Dictionary:
 	var owner_ids := {}
 	for layer in renderer_input.layers:
-		if layer.id != WorldData.LAYER_INTERACTABLES:
+		if String(layer.id) != layer_id:
 			continue
 		for cell in layer.cells:
 			owner_ids[cell.owner_id] = true
@@ -148,6 +225,69 @@ func _assert_renderer_source_paths_exist(asserts, renderer_input: Dictionary) ->
 	for source_id in seen.keys():
 		var source_path := "res://%s" % source_id
 		asserts.true_value(FileAccess.file_exists(source_path), "renderer source path exists: %s" % source_id)
+
+func _assert_mountain_terrain_profile(asserts, world_data: Dictionary) -> void:
+	var required_walkable := {
+		"mountain_slope": true,
+		"mountain_path": true,
+		"mountain_cave_ground": true
+	}
+	var required_blocked := {
+		"mountain_cliff": true,
+		"mountain_rock": true,
+		"mountain_conifer_forest": true,
+		"mountain_valley_water": true
+	}
+	var terrain_counts := {}
+	var blocked_counts := {}
+	for cell in world_data.cells:
+		var terrain: Dictionary = cell.layers.terrain
+		var terrain_id := String(terrain.id)
+		terrain_counts[terrain_id] = int(terrain_counts.get(terrain_id, 0)) + 1
+		if not bool(terrain.walkable):
+			blocked_counts[terrain_id] = int(blocked_counts.get(terrain_id, 0)) + 1
+	for terrain_id in required_walkable.keys():
+		asserts.true_value(int(terrain_counts.get(terrain_id, 0)) > 0, "mountain includes walkable terrain: %s" % terrain_id)
+	for terrain_id in required_blocked.keys():
+		asserts.true_value(int(blocked_counts.get(terrain_id, 0)) > 0, "mountain includes blocked terrain: %s" % terrain_id)
+
+func _assert_mountain_renderer_sources(asserts, renderer_input: Dictionary) -> void:
+	var expected_sources := {
+		"assets/sprites/objects/natural-props/flat_rock_32x32.png": true,
+		"assets/sprites/objects/natural-props/mossy_rock_32x32.png": true,
+		"assets/sprites/objects/natural-props/mountain_rock_04_32x32.png": true,
+		"assets/sprites/objects/natural-props/mountain_rock_01_32x32.png": true,
+		"assets/sprites/objects/natural-props/pine_tree_small_32x32.png": true,
+		"assets/sprites/objects/mining/rock_cave_entrance_1x2_64x32.png": true,
+		"assets/sprites/objects/structures/shrine_torii_gate_2x2_64x64.png": true,
+		"assets/sprites/objects/mining/timber_support_1x2_32x64.png": true,
+		"assets/sprites/objects/crafting/tea_table_2x2_64x64.png": true
+	}
+	var seen := {}
+	for layer in renderer_input.layers:
+		for cell in layer.cells:
+			var source_id := String(cell.get("source_id", ""))
+			if expected_sources.has(source_id):
+				seen[source_id] = true
+	for source_id in expected_sources.keys():
+		asserts.true_value(seen.has(source_id), "mountain renderer uses promoted source: %s" % source_id)
+
+func _assert_landmark_terrain_terms(asserts, landmarks: Array) -> void:
+	var required_terms := ["산길", "절벽", "바위지대", "계곡", "폭포", "침엽수림", "동굴"]
+	for landmark in landmarks:
+		var metadata: Dictionary = landmark.get("metadata", {})
+		var terms: Array = metadata.get("terrain_terms", [])
+		for term in required_terms:
+			asserts.true_value(terms.has(term), "%s landmark carries mountain terrain term: %s" % [landmark.get("id", ""), term])
+
+func _assert_resource_ids_resolve_to_mountain_materials(asserts, resource_nodes: Array, biome: Dictionary, item_definitions: Array) -> void:
+	var mountain_resource_text := String(biome.get("resources", ""))
+	var material_ids := {}
+	for item in item_definitions:
+		if String(item.get("type", "")) == "재료" and mountain_resource_text.contains(String(item.get("name", ""))):
+			material_ids[String(item.get("id", ""))] = true
+	for node in resource_nodes:
+		asserts.true_value(material_ids.has(String(node.resource_id)), "%s uses an existing mountain material item id" % node.id)
 
 func _manhattan_distance(a: Dictionary, b: Dictionary) -> int:
 	return abs(int(a.x) - int(b.x)) + abs(int(a.y) - int(b.y))

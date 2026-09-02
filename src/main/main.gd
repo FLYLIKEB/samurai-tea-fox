@@ -81,15 +81,16 @@ func _configure_combat_lifecycle() -> Dictionary:
 	return {"ok": true}
 
 func _configure_world_for_current_run() -> Dictionary:
-	var common_biome: Dictionary = catalog.find_by_id("biomes", "common_region")
-	if common_biome.is_empty():
-		return {"ok": false, "reason": "missing_common_biome", "error": "No common biome data loaded."}
 	var generator := WorldGenerator.new()
 	var progression_result := BiomeProgressionState.from_catalog(catalog, run_state)
 	if not progression_result.ok:
 		return progression_result
 	var projection: Dictionary = progression_result.progression_state.to_projection()
-	generated_world = generator.generate(run_state.seed, catalog.data_version, common_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), {"progression_projection": projection})
+	var current_biome_id := String(projection.get("current_biome_id", ""))
+	var current_biome: Dictionary = catalog.find_by_id("biomes", current_biome_id)
+	if current_biome.is_empty():
+		return {"ok": false, "reason": "missing_current_biome", "error": "No current biome data loaded for %s." % current_biome_id}
+	generated_world = generator.generate(run_state.seed, catalog.data_version, current_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), {"progression_projection": projection})
 	if not generated_world.get("ok", false):
 		return {"ok": false, "reason": "world_generation_failed", "error": String(generated_world.get("failure_reason", "World generation failed."))}
 	var acquisition_result := _configure_acquisition_for_generated_world()
@@ -616,6 +617,11 @@ func _owner_sprite_sources(world: Dictionary) -> Dictionary:
 		var resource_id := String(node.get("resource_id", ""))
 		if owner_id != "" and sources.has(resource_id):
 			sources[owner_id] = sources[resource_id]
+	for node in world.get("facility_nodes", []):
+		var owner_id := String(node.get("id", ""))
+		var source_id := String(node.get("source_id", ""))
+		if owner_id != "" and source_id != "":
+			sources[owner_id] = source_id
 	return sources
 
 func _hide_prototype_visuals() -> void:
