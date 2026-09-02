@@ -14,6 +14,7 @@ const DEFAULT_RETRY_LIMIT := 8
 const BIOME_COMMON := "common_region"
 const BIOME_MOUNTAIN := "mountain_region"
 const BIOME_WASTELAND := "wasteland"
+const BIOME_SNOWFIELD := "snowfield"
 
 const TERRAIN_GROUND := "common_ground"
 const TERRAIN_GRASS := "common_grass"
@@ -36,6 +37,13 @@ const TERRAIN_WASTELAND_RUIN := "wasteland_ruin"
 const TERRAIN_WASTELAND_DEAD_TREE := "wasteland_dead_tree"
 const TERRAIN_WASTELAND_DRY_RIVER := "wasteland_dry_river"
 const TERRAIN_WASTELAND_CAMP_TRACE := "wasteland_camp_trace"
+const TERRAIN_SNOWFIELD_SNOW := "snowfield_snow"
+const TERRAIN_SNOWFIELD_SNOW_PATH := "snowfield_snow_path"
+const TERRAIN_SNOWFIELD_ICE := "snowfield_ice"
+const TERRAIN_SNOWFIELD_ICE_EDGE := "snowfield_ice_edge"
+const TERRAIN_SNOWFIELD_PINE := "snowfield_pine"
+const TERRAIN_SNOWFIELD_ICE_WALL := "snowfield_ice_wall"
+const TERRAIN_SNOWFIELD_SAFE_CLEARING := "snowfield_safe_clearing"
 
 const RENDER_GROUND := "assets/tiles/terrain/plains/grass_ground_01_32x32.png"
 const RENDER_GRASS := "assets/tiles/terrain/plains/grass_ground_01_32x32.png"
@@ -64,6 +72,17 @@ const RENDER_WASTELAND_ABANDONED_OUTPOST := "assets/sprites/objects/structures/r
 const RENDER_WASTELAND_RUINED_TEA_ROOM := "assets/sprites/objects/crafting/tea_table_2x2_64x64.png"
 const RENDER_WASTELAND_BATTLEFIELD_TRACE := "assets/tiles/terrain/desert/bone_scatter_32x32.png"
 const RENDER_RESOURCE_IRON_SCRAP := "assets/sprites/objects/mining/iron_ore_32x32.png"
+const RENDER_SNOWFIELD_SNOW := "assets/tiles/terrain/snow/snow_ground_01_32x32.png"
+const RENDER_SNOWFIELD_PATH := "assets/tiles/terrain/snow/snow_ground_03_32x32.png"
+const RENDER_SNOWFIELD_ICE := "assets/tiles/terrain/snow/snow_ground_04_32x32.png"
+const RENDER_SNOWFIELD_ICE_EDGE := "assets/tiles/terrain/snow/snow_rock_edge_01_32x32.png"
+const RENDER_SNOWFIELD_PINE := "assets/tiles/terrain/snow/snowy_pine_tree_01_32x32.png"
+const RENDER_SNOWFIELD_ICE_WALL := "assets/tiles/terrain/snow/snow_rock_edge_02_32x32.png"
+const RENDER_SNOWFIELD_SAFE_CLEARING := "assets/tiles/terrain/snow/snow_mound_32x32.png"
+const RENDER_SNOWFIELD_LODGE := "assets/sprites/objects/structures/small_wood_house_2x2_64x64.png"
+const RENDER_SNOWFIELD_HOT_SPRING := "assets/sprites/objects/shrine-props/stone_water_basin_32x32.png"
+const RENDER_SNOWFIELD_SHRINE := "assets/sprites/objects/structures/shrine_torii_gate_2x2_64x64.png"
+const RENDER_SNOWFIELD_FROZEN_MINE := "assets/sprites/objects/mining/rock_cave_entrance_1x2_64x32.png"
 
 const BALANCE_MIN_RESOURCE_NODES_ID := "biome_min_resource_nodes"
 
@@ -184,6 +203,8 @@ func _apply_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRn
 			_apply_mountain_chunk(world_data, chunk, rng)
 		BIOME_WASTELAND:
 			_apply_wasteland_chunk(world_data, chunk, rng)
+		BIOME_SNOWFIELD:
+			_apply_snowfield_chunk(world_data, chunk, rng)
 		_:
 			_apply_common_chunk(world_data, chunk, rng)
 
@@ -333,6 +354,72 @@ func _wasteland_feature_for_variant(variant: int) -> String:
 			return "battlefield_trace"
 		_:
 			return "dry_soil"
+
+func _apply_snowfield_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRng) -> void:
+	var origin := _vector_from_dictionary(chunk.origin)
+	var variant := int(chunk.variant)
+	chunk["feature"] = _snowfield_feature_for_variant(variant)
+	for y in range(origin.y, origin.y + CHUNK_HEIGHT):
+		for x in range(origin.x, origin.x + CHUNK_WIDTH):
+			var position := Vector2i(x, y)
+			var local_x := x - origin.x
+			var local_y := y - origin.y
+			match variant:
+				0:
+					if local_y == CHUNK_HEIGHT / 2 or local_x == CHUNK_WIDTH / 2:
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW_PATH, true, RENDER_SNOWFIELD_PATH)
+					else:
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true, RENDER_SNOWFIELD_SNOW)
+				1:
+					if local_x == 2 or local_x == 5:
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_ICE_EDGE, true, RENDER_SNOWFIELD_ICE_EDGE)
+					elif local_x > 2 and local_x < 5:
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_ICE, false, RENDER_SNOWFIELD_ICE)
+					else:
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true, RENDER_SNOWFIELD_SNOW)
+				2:
+					if rng.next_range(0, 99) < 38:
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_PINE, false, RENDER_SNOWFIELD_PINE)
+					else:
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true, RENDER_SNOWFIELD_SNOW)
+				3:
+					if local_y == 0 or local_x == 0 or local_x == CHUNK_WIDTH - 1:
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_ICE_WALL, false, RENDER_SNOWFIELD_ICE_WALL)
+					elif local_y == 2 or local_x == 3:
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW_PATH, true, RENDER_SNOWFIELD_PATH)
+					else:
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true, RENDER_SNOWFIELD_SNOW)
+				4:
+					if local_x >= 2 and local_x <= 5 and local_y >= 1 and local_y <= 4:
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SAFE_CLEARING, true, RENDER_SNOWFIELD_SAFE_CLEARING)
+					else:
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true, RENDER_SNOWFIELD_SNOW)
+				5:
+					if local_y == 1 or (local_x >= 4 and local_y == 4):
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW_PATH, true, RENDER_SNOWFIELD_PATH)
+					elif local_x == 1 and local_y >= 2:
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_ICE_EDGE, true, RENDER_SNOWFIELD_ICE_EDGE)
+					else:
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true, RENDER_SNOWFIELD_SNOW)
+				_:
+					world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true, RENDER_SNOWFIELD_SNOW)
+
+func _snowfield_feature_for_variant(variant: int) -> String:
+	match variant:
+		0:
+			return "snow_path_crossing"
+		1:
+			return "frozen_river_edge"
+		2:
+			return "pine_silence"
+		3:
+			return "ice_wall_pass"
+		4:
+			return "safe_clearing"
+		5:
+			return "snowy_mountain_path"
+		_:
+			return "snowfield"
 
 func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, core_dungeon_count: int, teleport_zone_count: int, biome_id: String, profile: Dictionary) -> Array:
 	var landmarks := []
@@ -592,6 +679,38 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 				},
 				"resource_source_by_id": {
 					"item_28": RENDER_RESOURCE_IRON_SCRAP
+				},
+				"minimum_facility_nodes": facility_terms.size()
+			})
+		BIOME_SNOWFIELD:
+			var required_terms := ["눈밭", "얼어붙은 강", "침엽수", "빙벽", "눈 덮인 산길"]
+			var terrain_text := String(biome_definition.get("terrain", ""))
+			for term in required_terms:
+				if not terrain_text.contains(term):
+					return {"ok": false, "reason": "missing_biome_generation_terms", "missing_term": term}
+			var facility_terms := ["산장", "온천", "설원 사당", "얼어붙은 광산"]
+			var facility_text := String(biome_definition.get("facilities", ""))
+			for term in facility_terms:
+				if not facility_text.contains(term):
+					return {"ok": false, "reason": "missing_biome_facility_terms", "missing_term": term}
+			return _profile_ok({
+				"id": BIOME_SNOWFIELD,
+				"chunk_variant_count": 6,
+				"default_terrain_id": TERRAIN_SNOWFIELD_SNOW,
+				"default_walkable": true,
+				"path_terrain_id": TERRAIN_SNOWFIELD_SNOW_PATH,
+				"bridge_terrain_id": TERRAIN_SNOWFIELD_ICE_EDGE,
+				"path_render_id": RENDER_SNOWFIELD_PATH,
+				"required_terrain_terms": required_terms,
+				"facility_terms": facility_terms,
+				"facility_source_by_term": {
+					"산장": RENDER_SNOWFIELD_LODGE,
+					"온천": RENDER_SNOWFIELD_HOT_SPRING,
+					"설원 사당": RENDER_SNOWFIELD_SHRINE,
+					"얼어붙은 광산": RENDER_SNOWFIELD_FROZEN_MINE
+				},
+				"resource_source_by_id": {
+					"wood": RENDER_SNOWFIELD_PINE
 				},
 				"minimum_facility_nodes": facility_terms.size()
 			})
