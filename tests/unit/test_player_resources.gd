@@ -78,6 +78,25 @@ func run(asserts) -> void:
 	resources.recover_ki(1)
 	resources.reduce_kokoro(1)
 	asserts.equal(resources.hp, damaged_hp, "other state changes do not naturally recover HP")
+	_assert_snapshot_delta_publish_is_prevalidated_and_emission_only(asserts)
+
+func _assert_snapshot_delta_publish_is_prevalidated_and_emission_only(asserts) -> void:
+	var resources := PlayerResources.new(100, 100, 100, 20)
+	resources.spend_ki(50)
+	var before := resources.to_dictionary()
+	resources.set_block_signals(true)
+	resources.recover_ki(12)
+	var after := resources.to_dictionary()
+	var prepared: Dictionary = resources.prepare_snapshot_delta(before, after)
+	asserts.true_value(prepared.ok, "current resource snapshot prepares a commit token")
+	var stale := after.duplicate(true)
+	stale.ki = 63
+	asserts.equal(resources.prepare_snapshot_delta(before, stale).reason, "stale_resource_snapshot", "stale resource delta is rejected before commit")
+	var events := []
+	resources.ki_changed.connect(func(previous: int, current: int, maximum: int) -> void: events.append([previous, current, maximum]))
+	resources.set_block_signals(false)
+	resources.publish_snapshot_delta(prepared.token)
+	asserts.equal(events, [[50, 62, 100]], "prepared resource commit publishes its captured delta exactly once")
 
 func _assert_invalid_balance_data(asserts) -> void:
 	var valid := {

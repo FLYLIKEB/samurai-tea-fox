@@ -69,43 +69,33 @@ class MutatingFailChoiceBoundary:
 		run_state.choice_history.append("partial_choice_mutation")
 		return {"ok": false, "reason": "choice_commit_failed", "error": "fixture choice commit failed"}
 
-class FailAfterCompleteTeaBoundary:
-	extends RefCounted
-	var delegate
-
-	func _init(value) -> void:
-		delegate = value
-
-	func has_prepared_tea(slot: int) -> bool: return delegate.has_prepared_tea(slot)
-	func get_prepared_tea(slot: int) -> Dictionary: return delegate.get_prepared_tea(slot)
-	func start_drinking(slot: int, context := {}) -> Dictionary: return delegate.start_drinking(slot, context)
-	func to_snapshot() -> Dictionary: return delegate.to_snapshot()
-	func load_snapshot(snapshot: Dictionary) -> Dictionary: return delegate.load_snapshot(snapshot)
-
+class FailAfterCompleteTeaService:
+	extends TeaService
 	func complete_drinking(action: Dictionary, resources = null) -> Dictionary:
-		var committed: Dictionary = delegate.complete_drinking(action, resources)
+		var committed: Dictionary = super.complete_drinking(action, resources)
 		if not committed.ok:
 			return committed
-		return {"ok": false, "reason": "tea_commit_failed", "error": "fixture tea failed after mutation"}
+		var failure := {"ok": false, "reason": "tea_commit_failed", "error": "fixture tea failed after mutation"}
+		operation_failed.emit(failure.duplicate(true))
+		return failure
 
-class DictionaryResourceTeaBoundary:
-	extends RefCounted
-	var delegate
-
-	func _init(value) -> void:
-		delegate = value
-
-	func has_prepared_tea(slot: int) -> bool: return delegate.has_prepared_tea(slot)
-	func get_prepared_tea(slot: int) -> Dictionary: return delegate.get_prepared_tea(slot)
-	func start_drinking(slot: int, context := {}) -> Dictionary: return delegate.start_drinking(slot, context)
-	func to_snapshot() -> Dictionary: return delegate.to_snapshot()
-	func load_snapshot(snapshot: Dictionary) -> Dictionary: return delegate.load_snapshot(snapshot)
-
+class DictionaryResourceTeaService:
+	extends TeaService
 	func complete_drinking(action: Dictionary, resources = null) -> Dictionary:
-		var committed: Dictionary = delegate.complete_drinking(action, null)
+		var committed: Dictionary = super.complete_drinking(action, null)
 		if committed.ok and resources is Dictionary:
 			resources.ki = mini(int(resources.get("ki_max", 0)), int(resources.get("ki", 0)) + int(committed.effect.ki_recovery_requested))
 		return committed
+
+class RejectDrinkCommitTeaService:
+	extends TeaService
+	func prepare_drink_commit(_started_action: Dictionary, _completion_result: Dictionary, _committed_snapshot: Dictionary) -> Dictionary:
+		return {"ok": false, "reason": "tea_commit_prepare_rejected", "error": "fixture tea commit prepare rejected"}
+
+class RejectSnapshotDeltaResources:
+	extends PlayerResources
+	func prepare_snapshot_delta(_before: Dictionary, _after: Dictionary) -> Dictionary:
+		return {"ok": false, "reason": "resource_commit_prepare_rejected", "error": "fixture resource commit prepare rejected"}
 
 func run(asserts) -> void:
 	_asserts_pre_boss_commands_are_stable_state(asserts)
@@ -115,8 +105,12 @@ func run(asserts) -> void:
 	_asserts_malformed_conditions_are_rejected_without_consumption(asserts)
 	_asserts_complete_drinking_failure_is_atomic(asserts)
 	_asserts_apply_choice_failure_is_atomic(asserts)
+	_asserts_tea_commit_prepare_failure_is_atomic(asserts)
+	_asserts_resource_commit_prepare_failure_is_atomic(asserts)
 	_asserts_resolution_failure_is_atomic(asserts)
+	_asserts_dictionary_resources_restore_without_signal_contract(asserts)
 	_asserts_successful_tea_resolution_commits_common_boss_contract(asserts)
+	_asserts_existing_signal_block_state_is_preserved(asserts)
 	_asserts_combat_start_branches_converge_once_through_common_victory(asserts)
 
 func _asserts_pre_boss_commands_are_stable_state(asserts) -> void:
@@ -179,14 +173,14 @@ func _asserts_malformed_conditions_are_rejected_without_consumption(asserts) -> 
 
 func _asserts_complete_drinking_failure_is_atomic(asserts) -> void:
 	var fixture := _fixture(asserts)
-	var failing_tea := FailAfterCompleteTeaBoundary.new(fixture.tea_service)
+	fixture.tea_service = _failing_tea_service(asserts)
 	var resources := PlayerResources.new(100, 100, 100, 20)
 	resources.spend_ki(50)
 	var hooks := {"count": 0}
 	fixture.tea_resolution = _tea_resolution_runtime(
 		asserts,
 		fixture.definition,
-		failing_tea,
+		fixture.tea_service,
 		fixture.choice_runtime,
 		func(event: Dictionary) -> Dictionary: return fixture.boss.handle_resolution(event),
 		func(_event: Dictionary) -> Dictionary:
@@ -195,6 +189,7 @@ func _asserts_complete_drinking_failure_is_atomic(asserts) -> void:
 	)
 	fixture.run_state.narrative_flags.append("met_boss")
 	asserts.true_value(_prepare_fixture_tea(fixture, "oribe_green_matcha"), "drink failure fixture tea prepares")
+	var signals := _committed_signal_counts(fixture.tea_service, resources)
 	fixture.tea_resolution.start("pre_boss_drink_failure")
 	var before := _state_snapshots(fixture)
 	var resources_before := resources.to_dictionary()
@@ -208,18 +203,21 @@ func _asserts_complete_drinking_failure_is_atomic(asserts) -> void:
 	asserts.true_value(result.rolled_back, "tea failure reports explicit snapshot rollback")
 	_assert_snapshots_equal(asserts, fixture, before, "complete_drinking failure")
 	asserts.equal(resources.to_dictionary(), resources_before, "complete_drinking failure restores player resources exactly")
+	_assert_no_committed_signals(asserts, signals, "complete_drinking failure")
+	asserts.false_value(fixture.tea_service.is_blocking_signals(), "complete_drinking failure restores tea signal blocking state")
+	asserts.false_value(resources.is_blocking_signals(), "complete_drinking failure restores resource signal blocking state")
 	asserts.equal(hooks.count, 0, "tea failure cannot invoke post-commit hooks")
 
 func _asserts_apply_choice_failure_is_atomic(asserts) -> void:
 	var fixture := _fixture(asserts)
 	var failing_choice := MutatingFailChoiceBoundary.new(fixture.choice_runtime)
-	var dictionary_tea := DictionaryResourceTeaBoundary.new(fixture.tea_service)
-	var resources := {"hp": 80, "hp_max": 100, "ki": 50, "ki_max": 100, "kokoro": 70, "kokoro_max": 100}
+	var resources := PlayerResources.new(100, 100, 100, 20)
+	resources.spend_ki(50)
 	var hooks := {"count": 0}
 	fixture.tea_resolution = _tea_resolution_runtime(
 		asserts,
 		fixture.definition,
-		dictionary_tea,
+		fixture.tea_service,
 		failing_choice,
 		func(event: Dictionary) -> Dictionary: return fixture.boss.handle_resolution(event),
 		func(_event: Dictionary) -> Dictionary:
@@ -228,16 +226,85 @@ func _asserts_apply_choice_failure_is_atomic(asserts) -> void:
 	)
 	fixture.run_state.narrative_flags.append("met_boss")
 	asserts.true_value(_prepare_fixture_tea(fixture, "oribe_green_matcha"), "choice failure fixture tea prepares")
+	var signals := _committed_signal_counts(fixture.tea_service, resources)
+	var evaluations := []
+	fixture.tea_resolution.peaceful_condition_evaluated.connect(func(event: Dictionary) -> void: evaluations.append(event))
 	fixture.tea_resolution.start("pre_boss_choice_failure")
 	var before := _state_snapshots(fixture)
-	var resources_before := resources.duplicate(true)
+	var resources_before := resources.to_dictionary()
 	var result: Dictionary = fixture.tea_resolution.handle_command(BossTeaResolutionRuntime.COMMAND_DRINK_TEA, {"slot": 0, "resources": resources}, fixture.run_state)
 	asserts.false_value(result.ok, "apply_choice failure rejects peaceful commit")
 	asserts.equal(result.reason, "choice_commit_failed", "choice failure reason is preserved")
 	asserts.true_value(result.rolled_back, "choice failure reports explicit snapshot rollback")
 	_assert_snapshots_equal(asserts, fixture, before, "apply_choice failure")
-	asserts.equal(resources, resources_before, "apply_choice failure restores dictionary resources exactly")
+	asserts.equal(resources.to_dictionary(), resources_before, "apply_choice failure restores player resources exactly")
+	_assert_no_committed_signals(asserts, signals, "apply_choice failure")
+	asserts.equal(evaluations.size(), 1, "choice failure retains one distinct preflight evaluation signal")
+	asserts.equal(evaluations[0].signal_phase, "preflight", "evaluation signal is explicitly preflight rather than committed")
 	asserts.equal(hooks.count, 0, "choice failure cannot invoke post-commit hooks")
+
+func _asserts_tea_commit_prepare_failure_is_atomic(asserts) -> void:
+	var fixture := _fixture(asserts)
+	fixture.tea_service = _rejecting_commit_tea_service(asserts)
+	var resources := PlayerResources.new(100, 100, 100, 20)
+	resources.spend_ki(50)
+	var hooks := {"count": 0}
+	fixture.tea_resolution = _tea_resolution_runtime(
+		asserts,
+		fixture.definition,
+		fixture.tea_service,
+		fixture.choice_runtime,
+		func(event: Dictionary) -> Dictionary: return fixture.boss.handle_resolution(event),
+		func(_event: Dictionary) -> Dictionary:
+			hooks.count += 1
+			return {"ok": true}
+	)
+	fixture.run_state.narrative_flags.append("met_boss")
+	asserts.true_value(_prepare_fixture_tea(fixture, "oribe_green_matcha"), "tea prepare rejection fixture tea prepares")
+	var signals := _committed_signal_counts(fixture.tea_service, resources)
+	fixture.tea_resolution.start("pre_boss_tea_commit_prepare_failure")
+	var before := _state_snapshots(fixture)
+	var resources_before := resources.to_dictionary()
+	var result: Dictionary = fixture.tea_resolution.handle_command(BossTeaResolutionRuntime.COMMAND_DRINK_TEA, {"slot": 0, "resources": resources}, fixture.run_state)
+	asserts.equal(result.reason, "tea_commit_prepare_rejected", "tea commit prepare rejection is preserved")
+	asserts.true_value(result.rolled_back, "tea commit prepare rejection reports rollback")
+	_assert_snapshots_equal(asserts, fixture, before, "tea commit prepare failure")
+	asserts.equal(resources.to_dictionary(), resources_before, "tea commit prepare failure restores player resources exactly")
+	_assert_no_committed_signals(asserts, signals, "tea commit prepare failure")
+	asserts.equal(hooks.count, 0, "tea commit prepare failure cannot invoke post-commit hooks")
+
+func _asserts_resource_commit_prepare_failure_is_atomic(asserts) -> void:
+	var fixture := _fixture(asserts)
+	var resources := RejectSnapshotDeltaResources.new(100, 100, 100, 20)
+	resources.spend_ki(50)
+	var hooks := {"count": 0}
+	fixture.tea_resolution = _tea_resolution_runtime(
+		asserts,
+		fixture.definition,
+		fixture.tea_service,
+		fixture.choice_runtime,
+		func(event: Dictionary) -> Dictionary: return fixture.boss.handle_resolution(event),
+		func(_event: Dictionary) -> Dictionary:
+			hooks.count += 1
+			return {"ok": true}
+	)
+	fixture.run_state.narrative_flags.append("met_boss")
+	asserts.true_value(_prepare_fixture_tea(fixture, "oribe_green_matcha"), "resource prepare rejection fixture tea prepares")
+	var signals := _committed_signal_counts(fixture.tea_service, resources)
+	fixture.tea_service.set_block_signals(true)
+	resources.set_block_signals(true)
+	fixture.tea_resolution.start("pre_boss_resource_commit_prepare_failure")
+	var before := _state_snapshots(fixture)
+	var resources_before := resources.to_dictionary()
+	var result: Dictionary = fixture.tea_resolution.handle_command(BossTeaResolutionRuntime.COMMAND_DRINK_TEA, {"slot": 0, "resources": resources}, fixture.run_state)
+	asserts.equal(result.reason, "resource_commit_prepare_rejected", "resource commit prepare rejection is preserved")
+	asserts.true_value(result.rolled_back, "resource commit prepare rejection reports rollback")
+	_assert_snapshots_equal(asserts, fixture, before, "resource commit prepare failure")
+	asserts.equal(resources.to_dictionary(), resources_before, "resource commit prepare failure restores player resources exactly")
+	_assert_no_committed_signals(asserts, signals, "resource commit prepare failure")
+	asserts.true_value(fixture.tea_service.is_blocking_signals(), "failed rollback preserves pre-blocked tea signal state")
+	asserts.true_value(resources.is_blocking_signals(), "failed rollback preserves pre-blocked resource signal state")
+	asserts.equal(hooks.count, 0, "resource commit prepare failure cannot invoke post-commit hooks")
 
 func _asserts_resolution_failure_is_atomic(asserts) -> void:
 	var fixture := _fixture(asserts)
@@ -257,6 +324,7 @@ func _asserts_resolution_failure_is_atomic(asserts) -> void:
 	fixture.progression.fail_completion = true
 	fixture.run_state.narrative_flags.append("met_boss")
 	asserts.true_value(_prepare_fixture_tea(fixture, "oribe_green_matcha"), "resolution failure fixture tea prepares")
+	var signals := _committed_signal_counts(fixture.tea_service, resources)
 	fixture.tea_resolution.start("pre_boss_resolution_failure")
 	var before := _state_snapshots(fixture)
 	var resources_before := resources.to_dictionary()
@@ -266,15 +334,37 @@ func _asserts_resolution_failure_is_atomic(asserts) -> void:
 	asserts.true_value(result.rolled_back, "resolution failure reports explicit snapshot rollback")
 	_assert_snapshots_equal(asserts, fixture, before, "resolution failure")
 	asserts.equal(resources.to_dictionary(), resources_before, "resolution failure restores player resources exactly")
+	_assert_no_committed_signals(asserts, signals, "resolution failure")
 	asserts.equal(hooks.count, 0, "resolution failure cannot invoke post-commit hooks")
 	fixture.progression.fail_completion = false
 	var retry: Dictionary = fixture.tea_resolution.handle_command(BossTeaResolutionRuntime.COMMAND_DRINK_TEA, {"slot": 0, "resources": resources}, fixture.run_state)
 	asserts.true_value(retry.ok, "fully rolled back peaceful resolution can retry")
 
+func _asserts_dictionary_resources_restore_without_signal_contract(asserts) -> void:
+	var fixture := _fixture(asserts)
+	fixture.tea_service = _dictionary_resource_tea_service(asserts)
+	var failing_choice := MutatingFailChoiceBoundary.new(fixture.choice_runtime)
+	fixture.tea_resolution = _tea_resolution_runtime(
+		asserts,
+		fixture.definition,
+		fixture.tea_service,
+		failing_choice,
+		func(event: Dictionary) -> Dictionary: return fixture.boss.handle_resolution(event)
+	)
+	var resources := {"hp": 80, "hp_max": 100, "ki": 50, "ki_max": 100, "kokoro": 70, "kokoro_max": 100}
+	fixture.run_state.narrative_flags.append("met_boss")
+	asserts.true_value(_prepare_fixture_tea(fixture, "oribe_green_matcha"), "dictionary resource fixture tea prepares")
+	fixture.tea_resolution.start("pre_boss_dictionary_resource_failure")
+	var resources_before := resources.duplicate(true)
+	var result: Dictionary = fixture.tea_resolution.handle_command(BossTeaResolutionRuntime.COMMAND_DRINK_TEA, {"slot": 0, "resources": resources}, fixture.run_state)
+	asserts.false_value(result.ok, "dictionary resource choice failure rejects commit")
+	asserts.equal(resources, resources_before, "dictionary resources restore exactly without a signal contract")
+
 func _asserts_successful_tea_resolution_commits_common_boss_contract(asserts) -> void:
 	var fixture := _fixture(asserts)
 	var hooks := {"memory": [], "weakness": [], "dialogue": []}
 	var hook_states := []
+	var sequence := []
 	fixture.tea_resolution = _tea_resolution_runtime(
 		asserts,
 		fixture.definition,
@@ -284,6 +374,7 @@ func _asserts_successful_tea_resolution_commits_common_boss_contract(asserts) ->
 		func(event: Dictionary) -> Dictionary:
 			hooks.memory.append(event)
 			hook_states.append(_state_snapshots(fixture))
+			sequence.append("hook")
 			return {"ok": true},
 		func(event: Dictionary) -> Dictionary:
 			hooks.weakness.append(event)
@@ -292,10 +383,14 @@ func _asserts_successful_tea_resolution_commits_common_boss_contract(asserts) ->
 			hooks.dialogue.append(event)
 			return {"ok": true}
 	)
+	var resources := PlayerResources.new(100, 100, 100, 20)
+	resources.spend_ki(50)
 	fixture.run_state.narrative_flags.append("met_boss")
 	asserts.true_value(_prepare_fixture_tea(fixture, "oribe_green_matcha"), "fixture tea can be prepared")
+	fixture.boss.encounter_resolved.connect(func(_event: Dictionary) -> void: sequence.append("boss_resolved"))
+	var signals := _committed_signal_counts(fixture.tea_service, resources, sequence)
 	fixture.tea_resolution.start("pre_boss_success")
-	var result: Dictionary = fixture.tea_resolution.handle_command(BossTeaResolutionRuntime.COMMAND_DRINK_TEA, {"slot": 0}, fixture.run_state)
+	var result: Dictionary = fixture.tea_resolution.handle_command(BossTeaResolutionRuntime.COMMAND_DRINK_TEA, {"slot": 0, "resources": resources}, fixture.run_state)
 	asserts.true_value(result.ok, "successful tea command resolves through boss runtime")
 	asserts.equal(result.event.event_type, BossEncounterRuntime.EVENT_RESOLVED, "tea ceremony emits common DEV-28 boss event")
 	asserts.equal(result.event.resolution_type, "peaceful", "tea ceremony maps to peaceful common resolution type")
@@ -304,7 +399,17 @@ func _asserts_successful_tea_resolution_commits_common_boss_contract(asserts) ->
 	asserts.equal(result.resolution_result.completion_result.clear_event.reward_item_ids, ["humble_clay_bowl"], "progression reward payload crosses dungeon completion")
 	asserts.true_value(result.consumed, "successful commit consumes the prepared tea")
 	asserts.false_value(fixture.tea_service.has_prepared_tea(0), "tea is consumed only after successful commit")
+	asserts.equal(resources.ki, 62, "successful commit preserves the tea resource effect")
 	asserts.true_value(fixture.run_state.narrative_flags.has("fixture_shared_tea"), "choice run flag is recorded after successful resolution")
+	asserts.equal(signals.drink_started, 1, "successful commit publishes drink_started exactly once")
+	asserts.equal(signals.drink_completed, 1, "successful commit publishes drink_completed exactly once")
+	asserts.equal(signals.changed, 1, "successful commit publishes tea changed exactly once")
+	asserts.equal(signals.operation_failed, 0, "successful commit does not publish operation_failed")
+	asserts.equal(signals.ki_changed, 1, "successful commit publishes resource delta exactly once")
+	asserts.equal(signals.ki_events, [[50, 62, 100]], "published resource delta preserves the committed before and after values")
+	asserts.equal(sequence, ["boss_resolved", "tea_started", "tea_completed", "tea_changed", "ki_changed", "hook"], "commit signals and hooks publish only after the common boss resolution succeeds")
+	asserts.false_value(result.has("tea_publish_result"), "successful result does not hide a fallible post-resolution tea publish result")
+	asserts.false_value(result.has("resource_publish_result"), "successful result does not hide a fallible post-resolution resource publish result")
 	asserts.equal(hooks.memory[0].memory_hook_keys, ["memory.fixture_boss.met", "memory.fixture_boss.shared_tea"], "memory hooks expose stable keys without dialogue text")
 	asserts.equal(hooks.weakness[0].weakness_hook_keys, ["weakness.fixture_boss.calm"], "weakness hooks expose stable keys")
 	asserts.equal(hooks.dialogue[0].dialogue_hook_keys, ["dialogue.fixture_boss.pre_boss", "dialogue.fixture_boss.peaceful"], "dialogue hooks expose stable keys")
@@ -313,6 +418,22 @@ func _asserts_successful_tea_resolution_commits_common_boss_contract(asserts) ->
 	asserts.equal(hook_states[0].tea.quick_slots[0], {}, "hooks run after tea consumption commits")
 	asserts.true_value(hook_states[0].run.narrative_flags.has("fixture_shared_tea"), "hooks run after choice state commits")
 	asserts.equal(fixture.tea_resolution.handle_command(BossTeaResolutionRuntime.COMMAND_DRINK_TEA, {"slot": 0}, fixture.run_state).reason, "pre_boss_resolution_not_active", "duplicate peaceful resolution is guarded")
+
+func _asserts_existing_signal_block_state_is_preserved(asserts) -> void:
+	var fixture := _fixture(asserts)
+	var resources := PlayerResources.new(100, 100, 100, 20)
+	resources.spend_ki(50)
+	fixture.run_state.narrative_flags.append("met_boss")
+	asserts.true_value(_prepare_fixture_tea(fixture, "oribe_green_matcha"), "blocked signal fixture tea prepares")
+	var signals := _committed_signal_counts(fixture.tea_service, resources)
+	fixture.tea_service.set_block_signals(true)
+	resources.set_block_signals(true)
+	fixture.tea_resolution.start("pre_boss_blocked_signals")
+	var result: Dictionary = fixture.tea_resolution.handle_command(BossTeaResolutionRuntime.COMMAND_DRINK_TEA, {"slot": 0, "resources": resources}, fixture.run_state)
+	asserts.true_value(result.ok, "transaction succeeds while observers are already blocked")
+	asserts.true_value(fixture.tea_service.is_blocking_signals(), "successful transaction preserves tea signal blocking state")
+	asserts.true_value(resources.is_blocking_signals(), "successful transaction preserves resource signal blocking state")
+	_assert_no_committed_signals(asserts, signals, "pre-blocked successful transaction")
 
 func _asserts_combat_start_branches_converge_once_through_common_victory(asserts) -> void:
 	for command_id in [BossTeaResolutionRuntime.COMMAND_REFUSE, BossTeaResolutionRuntime.COMMAND_ATTACK_FIRST, BossTeaResolutionRuntime.COMMAND_DRINK_TEA]:
@@ -423,6 +544,51 @@ func _assert_snapshots_equal(asserts, fixture: Dictionary, before: Dictionary, l
 	asserts.equal(after.run, before.run, "%s restores run state" % label)
 	asserts.equal(after.progression, before.progression, "%s preserves progression state" % label)
 
+func _committed_signal_counts(tea_service, resources = null, sequence = null) -> Dictionary:
+	var counts := {
+		"drink_started": 0,
+		"drink_completed": 0,
+		"changed": 0,
+		"operation_failed": 0,
+		"ki_changed": 0,
+		"ki_events": []
+	}
+	tea_service.drink_started.connect(func(_event: Dictionary) -> void:
+		counts.drink_started += 1
+		if sequence is Array:
+			sequence.append("tea_started")
+	)
+	tea_service.drink_completed.connect(func(_event: Dictionary) -> void:
+		counts.drink_completed += 1
+		if sequence is Array:
+			sequence.append("tea_completed")
+	)
+	tea_service.changed.connect(func(_snapshot: Dictionary) -> void:
+		counts.changed += 1
+		if sequence is Array:
+			sequence.append("tea_changed")
+	)
+	tea_service.operation_failed.connect(func(_failure: Dictionary) -> void:
+		counts.operation_failed += 1
+		if sequence is Array:
+			sequence.append("tea_failed")
+	)
+	if resources != null and not resources is Dictionary:
+		resources.ki_changed.connect(func(previous: int, current: int, maximum: int) -> void:
+			counts.ki_changed += 1
+			counts.ki_events.append([previous, current, maximum])
+			if sequence is Array:
+				sequence.append("ki_changed")
+		)
+	return counts
+
+func _assert_no_committed_signals(asserts, signals: Dictionary, label: String) -> void:
+	asserts.equal(signals.drink_started, 0, "%s emits no drink_started signal" % label)
+	asserts.equal(signals.drink_completed, 0, "%s emits no drink_completed signal" % label)
+	asserts.equal(signals.changed, 0, "%s emits no tea changed signal" % label)
+	asserts.equal(signals.operation_failed, 0, "%s emits no operation_failed signal" % label)
+	asserts.equal(signals.ki_changed, 0, "%s emits no resource delta signal" % label)
+
 func _prepare_fixture_tea(fixture: Dictionary, tea_id: String) -> bool:
 	var inventory: InventoryModel = fixture.inventory
 	inventory.add_item(tea_id, 1)
@@ -437,6 +603,27 @@ func _tea_service(asserts) -> TeaService:
 	}))
 	asserts.true_value(result.ok, "fixture tea service loads")
 	return result.tea_service
+
+func _failing_tea_service(asserts) -> TeaService:
+	return _configured_tea_subclass(asserts, FailAfterCompleteTeaService.new())
+
+func _dictionary_resource_tea_service(asserts) -> TeaService:
+	return _configured_tea_subclass(asserts, DictionaryResourceTeaService.new())
+
+func _rejecting_commit_tea_service(asserts) -> TeaService:
+	return _configured_tea_subclass(asserts, RejectDrinkCommitTeaService.new())
+
+func _configured_tea_subclass(asserts, service: TeaService) -> TeaService:
+	var base := _tea_service(asserts)
+	var configured: Dictionary = service.configure(
+		base.quickslot_count,
+		base.drink_base_seconds,
+		base.tea_definitions,
+		base.vessel_definitions,
+		base.data_version
+	)
+	asserts.true_value(configured.ok, "tea service test subclass configures")
+	return service
 
 func _inventory(asserts) -> InventoryModel:
 	var result: Dictionary = InventoryModel.from_catalog(FakeCatalog.new({

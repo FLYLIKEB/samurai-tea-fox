@@ -62,7 +62,9 @@ func configure(
 		or not tea_service.has_method("start_drinking") \
 		or not tea_service.has_method("complete_drinking") \
 		or not tea_service.has_method("to_snapshot") \
-		or not tea_service.has_method("load_snapshot"):
+		or not tea_service.has_method("load_snapshot") \
+		or not tea_service.has_method("prepare_drink_commit") \
+		or not tea_service.has_method("publish_drink_commit"):
 		return _fail("invalid_tea_service", "Boss tea resolution requires the tea service public boundary.")
 	if not resolution_hook.is_valid():
 		return _fail("invalid_resolution_hook", "Boss tea resolution requires a boss resolution hook.")
@@ -127,6 +129,8 @@ func _handle_drink_tea(payload: Dictionary, run_state, context: Dictionary) -> D
 
 	var condition_result := _peaceful_conditions_pass(prepared, config, run_state, context)
 	var evaluation_event := _build_hook_event(COMMAND_DRINK_TEA, prepared, OUTCOME_PEACEFUL_TEA_CEREMONY)
+	evaluation_event["event_type"] = "boss_peaceful_condition_evaluated"
+	evaluation_event["signal_phase"] = "preflight"
 	evaluation_event["passed"] = bool(condition_result.get("passed", false))
 	if not condition_result.ok:
 		return condition_result
@@ -157,6 +161,7 @@ func _handle_drink_tea(payload: Dictionary, run_state, context: Dictionary) -> D
 	var snapshots := _capture_transaction_snapshots(run_state, resources)
 	if not snapshots.ok:
 		return snapshots
+	var signal_state := _block_transaction_signals(resources)
 	var action_result: Dictionary = _tea_service.start_drinking(slot_index, {
 		"pre_boss_id": _state.pre_boss_id,
 		"boss_id": _definition.id,
@@ -164,14 +169,27 @@ func _handle_drink_tea(payload: Dictionary, run_state, context: Dictionary) -> D
 		"command": COMMAND_DRINK_TEA
 	})
 	if not action_result.ok:
-		return _rollback_failure(action_result, snapshots, run_state, resources)
+		return _rollback_failure(action_result, snapshots, run_state, resources, signal_state)
 
 	var consume_result: Dictionary = _tea_service.complete_drinking(action_result.action, resources)
 	if not consume_result.ok:
-		return _rollback_failure(consume_result, snapshots, run_state, resources)
+		return _rollback_failure(consume_result, snapshots, run_state, resources, signal_state)
 	var apply_result := _apply_choice(choice_result.choice_id, run_state, config, context)
 	if not apply_result.ok:
-		return _rollback_failure(apply_result, snapshots, run_state, resources)
+		return _rollback_failure(apply_result, snapshots, run_state, resources, signal_state)
+	var committed_tea_snapshot = _tea_service.to_snapshot()
+	var tea_commit: Dictionary = _tea_service.prepare_drink_commit(
+		action_result.action,
+		consume_result,
+		committed_tea_snapshot
+	)
+	if not tea_commit.ok:
+		return _rollback_failure(tea_commit, snapshots, run_state, resources, signal_state)
+	var resource_snapshot := _dictionary_value(snapshots.get("resources", {}))
+	var committed_resource_snapshot := _current_resource_snapshot(resources, resource_snapshot)
+	var resource_commit := _prepare_resource_commit(resources, resource_snapshot, committed_resource_snapshot)
+	if not resource_commit.ok:
+		return _rollback_failure(resource_commit, snapshots, run_state, resources, signal_state)
 
 	var resolution_input := _build_resolution_input(
 		COMMAND_DRINK_TEA,
@@ -182,12 +200,16 @@ func _handle_drink_tea(payload: Dictionary, run_state, context: Dictionary) -> D
 	var resolution_result := _normalize_hook_result(_resolution_hook.call(resolution_input.duplicate(true)))
 	if not bool(resolution_result.get("ok", false)):
 		var resolution_failure := _fail(String(resolution_result.get("reason", "resolution_hook_rejected")), String(resolution_result.get("error", "Boss resolution hook rejected peaceful tea completion.")))
-		return _rollback_failure(resolution_failure, snapshots, run_state, resources)
+		return _rollback_failure(resolution_failure, snapshots, run_state, resources, signal_state)
 
 	_state.selected_command = COMMAND_DRINK_TEA
 	_state.lifecycle_state = STATE_RESOLVED
 	_state.resolution_event = _dictionary_value(resolution_result.get("event", resolution_input))
+	_restore_signal_blocking(signal_state, resources)
+	_tea_service.publish_drink_commit(_dictionary_value(tea_commit.get("token", {})))
+	_publish_resource_commit(resources, resource_commit)
 	var hook_event := _build_hook_event(COMMAND_DRINK_TEA, prepared, OUTCOME_PEACEFUL_TEA_CEREMONY)
+	hook_event["signal_phase"] = "committed"
 	_call_non_blocking_hooks(hook_event)
 	pre_boss_choice_selected.emit(hook_event.duplicate(true))
 	var committed := {
@@ -409,10 +431,11 @@ func _snapshot_run_state(run_state) -> Dictionary:
 			return {"ok": true, "kind": "object", "value": snapshot.duplicate(true)}
 	return _fail("invalid_run_state_snapshot", "Peaceful resolution requires snapshot-capable run state.")
 
-func _rollback_failure(failure: Dictionary, snapshots: Dictionary, run_state, resources) -> Dictionary:
+func _rollback_failure(failure: Dictionary, snapshots: Dictionary, run_state, resources, signal_state: Dictionary) -> Dictionary:
 	var tea_restore: Dictionary = _tea_service.load_snapshot(_dictionary_value(snapshots.get("tea", {})))
 	var run_restore := _restore_run_state(run_state, _dictionary_value(snapshots.get("run", {})))
 	var resource_restore := _restore_resources(resources, _dictionary_value(snapshots.get("resources", {})))
+	_restore_signal_blocking(signal_state, resources)
 	if not tea_restore.ok or not run_restore.ok or not resource_restore.ok:
 		return {
 			"ok": false,
@@ -458,7 +481,9 @@ func _snapshot_resources(resources) -> Dictionary:
 		and resources.has_method("recover_ki") \
 		and resources.has_method("spend_ki") \
 		and resources.has_method("restore_kokoro") \
-		and resources.has_method("reduce_kokoro"):
+		and resources.has_method("reduce_kokoro") \
+		and resources.has_method("prepare_snapshot_delta") \
+		and resources.has_method("publish_snapshot_delta"):
 		var fields = resources.to_dictionary()
 		if typeof(fields) == TYPE_DICTIONARY and _valid_resource_fields(fields):
 			return {"ok": true, "kind": "player_resources", "value": fields.duplicate(true)}
@@ -506,6 +531,55 @@ func _valid_resource_fields(value: Dictionary) -> bool:
 		if typeof(value.get(field)) != TYPE_INT:
 			return false
 	return true
+
+func _block_transaction_signals(resources) -> Dictionary:
+	var state := {
+		"tea_was_blocked": _tea_service.is_blocking_signals(),
+		"resources_blocked": false,
+		"resources_were_blocked": false
+	}
+	_tea_service.set_block_signals(true)
+	if resources != null \
+			and not resources is Dictionary \
+			and resources.has_method("is_blocking_signals") \
+			and resources.has_method("set_block_signals"):
+		state.resources_blocked = true
+		state.resources_were_blocked = resources.is_blocking_signals()
+		resources.set_block_signals(true)
+	return state
+
+func _restore_signal_blocking(signal_state: Dictionary, resources) -> void:
+	_tea_service.set_block_signals(bool(signal_state.get("tea_was_blocked", false)))
+	if bool(signal_state.get("resources_blocked", false)) and resources != null and not resources is Dictionary:
+		resources.set_block_signals(bool(signal_state.get("resources_were_blocked", false)))
+
+func _current_resource_snapshot(resources, transaction_snapshot: Dictionary) -> Dictionary:
+	var kind := String(transaction_snapshot.get("kind", ""))
+	if kind == "dictionary" and resources is Dictionary:
+		return resources.duplicate(true)
+	if kind == "snapshot_object" and resources != null:
+		var snapshot = resources.to_snapshot()
+		return snapshot.duplicate(true) if typeof(snapshot) == TYPE_DICTIONARY else {}
+	if kind == "player_resources" and resources != null:
+		var snapshot = resources.to_dictionary()
+		return snapshot.duplicate(true) if typeof(snapshot) == TYPE_DICTIONARY else {}
+	return {}
+
+func _prepare_resource_commit(resources, transaction_snapshot: Dictionary, committed_snapshot: Dictionary) -> Dictionary:
+	var kind := String(transaction_snapshot.get("kind", ""))
+	if kind in ["none", "dictionary", "snapshot_object"]:
+		return {"ok": true, "skipped": true}
+	if kind == "player_resources" and resources != null:
+		return _normalize_hook_result(resources.prepare_snapshot_delta(
+			_dictionary_value(transaction_snapshot.get("value", {})),
+			committed_snapshot
+		))
+	return _fail("invalid_resource_commit", "Resource commit token could not be prepared.")
+
+func _publish_resource_commit(resources, resource_commit: Dictionary) -> void:
+	if bool(resource_commit.get("skipped", false)):
+		return
+	resources.publish_snapshot_delta(_dictionary_value(resource_commit.get("token", {})))
 
 func _require_active() -> Dictionary:
 	if _state.lifecycle_state != STATE_ACTIVE:
