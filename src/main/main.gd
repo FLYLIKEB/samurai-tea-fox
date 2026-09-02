@@ -615,7 +615,10 @@ func _owner_sprite_sources(world: Dictionary) -> Dictionary:
 	for node in world.get("resource_nodes", []):
 		var owner_id := String(node.get("id", ""))
 		var resource_id := String(node.get("resource_id", ""))
-		if owner_id != "" and sources.has(resource_id):
+		var source_id := String(node.get("source_id", ""))
+		if owner_id != "" and not source_id.is_empty():
+			sources[owner_id] = source_id
+		elif owner_id != "" and sources.has(resource_id):
 			sources[owner_id] = sources[resource_id]
 	for node in world.get("facility_nodes", []):
 		var owner_id := String(node.get("id", ""))

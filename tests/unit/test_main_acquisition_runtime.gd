@@ -23,7 +23,8 @@ class MovementPlayer:
 func run(asserts) -> void:
 	var catalog := DataCatalog.new()
 	asserts.true_value(catalog.load_from_directory("res://data/generated").ok, "runtime acquisition fixture loads generated definitions")
-	_assert_main_generates_current_mountain_biome(asserts, catalog)
+	_assert_main_generates_current_biome(asserts, catalog, "mountain_region")
+	_assert_main_generates_current_biome(asserts, catalog, "wasteland")
 	var runtime := _configured_runtime(catalog, RunState.new())
 	asserts.true_value(runtime.result.ok, "main configures acquisition against generated world data: %s" % runtime.result.get("error", ""))
 	if not runtime.result.ok:
@@ -125,10 +126,10 @@ func run(asserts) -> void:
 	restored.main.free()
 	drop_restored.main.free()
 
-func _assert_main_generates_current_mountain_biome(asserts, catalog: DataCatalog) -> void:
+func _assert_main_generates_current_biome(asserts, catalog: DataCatalog, biome_id: String) -> void:
 	var state := RunState.new()
-	state.current_biome_id = "mountain_region"
-	state.teleport_states = {"common_region": "repaired", "mountain_region": "broken"}
+	state.current_biome_id = biome_id
+	state.teleport_states = {"common_region": "repaired", "mountain_region": "repaired", "wasteland": "broken"}
 	var runtime := Main.new()
 	var combat_source := DropSource.new()
 	var world_root := Node2D.new()
@@ -137,16 +138,30 @@ func _assert_main_generates_current_mountain_biome(asserts, catalog: DataCatalog
 	runtime.combat_dummy = combat_source
 	runtime.world_visuals = world_root
 	var services: Dictionary = runtime._configure_run_services(catalog)
-	asserts.true_value(services.ok, "mountain runtime fixture configures run services")
+	asserts.true_value(services.ok, "%s runtime fixture configures run services" % biome_id)
 	if services.ok:
 		var result: Dictionary = runtime._configure_world_for_current_run()
-		asserts.true_value(result.ok, "main configures generated world for current mountain biome: %s" % result.get("error", ""))
-		asserts.equal(runtime.generated_world.get("biome_id", ""), "mountain_region", "main uses current_biome_id instead of hard-coded common_region")
-		asserts.equal(runtime.generated_world.get("biome_generation_rule_id", ""), "mountain_region", "main feeds the mountain definition into WorldGenerator")
-		asserts.true_value(runtime.world_render_result.get("ok", false), "mountain runtime render uses generated renderer input")
+		asserts.true_value(result.ok, "main configures generated world for current %s biome: %s" % [biome_id, result.get("error", "")])
+		asserts.equal(runtime.generated_world.get("biome_id", ""), biome_id, "main uses current_biome_id instead of hard-coded common_region")
+		asserts.equal(runtime.generated_world.get("biome_generation_rule_id", ""), biome_id, "main feeds the current biome definition into WorldGenerator")
+		asserts.true_value(runtime.world_render_result.get("ok", false), "%s runtime render uses generated renderer input" % biome_id)
+		if biome_id == "wasteland":
+			_assert_wasteland_runtime_sources(asserts, runtime)
 	runtime.free()
 	combat_source.free()
 	world_root.free()
+
+func _assert_wasteland_runtime_sources(asserts, runtime: Main) -> void:
+	var owner_sources: Dictionary = runtime._owner_sprite_sources(runtime.generated_world)
+	var has_iron_scrap_source := false
+	for node in runtime.generated_world.get("resource_nodes", []):
+		if String(node.get("resource_id", "")) != "item_28":
+			continue
+		var owner_id := String(node.get("id", ""))
+		asserts.equal(String(node.get("source_id", "")), "assets/sprites/objects/mining/iron_ore_32x32.png", "wasteland repair resource carries promoted source id")
+		asserts.equal(String(owner_sources.get(owner_id, "")), "assets/sprites/objects/mining/iron_ore_32x32.png", "main maps wasteland repair resource owner to its source")
+		has_iron_scrap_source = true
+	asserts.true_value(has_iron_scrap_source, "wasteland runtime generates sourced iron-scrap repair resources")
 
 func _configured_runtime(catalog, state: RunState, resource_position := Vector2i.ZERO) -> Dictionary:
 	var runtime := Main.new()
