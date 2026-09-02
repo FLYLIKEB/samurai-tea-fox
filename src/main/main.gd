@@ -16,6 +16,7 @@ const BiomeProgressionState = preload("res://src/world/biome/biome_progression_s
 const RunState = preload("res://src/save/run_state.gd")
 const SenRikyuPhaseOneRuntime = preload("res://src/dungeon/sen_rikyu_phase_one_runtime.gd")
 const SenRikyuPhaseTwoRuntime = preload("res://src/dungeon/sen_rikyu_phase_two_runtime.gd")
+const SenRikyuPhaseThreeRuntime = preload("res://src/dungeon/sen_rikyu_phase_three_runtime.gd")
 const AcquisitionService = preload("res://src/world/interactions/acquisition_service.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
@@ -45,6 +46,7 @@ var core_tea_ware_collection
 var final_room_state_builder
 var sen_rikyu_phase_one_runtime
 var sen_rikyu_phase_two_runtime
+var sen_rikyu_phase_three_runtime
 var memory_tea_cutscene_runtime
 var acquisition_service
 var dungeon_runtime
@@ -371,6 +373,12 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 		if not phase_two_result.ok:
 			return phase_two_result
 		sen_rikyu_phase_two_runtime = phase_two_result.runtime
+	sen_rikyu_phase_three_runtime = null
+	if loaded_catalog.has_method("find_by_id") and not loaded_catalog.find_by_id("events", SenRikyuPhaseThreeRuntime.EVENT_ID).is_empty():
+		var phase_three_result: Dictionary = SenRikyuPhaseThreeRuntime.from_catalog(loaded_catalog)
+		if not phase_three_result.ok:
+			return phase_three_result
+		sen_rikyu_phase_three_runtime = phase_three_result.runtime
 	tea_service.drink_completed.connect(_on_tea_drink_completed)
 	memory_tea_cutscene_runtime = MemoryTeaCutsceneRuntime.new()
 	var memory_runtime_result: Dictionary = memory_tea_cutscene_runtime.configure(loaded_catalog.data_version)
@@ -414,6 +422,20 @@ func start_sen_rikyu_phase_two(phase_one_transition_command) -> Dictionary:
 	if sen_rikyu_phase_two_runtime == null:
 		return {"ok": false, "reason": "missing_sen_rikyu_phase_two", "error": "Sen Rikyu Phase 2 runtime is not configured."}
 	return sen_rikyu_phase_two_runtime.start_from_phase_one(phase_one_transition_command)
+
+func start_sen_rikyu_phase_three(phase_two_transition) -> Dictionary:
+	if sen_rikyu_phase_three_runtime == null:
+		return {"ok": false, "reason": "missing_sen_rikyu_phase_three", "error": "Sen Rikyu Phase 3 runtime is not configured."}
+	if run_state == null:
+		run_state = RunState.new()
+	return sen_rikyu_phase_three_runtime.start(phase_two_transition, run_state)
+
+func complete_sen_rikyu_phase_three(ability_id: String) -> Dictionary:
+	if sen_rikyu_phase_three_runtime == null:
+		return {"ok": false, "reason": "missing_sen_rikyu_phase_three", "error": "Sen Rikyu Phase 3 runtime is not configured."}
+	if run_state == null:
+		run_state = RunState.new()
+	return sen_rikyu_phase_three_runtime.complete_with_ability(ability_id, run_state)
 
 func _sen_rikyu_phase_two_accepts_command(command) -> bool:
 	return sen_rikyu_phase_two_runtime != null \
