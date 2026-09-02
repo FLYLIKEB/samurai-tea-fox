@@ -3,6 +3,7 @@ class_name SaveCodec
 
 const RunState = preload("res://src/save/run_state.gd")
 const MetaState = preload("res://src/save/meta_state.gd")
+const TailState = preload("res://src/player/tail_state.gd")
 
 const CURRENT_SCHEMA_VERSION := 1
 const RUN_KIND := "run"
@@ -18,6 +19,7 @@ const RUN_FIELD_TYPES := {
 	"currency": TYPE_INT,
 	"trade_stock": TYPE_DICTIONARY,
 	"tails": TYPE_INT,
+	"tail_state": TYPE_DICTIONARY,
 	"abilities": TYPE_ARRAY,
 	"completed_dungeon_ids": TYPE_ARRAY,
 	"completed_runtime_dungeon_ids": TYPE_ARRAY,
@@ -101,6 +103,10 @@ static func _decode_payload(save_data: Dictionary, expected_kind: String, field_
 			payload[field] = int(payload[field])
 		elif typeof(payload[field]) != field_types[field]:
 			return _failure("Malformed %s field '%s'." % [expected_kind, field])
+	if expected_kind == RUN_KIND:
+		var tail_validation := TailState.validate_dictionary(payload.tail_state)
+		if not tail_validation.ok:
+			return _failure(tail_validation.error)
 	return {"ok": true, "state": payload.duplicate(true)}
 
 static func _validate_envelope(save_data: Dictionary, expected_kind: String) -> Dictionary:
@@ -126,6 +132,8 @@ static func _migrate_payload(schema_version: int, kind: String, payload: Diction
 	match schema_version:
 		1:
 			var migrated := payload.duplicate(true)
+			if kind == RUN_KIND and not migrated.has("tail_state") and migrated.has("tails") and _is_integer_value(migrated.tails):
+				migrated["tail_state"] = TailState.from_tail_count(int(migrated.tails)).to_dictionary()
 			var defaults := RunState.new().to_dictionary() if kind == RUN_KIND else MetaState.new().to_dictionary()
 			for field in defaults:
 				if not migrated.has(field) and not field in REQUIRED_FIELDS[kind]:
@@ -148,6 +156,10 @@ static func _validate_snapshot(state, kind: String, field_types: Dictionary) -> 
 			continue
 		if typeof(snapshot[field]) != field_types[field]:
 			return _failure("Malformed %s field '%s'." % [kind, field])
+	if kind == RUN_KIND and snapshot.has("tail_state"):
+		var tail_validation := TailState.validate_dictionary(snapshot.tail_state)
+		if not tail_validation.ok:
+			return _failure(tail_validation.error)
 	return {"ok": true, "snapshot": snapshot.duplicate(true)}
 
 static func _snapshot_for(state, kind: String) -> Dictionary:

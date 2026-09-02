@@ -4,6 +4,7 @@ const SaveCodec = preload("res://src/save/save_codec.gd")
 const SaveStore = preload("res://src/save/save_store.gd")
 const RunState = preload("res://src/save/run_state.gd")
 const MetaState = preload("res://src/save/meta_state.gd")
+const TailState = preload("res://src/player/tail_state.gd")
 
 const TEST_DIRECTORY := "user://dev14_save_store_tests"
 const RUN_PATH := TEST_DIRECTORY + "/run.json"
@@ -95,6 +96,9 @@ func _full_run_state() -> RunState:
 	state.equipment = {"slots": {"tea_ware": {"item_id": "travel_bottle"}}}
 	state.currency = 7
 	state.tails = 2
+	var tail := TailState.new()
+	tail.apply_transition("event", "test_tail_growth", 2, ["humanity"])
+	state.tail_state = tail.to_dictionary()
 	state.abilities = ["fox_dash"]
 	state.completed_dungeon_ids = ["common_region"]
 	state.completed_runtime_dungeon_ids = ["fixture_dungeon"]

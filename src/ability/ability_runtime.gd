@@ -124,6 +124,21 @@ func effective_ki_cost(definition, context: Dictionary) -> int:
 func definition_for_slot(slot: int) -> Dictionary:
 	return _ability_for_slot(slot)
 
+func ability_candidates(context := {}) -> Dictionary:
+	var ids := []
+	var candidates := []
+	var sorted_ids := definitions.keys()
+	sorted_ids.sort()
+	for ability_id in sorted_ids:
+		var definition: AbilityDefinition = definitions[ability_id]
+		var tail_check := _tail_condition_result(definition, context)
+		if tail_check.ok:
+			ids.append(definition.id)
+			candidates.append(definition.to_dictionary())
+		elif String(tail_check.get("reason", "")) != "tail_requirement_not_met":
+			return tail_check
+	return {"ok": true, "ability_ids": ids, "definitions": candidates}
+
 func equipped_ability_id(slot: int) -> String:
 	if slot < 0 or slot >= equip_slots.size():
 		return ""

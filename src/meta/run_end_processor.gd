@@ -173,6 +173,12 @@ func _events_from_run_summary(run_summary: Dictionary) -> Array:
 		events.append({"type": "final_tea_room_reached", "target": "final_tea_room", "value": 1})
 	if int(run_summary.get("tail_stage", 0)) > 0:
 		events.append({"type": "tail_stage_reached", "target": "tail_stage", "value": int(run_summary.tail_stage)})
+	var tail_state = run_summary.get("tail_state", {})
+	if typeof(tail_state) == TYPE_DICTIONARY:
+		if int(tail_state.get("stage", 0)) > 0:
+			events.append({"type": "tail_stage_reached", "target": "tail_stage", "value": int(tail_state.stage)})
+		for flag in _array_value(tail_state.get("path_flags", [])):
+			events.append({"type": "tail_path_flag", "target": String(flag), "value": 1})
 	for record_id in _array_value(run_summary.get("discovered_records", [])):
 		events.append({"type": "discovered_record", "target": String(record_id), "value": 1})
 	for choice_id in _array_value(run_summary.get("choice_history", [])):
