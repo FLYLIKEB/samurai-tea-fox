@@ -90,6 +90,38 @@ func run(asserts) -> void:
 	if not missing_nested_summon.ok:
 		asserts.true_value("missing_monster" in missing_nested_summon.error, "nested summon relation error names the missing monster")
 
+	var boss_tea_rules := {
+		"bosses": {"required_fields": ["id"]},
+		"choices": {"required_fields": ["id"]},
+		"teas": {"required_fields": ["id"]},
+		"monsters": {"required_fields": ["id"]}
+	}
+	var valid_boss_tea := validator.validate_catalog({
+		"bosses": [_boss_definition({"tea_resolution": _boss_tea_resolution()})],
+		"choices": [_catalog_choice()],
+		"teas": [{"id": "oribe_green_matcha"}],
+		"monsters": [{"id": "road_bandit"}]
+	}, boss_tea_rules)
+	asserts.true_value(valid_boss_tea.ok, "boss tea nested references resolve through choices and teas")
+	var missing_boss_choice := validator.validate_catalog({
+		"bosses": [_boss_definition({"tea_resolution": _boss_tea_resolution()})],
+		"choices": [],
+		"teas": [{"id": "oribe_green_matcha"}],
+		"monsters": [{"id": "road_bandit"}]
+	}, boss_tea_rules)
+	asserts.false_value(missing_boss_choice.ok, "boss tea choice_id must resolve through choices")
+	if not missing_boss_choice.ok:
+		asserts.true_value("fixture_share_tea" in missing_boss_choice.error, "boss tea choice relation names the missing choice")
+	var missing_boss_tea := validator.validate_catalog({
+		"bosses": [_boss_definition({"tea_resolution": _boss_tea_resolution()})],
+		"choices": [_catalog_choice()],
+		"teas": [],
+		"monsters": [{"id": "road_bandit"}]
+	}, boss_tea_rules)
+	asserts.false_value(missing_boss_tea.ok, "boss required_tea_ids must resolve through teas")
+	if not missing_boss_tea.ok:
+		asserts.true_value("oribe_green_matcha" in missing_boss_tea.error, "boss tea relation names the missing tea")
+
 	var required_result := validator.validate_catalog({
 		"balance": [{"id": "player_hp_max", "name": "플레이어 HP 최대치", "status": "확정"}]
 	}, {
@@ -198,6 +230,7 @@ func _boss_definition(overrides: Dictionary = {}) -> Dictionary:
 		"biome_id": "common_region",
 		"reward_item_ids": ["oribe_green_glazed_bowl"],
 		"summon_monster_ids": ["road_bandit"],
+		"resolution_types": ["combat", "peaceful"],
 		"phases": [{
 			"id": "opening",
 			"patterns": [{
@@ -212,3 +245,20 @@ func _boss_definition(overrides: Dictionary = {}) -> Dictionary:
 			continue
 		boss[key] = overrides[key]
 	return boss
+
+func _boss_tea_resolution() -> Dictionary:
+	return {
+		"choice_id": "fixture_share_tea",
+		"required_tea_ids": ["oribe_green_matcha"],
+		"peaceful_conditions": [{"type": "prepared_tea", "id": "oribe_green_matcha"}],
+		"hooks": {"common": {"memory": ["memory.fixture_boss.met"]}}
+	}
+
+func _catalog_choice() -> Dictionary:
+	return {
+		"id": "fixture_share_tea",
+		"run_flag": "fixture_shared_tea",
+		"meta_record": false,
+		"target_survives": true,
+		"philosophy_marks": []
+	}

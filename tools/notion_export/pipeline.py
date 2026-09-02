@@ -19,6 +19,9 @@ def canonical_json_bytes(value: Any) -> bytes:
 class ExportPipeline:
     EVENT_REPLAY_POLICIES = {"once", "repeat"}
     EVENT_RESULT_TYPES = {"set_run_flag", "grant_item", "apply_choice"}
+    BOSS_TEA_CONDITION_TYPES = {"always", "prepared_tea", "run_flag", "run_not_flag", "current_biome", "has_item"}
+    BOSS_TEA_HOOK_GROUPS = {"common", "peaceful_tea_ceremony", "mixed", "combat_started"}
+    BOSS_TEA_HOOK_CHANNELS = {"memory", "weakness", "dialogue"}
 
     def __init__(self, schema: dict[str, Any]):
         self.schema = schema
@@ -319,6 +322,85 @@ class ExportPipeline:
                     raise ExportValidationError(
                         f"bosses item {boss_id} pattern {pattern.get('id', '')}: summon_monster_ids must be an array"
                     )
+        config = row.get("tea_resolution", {})
+        if config is None:
+            return
+        if not isinstance(config, dict):
+            raise ExportValidationError(f"bosses item {boss_id}: tea_resolution must be an object")
+        if not config:
+            return
+        if "peaceful" not in row.get("resolution_types", []):
+            raise ExportValidationError(
+                f"bosses item {boss_id}: tea_resolution requires peaceful resolution support"
+            )
+        stable_id = re.compile(self.schema["stable_id_pattern"])
+        choice_id = config.get("choice_id")
+        if not isinstance(choice_id, str) or not stable_id.fullmatch(choice_id):
+            raise ExportValidationError(f"bosses item {boss_id}: tea_resolution.choice_id must be a stable id")
+        tea_ids = config.get("required_tea_ids", [])
+        if not isinstance(tea_ids, list) or any(
+            not isinstance(tea_id, str) or not stable_id.fullmatch(tea_id)
+            for tea_id in tea_ids
+        ):
+            raise ExportValidationError(
+                f"bosses item {boss_id}: tea_resolution.required_tea_ids must contain stable ids"
+            )
+        conditions = config.get("peaceful_conditions", [])
+        if not isinstance(conditions, list):
+            raise ExportValidationError(
+                f"bosses item {boss_id}: tea_resolution.peaceful_conditions must be an array"
+            )
+        for condition in conditions:
+            if not isinstance(condition, dict):
+                raise ExportValidationError(
+                    f"bosses item {boss_id}: tea_resolution.peaceful_conditions must contain objects"
+                )
+            condition_type = condition.get("type")
+            if condition_type not in self.BOSS_TEA_CONDITION_TYPES:
+                raise ExportValidationError(
+                    f"bosses item {boss_id}: tea_resolution unsupported condition type {condition_type}"
+                )
+            allowed_fields = {"type"} if condition_type == "always" else {"type", "id"}
+            unsupported_fields = set(condition) - allowed_fields
+            if unsupported_fields:
+                raise ExportValidationError(
+                    f"bosses item {boss_id}: tea_resolution condition has unsupported field {sorted(unsupported_fields)[0]}"
+                )
+            if condition_type != "always":
+                condition_id = condition.get("id")
+                if not isinstance(condition_id, str) or not stable_id.fullmatch(condition_id):
+                    raise ExportValidationError(
+                        f"bosses item {boss_id}: tea_resolution condition id must be stable"
+                    )
+        self._validate_boss_tea_hooks(boss_id, config.get("hooks", {}))
+
+    def _validate_boss_tea_hooks(self, boss_id: str, hooks: Any) -> None:
+        if not isinstance(hooks, dict):
+            raise ExportValidationError(f"bosses item {boss_id}: tea_resolution.hooks must be an object")
+        hook_key = re.compile(r"[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+")
+        for group, channels in hooks.items():
+            if group not in self.BOSS_TEA_HOOK_GROUPS:
+                raise ExportValidationError(
+                    f"bosses item {boss_id}: tea_resolution.hooks unsupported group {group}"
+                )
+            if not isinstance(channels, dict):
+                raise ExportValidationError(
+                    f"bosses item {boss_id}: tea_resolution hook group {group} must be an object"
+                )
+            for channel, keys in channels.items():
+                if channel not in self.BOSS_TEA_HOOK_CHANNELS:
+                    raise ExportValidationError(
+                        f"bosses item {boss_id}: tea_resolution unsupported hook channel {channel}"
+                    )
+                if not isinstance(keys, list) or any(
+                    not isinstance(key, str)
+                    or not hook_key.fullmatch(key)
+                    or not key.startswith(f"{channel}.")
+                    for key in keys
+                ):
+                    raise ExportValidationError(
+                        f"bosses item {boss_id}: tea_resolution {channel} hook keys must be stable channel keys"
+                    )
 
     def _validate_snapshot(self, dataset_name: str, snapshot: dict[str, Any]) -> None:
         if not isinstance(snapshot, dict):
@@ -384,6 +466,7 @@ class ExportPipeline:
                 ids_by_dataset.get("monsters", set()),
                 "monsters" in ids_by_dataset,
             )
+            self._validate_boss_tea_references(snapshots["bosses"]["items"], ids_by_dataset)
 
     def _validate_boss_nested_summons(
         self,
@@ -410,6 +493,38 @@ class ExportPipeline:
                             raise ExportValidationError(
                                 f"bosses item {boss['id']} pattern {pattern.get('id', '')}: summon_monster_ids targets monsters missing id {monster_id}"
                             )
+
+    def _validate_boss_tea_references(
+        self,
+        bosses: list[dict[str, Any]],
+        ids_by_dataset: dict[str, set[str]],
+    ) -> None:
+        for boss in bosses:
+            config = boss.get("tea_resolution", {})
+            if not config:
+                continue
+            choice_id = config["choice_id"]
+            if "choices" not in ids_by_dataset:
+                raise ExportValidationError(
+                    f"bosses item {boss['id']}: tea_resolution.choice_id targets missing dataset choices"
+                )
+            if choice_id not in ids_by_dataset["choices"]:
+                raise ExportValidationError(
+                    f"bosses item {boss['id']}: tea_resolution.choice_id targets choices missing id {choice_id}"
+                )
+            tea_ids = list(config.get("required_tea_ids", []))
+            for condition in config.get("peaceful_conditions", []):
+                if condition["type"] == "prepared_tea" and condition["id"] not in tea_ids:
+                    tea_ids.append(condition["id"])
+            if tea_ids and "teas" not in ids_by_dataset:
+                raise ExportValidationError(
+                    f"bosses item {boss['id']}: tea_resolution.required_tea_ids targets missing dataset teas"
+                )
+            for tea_id in tea_ids:
+                if tea_id not in ids_by_dataset["teas"]:
+                    raise ExportValidationError(
+                        f"bosses item {boss['id']}: tea_resolution.required_tea_ids targets teas missing id {tea_id}"
+                    )
 
     def _validate_events(
         self,

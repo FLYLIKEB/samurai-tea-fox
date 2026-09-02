@@ -279,6 +279,43 @@ class NotionExportPipelineTests(unittest.TestCase):
         with self.assertRaisesRegex(ExportValidationError, "bosses.*fixture_boss.*summon_monster_ids.*missing_monster"):
             self.pipeline.build_snapshots(missing_monster, "confirmed-test")
 
+    def test_boss_tea_contract_and_nested_relations_are_validated(self):
+        capture = self._minimal_boss_tea_capture()
+        snapshots = self.pipeline.build_snapshots(capture, "confirmed-test")
+        self.assertEqual(
+            snapshots["bosses"]["items"][0]["tea_resolution"]["choice_id"],
+            "fixture_share_tea",
+        )
+
+        missing_choice = copy.deepcopy(capture)
+        missing_choice["datasets"]["choices"]["items"] = []
+        with self.assertRaisesRegex(ExportValidationError, "tea_resolution.choice_id.*fixture_share_tea"):
+            self.pipeline.build_snapshots(missing_choice, "confirmed-test")
+
+        missing_tea = copy.deepcopy(capture)
+        missing_tea["datasets"]["teas"]["items"] = []
+        with self.assertRaisesRegex(ExportValidationError, "required_tea_ids.*oribe_green_matcha"):
+            self.pipeline.build_snapshots(missing_tea, "confirmed-test")
+
+        invalid_condition = copy.deepcopy(capture)
+        invalid_condition["datasets"]["bosses"]["items"][0]["tea_resolution"]["peaceful_conditions"] = [
+            {"type": "meta_flag", "id": "forbidden_meta"}
+        ]
+        with self.assertRaisesRegex(ExportValidationError, "unsupported condition type meta_flag"):
+            self.pipeline.build_snapshots(invalid_condition, "confirmed-test")
+
+        combat_only = copy.deepcopy(capture)
+        combat_only["datasets"]["bosses"]["items"][0]["resolution_types"] = ["combat"]
+        with self.assertRaisesRegex(ExportValidationError, "tea_resolution requires peaceful"):
+            self.pipeline.build_snapshots(combat_only, "confirmed-test")
+
+        invalid_hook = copy.deepcopy(capture)
+        invalid_hook["datasets"]["bosses"]["items"][0]["tea_resolution"]["hooks"]["common"]["memory"] = [
+            "dialogue.wrong_channel"
+        ]
+        with self.assertRaisesRegex(ExportValidationError, "memory hook keys.*stable channel keys"):
+            self.pipeline.build_snapshots(invalid_hook, "confirmed-test")
+
     def test_event_result_grant_item_must_target_catalog_item(self):
         invalid = self._minimal_event_capture()
         invalid["datasets"]["events"]["items"][0]["nodes"][0]["options"][0]["results"][0]["id"] = "missing_item"
@@ -573,6 +610,32 @@ class NotionExportPipelineTests(unittest.TestCase):
                 }]},
             },
         }
+
+    def _minimal_boss_tea_capture(self):
+        capture = self._minimal_boss_capture()
+        capture["datasets"]["choices"] = {
+            "source": "collection://choices",
+            "items": [self._choice_definition("fixture_share_tea")],
+        }
+        capture["datasets"]["teas"] = {
+            "source": "collection://teas",
+            "items": [{"id": "oribe_green_matcha", "name": "Tea", "status": "확정"}],
+        }
+        boss = capture["datasets"]["bosses"]["items"][0]
+        boss["resolution_types"] = ["combat", "peaceful"]
+        boss["tea_resolution"] = {
+            "choice_id": "fixture_share_tea",
+            "required_tea_ids": ["oribe_green_matcha"],
+            "peaceful_conditions": [
+                {"type": "prepared_tea", "id": "oribe_green_matcha"},
+                {"type": "run_flag", "id": "met_boss"},
+            ],
+            "hooks": {
+                "common": {"memory": ["memory.fixture_boss.met"]},
+                "combat_started": {"dialogue": ["dialogue.fixture_boss.combat_started"]},
+            },
+        }
+        return capture
 
     def _choice_definition(self, choice_id):
         return {

@@ -1,6 +1,10 @@
 extends RefCounted
 class_name DataSchemaValidator
 
+const BOSS_TEA_CONDITION_TYPES := ["always", "prepared_tea", "run_flag", "run_not_flag", "current_biome", "has_item"]
+const BOSS_TEA_HOOK_GROUPS := ["common", "peaceful_tea_ceremony", "mixed", "combat_started"]
+const BOSS_TEA_HOOK_CHANNELS := ["memory", "weakness", "dialogue"]
+
 func validate_export_file(value, path: String) -> Dictionary:
 	if typeof(value) != TYPE_DICTIONARY:
 		return {"ok": false, "error": "%s is not a JSON object." % path}
@@ -78,6 +82,9 @@ func validate_catalog(definitions: Dictionary, dataset_rules: Dictionary) -> Dic
 				var boss_result := _validate_boss_nested_summon_references(item, ids_by_dataset)
 				if not boss_result.ok:
 					return boss_result
+				var tea_result := _validate_boss_tea_references(item, ids_by_dataset)
+				if not tea_result.ok:
+					return tea_result
 	if definitions.has("events"):
 		var event_result := _validate_event_result_references(definitions.events, ids_by_dataset)
 		if not event_result.ok:
@@ -107,6 +114,26 @@ func _validate_boss_nested_summon_references(boss: Dictionary, ids_by_dataset: D
 			for monster_id in summon_ids:
 				if not ids_by_dataset.monsters.has(monster_id):
 					return {"ok": false, "error": "bosses item '%s' pattern '%s' summon_monster_ids targets missing monster id '%s'." % [boss.id, pattern.get("id", ""), monster_id]}
+	return {"ok": true}
+
+func _validate_boss_tea_references(boss: Dictionary, ids_by_dataset: Dictionary) -> Dictionary:
+	var config = boss.get("tea_resolution", {})
+	if typeof(config) != TYPE_DICTIONARY or config.is_empty():
+		return {"ok": true}
+	if not ids_by_dataset.has("choices"):
+		return {"ok": false, "error": "bosses item '%s' tea_resolution.choice_id targets missing dataset 'choices'." % boss.id}
+	var choice_id := String(config.get("choice_id", ""))
+	if not ids_by_dataset.choices.has(choice_id):
+		return {"ok": false, "error": "bosses item '%s' tea_resolution.choice_id targets missing choice id '%s'." % [boss.id, choice_id]}
+	var tea_ids: Array = config.get("required_tea_ids", []).duplicate(true)
+	for condition in config.get("peaceful_conditions", []):
+		if String(condition.get("type", "")) == "prepared_tea" and not tea_ids.has(condition.id):
+			tea_ids.append(condition.id)
+	if not tea_ids.is_empty() and not ids_by_dataset.has("teas"):
+		return {"ok": false, "error": "bosses item '%s' tea_resolution.required_tea_ids targets missing dataset 'teas'." % boss.id}
+	for tea_id in tea_ids:
+		if not ids_by_dataset.teas.has(tea_id):
+			return {"ok": false, "error": "bosses item '%s' tea_resolution.required_tea_ids targets missing tea id '%s'." % [boss.id, tea_id]}
 	return {"ok": true}
 
 func _validate_event_result_references(events: Array, ids_by_dataset: Dictionary) -> Dictionary:
@@ -155,11 +182,79 @@ func _validate_item_contract(dataset_name: String, item: Dictionary) -> Dictiona
 		return _validate_shop_contract(item)
 	if dataset_name == "meta_unlocks":
 		return _validate_meta_unlock_contract(item)
+	if dataset_name == "bosses":
+		return _validate_boss_tea_contract(item)
 	if dataset_name != "items":
 		return {"ok": true}
 	if String(item.get("type", "")) != "다구" or String(item.get("equipment_slot", "")) != "다구":
 		return {"ok": true}
 	return _validate_attachment_stage_data(item)
+
+func _validate_boss_tea_contract(item: Dictionary) -> Dictionary:
+	var config = item.get("tea_resolution", {})
+	if config == null:
+		return {"ok": true}
+	if typeof(config) != TYPE_DICTIONARY:
+		return {"ok": false, "error": "bosses item '%s' tea_resolution must be an object." % item.id}
+	if config.is_empty():
+		return {"ok": true}
+	var resolution_types = item.get("resolution_types", [])
+	if typeof(resolution_types) != TYPE_ARRAY or not resolution_types.has("peaceful"):
+		return {"ok": false, "error": "bosses item '%s' tea_resolution requires peaceful resolution support." % item.id}
+	if not _stable_id(String(config.get("choice_id", ""))):
+		return {"ok": false, "error": "bosses item '%s' tea_resolution.choice_id must be a stable id." % item.id}
+	var tea_ids = config.get("required_tea_ids", [])
+	if typeof(tea_ids) != TYPE_ARRAY:
+		return {"ok": false, "error": "bosses item '%s' tea_resolution.required_tea_ids must be an array." % item.id}
+	for tea_id in tea_ids:
+		if typeof(tea_id) != TYPE_STRING or not _stable_id(String(tea_id)):
+			return {"ok": false, "error": "bosses item '%s' tea_resolution.required_tea_ids must contain stable ids." % item.id}
+	var conditions = config.get("peaceful_conditions", [])
+	if typeof(conditions) != TYPE_ARRAY:
+		return {"ok": false, "error": "bosses item '%s' tea_resolution.peaceful_conditions must be an array." % item.id}
+	for condition in conditions:
+		if typeof(condition) != TYPE_DICTIONARY:
+			return {"ok": false, "error": "bosses item '%s' tea_resolution.peaceful_conditions must contain objects." % item.id}
+		var condition_type := String(condition.get("type", ""))
+		if not BOSS_TEA_CONDITION_TYPES.has(condition_type):
+			return {"ok": false, "error": "bosses item '%s' tea_resolution has unsupported condition type '%s'." % [item.id, condition_type]}
+		var allowed_fields := ["type"] if condition_type == "always" else ["type", "id"]
+		for field in condition:
+			if not allowed_fields.has(String(field)):
+				return {"ok": false, "error": "bosses item '%s' tea_resolution condition has unsupported field '%s'." % [item.id, field]}
+		if condition_type != "always" and (typeof(condition.get("id")) != TYPE_STRING or not _stable_id(String(condition.get("id", "")))):
+			return {"ok": false, "error": "bosses item '%s' tea_resolution condition id must be stable." % item.id}
+	return _validate_boss_tea_hooks(item, config.get("hooks", {}))
+
+func _validate_boss_tea_hooks(item: Dictionary, hooks) -> Dictionary:
+	if typeof(hooks) != TYPE_DICTIONARY:
+		return {"ok": false, "error": "bosses item '%s' tea_resolution.hooks must be an object." % item.id}
+	for group in hooks:
+		if not BOSS_TEA_HOOK_GROUPS.has(String(group)):
+			return {"ok": false, "error": "bosses item '%s' tea_resolution.hooks has unsupported group '%s'." % [item.id, group]}
+		var channels = hooks[group]
+		if typeof(channels) != TYPE_DICTIONARY:
+			return {"ok": false, "error": "bosses item '%s' tea_resolution hook group must be an object." % item.id}
+		for channel in channels:
+			if not BOSS_TEA_HOOK_CHANNELS.has(String(channel)):
+				return {"ok": false, "error": "bosses item '%s' tea_resolution hook channel '%s' is unsupported." % [item.id, channel]}
+			var keys = channels[channel]
+			if typeof(keys) != TYPE_ARRAY:
+				return {"ok": false, "error": "bosses item '%s' tea_resolution hook keys must be an array." % item.id}
+			for key in keys:
+				if typeof(key) != TYPE_STRING or not _stable_hook_key(String(key)) or not String(key).begins_with("%s." % channel):
+					return {"ok": false, "error": "bosses item '%s' tea_resolution hook key '%s' is invalid." % [item.id, key]}
+	return {"ok": true}
+
+func _stable_id(value: String) -> bool:
+	var pattern := RegEx.new()
+	pattern.compile("^[a-z][a-z0-9_]*$")
+	return pattern.search(value) != null
+
+func _stable_hook_key(value: String) -> bool:
+	var pattern := RegEx.new()
+	pattern.compile("^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$")
+	return pattern.search(value) != null
 
 
 func _validate_meta_unlock_contract(item: Dictionary) -> Dictionary:

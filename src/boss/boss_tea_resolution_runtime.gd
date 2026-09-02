@@ -16,7 +16,11 @@ const COMMANDS := [COMMAND_DRINK_TEA, COMMAND_REFUSE, COMMAND_ATTACK_FIRST]
 
 const OUTCOME_PEACEFUL_TEA_CEREMONY := "peaceful_tea_ceremony"
 const OUTCOME_MIXED := "mixed"
-const OUTCOME_COMBAT := "combat"
+const OUTCOME_COMBAT_STARTED := "combat_started"
+const OUTCOME_COMBAT := OUTCOME_COMBAT_STARTED
+
+const EVENT_PRE_BOSS_CHOICE := "boss_pre_boss_choice"
+const EVENT_PRE_BOSS_COMBAT_STARTED := "boss_pre_boss_combat_started"
 
 const DEFAULT_EXCLUSIVE_GROUP_SUFFIX := "_boss_resolution"
 
@@ -53,10 +57,12 @@ func configure(
 	if not definition is BossDefinition:
 		return _fail("invalid_boss_definition", "Boss tea resolution requires a BossDefinition.")
 	if tea_service == null \
-			or not tea_service.has_method("has_prepared_tea") \
-			or not tea_service.has_method("get_prepared_tea") \
-			or not tea_service.has_method("start_drinking") \
-			or not tea_service.has_method("complete_drinking"):
+		or not tea_service.has_method("has_prepared_tea") \
+		or not tea_service.has_method("get_prepared_tea") \
+		or not tea_service.has_method("start_drinking") \
+		or not tea_service.has_method("complete_drinking") \
+		or not tea_service.has_method("to_snapshot") \
+		or not tea_service.has_method("load_snapshot"):
 		return _fail("invalid_tea_service", "Boss tea resolution requires the tea service public boundary.")
 	if not resolution_hook.is_valid():
 		return _fail("invalid_resolution_hook", "Boss tea resolution requires a boss resolution hook.")
@@ -80,8 +86,8 @@ func start(pre_boss_id: String) -> Dictionary:
 		return _fail("not_configured", "Boss tea resolution is not configured.")
 	if _state.lifecycle_state != STATE_IDLE:
 		return _fail("pre_boss_already_started", "Pre-boss tea resolution can only start once.")
-	if pre_boss_id.strip_edges().is_empty():
-		return _fail("missing_pre_boss_id", "Pre-boss tea resolution requires a stable id.")
+	if not _is_stable_id(pre_boss_id):
+		return _fail("invalid_pre_boss_id", "Pre-boss tea resolution requires a valid stable id.")
 	_state.pre_boss_id = pre_boss_id
 	_state.boss_id = _definition.id
 	_state.dungeon_id = _definition.dungeon_id
@@ -101,6 +107,10 @@ func handle_command(command_id: String, payload := {}, run_state = null, context
 func to_projection() -> Dictionary:
 	var projection := _state.duplicate(true)
 	projection["read_only"] = true
+	projection["phase"] = "pre_boss"
+	projection["combat_started"] = _state.lifecycle_state == STATE_COMBAT_STARTED
+	projection["final_resolution_committed"] = _state.lifecycle_state == STATE_RESOLVED
+	projection["boss_resolution_pending"] = _state.lifecycle_state in [STATE_ACTIVE, STATE_COMBAT_STARTED]
 	return projection
 
 func _handle_drink_tea(payload: Dictionary, run_state, context: Dictionary) -> Dictionary:
@@ -114,15 +124,6 @@ func _handle_drink_tea(payload: Dictionary, run_state, context: Dictionary) -> D
 	var tea_allowed := _prepared_tea_allowed(prepared, config)
 	if not tea_allowed.ok:
 		return tea_allowed
-
-	var action_result: Dictionary = _tea_service.start_drinking(slot_index, {
-		"pre_boss_id": _state.pre_boss_id,
-		"boss_id": _definition.id,
-		"dungeon_id": _definition.dungeon_id,
-		"command": COMMAND_DRINK_TEA
-	})
-	if not action_result.ok:
-		return action_result
 
 	var condition_result := _peaceful_conditions_pass(prepared, config, run_state, context)
 	var evaluation_event := _build_hook_event(COMMAND_DRINK_TEA, prepared, OUTCOME_PEACEFUL_TEA_CEREMONY)
@@ -152,9 +153,25 @@ func _handle_drink_tea(payload: Dictionary, run_state, context: Dictionary) -> D
 	if not availability.ok:
 		return availability
 
-	var hook_event := _build_hook_event(COMMAND_DRINK_TEA, prepared, OUTCOME_PEACEFUL_TEA_CEREMONY)
-	_call_non_blocking_hooks(hook_event)
-	pre_boss_choice_selected.emit(hook_event.duplicate(true))
+	var resources = payload.get("resources", context.get("resources", null))
+	var snapshots := _capture_transaction_snapshots(run_state, resources)
+	if not snapshots.ok:
+		return snapshots
+	var action_result: Dictionary = _tea_service.start_drinking(slot_index, {
+		"pre_boss_id": _state.pre_boss_id,
+		"boss_id": _definition.id,
+		"dungeon_id": _definition.dungeon_id,
+		"command": COMMAND_DRINK_TEA
+	})
+	if not action_result.ok:
+		return _rollback_failure(action_result, snapshots, run_state, resources)
+
+	var consume_result: Dictionary = _tea_service.complete_drinking(action_result.action, resources)
+	if not consume_result.ok:
+		return _rollback_failure(consume_result, snapshots, run_state, resources)
+	var apply_result := _apply_choice(choice_result.choice_id, run_state, config, context)
+	if not apply_result.ok:
+		return _rollback_failure(apply_result, snapshots, run_state, resources)
 
 	var resolution_input := _build_resolution_input(
 		COMMAND_DRINK_TEA,
@@ -164,19 +181,15 @@ func _handle_drink_tea(payload: Dictionary, run_state, context: Dictionary) -> D
 	)
 	var resolution_result := _normalize_hook_result(_resolution_hook.call(resolution_input.duplicate(true)))
 	if not bool(resolution_result.get("ok", false)):
-		return _fail(String(resolution_result.get("reason", "resolution_hook_rejected")), String(resolution_result.get("error", "Boss resolution hook rejected peaceful tea completion.")))
-
-	var resources = payload.get("resources", context.get("resources", null))
-	var consume_result: Dictionary = _tea_service.complete_drinking(action_result.action, resources)
-	if not consume_result.ok:
-		return consume_result
-	var apply_result := _apply_choice(choice_result.choice_id, run_state, config, context)
-	if not apply_result.ok:
-		return apply_result
+		var resolution_failure := _fail(String(resolution_result.get("reason", "resolution_hook_rejected")), String(resolution_result.get("error", "Boss resolution hook rejected peaceful tea completion.")))
+		return _rollback_failure(resolution_failure, snapshots, run_state, resources)
 
 	_state.selected_command = COMMAND_DRINK_TEA
 	_state.lifecycle_state = STATE_RESOLVED
 	_state.resolution_event = _dictionary_value(resolution_result.get("event", resolution_input))
+	var hook_event := _build_hook_event(COMMAND_DRINK_TEA, prepared, OUTCOME_PEACEFUL_TEA_CEREMONY)
+	_call_non_blocking_hooks(hook_event)
+	pre_boss_choice_selected.emit(hook_event.duplicate(true))
 	var committed := {
 		"event_type": "boss_tea_resolution_committed",
 		"pre_boss_id": _state.pre_boss_id,
@@ -203,13 +216,13 @@ func _handle_drink_tea(payload: Dictionary, run_state, context: Dictionary) -> D
 func _handle_combat_branch(command_id: String, payload: Dictionary, context: Dictionary) -> Dictionary:
 	_state.selected_command = command_id
 	_state.lifecycle_state = STATE_COMBAT_STARTED
-	var event := _build_hook_event(command_id, {}, OUTCOME_COMBAT)
+	var event := _build_hook_event(command_id, {}, OUTCOME_COMBAT_STARTED)
 	event["reason"] = String(payload.get("reason", command_id))
 	_call_non_blocking_hooks(event, context)
 	pre_boss_choice_selected.emit(event.duplicate(true))
 	return {
 		"ok": true,
-		"outcome_type": OUTCOME_COMBAT,
+		"outcome_type": OUTCOME_COMBAT_STARTED,
 		"consumed": false,
 		"combat_started": true,
 		"event": event,
@@ -235,7 +248,7 @@ func _peaceful_conditions_pass(prepared: Dictionary, config: Dictionary, run_sta
 			return _fail("invalid_peaceful_condition", "Boss peaceful condition must be an object.")
 		var condition_type := String(condition.get("type", ""))
 		if condition_type == "prepared_tea":
-			if String(condition.get("tea_id", "")) != String(prepared.get("tea_id", "")):
+			if String(condition.get("id", "")) != String(prepared.get("tea_id", "")):
 				return {"ok": true, "passed": false}
 			continue
 		var resolved := _condition_resolver.resolve(condition, _run_query(run_state, prepared, context), {})
@@ -246,9 +259,11 @@ func _peaceful_conditions_pass(prepared: Dictionary, config: Dictionary, run_sta
 	return {"ok": true, "passed": true}
 
 func _choice_metadata(config: Dictionary, payload: Dictionary) -> Dictionary:
-	var choice_id := String(payload.get("choice_id", config.get("choice_id", "")))
+	var choice_id := String(config.get("choice_id", ""))
 	if choice_id.is_empty():
 		return _fail("missing_peaceful_choice", "Peaceful tea resolution requires a stable choice id.")
+	if payload.has("choice_id") and String(payload.get("choice_id", "")) != choice_id:
+		return _fail("peaceful_choice_mismatch", "Command choice id must match the configured boss tea choice.")
 	var definition := _choice_definition(choice_id)
 	if definition.is_empty():
 		return _fail("missing_choice", "Peaceful tea resolution choice is not defined: %s" % choice_id)
@@ -304,13 +319,19 @@ func _build_resolution_input(command_id: String, prepared: Dictionary, outcome_t
 
 func _build_hook_event(command_id: String, prepared: Dictionary, outcome_type: String) -> Dictionary:
 	var hook_keys := _hook_keys_for_outcome(outcome_type)
+	var starts_combat := outcome_type in [OUTCOME_MIXED, OUTCOME_COMBAT_STARTED]
 	return {
-		"event_type": "boss_pre_boss_choice",
+		"event_type": EVENT_PRE_BOSS_COMBAT_STARTED if starts_combat else EVENT_PRE_BOSS_CHOICE,
 		"pre_boss_id": _state.pre_boss_id,
 		"boss_id": _definition.id,
 		"dungeon_id": _definition.dungeon_id,
+		"phase": "pre_boss",
 		"command": command_id,
 		"outcome_type": outcome_type,
+		"combat_started": starts_combat,
+		"final_resolution": false,
+		"boss_resolution_pending": starts_combat,
+		"requires_boss_victory": starts_combat,
 		"tea_id": String(prepared.get("tea_id", "")),
 		"prepared_tea_id": String(prepared.get("prepared_id", "")),
 		"memory_hook_keys": hook_keys.memory_hook_keys,
@@ -360,6 +381,132 @@ func _run_query(run_state, prepared: Dictionary, context: Dictionary) -> Diction
 		"dungeon_id": _definition.dungeon_id
 	}
 
+func _capture_transaction_snapshots(run_state, resources) -> Dictionary:
+	var tea_snapshot = _tea_service.to_snapshot()
+	if typeof(tea_snapshot) != TYPE_DICTIONARY:
+		return _fail("invalid_tea_snapshot", "Tea service transaction snapshot must be a dictionary.")
+	var run_snapshot := _snapshot_run_state(run_state)
+	if not run_snapshot.ok:
+		return run_snapshot
+	var resource_snapshot := _snapshot_resources(resources)
+	if not resource_snapshot.ok:
+		return resource_snapshot
+	return {
+		"ok": true,
+		"tea": tea_snapshot.duplicate(true),
+		"run": run_snapshot,
+		"resources": resource_snapshot
+	}
+
+func _snapshot_run_state(run_state) -> Dictionary:
+	if run_state == null:
+		return {"ok": true, "kind": "none", "value": {}}
+	if run_state is Dictionary:
+		return {"ok": true, "kind": "dictionary", "value": run_state.duplicate(true)}
+	if run_state.has_method("to_dictionary"):
+		var snapshot = run_state.to_dictionary()
+		if typeof(snapshot) == TYPE_DICTIONARY:
+			return {"ok": true, "kind": "object", "value": snapshot.duplicate(true)}
+	return _fail("invalid_run_state_snapshot", "Peaceful resolution requires snapshot-capable run state.")
+
+func _rollback_failure(failure: Dictionary, snapshots: Dictionary, run_state, resources) -> Dictionary:
+	var tea_restore: Dictionary = _tea_service.load_snapshot(_dictionary_value(snapshots.get("tea", {})))
+	var run_restore := _restore_run_state(run_state, _dictionary_value(snapshots.get("run", {})))
+	var resource_restore := _restore_resources(resources, _dictionary_value(snapshots.get("resources", {})))
+	if not tea_restore.ok or not run_restore.ok or not resource_restore.ok:
+		return {
+			"ok": false,
+			"reason": "boss_tea_rollback_failed",
+			"error": "Boss tea resolution failed and its transaction snapshot could not be fully restored.",
+			"cause": failure.duplicate(true),
+			"tea_restore": tea_restore,
+			"run_restore": run_restore,
+			"resource_restore": resource_restore
+		}
+	var restored := failure.duplicate(true)
+	restored["rolled_back"] = true
+	return restored
+
+func _restore_run_state(run_state, snapshot: Dictionary) -> Dictionary:
+	var kind := String(snapshot.get("kind", ""))
+	var value := _dictionary_value(snapshot.get("value", {}))
+	if kind == "none":
+		return {"ok": true}
+	if kind == "dictionary" and run_state is Dictionary:
+		run_state.clear()
+		for field in value:
+			run_state[field] = _duplicate_value(value[field])
+		return {"ok": true}
+	if kind == "object" and run_state != null:
+		for field in value:
+			run_state.set(field, _duplicate_value(value[field]))
+		return {"ok": true}
+	return _fail("invalid_run_state_restore", "Run state transaction snapshot does not match its target.")
+
+func _snapshot_resources(resources) -> Dictionary:
+	if resources == null:
+		return {"ok": true, "kind": "none", "value": {}}
+	if resources is Dictionary:
+		return {"ok": true, "kind": "dictionary", "value": resources.duplicate(true)}
+	if resources.has_method("to_snapshot") and resources.has_method("load_snapshot"):
+		var snapshot = resources.to_snapshot()
+		if typeof(snapshot) == TYPE_DICTIONARY:
+			return {"ok": true, "kind": "snapshot_object", "value": snapshot.duplicate(true)}
+	if resources.has_method("to_dictionary") \
+		and resources.has_method("heal_hp") \
+		and resources.has_method("apply_damage") \
+		and resources.has_method("recover_ki") \
+		and resources.has_method("spend_ki") \
+		and resources.has_method("restore_kokoro") \
+		and resources.has_method("reduce_kokoro"):
+		var fields = resources.to_dictionary()
+		if typeof(fields) == TYPE_DICTIONARY and _valid_resource_fields(fields):
+			return {"ok": true, "kind": "player_resources", "value": fields.duplicate(true)}
+	return _fail("invalid_resources_snapshot", "Tea resources must expose a restorable public snapshot boundary.")
+
+func _restore_resources(resources, snapshot: Dictionary) -> Dictionary:
+	var kind := String(snapshot.get("kind", ""))
+	var value := _dictionary_value(snapshot.get("value", {}))
+	if kind == "none":
+		return {"ok": true}
+	if kind == "dictionary" and resources is Dictionary:
+		resources.clear()
+		for field in value:
+			resources[field] = _duplicate_value(value[field])
+		return {"ok": true}
+	if kind == "snapshot_object" and resources != null and resources.has_method("load_snapshot"):
+		return _normalize_hook_result(resources.load_snapshot(value.duplicate(true)))
+	if kind == "player_resources" and resources != null:
+		return _restore_player_resources(resources, value)
+	return _fail("invalid_resources_restore", "Resource transaction snapshot does not match its target.")
+
+func _restore_player_resources(resources, target: Dictionary) -> Dictionary:
+	var current = resources.to_dictionary()
+	if typeof(current) != TYPE_DICTIONARY or not _valid_resource_fields(current):
+		return _fail("invalid_resources_restore", "Player resources no longer expose their public field snapshot.")
+	for maximum_field in ["hp_max", "ki_max", "kokoro_max", "kokoro_low_threshold"]:
+		if int(current.get(maximum_field, -1)) != int(target.get(maximum_field, -2)):
+			return _fail("resource_bounds_changed", "Player resource bounds changed during boss tea resolution.")
+	_restore_resource_value(resources, "hp", int(current.hp), int(target.hp), "heal_hp", "apply_damage")
+	_restore_resource_value(resources, "ki", int(current.ki), int(target.ki), "recover_ki", "spend_ki")
+	_restore_resource_value(resources, "kokoro", int(current.kokoro), int(target.kokoro), "restore_kokoro", "reduce_kokoro")
+	var restored = resources.to_dictionary()
+	if typeof(restored) != TYPE_DICTIONARY or restored != target:
+		return _fail("resources_restore_mismatch", "Player resources did not restore to the exact transaction snapshot.")
+	return {"ok": true}
+
+func _restore_resource_value(resources, _field: String, current: int, target: int, increase_method: String, decrease_method: String) -> void:
+	if current < target:
+		resources.call(increase_method, target - current)
+	elif current > target:
+		resources.call(decrease_method, current - target)
+
+func _valid_resource_fields(value: Dictionary) -> bool:
+	for field in ["hp", "hp_max", "ki", "ki_max", "kokoro", "kokoro_max", "kokoro_low_threshold"]:
+		if typeof(value.get(field)) != TYPE_INT:
+			return false
+	return true
+
 func _require_active() -> Dictionary:
 	if _state.lifecycle_state != STATE_ACTIVE:
 		return _fail("pre_boss_resolution_not_active", "Pre-boss resolution command requires an active state.")
@@ -387,6 +534,14 @@ func _array_value(value) -> Array:
 
 func _dictionary_value(value) -> Dictionary:
 	return value.duplicate(true) if typeof(value) == TYPE_DICTIONARY else {}
+
+func _duplicate_value(value):
+	return value.duplicate(true) if typeof(value) in [TYPE_ARRAY, TYPE_DICTIONARY] else value
+
+func _is_stable_id(value: String) -> bool:
+	var pattern := RegEx.new()
+	pattern.compile("^[a-z][a-z0-9_]*$")
+	return pattern.search(value) != null
 
 static func _fail(reason: String, error: String) -> Dictionary:
 	return {"ok": false, "reason": reason, "error": error}
