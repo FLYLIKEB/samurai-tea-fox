@@ -1,5 +1,6 @@
 extends SceneTree
 
+const GameCommand = preload("res://src/core/commands/game_command.gd")
 const MetaState = preload("res://src/save/meta_state.gd")
 const RunState = preload("res://src/save/run_state.gd")
 const SaveStore = preload("res://src/save/save_store.gd")
@@ -67,17 +68,29 @@ func run() -> void:
 		var status_panel := hud.get_node_or_null("Root/StatusPanel")
 		var map_panel := hud.get_node_or_null("Root/MapPanel")
 		var quickslot_panel := hud.get_node_or_null("Root/QuickSlotPanel")
-		var movement_panel := hud.get_node_or_null("Root/MovementPadPanel")
-		if status_panel == null or map_panel == null or quickslot_panel == null or movement_panel == null:
-			failures.append("runtime HUD shows status, map, quickslot, and movement panels")
-		elif _texture_rect_count(status_panel) < 4 or _label_count(status_panel) < 4:
-			failures.append("runtime HUD status panel renders icon-backed resource rows")
+		var dpad_panel := hud.get_node_or_null("Root/DPadPanel")
+		var action_panel := hud.get_node_or_null("Root/ActionPanel")
+		if status_panel == null or map_panel == null or quickslot_panel == null or dpad_panel == null or action_panel == null:
+			failures.append("runtime HUD shows status, map, quickslot, dpad, and action panels")
+		elif _texture_rect_count(status_panel) < 3 or _label_count(status_panel) < 3:
+			failures.append("runtime HUD status panel renders icon-backed HP/ki/kokoro rows")
 		elif _texture_rect_count(quickslot_panel) < 4 or _label_count(quickslot_panel) < 4:
 			failures.append("runtime HUD quickslots render icon-backed rows")
-		elif _button_count(movement_panel) < 4:
-			failures.append("runtime HUD movement panel exposes four directional buttons")
+		else:
+			_assert_hud_layout_fits_viewport([status_panel, map_panel, quickslot_panel, dpad_panel, action_panel])
+			if _button_count(action_panel) != 8:
+				failures.append("runtime HUD exposes attack, dodge, two tea, consumable, two ability, and inventory controls")
+			var time_label := hud.get("_labels").get("time") as Label
+			if time_label == null or time_label.get_parent().visible:
+				failures.append("runtime HUD hides the time row until a canonical runtime time state is supplied")
+			if _button_count(dpad_panel) < 5:
+				failures.append("runtime HUD dpad exposes four directions and stop control")
 		if not _passive_controls_ignore_mouse(hud):
 			failures.append("runtime HUD passive controls do not block world click and touch input")
+
+	var unopened_inventory := GameCommand.new(GameCommand.Type.OPEN_INVENTORY)
+	if main.submit_mobile_action_command(unopened_inventory):
+		failures.append("OPEN_INVENTORY remains rejected until the DEV-45 menu provides a visible effect")
 
 	main.queue_free()
 	_cleanup_lifecycle_files()
@@ -106,18 +119,35 @@ func _label_count(node: Node) -> int:
 	return count
 
 func _button_count(node: Node) -> int:
-	var count := 1 if node is Button else 0
+	var count := 1 if node is BaseButton else 0
 	for child in node.get_children():
 		count += _button_count(child)
 	return count
 
 func _passive_controls_ignore_mouse(node: Node) -> bool:
-	if node is Control and not node is Button and (node as Control).mouse_filter != Control.MOUSE_FILTER_IGNORE:
+	if node is Control and not node is BaseButton and (node as Control).mouse_filter != Control.MOUSE_FILTER_IGNORE:
 		return false
 	for child in node.get_children():
 		if not _passive_controls_ignore_mouse(child):
 			return false
 	return true
+
+func _assert_hud_layout_fits_viewport(panels: Array) -> void:
+	var viewport_size := Vector2(640, 360)
+	if not panels.is_empty() and panels[0] is Control:
+		var actual_size := (panels[0] as Control).get_viewport_rect().size
+		if actual_size.x > 64.0 and actual_size.y > 64.0:
+			viewport_size = actual_size
+	var viewport_rect := Rect2(Vector2.ZERO, viewport_size)
+	for panel in panels:
+		var control := panel as Control
+		if control == null:
+			continue
+		if not viewport_rect.encloses(control.get_global_rect()):
+			failures.append("runtime HUD panel stays inside the 640x360 viewport: %s rect=%s viewport=%s" % [control.name, control.get_global_rect(), viewport_rect])
+		var minimum := control.get_combined_minimum_size()
+		if minimum.x > control.size.x + 0.5 or minimum.y > control.size.y + 0.5:
+			failures.append("runtime HUD panel content fits its frame: %s" % control.name)
 
 func _assert_runtime_death_replaces_run(main, player) -> void:
 	_cleanup_lifecycle_files()
