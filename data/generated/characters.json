@@ -1,9 +1,10 @@
 {
-  "content_hash": "f8132061ec9c9d291d28fac8e77dba31e90b9c8d4212d45b7e7f3d2a95404cf4",
+  "content_hash": "3d77636fe4a8d607fda852dc4812901b6123977e9bdb64b8e3eb46b90e657d41",
   "data_version": "notion-2026-09-01",
   "items": [
     {
       "character_id": "CHR-1",
+      "final_room_target_ids": [],
       "id": "chr_1",
       "meta_memory": true,
       "name": "아버지 — 차를 사랑하는 구미호",
@@ -12,6 +13,9 @@
     },
     {
       "character_id": "CHR-2",
+      "final_room_target_ids": [
+        "daimyo"
+      ],
       "id": "chr_2",
       "meta_memory": false,
       "name": "황무지 보스 — 다이묘",
@@ -20,6 +24,9 @@
     },
     {
       "character_id": "CHR-3",
+      "final_room_target_ids": [
+        "oribe"
+      ],
       "id": "chr_3",
       "meta_memory": false,
       "name": "후루타 오리베 — 불완전함의 다인",
@@ -28,6 +35,9 @@
     },
     {
       "character_id": "CHR-4",
+      "final_room_target_ids": [
+        "monk"
+      ],
       "id": "chr_4",
       "meta_memory": false,
       "name": "설원 보스 — 승려",
@@ -36,6 +46,7 @@
     },
     {
       "character_id": "CHR-5",
+      "final_room_target_ids": [],
       "id": "chr_5",
       "meta_memory": true,
       "name": "센리큐 — 이름 없는 노다인",
@@ -44,6 +55,9 @@
     },
     {
       "character_id": "CHR-6",
+      "final_room_target_ids": [
+        "yokai_teamaster"
+      ],
       "id": "chr_6",
       "meta_memory": false,
       "name": "열대우림 보스 — 요괴 다인",
@@ -52,6 +66,9 @@
     },
     {
       "character_id": "CHR-7",
+      "final_room_target_ids": [
+        "potter"
+      ],
       "id": "chr_7",
       "meta_memory": false,
       "name": "산악 지역 보스 — 도공",
@@ -60,6 +77,7 @@
     },
     {
       "character_id": "CHR-8",
+      "final_room_target_ids": [],
       "id": "chr_8",
       "meta_memory": false,
       "name": "무차우",
@@ -68,6 +86,7 @@
     },
     {
       "character_id": "CHR-9",
+      "final_room_target_ids": [],
       "id": "wandering_tea_merchant",
       "meta_memory": false,
       "name": "떠돌이 차 상인",

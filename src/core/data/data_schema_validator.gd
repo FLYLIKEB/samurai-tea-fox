@@ -179,6 +179,12 @@ func _validate_item_contract(dataset_name: String, item: Dictionary) -> Dictiona
 			return {"ok": false, "error": "characters item '%s' character_id must match CHR-<number>." % item.id}
 		if typeof(item.get("meta_memory")) != TYPE_BOOL:
 			return {"ok": false, "error": "characters item '%s' meta_memory must be a boolean." % item.id}
+		var target_ids = item.get("final_room_target_ids", [])
+		if typeof(target_ids) != TYPE_ARRAY:
+			return {"ok": false, "error": "characters item '%s' final_room_target_ids must be an array." % item.id}
+		for target_id in target_ids:
+			if typeof(target_id) != TYPE_STRING or not _stable_id(String(target_id)):
+				return {"ok": false, "error": "characters item '%s' final_room_target_ids must contain stable ids." % item.id}
 		return {"ok": true}
 	if dataset_name == "drops":
 		return _validate_drop_contract(item)
