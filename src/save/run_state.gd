@@ -1,6 +1,8 @@
 extends RefCounted
 class_name RunState
 
+const TailState = preload("res://src/player/tail_state.gd")
+
 var data_version := ""
 var lifecycle_epoch := 0
 var seed := 0
@@ -10,6 +12,7 @@ var equipment := {}
 var currency := 0
 var trade_stock := {}
 var tails := 1
+var tail_state := TailState.default_dictionary()
 var abilities := []
 var completed_dungeon_ids := []
 var completed_runtime_dungeon_ids := []
@@ -37,7 +40,12 @@ static func from_dictionary(data: Dictionary):
 	state.equipment = _dictionary_value(data.get("equipment", {}))
 	state.currency = int(data.get("currency", 0))
 	state.trade_stock = _dictionary_value(data.get("trade_stock", {}))
-	state.tails = int(data.get("tails", 1))
+	var tail_snapshot: Dictionary = _dictionary_value(data.get("tail_state", {}))
+	if tail_snapshot.is_empty():
+		tail_snapshot = TailState.from_tail_count(int(data.get("tails", 1))).to_dictionary()
+	var tail_result: Dictionary = TailState.from_dictionary(tail_snapshot)
+	state.tail_state = tail_result.tail_state.to_dictionary() if tail_result.ok else TailState.default_dictionary()
+	state.tails = int(state.tail_state.tail_count)
 	state.abilities = _array_value(data.get("abilities", []))
 	state.completed_dungeon_ids = _array_value(data.get("completed_dungeon_ids", []))
 	state.completed_runtime_dungeon_ids = _array_value(data.get("completed_runtime_dungeon_ids", []))
@@ -65,6 +73,11 @@ func reset_biome_progression() -> void:
 	repaired_teleports.clear()
 	crafting_unlocks.clear()
 
+func reset_run_growth() -> void:
+	tails = 1
+	tail_state = TailState.default_dictionary()
+	abilities.clear()
+
 func to_dictionary() -> Dictionary:
 	return {
 		"data_version": data_version,
@@ -76,6 +89,7 @@ func to_dictionary() -> Dictionary:
 		"currency": currency,
 		"trade_stock": trade_stock.duplicate(true),
 		"tails": tails,
+		"tail_state": tail_state.duplicate(true),
 		"abilities": abilities.duplicate(true),
 		"completed_dungeon_ids": completed_dungeon_ids.duplicate(true),
 		"completed_runtime_dungeon_ids": completed_runtime_dungeon_ids.duplicate(true),

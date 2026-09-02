@@ -95,6 +95,7 @@ func _full_run_state() -> RunState:
 	state.equipment = {"slots": {"tea_ware": {"item_id": "travel_bottle"}}}
 	state.currency = 7
 	state.tails = 2
+	state.tail_state = {"stage": 2, "tail_count": 2, "path_flags": ["humanity"], "transition_history": []}
 	state.abilities = ["fox_dash"]
 	state.completed_dungeon_ids = ["common_region"]
 	state.completed_runtime_dungeon_ids = ["fixture_dungeon"]

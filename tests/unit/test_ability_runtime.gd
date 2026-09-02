@@ -7,6 +7,7 @@ const TimeState = preload("res://src/time/time_state.gd")
 const CombatantState = preload("res://src/combat/combatant_state.gd")
 const AbilityDefinition = preload("res://src/ability/ability_definition.gd")
 const AbilityRuntime = preload("res://src/ability/ability_runtime.gd")
+const TailState = preload("res://src/player/tail_state.gd")
 
 class FakeCatalog:
 	extends RefCounted
@@ -39,6 +40,7 @@ class TailQuery:
 func run(asserts) -> void:
 	_assert_generated_catalog_loads_ability_runtime(asserts)
 	_assert_equipping_slots_and_tail_query(asserts)
+	_assert_tail_state_drives_ability_candidates(asserts)
 	_assert_damage_sample_casts_through_common_runtime(asserts)
 	_assert_low_kokoro_cost_cooldown_and_insufficient_ki(asserts)
 	_assert_movement_sample_uses_strategy_without_damage(asserts)
@@ -77,6 +79,18 @@ func _assert_equipping_slots_and_tail_query(asserts) -> void:
 	var unknown := runtime.equip(0, "missing", {"tail_count": 9})
 	asserts.false_value(unknown.ok, "equip rejects unknown ability IDs")
 	asserts.equal(unknown.reason, "unknown_ability", "unknown ability reason is explicit")
+
+func _assert_tail_state_drives_ability_candidates(asserts) -> void:
+	var runtime := _test_runtime()
+	var tail_state := TailState.new({"stage": 2, "tail_count": 2})
+	var candidates: Dictionary = runtime.ability_candidates({"tail_query": tail_state})
+	asserts.true_value(candidates.ok, "tail state can query ability candidates")
+	asserts.equal(candidates.ability_ids, ["ember", "water_shadow"], "candidate ability IDs are filtered by tail requirement")
+	asserts.equal(candidates.definitions[0].id, "ember", "candidate payload keeps stable ability ID")
+	var blocked := runtime.equip(0, "crooked_cut", {"tail_query": tail_state})
+	asserts.equal(blocked.reason, "tail_requirement_not_met", "tail state blocks direct equip above current stage")
+	asserts.true_value(tail_state.apply_transition("event", "fox_fire_trial", 3).ok, "tail state advances by stable event")
+	asserts.true_value(runtime.equip(0, "crooked_cut", {"tail_query": tail_state}).ok, "advanced tail state unlocks higher requirement ability")
 
 func _assert_damage_sample_casts_through_common_runtime(asserts) -> void:
 	var runtime := _test_runtime()

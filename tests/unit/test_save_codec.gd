@@ -3,6 +3,7 @@ extends RefCounted
 const SaveCodec = preload("res://src/save/save_codec.gd")
 const BiomeProgressionState = preload("res://src/world/biome/biome_progression_state.gd")
 const RunState = preload("res://src/save/run_state.gd")
+const TailState = preload("res://src/player/tail_state.gd")
 
 func run(asserts) -> void:
 	var run_equipment := {"slots": {"tea_ware": {"item_id": "travel_bottle", "quantity": 1, "instance_id": "inst_tea_ware", "metadata": {"tea_ware_use_count": 4}}}}
@@ -13,7 +14,7 @@ func run(asserts) -> void:
 		"philosophy_marks": ["和·공존"],
 		"final_room_effects": [{"choice_id": "daimyo_relinquish_tea", "effect": "관계형 지원 효과"}]
 	}
-	var run_payload := {"seed": 11037, "inventory": ["wood"], "equipment": run_equipment}
+	var run_payload := {"seed": 11037, "inventory": ["wood"], "equipment": run_equipment, "tail_state": {"stage": 2, "tail_count": 2, "path_flags": ["humanity"], "transition_history": []}}
 	run_payload.merge(choice_state)
 	var run_save := SaveCodec.encode_run(run_payload)
 	var meta_save := SaveCodec.encode_meta({"run_count": 2, "discovered_records": ["oribe_bowl"], "unlocked_meta_flags": ["sen_rikyu_reunion_dialogue_1"]})
@@ -25,6 +26,8 @@ func run(asserts) -> void:
 	asserts.true_value(SaveCodec.decode_run(run_save).ok, "run save decodes")
 	asserts.equal(SaveCodec.decode_run(run_save).state.equipment, run_equipment, "run save preserves equipment payload")
 	asserts.equal(SaveCodec.decode_run(run_save).state.equipment.slots.tea_ware.metadata.tea_ware_use_count, 4, "run save keeps per-run tea ware use metadata")
+	asserts.equal(SaveCodec.decode_run(run_save).state.tail_state.stage, 2, "run save preserves tail state stage")
+	asserts.equal(SaveCodec.decode_run(run_save).state.tails, 2, "run save mirrors tail count from tail state")
 	var decoded_choice: Dictionary = SaveCodec.decode_run(run_save)
 	for field in choice_state:
 		asserts.equal(decoded_choice.state[field], choice_state[field], "run save preserves choice field '%s'" % field)
@@ -34,6 +37,7 @@ func run(asserts) -> void:
 	asserts.false_value(SaveCodec.decode_meta(run_save).ok, "run save cannot decode as meta")
 	asserts.false_value(SaveCodec.decode_run({"schema_version": SaveCodec.CURRENT_SCHEMA_VERSION, "kind": "run", "run": []}).ok, "run save rejects non-dictionary payload")
 	asserts.false_value(SaveCodec.decode_meta({"schema_version": SaveCodec.CURRENT_SCHEMA_VERSION, "kind": "meta", "meta": []}).ok, "meta save rejects non-dictionary payload")
+	asserts.false_value(SaveCodec.decode_run({"schema_version": SaveCodec.CURRENT_SCHEMA_VERSION, "kind": "run", "run": {"seed": 1, "tail_state": {"stage": 3, "tail_count": 2, "path_flags": [], "transition_history": []}}}).ok, "run save rejects malformed tail state")
 
 	var state := RunState.new()
 	state.current_biome_id = "common_region"
@@ -72,6 +76,8 @@ func run(asserts) -> void:
 		"processed_drop_request_ids": []
 	}
 	state.trade_stock = {"shop_1": 2}
+	state.tail_state = {"stage": 3, "tail_count": 3, "path_flags": ["yokai_nature"], "transition_history": [{"source_kind": "event", "source_id": "fox_fire_trial", "source_key": "", "stage": 3, "path_flags": ["yokai_nature"]}]}
+	state.tails = 3
 	var progression_save := SaveCodec.encode_run(state.to_dictionary())
 	asserts.equal(SaveCodec.decode_run(progression_save).state.teleport_states.common_region, "repairable", "run save preserves teleport progression")
 	var decoded := SaveCodec.decode_run(progression_save)
@@ -92,14 +98,18 @@ func run(asserts) -> void:
 	asserts.true_value(decoded.run_state.acquisitions.gatherables[0].depleted, "hydrated run state preserves gatherable depletion")
 	asserts.equal(decoded.run_state.acquisitions.pickups[0].item_id, "wood", "hydrated run state preserves world pickups")
 	asserts.equal(decoded.run_state.trade_stock.shop_1, 2, "hydrated run state preserves trade stock")
+	asserts.equal(decoded.run_state.tail_state.stage, 3, "hydrated run state preserves tail stage")
+	asserts.equal(decoded.run_state.tail_state.path_flags, ["yokai_nature"], "hydrated run state preserves tail path flags")
 	progression_save.run.equipment.slots.tea_ware.metadata.tea_ware_use_count = 99
 	progression_save.run.narrative_flags.append("mutated_after_decode")
 	progression_save.run.consumables.active_action.elapsed_seconds = 0.75
 	progression_save.run.acquisitions.pickups[0].quantity = 99
+	progression_save.run.tail_state.path_flags.append("mutated_after_decode")
 	asserts.equal(decoded.run_state.equipment.slots.tea_ware.metadata.tea_ware_use_count, 4, "hydrated equipment state is detached from encoded payload")
 	asserts.equal(decoded.run_state.narrative_flags, ["met_sen_rikyu"], "hydrated narrative state is detached from encoded payload")
 	asserts.equal(decoded.run_state.consumables.active_action.elapsed_seconds, 0.5, "hydrated consumable state is detached from encoded payload")
 	asserts.equal(decoded.run_state.acquisitions.pickups[0].quantity, 1, "hydrated acquisition state is detached from encoded payload")
+	asserts.equal(decoded.run_state.tail_state.path_flags, ["yokai_nature"], "hydrated tail state is detached from encoded payload")
 	state.reset_biome_progression()
 	asserts.equal(state.current_biome_id, "", "run state reset clears current biome")
 	asserts.equal(state.completed_dungeon_ids, [], "run state reset clears dungeon completion")
@@ -107,6 +117,10 @@ func run(asserts) -> void:
 	asserts.equal(state.dungeon_runtime_state, {}, "run state reset clears active dungeon runtime")
 	asserts.equal(state.teleport_states, {}, "run state reset clears teleport states")
 	asserts.equal(state.crafting_unlocks, [], "run state reset clears crafting unlocks")
+	state.reset_run_growth()
+	asserts.equal(state.tails, 1, "run growth reset returns tails to one")
+	asserts.equal(state.tail_state, TailState.default_dictionary(), "run growth reset returns tail state to default")
+	asserts.equal(state.abilities, [], "run growth reset clears run ability candidates")
 
 func _fixture_biomes() -> Array:
 	return [
