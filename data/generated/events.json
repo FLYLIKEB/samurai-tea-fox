@@ -1,5 +1,5 @@
 {
-  "content_hash": "587c3bcf154ffaaf34cfcec2a79d0751f41c99176a38432c3553f5602af4ec93",
+  "content_hash": "ad3c28415b1a862c9f4ed2b9b58c1c8bd761011faea831e4d93904a711e8cc30",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -283,6 +283,35 @@
       ],
       "replay_policy": "once",
       "start_node_id": "start",
+      "status": "확정"
+    },
+    {
+      "id": "sen_rikyu_phase_3_final_victory",
+      "name": "센리큐 Phase 3 — 一期一会 선택 회수",
+      "nodes": [
+        {
+          "id": "result",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "마지막 회수를 마친다",
+              "id": "complete",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "sen_rikyu_phase3_victory",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "센리큐는 여행의 흔적이 모인 마지막 일격을 받아들인다."
+        }
+      ],
+      "replay_policy": "once",
+      "start_node_id": "result",
       "status": "확정"
     }
   ],
