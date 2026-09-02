@@ -41,6 +41,7 @@ func run(asserts) -> void:
 	_assert_mountain_generation(asserts, catalog, generator)
 	_assert_wasteland_generation(asserts, catalog, generator)
 	_assert_snowfield_generation(asserts, catalog, generator)
+	_assert_rainforest_generation(asserts, catalog, generator)
 
 	var progression_result: Dictionary = BiomeProgressionState.from_catalog(catalog, RunState.new())
 	asserts.true_value(progression_result.ok, "progression state configures for renderer projection")
@@ -244,6 +245,57 @@ func _assert_snowfield_generation(asserts, catalog, generator: WorldGenerator) -
 	var missing_facility := generator.generate(35033, catalog.data_version, missing_facility_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
 	asserts.false_value(missing_facility.ok, "snowfield rules require every canonical facility term")
 	asserts.equal(missing_facility.failure_reason, "missing_biome_facility_terms", "missing snowfield facility term fails explicitly")
+
+func _assert_rainforest_generation(asserts, catalog, generator: WorldGenerator) -> void:
+	var rainforest: Dictionary = catalog.find_by_id("biomes", "rainforest")
+	asserts.false_value(rainforest.is_empty(), "rainforest biome definition exists")
+	var generated := generator.generate(36033, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var repeated := generator.generate(36033, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var alternate := generator.generate(36034, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var next_version := generator.generate(36033, "notion-2026-09-02", rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	asserts.true_value(generated.ok, "rainforest world generation succeeds")
+	asserts.equal(_canonical_world(generated), _canonical_world(repeated), "rainforest generation is deterministic for the same seed")
+	asserts.true_value(_canonical_world(generated) != _canonical_world(alternate), "rainforest generation varies by seed")
+	asserts.true_value(_canonical_world(generated) != _canonical_world(next_version), "rainforest generation varies by data version")
+	asserts.equal(generated.biome_generation_rule_id, "rainforest", "rainforest records its generation ruleset")
+	asserts.equal(generated.biome_progression_order, 5, "rainforest generation preserves data-driven progression order")
+	asserts.true_value(generated.connectivity.valid, "rainforest landmarks are connectivity-valid")
+	asserts.true_value(generated.facility_accessibility.valid, "rainforest facilities have reachable access points")
+	asserts.true_value(generated.resource_accessibility.valid, "rainforest resources have reachable access points")
+	asserts.equal(generated.facility_nodes.size(), 4, "rainforest places every canonical facility term")
+	asserts.true_value(generated.resource_nodes.size() >= generated.min_resource_nodes, "rainforest places minimum resources")
+	_assert_teleport_landmark_metadata(asserts, generated.world_data, "rainforest")
+	_assert_resource_accessibility(asserts, generated)
+	_assert_facility_accessibility_for_terms(asserts, generated, ["차 재배지", "강변 취락", "숲속 다실", "향 문화 공간"])
+	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
+	_assert_rainforest_terrain_profile(asserts, generated.world_data)
+	_assert_rainforest_renderer_sources(asserts, generated.renderer_input)
+	_assert_landmark_terms(asserts, generated.landmarks, ["밀림", "습지", "넓은 강", "덩굴 통로", "차 재배지", "향목 숲"])
+	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, rainforest, catalog.get_definitions("items"))
+	_assert_rainforest_rare_resource_ids(asserts, generated.resource_nodes)
+	_assert_rainforest_chunk_features(asserts, generated.chunks)
+	_assert_no_forbidden_survival_state(asserts, generated)
+
+	for seed in range(36000, 36025):
+		var sampled := generator.generate(seed, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+		asserts.true_value(sampled.ok, "rainforest seed %d generates successfully" % seed)
+		asserts.equal(_canonical_world(sampled), _canonical_world(generator.generate(seed, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"))), "rainforest seed %d remains deterministic" % seed)
+		asserts.true_value(sampled.connectivity.valid, "rainforest seed %d keeps landmarks connected" % seed)
+		asserts.true_value(sampled.facility_accessibility.valid, "rainforest seed %d keeps facilities accessible" % seed)
+		asserts.true_value(sampled.resource_accessibility.valid, "rainforest seed %d keeps resources accessible" % seed)
+		_assert_rainforest_chunk_features(asserts, sampled.chunks)
+
+	var missing_term_biome: Dictionary = rainforest.duplicate(true)
+	missing_term_biome.terrain = "밀림, 습지, 넓은 강, 덩굴 통로, 차 재배지"
+	var missing_term := generator.generate(36033, catalog.data_version, missing_term_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	asserts.false_value(missing_term.ok, "rainforest rules require every canonical terrain term")
+	asserts.equal(missing_term.failure_reason, "missing_biome_generation_terms", "missing rainforest terrain term fails explicitly")
+
+	var missing_facility_biome: Dictionary = rainforest.duplicate(true)
+	missing_facility_biome.facilities = "차 재배지, 강변 취락, 숲속 다실"
+	var missing_facility := generator.generate(36033, catalog.data_version, missing_facility_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	asserts.false_value(missing_facility.ok, "rainforest rules require every canonical facility term")
+	asserts.equal(missing_facility.failure_reason, "missing_biome_facility_terms", "missing rainforest facility term fails explicitly")
 
 func _assert_resource_accessibility(asserts, world: Dictionary) -> void:
 	var validator := ConnectivityValidator.new()
@@ -489,6 +541,53 @@ func _assert_snowfield_renderer_sources(asserts, renderer_input: Dictionary) -> 
 	for source_id in expected_sources.keys():
 		asserts.true_value(seen.has(source_id), "snowfield renderer uses promoted source: %s" % source_id)
 
+func _assert_rainforest_terrain_profile(asserts, world_data: Dictionary) -> void:
+	var required_walkable := {
+		"rainforest_vine_path": true,
+		"rainforest_tea_field": true,
+		"rainforest_river_bank": true
+	}
+	var required_blocked := {
+		"rainforest_jungle": true,
+		"rainforest_swamp": true,
+		"rainforest_river": true,
+		"rainforest_agarwood_grove": true
+	}
+	var terrain_counts := {}
+	var blocked_counts := {}
+	for cell in world_data.cells:
+		var terrain: Dictionary = cell.layers.terrain
+		var terrain_id := String(terrain.id)
+		terrain_counts[terrain_id] = int(terrain_counts.get(terrain_id, 0)) + 1
+		if not bool(terrain.walkable):
+			blocked_counts[terrain_id] = int(blocked_counts.get(terrain_id, 0)) + 1
+	for terrain_id in required_walkable.keys():
+		asserts.true_value(int(terrain_counts.get(terrain_id, 0)) > 0, "rainforest includes walkable terrain: %s" % terrain_id)
+	for terrain_id in required_blocked.keys():
+		asserts.true_value(int(blocked_counts.get(terrain_id, 0)) > 0, "rainforest includes blocked terrain: %s" % terrain_id)
+
+func _assert_rainforest_renderer_sources(asserts, renderer_input: Dictionary) -> void:
+	var expected_sources := {
+		"assets/sprites/objects/natural-props/dense_shrub_32x32.png": true,
+		"assets/sprites/objects/natural-props/reed_clump_32x32.png": true,
+		"assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_202_420_146x145_resize_32x32.png": true,
+		"assets/sprites/objects/natural-props/bamboo_reeds_32x32.png": true,
+		"assets/sprites/objects/crafting/tea_leaf_worktable_32x32.png": true,
+		"assets/sprites/objects/natural-props/round_tree_large_32x32.png": true,
+		"assets/tiles/terrain/plains/flower_grass_02_32x32.png": true,
+		"assets/sprites/objects/structures/small_wood_house_2x2_64x64.png": true,
+		"assets/sprites/objects/crafting/tea_table_2x2_64x64.png": true,
+		"assets/sprites/objects/shrine-props/incense_burner_32x32.png": true
+	}
+	var seen := {}
+	for layer in renderer_input.layers:
+		for cell in layer.cells:
+			var source_id := String(cell.get("source_id", ""))
+			if expected_sources.has(source_id):
+				seen[source_id] = true
+	for source_id in expected_sources.keys():
+		asserts.true_value(seen.has(source_id), "rainforest renderer uses promoted source: %s" % source_id)
+
 func _assert_landmark_terrain_terms(asserts, landmarks: Array) -> void:
 	_assert_landmark_terms(asserts, landmarks, ["산길", "절벽", "바위지대", "계곡", "폭포", "침엽수림", "동굴"])
 
@@ -506,10 +605,19 @@ func _assert_resource_ids_resolve_to_biome_materials(asserts, resource_nodes: Ar
 	var biome_resource_text := String(biome.get("resources", ""))
 	var material_ids := {}
 	for item in item_definitions:
-		if String(item.get("type", "")) == "재료" and biome_resource_text.contains(String(item.get("name", ""))):
+		var item_type := String(item.get("type", ""))
+		if (item_type == "재료" or item_type == "향") and biome_resource_text.contains(String(item.get("name", ""))):
 			material_ids[String(item.get("id", ""))] = true
 	for node in resource_nodes:
 		asserts.true_value(material_ids.has(String(node.resource_id)), "%s uses an existing biome material item id" % node.id)
+
+func _assert_rainforest_rare_resource_ids(asserts, resource_nodes: Array) -> void:
+	var has_incense := false
+	for node in resource_nodes:
+		if String(node.get("resource_id", "")) == "item_5":
+			asserts.equal(String(node.get("source_id", "")), "assets/sprites/objects/natural-props/round_tree_large_32x32.png", "rainforest 침향 resource uses agarwood source")
+			has_incense = true
+	asserts.true_value(has_incense, "rainforest includes confirmed 침향 rare resource id")
 
 func _assert_wasteland_chunk_features(asserts, chunks: Array) -> void:
 	var feature_counts := {}
@@ -531,11 +639,28 @@ func _assert_snowfield_chunk_features(asserts, chunks: Array) -> void:
 	asserts.true_value(int(feature_counts.get("ice_wall_pass", 0)) > 0, "snowfield includes ice wall boundary chunks")
 	asserts.true_value(int(feature_counts.get("safe_clearing", 0)) > 0, "snowfield includes safe-point clearings")
 
+func _assert_rainforest_chunk_features(asserts, chunks: Array) -> void:
+	var feature_counts := {}
+	for chunk in chunks:
+		var feature := String(chunk.get("feature", ""))
+		feature_counts[feature] = int(feature_counts.get(feature, 0)) + 1
+	asserts.true_value(int(feature_counts.get("dense_jungle_vine_path", 0)) > 0, "rainforest includes dense jungle/vine path chunks")
+	asserts.true_value(int(feature_counts.get("wide_river_bank", 0)) > 0 or int(feature_counts.get("river_bypass", 0)) > 0, "rainforest includes water boundary/bypass chunks")
+	asserts.true_value(int(feature_counts.get("swamp_boundary", 0)) > 0, "rainforest includes swamp boundary chunks")
+	asserts.true_value(int(feature_counts.get("agarwood_grove", 0)) > 0, "rainforest includes agarwood grove chunks")
+
 func _assert_no_temperature_state(asserts, world: Dictionary) -> void:
 	var text := JSON.stringify(world).to_lower()
 	asserts.false_value(text.contains("temperature"), "snowfield generation does not add temperature state")
 	asserts.false_value(text.contains("body_temperature"), "snowfield generation does not add body temperature state")
 	asserts.false_value(text.contains("체온"), "snowfield generation does not add 체온 state")
+
+func _assert_no_forbidden_survival_state(asserts, world: Dictionary) -> void:
+	var text := JSON.stringify(world).to_lower()
+	asserts.false_value(text.contains("poison"), "rainforest generation does not add poison state")
+	asserts.false_value(text.contains("disease"), "rainforest generation does not add disease state")
+	asserts.false_value(text.contains("독"), "rainforest generation does not add 독 state")
+	asserts.false_value(text.contains("질병"), "rainforest generation does not add 질병 state")
 
 func _manhattan_distance(a: Dictionary, b: Dictionary) -> int:
 	return abs(int(a.x) - int(b.x)) + abs(int(a.y) - int(b.y))
