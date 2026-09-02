@@ -181,6 +181,11 @@ class ExportPipeline:
         if dataset_name == "bosses":
             self._validate_boss_contract(row)
             return
+        if dataset_name != "items":
+            return
+        if row.get("type") != "다구" or row.get("equipment_slot") != "다구":
+            return
+        self._validate_attachment_stage_data(row)
 
     def _validate_character_contract(self, row: dict[str, Any]) -> None:
         character_id = row.get("character_id")
@@ -192,11 +197,6 @@ class ExportPipeline:
             raise ExportValidationError(
                 f"characters item {row['id']}: meta_memory must be a boolean"
             )
-        if dataset_name != "items":
-            return
-        if row.get("type") != "다구" or row.get("equipment_slot") != "다구":
-            return
-        self._validate_attachment_stage_data(row)
 
 
     def _validate_meta_unlock_contract(self, row: dict[str, Any]) -> None:
