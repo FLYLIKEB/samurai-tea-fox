@@ -41,6 +41,33 @@
       }
     ]
   },
+  "walk_animation_production": {
+    "task": "DEV-62",
+    "generator": "PixelLab",
+    "endpoint": "/animate-with-text-v3",
+    "source_rule": "Each approved south, west, east, and north 32x32 PNG is an immutable first-frame reference for its own eight-frame walk loop.",
+    "sheet_contract": {
+      "canvas": "256x128",
+      "frame_size": "32x32",
+      "directions": 4,
+      "frames_per_direction": 8,
+      "row_order": ["south", "west", "east", "north"],
+      "column_order": "animation frames 0 through 7"
+    },
+    "raw_candidates": "assets/source/imagegen/pixellab-character-walk-20260902/raw/",
+    "production_metadata": "assets/sprites/characters/walk-production-metadata.json",
+    "art_assets": {
+      "CHR-1": "ART-14",
+      "CHR-2": "ART-15",
+      "CHR-3": "ART-16",
+      "CHR-4": "ART-17",
+      "CHR-5": "ART-18",
+      "CHR-6": "ART-19",
+      "CHR-7": "ART-20",
+      "CHR-8": "ART-21",
+      "CHR-9": "ART-22"
+    }
+  },
   "characters": [
     {
       "character_id": "CHR-1",
@@ -53,7 +80,8 @@
         "kitsune_father_left_32x32.png",
         "kitsune_father_right_32x32.png",
         "kitsune_father_back_32x32.png",
-        "kitsune_father_front_64x64.png"
+        "kitsune_father_front_64x64.png",
+        "kitsune_father_walk_4dir_8f_32x32.png"
       ],
       "legacy_prefix": "npc_kitsune_spirit_flame"
     },
@@ -68,7 +96,8 @@
         "wasteland_daimyo_left_32x32.png",
         "wasteland_daimyo_right_32x32.png",
         "wasteland_daimyo_back_32x32.png",
-        "wasteland_daimyo_front_64x64.png"
+        "wasteland_daimyo_front_64x64.png",
+        "wasteland_daimyo_walk_4dir_8f_32x32.png"
       ],
       "legacy_prefix": "npc_helmet_samurai"
     },
@@ -83,7 +112,8 @@
         "furuta_oribe_left_32x32.png",
         "furuta_oribe_right_32x32.png",
         "furuta_oribe_back_32x32.png",
-        "furuta_oribe_front_64x64.png"
+        "furuta_oribe_front_64x64.png",
+        "furuta_oribe_walk_4dir_8f_32x32.png"
       ],
       "legacy_prefix": "npc_fox_spirit_aura"
     },
@@ -98,7 +128,8 @@
         "snow_monk_left_32x32.png",
         "snow_monk_right_32x32.png",
         "snow_monk_back_32x32.png",
-        "snow_monk_front_64x64.png"
+        "snow_monk_front_64x64.png",
+        "snow_monk_walk_4dir_8f_32x32.png"
       ],
       "legacy_prefix": "npc_bald_monk"
     },
@@ -113,7 +144,8 @@
         "sen_rikyu_left_32x32.png",
         "sen_rikyu_right_32x32.png",
         "sen_rikyu_back_32x32.png",
-        "sen_rikyu_front_64x64.png"
+        "sen_rikyu_front_64x64.png",
+        "sen_rikyu_walk_4dir_8f_32x32.png"
       ],
       "legacy_prefix": "npc_tea_master"
     },
@@ -128,7 +160,8 @@
         "yokai_tea_master_left_32x32.png",
         "yokai_tea_master_right_32x32.png",
         "yokai_tea_master_back_32x32.png",
-        "yokai_tea_master_front_64x64.png"
+        "yokai_tea_master_front_64x64.png",
+        "yokai_tea_master_walk_4dir_8f_32x32.png"
       ],
       "legacy_prefix": "npc_oni_fox_mage"
     },
@@ -143,7 +176,8 @@
         "mountain_potter_left_32x32.png",
         "mountain_potter_right_32x32.png",
         "mountain_potter_back_32x32.png",
-        "mountain_potter_front_64x64.png"
+        "mountain_potter_front_64x64.png",
+        "mountain_potter_walk_4dir_8f_32x32.png"
       ],
       "legacy_prefix": "npc_straw_hat_villager"
     },
@@ -161,7 +195,8 @@
         "fox_samurai_left_idle_32x32.png",
         "fox_samurai_left_idle_64x64.png",
         "fox_samurai_right_idle_32x32.png",
-        "fox_samurai_right_idle_64x64.png"
+        "fox_samurai_right_idle_64x64.png",
+        "fox_samurai_walk_4dir_8f_32x32.png"
       ],
       "legacy_prefix": "fox_samurai"
     },
@@ -176,7 +211,8 @@
         "wandering_tea_merchant_left_32x32.png",
         "wandering_tea_merchant_right_32x32.png",
         "wandering_tea_merchant_back_32x32.png",
-        "wandering_tea_merchant_front_64x64.png"
+        "wandering_tea_merchant_front_64x64.png",
+        "wandering_tea_merchant_walk_4dir_8f_32x32.png"
       ],
       "legacy_prefix": "npc_pack_merchant"
     }

@@ -20,5 +20,11 @@ func run(asserts) -> void:
 		"enemy sprite stable asset ID resolves to the promoted runtime path"
 	)
 	asserts.true_value(catalog.load_texture("wasteland_daimyo_front_idle") != null, "registered enemy PNG loads as Texture2D")
+	asserts.equal(
+		catalog.character_animation_id("CHR-8", "walk"),
+		"chr_8_fox_samurai_walk",
+		"character animation metadata resolves a stable runtime asset ID"
+	)
+	asserts.equal(catalog.character_animation_id("CHR-404", "walk"), "", "unknown character animation metadata has no ID")
 	asserts.equal(catalog.path_for("missing_asset"), "", "unknown stable asset ID has no path")
 	asserts.true_value(catalog.load_texture("missing_asset") == null, "unknown stable asset ID has no texture")

@@ -42,15 +42,28 @@ func run() -> void:
 	player.submit_command(GameCommand.new(GameCommand.Type.MOVE, Vector2i.RIGHT))
 	await physics_frame
 	await physics_frame
-	if sprite.texture == null or player._current_sprite_asset_id != "fox_samurai_right_idle":
-		failures.append("player movement switches to the right-facing stable asset ID")
-	for _index in 38:
+	if sprite.texture == null or player._current_sprite_asset_id != "chr_8_fox_samurai_walk":
+		failures.append("player movement switches to the stable walk asset ID")
+	elif Vector2i(sprite.hframes, sprite.vframes) != Vector2i(8, 4) or sprite.frame_coords.y != 2:
+		failures.append("player movement selects the east row of the 8x4 walk sheet")
+	for _index in 10:
+		await physics_frame
+	if sprite.frame_coords.x == 0:
+		failures.append("player walk animation advances while movement continues")
+	for _index in 28:
 		await physics_frame
 
 	if player.position.x < 1.0:
 		failures.append("player advances when a movement command is submitted")
 	elif player.position.x > 10.1:
 		failures.append("player does not pass through a wall")
+
+	player.submit_command(GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO))
+	await physics_frame
+	if player._current_sprite_asset_id != "fox_samurai_right_idle":
+		failures.append("player stopping restores the last facing idle asset")
+	elif Vector2i(sprite.hframes, sprite.vframes) != Vector2i.ONE:
+		failures.append("player stopping restores a single-frame sprite")
 
 	player.queue_free()
 	wall.queue_free()

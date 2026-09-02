@@ -361,6 +361,276 @@
       "placeholder": false
     },
     {
+      "id": "chr_1_kitsune_father_walk",
+      "name": "아버지 4방향 걷기 시트",
+      "art_asset_id": "ART-14",
+      "character_id": "CHR-1",
+      "animation_id": "walk",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/family/chr-1-kitsune-father/kitsune_father_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frames_per_direction": 8,
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    },
+    {
+      "id": "chr_2_wasteland_daimyo_walk",
+      "name": "황무지 다이묘 4방향 걷기 시트",
+      "art_asset_id": "ART-15",
+      "character_id": "CHR-2",
+      "animation_id": "walk",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/bosses/chr-2-wasteland-daimyo/wasteland_daimyo_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frames_per_direction": 8,
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    },
+    {
+      "id": "chr_3_furuta_oribe_walk",
+      "name": "후루타 오리베 4방향 걷기 시트",
+      "art_asset_id": "ART-16",
+      "character_id": "CHR-3",
+      "animation_id": "walk",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/rivals/chr-3-furuta-oribe/furuta_oribe_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frames_per_direction": 8,
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    },
+    {
+      "id": "chr_4_snow_monk_walk",
+      "name": "설원 승려 4방향 걷기 시트",
+      "art_asset_id": "ART-17",
+      "character_id": "CHR-4",
+      "animation_id": "walk",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/bosses/chr-4-snow-monk/snow_monk_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frames_per_direction": 8,
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    },
+    {
+      "id": "chr_5_sen_rikyu_walk",
+      "name": "센리큐 4방향 걷기 시트",
+      "art_asset_id": "ART-18",
+      "character_id": "CHR-5",
+      "animation_id": "walk",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/bosses/chr-5-sen-rikyu/sen_rikyu_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frames_per_direction": 8,
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    },
+    {
+      "id": "chr_6_yokai_tea_master_walk",
+      "name": "요괴 다인 4방향 걷기 시트",
+      "art_asset_id": "ART-19",
+      "character_id": "CHR-6",
+      "animation_id": "walk",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/bosses/chr-6-yokai-tea-master/yokai_tea_master_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frames_per_direction": 8,
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    },
+    {
+      "id": "chr_7_mountain_potter_walk",
+      "name": "산악 도공 4방향 걷기 시트",
+      "art_asset_id": "ART-20",
+      "character_id": "CHR-7",
+      "animation_id": "walk",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/bosses/chr-7-mountain-potter/mountain_potter_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frames_per_direction": 8,
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    },
+    {
+      "id": "chr_8_fox_samurai_walk",
+      "name": "무차우 4방향 걷기 시트",
+      "art_asset_id": "ART-21",
+      "character_id": "CHR-8",
+      "animation_id": "walk",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frames_per_direction": 8,
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    },
+    {
+      "id": "chr_9_wandering_tea_merchant_walk",
+      "name": "떠돌이 차 상인 4방향 걷기 시트",
+      "art_asset_id": "ART-22",
+      "character_id": "CHR-9",
+      "animation_id": "walk",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/npcs/chr-9-wandering-tea-merchant/wandering_tea_merchant_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frames_per_direction": 8,
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    },
+    {
       "id": "terrain_plains_grass_ground_01",
       "name": "초원 기본 땅 타일 01",
       "status": "완료",

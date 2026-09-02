@@ -18,6 +18,7 @@ func load_manifest(path := DEFAULT_MANIFEST_PATH) -> Dictionary:
 		return {"ok": false, "error": "Asset manifest assets must be an array: %s" % path}
 	var id_pattern := RegEx.new()
 	id_pattern.compile(STABLE_ID_PATTERN)
+	var character_animation_ids: Dictionary = {}
 	for definition in assets:
 		if typeof(definition) != TYPE_DICTIONARY:
 			return {"ok": false, "error": "Asset manifest entry must be an object"}
@@ -33,6 +34,15 @@ func load_manifest(path := DEFAULT_MANIFEST_PATH) -> Dictionary:
 			return {"ok": false, "error": "Runtime placeholder is forbidden: %s" % asset_id}
 		if not _texture_exists(asset_path):
 			return {"ok": false, "error": "Missing asset file for %s: %s" % [asset_id, asset_path]}
+		var character_id := String(definition.get("character_id", ""))
+		var animation_id := String(definition.get("animation_id", ""))
+		if not character_id.is_empty() or not animation_id.is_empty():
+			if character_id.is_empty() or animation_id.is_empty():
+				return {"ok": false, "error": "Character animation metadata is incomplete for %s" % asset_id}
+			var animation_key := "%s:%s" % [character_id, animation_id]
+			if character_animation_ids.has(animation_key):
+				return {"ok": false, "error": "Duplicate character animation metadata: %s" % animation_key}
+			character_animation_ids[animation_key] = asset_id
 		definitions[asset_id] = definition.duplicate(true)
 	return {"ok": true}
 
@@ -44,6 +54,16 @@ func definition_for(id: String) -> Dictionary:
 
 func path_for(id: String) -> String:
 	return definitions.get(id, {}).get("path", "")
+
+func character_animation_id(character_id: String, animation_id: String) -> String:
+	for asset_id in definitions:
+		var definition: Dictionary = definitions[asset_id]
+		if (
+			String(definition.get("character_id", "")) == character_id
+			and String(definition.get("animation_id", "")) == animation_id
+		):
+			return String(asset_id)
+	return ""
 
 func load_texture(id: String) -> Texture2D:
 	var path := path_for(id)
