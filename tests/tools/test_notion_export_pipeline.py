@@ -266,6 +266,19 @@ class NotionExportPipelineTests(unittest.TestCase):
         ):
             self.pipeline.build_snapshots(invalid, "confirmed")
 
+    def test_boss_dungeon_and_nested_summon_relations_are_validated(self):
+        capture = self._minimal_boss_capture()
+
+        missing_dungeon = copy.deepcopy(capture)
+        missing_dungeon["datasets"]["bosses"]["items"][0]["dungeon_id"] = "missing_dungeon"
+        with self.assertRaisesRegex(ExportValidationError, "bosses.*fixture_boss.*dungeon_id.*missing_dungeon"):
+            self.pipeline.build_snapshots(missing_dungeon, "confirmed-test")
+
+        missing_monster = copy.deepcopy(capture)
+        missing_monster["datasets"]["bosses"]["items"][0]["phases"][0]["patterns"][0]["summon_monster_ids"] = ["missing_monster"]
+        with self.assertRaisesRegex(ExportValidationError, "bosses.*fixture_boss.*summon_monster_ids.*missing_monster"):
+            self.pipeline.build_snapshots(missing_monster, "confirmed-test")
+
     def test_event_result_grant_item_must_target_catalog_item(self):
         invalid = self._minimal_event_capture()
         invalid["datasets"]["events"]["items"][0]["nodes"][0]["options"][0]["results"][0]["id"] = "missing_item"
@@ -486,6 +499,31 @@ class NotionExportPipelineTests(unittest.TestCase):
         return {
             **payload,
             "content_hash": hashlib.sha256(canonical_json_bytes(payload)).hexdigest(),
+        }
+
+    def _minimal_boss_capture(self):
+        return {
+            "schema_version": 1,
+            "data_version": "fixture-boss-relations-v1",
+            "datasets": {
+                "dungeons": {"source": "collection://dungeons", "items": [{"id": "dungeon_4", "name": "Dungeon", "status": "확정"}]},
+                "biomes": {"source": "collection://biomes", "items": [{"id": "common_region", "name": "Biome", "status": "확정"}]},
+                "items": {"source": "collection://items", "items": [{"id": "reward_bowl", "name": "Reward", "status": "확정"}]},
+                "monsters": {"source": "collection://monsters", "items": [{"id": "road_bandit", "name": "Bandit", "status": "확정"}]},
+                "bosses": {"source": "fixture://bosses", "items": [{
+                    "id": "fixture_boss",
+                    "name": "Boss",
+                    "status": "테스트",
+                    "dungeon_id": "dungeon_4",
+                    "biome_id": "common_region",
+                    "max_hp": 100,
+                    "phases": [{"id": "opening", "health_ratio_threshold": 1.0, "patterns": [{"id": "call", "interval_seconds": 1.0, "summon_monster_ids": ["road_bandit"]}]}],
+                    "resolution_types": ["combat"],
+                    "reward_item_ids": ["reward_bowl"],
+                    "progression_unlock_ids": ["common_region"],
+                    "summon_monster_ids": ["road_bandit"],
+                }]},
+            },
         }
 
     def _choice_definition(self, choice_id):

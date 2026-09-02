@@ -9,8 +9,25 @@ const DungeonRuntime = preload("res://src/dungeon/dungeon_runtime.gd")
 const RunState = preload("res://src/save/run_state.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 
+class CatalogProgressionBoundary:
+	extends RefCounted
+
+	var biome_id: String
+	var completed_biome_ids := []
+
+	func _init(value: String) -> void:
+		biome_id = value
+
+	func current_biome_id() -> String:
+		return biome_id
+
+	func complete_dungeon(value: String) -> Dictionary:
+		completed_biome_ids.append(value)
+		return {"ok": true}
+
 func run(asserts) -> void:
 	_definition_loader_and_samples(asserts)
+	_catalog_bosses_complete_declared_dungeons(asserts)
 	_deterministic_phases_patterns_and_summons(asserts)
 	_combat_resolution_completes_dungeon_once(asserts)
 	_peaceful_resolution_uses_common_contract(asserts)
@@ -30,6 +47,45 @@ func _definition_loader_and_samples(asserts) -> void:
 	var invalid := _boss_row()
 	invalid.phases[1].health_ratio_threshold = 1.0
 	asserts.false_value(BossDefinition.from_dictionary(invalid).ok, "non-descending phase thresholds are rejected")
+
+func _catalog_bosses_complete_declared_dungeons(asserts) -> void:
+	var catalog := DataCatalog.new()
+	asserts.true_value(catalog.load_from_directory("res://data/generated").ok, "catalog dungeon adapter fixture loads")
+	for boss_id in ["sample_bamboo_guardian", "sample_ash_warden"]:
+		var boss_row: Dictionary = catalog.find_by_id("bosses", boss_id)
+		var dungeon_row: Dictionary = catalog.find_by_id("dungeons", String(boss_row.dungeon_id))
+		asserts.false_value(dungeon_row.is_empty(), "%s resolves its canonical dungeon relation" % boss_id)
+		if dungeon_row.is_empty():
+			continue
+		var biome_id := String(dungeon_row.get("biome_ids", [""])[0])
+		asserts.equal(biome_id, String(boss_row.biome_id), "%s dungeon relation preserves the canonical biome" % boss_id)
+		var progression := CatalogProgressionBoundary.new(biome_id)
+		var dungeon := DungeonRuntime.new()
+		asserts.true_value(dungeon.configure(
+			RunState.new(),
+			progression,
+			func(payload: Dictionary, _projection: Dictionary) -> bool: return bool(payload.get("objective_complete", false))
+		).ok, "%s configures the shared dungeon adapter" % boss_id)
+		asserts.true_value(dungeon.enter_dungeon(
+			"%s_instance" % boss_id,
+			{"id": dungeon_row.id, "biome_id": biome_id},
+			WorldData.new(2, 2),
+			{"biome_id": biome_id, "world_seed": 2801}
+		).ok, "%s enters through its declared catalog dungeon ID" % boss_id)
+		var boss := BossEncounterRuntime.new()
+		asserts.true_value(boss.configure(
+			BossDefinition.from_catalog(catalog, boss_id).definition,
+			null,
+			Callable(),
+			func(event: Dictionary) -> Dictionary: return dungeon.complete_boss_encounter(event)
+		).ok, "%s connects to the shared dungeon adapter" % boss_id)
+		asserts.true_value(boss.start("%s_encounter" % boss_id, String(boss_row.dungeon_id)).ok, "%s starts with its declared catalog dungeon ID" % boss_id)
+		asserts.true_value(boss.update_health(0).ok, "%s reaches combat resolution" % boss_id)
+		var resolved := boss.handle_resolution({"type": "victory"})
+		asserts.true_value(resolved.ok, "%s completes its declared catalog dungeon" % boss_id)
+		if resolved.ok:
+			asserts.equal(resolved.completion_result.clear_event.dungeon_id, boss_row.dungeon_id, "%s clear event preserves the catalog dungeon ID" % boss_id)
+		asserts.equal(progression.completed_biome_ids, [biome_id], "%s crosses progression exactly once" % boss_id)
 
 func _deterministic_phases_patterns_and_summons(asserts) -> void:
 	var definition = BossDefinition.from_dictionary(_boss_row()).definition
