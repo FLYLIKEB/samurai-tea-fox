@@ -4,7 +4,7 @@ import shutil
 import tempfile
 import unittest
 
-from tools.asset_pipeline.validator import AssetManifestValidator, AssetValidationError
+from tools.asset_pipeline.validator import AssetManifestValidator, AssetValidationError, read_png_pixel_data
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -37,6 +37,15 @@ class AssetPipelineTests(unittest.TestCase):
                 "texture_filter": "nearest",
                 "godot_project_setting": "textures/canvas_textures/default_texture_filter",
                 "godot_nearest_value": 0,
+                "mipmaps": False,
+                "lossy_compression": False,
+                "runtime_scale_policy": "integer",
+                "import_metadata_source": "asset-manifest",
+                "tracked_policy": True,
+                "godot_import_settings": {
+                    "mipmaps/generate": False,
+                    "compress/mode": 0,
+                },
             },
             "placeholder_policy": {
                 "allow_runtime_placeholders": False,
@@ -64,12 +73,19 @@ class AssetPipelineTests(unittest.TestCase):
             "alpha_required": True,
             "texture_filter": "nearest",
             "placeholder": False,
+            "runtime_scale": 1,
         }
 
     def write_manifest(self):
         (self.root / "assets/asset-manifest.json").write_text(
             json.dumps(self.manifest, ensure_ascii=False), encoding="utf-8"
         )
+        for asset in self.manifest["assets"]:
+            asset_path = self.root / asset["path"].removeprefix("res://")
+            if asset_path.is_file():
+                png = read_png_pixel_data(asset_path)
+                asset["source_sha256"] = png.source_sha256
+                asset["rgba_sha256"] = png.rgba_sha256
         promoted = {
             "assets": [
                 {
@@ -77,6 +93,8 @@ class AssetPipelineTests(unittest.TestCase):
                     "width": asset["width"],
                     "height": asset["height"],
                     "mode": "RGBA",
+                    "source_sha256": asset["source_sha256"],
+                    "rgba_sha256": asset["rgba_sha256"],
                 }
                 for asset in self.manifest["assets"]
             ]
@@ -150,6 +168,27 @@ class AssetPipelineTests(unittest.TestCase):
             "[rendering]\ntextures/canvas_textures/default_texture_filter=1\n", encoding="utf-8"
         )
         self.assert_invalid("(?s)must be 0 for nearest filtering.*texture_filter must be 'nearest'")
+
+    def test_pixel_hash_mismatch_fails(self):
+        self.write_manifest()
+        self.manifest["assets"][0]["source_sha256"] = "sha256:deadbeef"
+        self.manifest["assets"][0]["rgba_sha256"] = "sha256:deadbeef"
+        (self.root / "assets/asset-manifest.json").write_text(
+            json.dumps(self.manifest, ensure_ascii=False), encoding="utf-8"
+        )
+        with self.assertRaisesRegex(AssetValidationError, "(?s)source_sha256 does not match.*rgba_sha256 does not match"):
+            self.validate()
+
+    def test_runtime_scale_must_be_integer(self):
+        self.manifest["assets"][0]["runtime_scale"] = 1.5
+        self.assert_invalid("runtime_scale must be a positive integer")
+
+    def test_import_file_mipmap_or_compression_fails(self):
+        (self.root / "assets/sprites/valid.png.import").write_text(
+            "[params]\nmipmaps/generate=true\ncompress/mode=1\n",
+            encoding="utf-8",
+        )
+        self.assert_invalid("(?s)mipmaps/generate must be false.*compress/mode must be 0")
 
     def test_runtime_placeholder_fails(self):
         self.manifest["assets"][0]["placeholder"] = True

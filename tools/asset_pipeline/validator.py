@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import re
 import struct
+import zlib
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -31,6 +33,13 @@ class PngHeader:
         return self.color_type in PNG_ALPHA_COLOR_TYPES or self.has_transparency_chunk
 
 
+@dataclass(frozen=True)
+class PngPixelData:
+    header: PngHeader
+    source_sha256: str
+    rgba_sha256: str
+
+
 class AssetManifestValidator:
     def __init__(self, project_root: Path):
         self.project_root = project_root.resolve()
@@ -45,7 +54,7 @@ class AssetManifestValidator:
 
         self._require_equal(manifest.get("schema_version"), 1, "manifest schema_version")
         stable_id_pattern, confirmed_statuses = self._validate_art_assets_contract(manifest)
-        nearest_filter, base_size = self._validate_style_and_import_policy(manifest)
+        nearest_filter, base_size, import_policy = self._validate_style_and_import_policy(manifest)
         promoted_assets = self._load_promoted_assets(manifest)
         runtime_roots = self._res_roots(manifest.get("runtime_roots"), "runtime_roots")
         placeholder_policy = manifest.get("placeholder_policy", {})
@@ -64,6 +73,7 @@ class AssetManifestValidator:
                 confirmed_statuses,
                 nearest_filter,
                 base_size,
+                import_policy,
                 runtime_roots,
                 placeholder_policy,
                 promoted_assets,
@@ -103,7 +113,7 @@ class AssetManifestValidator:
             pattern = STABLE_ID_FALLBACK
         return pattern, set(dataset.get("confirmed_statuses", []))
 
-    def _validate_style_and_import_policy(self, manifest: dict[str, Any]) -> tuple[str, int]:
+    def _validate_style_and_import_policy(self, manifest: dict[str, Any]) -> tuple[str, int, dict[str, Any]]:
         style = self._read_res_json(manifest.get("style_tokens"), "art style tokens")
         pixel_rules = style.get("pixel_rules", {}) if isinstance(style, dict) else {}
         nearest_filter = pixel_rules.get("texture_filter")
@@ -117,9 +127,19 @@ class AssetManifestValidator:
         policy = manifest.get("import_policy")
         if not isinstance(policy, dict):
             self.errors.append("import_policy must be an object")
-            return "nearest", base_size
+            return "nearest", base_size, {}
         if policy.get("texture_filter") != nearest_filter:
             self.errors.append("manifest import filter must match art style tokens")
+        if policy.get("mipmaps") is not False:
+            self.errors.append("import_policy.mipmaps must be false")
+        if policy.get("lossy_compression") is not False:
+            self.errors.append("import_policy.lossy_compression must be false")
+        if policy.get("runtime_scale_policy") != "integer":
+            self.errors.append("import_policy.runtime_scale_policy must be 'integer'")
+        if policy.get("import_metadata_source") != "asset-manifest":
+            self.errors.append("import_policy.import_metadata_source must be 'asset-manifest'")
+        if policy.get("tracked_policy") is not True:
+            self.errors.append("import_policy.tracked_policy must be true")
         setting = policy.get("godot_project_setting")
         expected = policy.get("godot_nearest_value")
         project_file = self.project_root / "project.godot"
@@ -132,7 +152,7 @@ class AssetManifestValidator:
                 self.errors.append(f"project.godot {setting} must be {expected} for nearest filtering")
         else:
             self.errors.append("import_policy must declare Godot nearest setting and integer value")
-        return str(nearest_filter or "nearest"), base_size
+        return str(nearest_filter or "nearest"), base_size, policy
 
     def _load_promoted_assets(self, manifest: dict[str, Any]) -> dict[str, dict[str, Any]]:
         promoted = self._read_res_json(manifest.get("promoted_assets"), "promoted assets manifest")
@@ -153,6 +173,7 @@ class AssetManifestValidator:
         confirmed_statuses: set[str],
         nearest_filter: str,
         base_size: int,
+        import_policy: dict[str, Any],
         runtime_roots: list[str],
         placeholder_policy: Any,
         promoted_assets: dict[str, dict[str, Any]],
@@ -207,19 +228,53 @@ class AssetManifestValidator:
             self.errors.append(f"{label} file is missing: {path}")
             return
         try:
-            png = read_png_header(file_path)
+            png_data = read_png_pixel_data(file_path)
         except AssetValidationError as error:
             self.errors.append(f"{label} {error}")
             return
+        png = png_data.header
         width = asset.get("width")
         height = asset.get("height")
         if (png.width, png.height) != (width, height):
             self.errors.append(
                 f"{label} PNG size is {png.width}x{png.height}, expected {width}x{height}"
             )
+        if asset.get("source_sha256") != png_data.source_sha256:
+            self.errors.append(f"{label} source_sha256 does not match the PNG bytes")
+        if asset.get("rgba_sha256") != png_data.rgba_sha256:
+            self.errors.append(f"{label} rgba_sha256 does not match decoded RGBA pixels")
+        if promoted is not None:
+            for hash_field in ("source_sha256", "rgba_sha256"):
+                if promoted.get(hash_field) != asset.get(hash_field):
+                    self.errors.append(f"{label} {hash_field} disagrees with the promoted assets manifest")
         if asset.get("alpha_required") is True and not png.supports_alpha:
             self.errors.append(f"{label} PNG must provide an alpha channel")
+        self._validate_godot_import_file(file_path, path, import_policy, label)
+        self._validate_runtime_scale(asset, label)
         self._validate_frame_grid(asset, label, base_size)
+
+    def _validate_godot_import_file(
+        self, file_path: Path, res_path: str, import_policy: dict[str, Any], label: str
+    ) -> None:
+        import_file = file_path.with_name(file_path.name + ".import")
+        if not import_file.exists():
+            if import_policy.get("import_metadata_source") == "asset-manifest" and import_policy.get("tracked_policy") is True:
+                return
+            self.errors.append(f"{label} is missing tracked import metadata and no manifest import policy is authoritative")
+            return
+        text = self._read_text(import_file, f"{res_path}.import")
+        required_settings = import_policy.get("godot_import_settings", {})
+        if not isinstance(required_settings, dict):
+            return
+        for setting, expected in required_settings.items():
+            rendered = "true" if expected is True else "false" if expected is False else str(expected)
+            if not re.search(rf"(?m)^{re.escape(str(setting))}\s*=\s*{re.escape(rendered)}\s*$", text):
+                self.errors.append(f"{label} import setting {setting} must be {rendered}")
+
+    def _validate_runtime_scale(self, asset: dict[str, Any], label: str) -> None:
+        scale = asset.get("runtime_scale", 1)
+        if not isinstance(scale, int) or scale <= 0:
+            self.errors.append(f"{label} runtime_scale must be a positive integer")
 
     def _validate_frame_grid(self, asset: dict[str, Any], label: str, base_size: int) -> None:
         grid = asset.get("frame_grid")
@@ -357,3 +412,126 @@ def read_png_header(path: Path) -> PngHeader:
             break
         offset = chunk_end
     return PngHeader(width, height, color_type, has_transparency_chunk)
+
+
+def read_png_pixel_data(path: Path) -> PngPixelData:
+    try:
+        data = path.read_bytes()
+    except OSError as error:
+        raise AssetValidationError(f"could not read PNG {path}: {error}") from error
+    header = read_png_header(path)
+    chunks: list[tuple[bytes, bytes]] = []
+    offset = 8
+    while offset + 12 <= len(data):
+        chunk_length = struct.unpack(">I", data[offset : offset + 4])[0]
+        chunk_type = data[offset + 4 : offset + 8]
+        chunk_data = data[offset + 8 : offset + 8 + chunk_length]
+        chunk_end = offset + 12 + chunk_length
+        if chunk_end > len(data):
+            raise AssetValidationError(f"has a truncated PNG chunk: {path}")
+        chunks.append((chunk_type, chunk_data))
+        if chunk_type == b"IEND":
+            break
+        offset = chunk_end
+    rgba = _decode_png_rgba(header, chunks, path)
+    return PngPixelData(
+        header=header,
+        source_sha256=f"sha256:{hashlib.sha256(data).hexdigest()}",
+        rgba_sha256=f"sha256:{hashlib.sha256(rgba).hexdigest()}",
+    )
+
+
+def _decode_png_rgba(header: PngHeader, chunks: list[tuple[bytes, bytes]], path: Path) -> bytes:
+    ihdr = next((chunk for chunk_type, chunk in chunks if chunk_type == b"IHDR"), b"")
+    if len(ihdr) != 13:
+        raise AssetValidationError(f"has an invalid PNG IHDR chunk: {path}")
+    bit_depth = ihdr[8]
+    compression = ihdr[10]
+    filter_method = ihdr[11]
+    interlace = ihdr[12]
+    if bit_depth != 8 or compression != 0 or filter_method != 0 or interlace != 0:
+        raise AssetValidationError(f"must be an 8-bit non-interlaced PNG: {path}")
+    if header.color_type not in {2, 3, 6}:
+        raise AssetValidationError(f"must be RGB, RGBA, or palette for decoded RGBA verification: {path}")
+    channels = 4 if header.color_type == 6 else 3 if header.color_type == 2 else 1
+    row_bytes = header.width * channels
+    compressed = b"".join(chunk for chunk_type, chunk in chunks if chunk_type == b"IDAT")
+    try:
+        raw = zlib.decompress(compressed)
+    except zlib.error as error:
+        raise AssetValidationError(f"has invalid PNG image data: {path}") from error
+    expected = (row_bytes + 1) * header.height
+    if len(raw) != expected:
+        raise AssetValidationError(f"has unexpected PNG image data length: {path}")
+    rows: list[bytearray] = []
+    offset = 0
+    previous = bytearray(row_bytes)
+    for _y in range(header.height):
+        filter_type = raw[offset]
+        offset += 1
+        row = bytearray(raw[offset : offset + row_bytes])
+        offset += row_bytes
+        _unfilter_png_row(row, previous, channels, filter_type, path)
+        rows.append(row)
+        previous = row
+    if header.color_type == 6:
+        return b"".join(bytes(row) for row in rows)
+    if header.color_type == 3:
+        palette = _palette_rgba(chunks, path)
+        rgba = bytearray()
+        for row in rows:
+            for palette_index in row:
+                if palette_index >= len(palette):
+                    raise AssetValidationError(f"has out-of-range PNG palette index: {path}")
+                rgba.extend(palette[palette_index])
+        return bytes(rgba)
+    rgba = bytearray()
+    for row in rows:
+        for pixel_offset in range(0, len(row), 3):
+            rgba.extend(row[pixel_offset : pixel_offset + 3])
+            rgba.append(255)
+    return bytes(rgba)
+
+
+def _palette_rgba(chunks: list[tuple[bytes, bytes]], path: Path) -> list[bytes]:
+    palette_chunk = next((chunk for chunk_type, chunk in chunks if chunk_type == b"PLTE"), b"")
+    if len(palette_chunk) == 0 or len(palette_chunk) % 3 != 0:
+        raise AssetValidationError(f"has invalid PNG palette data: {path}")
+    transparency = next((chunk for chunk_type, chunk in chunks if chunk_type == b"tRNS"), b"")
+    palette: list[bytes] = []
+    for index in range(0, len(palette_chunk), 3):
+        entry_index = index // 3
+        alpha = transparency[entry_index] if entry_index < len(transparency) else 255
+        palette.append(palette_chunk[index : index + 3] + bytes([alpha]))
+    return palette
+
+
+def _unfilter_png_row(row: bytearray, previous: bytearray, stride: int, filter_type: int, path: Path) -> None:
+    if filter_type == 0:
+        return
+    if filter_type not in {1, 2, 3, 4}:
+        raise AssetValidationError(f"has unsupported PNG filter {filter_type}: {path}")
+    for index in range(len(row)):
+        left = row[index - stride] if index >= stride else 0
+        up = previous[index]
+        upper_left = previous[index - stride] if index >= stride else 0
+        if filter_type == 1:
+            row[index] = (row[index] + left) & 0xFF
+        elif filter_type == 2:
+            row[index] = (row[index] + up) & 0xFF
+        elif filter_type == 3:
+            row[index] = (row[index] + ((left + up) // 2)) & 0xFF
+        else:
+            row[index] = (row[index] + _paeth(left, up, upper_left)) & 0xFF
+
+
+def _paeth(left: int, up: int, upper_left: int) -> int:
+    estimate = left + up - upper_left
+    distance_left = abs(estimate - left)
+    distance_up = abs(estimate - up)
+    distance_upper_left = abs(estimate - upper_left)
+    if distance_left <= distance_up and distance_left <= distance_upper_left:
+        return left
+    if distance_up <= distance_upper_left:
+        return up
+    return upper_left
