@@ -13,6 +13,7 @@ const CHUNK_HEIGHT := 6
 const DEFAULT_RETRY_LIMIT := 8
 const BIOME_COMMON := "common_region"
 const BIOME_MOUNTAIN := "mountain_region"
+const BIOME_WASTELAND := "wasteland"
 
 const TERRAIN_GROUND := "common_ground"
 const TERRAIN_GRASS := "common_grass"
@@ -28,6 +29,13 @@ const TERRAIN_MOUNTAIN_ROCK := "mountain_rock"
 const TERRAIN_MOUNTAIN_CONIFER := "mountain_conifer_forest"
 const TERRAIN_MOUNTAIN_VALLEY_WATER := "mountain_valley_water"
 const TERRAIN_MOUNTAIN_CAVE_GROUND := "mountain_cave_ground"
+const TERRAIN_WASTELAND_DRY_SOIL := "wasteland_dry_soil"
+const TERRAIN_WASTELAND_CRACKED_GROUND := "wasteland_cracked_ground"
+const TERRAIN_WASTELAND_DETOUR_PATH := "wasteland_detour_path"
+const TERRAIN_WASTELAND_RUIN := "wasteland_ruin"
+const TERRAIN_WASTELAND_DEAD_TREE := "wasteland_dead_tree"
+const TERRAIN_WASTELAND_DRY_RIVER := "wasteland_dry_river"
+const TERRAIN_WASTELAND_CAMP_TRACE := "wasteland_camp_trace"
 
 const RENDER_GROUND := "assets/tiles/terrain/plains/grass_ground_01_32x32.png"
 const RENDER_GRASS := "assets/tiles/terrain/plains/grass_ground_01_32x32.png"
@@ -44,6 +52,18 @@ const RENDER_MOUNTAIN_MINE := "assets/sprites/objects/mining/rock_cave_entrance_
 const RENDER_MOUNTAIN_TEMPLE := "assets/sprites/objects/structures/shrine_torii_gate_2x2_64x64.png"
 const RENDER_MOUNTAIN_ABANDONED_MINE := "assets/sprites/objects/mining/timber_support_1x2_32x64.png"
 const RENDER_MOUNTAIN_TEA_HOUSE := "assets/sprites/objects/crafting/tea_table_2x2_64x64.png"
+const RENDER_WASTELAND_DRY_SOIL := "assets/tiles/terrain/desert/dry_soil_01_32x32.png"
+const RENDER_WASTELAND_CRACKED_GROUND := "assets/tiles/terrain/desert/cracked_clay_32x32.png"
+const RENDER_WASTELAND_DETOUR_PATH := "assets/tiles/terrain/desert/sand_ripple_01_32x32.png"
+const RENDER_WASTELAND_RUIN := "assets/sprites/objects/structures/ruined_wall_1x2_64x32.png"
+const RENDER_WASTELAND_DEAD_TREE := "assets/sprites/objects/natural-props/dead_tree_small_32x32.png"
+const RENDER_WASTELAND_DRY_RIVER := "assets/tiles/terrain/desert/dry_scrub_patch_32x32.png"
+const RENDER_WASTELAND_CAMP_TRACE := "assets/tiles/terrain/desert/bone_scatter_32x32.png"
+const RENDER_WASTELAND_ABANDONED_VILLAGE := "assets/sprites/objects/structures/small_storage_shed_64x64.png"
+const RENDER_WASTELAND_ABANDONED_OUTPOST := "assets/sprites/objects/structures/ruined_wall_1x2_64x32.png"
+const RENDER_WASTELAND_RUINED_TEA_ROOM := "assets/sprites/objects/crafting/tea_table_2x2_64x64.png"
+const RENDER_WASTELAND_BATTLEFIELD_TRACE := "assets/tiles/terrain/desert/bone_scatter_32x32.png"
+const RENDER_RESOURCE_IRON_SCRAP := "assets/sprites/objects/mining/iron_ore_32x32.png"
 
 const BALANCE_MIN_RESOURCE_NODES_ID := "biome_min_resource_nodes"
 
@@ -98,7 +118,7 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 	var validator := ConnectivityValidator.new()
 	var facility_nodes := _place_facility_nodes(world_data, rng, landmarks, profile, validator.reachable_cell_keys_from_entry(world_data.to_dictionary()))
 	var reachable_cells := validator.reachable_cell_keys_from_entry(world_data.to_dictionary())
-	var resource_nodes := _place_resource_nodes(world_data, rng, min_resource_nodes, max_resource_placement_attempts, resource_ids, reachable_cells)
+	var resource_nodes := _place_resource_nodes(world_data, rng, min_resource_nodes, max_resource_placement_attempts, resource_ids, reachable_cells, profile.get("resource_source_by_id", {}))
 	var access_points := []
 	for resource_node in resource_nodes:
 		access_points.append(resource_node.access_position)
@@ -162,6 +182,8 @@ func _apply_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRn
 	match String(profile.id):
 		BIOME_MOUNTAIN:
 			_apply_mountain_chunk(world_data, chunk, rng)
+		BIOME_WASTELAND:
+			_apply_wasteland_chunk(world_data, chunk, rng)
 		_:
 			_apply_common_chunk(world_data, chunk, rng)
 
@@ -238,6 +260,80 @@ func _apply_mountain_chunk(world_data: WorldData, chunk: Dictionary, rng: Determ
 				_:
 					world_data.set_terrain(position, TERRAIN_MOUNTAIN_SLOPE, true, RENDER_MOUNTAIN_SLOPE)
 
+func _apply_wasteland_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRng) -> void:
+	var origin := _vector_from_dictionary(chunk.origin)
+	var variant := int(chunk.variant)
+	chunk["feature"] = _wasteland_feature_for_variant(variant)
+	for y in range(origin.y, origin.y + CHUNK_HEIGHT):
+		for x in range(origin.x, origin.x + CHUNK_WIDTH):
+			var position := Vector2i(x, y)
+			var local_x := x - origin.x
+			var local_y := y - origin.y
+			match variant:
+				0:
+					if local_y == 1 or (local_x >= 3 and local_y == 4):
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true, RENDER_WASTELAND_DETOUR_PATH)
+					else:
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true, RENDER_WASTELAND_DRY_SOIL)
+				1:
+					if local_x >= 1 and local_x <= 5 and local_y >= 1 and local_y <= 3 and (local_x == 1 or local_x == 5 or local_y == 1 or local_y == 3):
+						world_data.set_terrain(position, TERRAIN_WASTELAND_RUIN, false, RENDER_WASTELAND_RUIN)
+					elif local_x == 3 and local_y == 2:
+						world_data.set_terrain(position, TERRAIN_WASTELAND_CRACKED_GROUND, true, RENDER_WASTELAND_CRACKED_GROUND)
+					else:
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true, RENDER_WASTELAND_DRY_SOIL)
+				2:
+					if local_x == CHUNK_WIDTH - 2 and local_y < CHUNK_HEIGHT - 1:
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true, RENDER_WASTELAND_DETOUR_PATH)
+					elif local_y == CHUNK_HEIGHT - 2 and local_x > 1:
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true, RENDER_WASTELAND_DETOUR_PATH)
+					elif local_x == 1 and local_y == CHUNK_HEIGHT - 2:
+						world_data.set_terrain(position, TERRAIN_WASTELAND_CRACKED_GROUND, true, RENDER_WASTELAND_CRACKED_GROUND)
+					else:
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true, RENDER_WASTELAND_DRY_SOIL)
+				3:
+					if local_x == 2 and local_y <= 3:
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true, RENDER_WASTELAND_DETOUR_PATH)
+					elif local_x == 2 and local_y == 4:
+						world_data.set_terrain(position, TERRAIN_WASTELAND_CRACKED_GROUND, true, RENDER_WASTELAND_CRACKED_GROUND)
+					elif rng.next_range(0, 99) < 28:
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DEAD_TREE, false, RENDER_WASTELAND_DEAD_TREE)
+					else:
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true, RENDER_WASTELAND_DRY_SOIL)
+				4:
+					if local_x == 3:
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_RIVER, false, RENDER_WASTELAND_DRY_RIVER)
+					elif local_x == 2 or local_x == 4:
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true, RENDER_WASTELAND_DETOUR_PATH)
+					else:
+						world_data.set_terrain(position, TERRAIN_WASTELAND_CRACKED_GROUND, true, RENDER_WASTELAND_CRACKED_GROUND)
+				5:
+					if local_x == 0 or local_y == 0 or (local_x == 6 and local_y < 5):
+						world_data.set_terrain(position, TERRAIN_WASTELAND_CAMP_TRACE, false, RENDER_WASTELAND_CAMP_TRACE)
+					elif local_y == 3 or local_x == 3:
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true, RENDER_WASTELAND_DETOUR_PATH)
+					else:
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true, RENDER_WASTELAND_DRY_SOIL)
+				_:
+					world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true, RENDER_WASTELAND_DRY_SOIL)
+
+func _wasteland_feature_for_variant(variant: int) -> String:
+	match variant:
+		0:
+			return "dry_detour"
+		1:
+			return "asymmetric_ruin"
+		2:
+			return "long_detour"
+		3:
+			return "dead_end"
+		4:
+			return "dry_river_bypass"
+		5:
+			return "battlefield_trace"
+		_:
+			return "dry_soil"
+
 func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, core_dungeon_count: int, teleport_zone_count: int, biome_id: String, profile: Dictionary) -> Array:
 	var landmarks := []
 	landmarks.append(_add_landmark(world_data, WorldData.LANDMARK_ENTRY, 0, Vector2i(3, rng.next_range(8, MAP_HEIGHT - 9)), profile))
@@ -300,7 +396,7 @@ func _make_path_cell(world_data: WorldData, position: Vector2i, profile: Diction
 	var terrain_id := String(profile.bridge_terrain_id) if not world_data.is_walkable(position) else String(profile.path_terrain_id)
 	world_data.set_terrain(position, terrain_id, true, String(profile.path_render_id))
 
-func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, reachable_cells: Dictionary) -> Array:
+func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, reachable_cells: Dictionary, source_by_resource_id: Dictionary) -> Array:
 	var nodes := []
 	var max_attempts: int = max(0, max_resource_placement_attempts)
 	var cardinal_offsets := [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]
@@ -315,17 +411,24 @@ func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_res
 			continue
 		var owner_id := "resource_%d" % nodes.size()
 		var resource_id: String = String(resource_ids[nodes.size() % resource_ids.size()])
-		var reserved := world_data.reserve_entity(owner_id, position, Vector2i.ONE, true, {"resource_id": resource_id})
+		var source_id := String(source_by_resource_id.get(resource_id, ""))
+		var metadata := {"resource_id": resource_id}
+		if not source_id.is_empty():
+			metadata["source_id"] = source_id
+		var reserved := world_data.reserve_entity(owner_id, position, Vector2i.ONE, true, metadata)
 		if not reserved.ok:
 			continue
-		nodes.append({
+		var node := {
 			"id": owner_id,
 			"resource_id": resource_id,
 			"position": _position_dictionary(position),
 			"access_position": _position_dictionary(access_position),
 			"placement_was_entry_reachable": true,
 			"interactable": true
-		})
+		}
+		if not source_id.is_empty():
+			node["source_id"] = source_id
+		nodes.append(node)
 	return nodes
 
 func _place_facility_nodes(world_data: WorldData, rng: DeterministicRng, landmarks: Array, profile: Dictionary, reachable_cells: Dictionary) -> Array:
@@ -427,6 +530,7 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 				"required_terrain_terms": [],
 				"facility_terms": [],
 				"facility_source_by_term": {},
+				"resource_source_by_id": {},
 				"minimum_facility_nodes": 0
 			})
 		BIOME_MOUNTAIN:
@@ -455,6 +559,39 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 					"산사": RENDER_MOUNTAIN_TEMPLE,
 					"폐광": RENDER_MOUNTAIN_ABANDONED_MINE,
 					"산중 찻집": RENDER_MOUNTAIN_TEA_HOUSE
+				},
+				"resource_source_by_id": {},
+				"minimum_facility_nodes": facility_terms.size()
+			})
+		BIOME_WASTELAND:
+			var required_terms := ["마른 흙", "갈라진 땅", "죽은 나무", "폐허", "말라붙은 하천", "군영 흔적"]
+			var terrain_text := String(biome_definition.get("terrain", ""))
+			for term in required_terms:
+				if not terrain_text.contains(term):
+					return {"ok": false, "reason": "missing_biome_generation_terms", "missing_term": term}
+			var facility_terms := ["폐촌", "버려진 초소", "무너진 다실", "전쟁터 흔적"]
+			var facility_text := String(biome_definition.get("facilities", ""))
+			for term in facility_terms:
+				if not facility_text.contains(term):
+					return {"ok": false, "reason": "missing_biome_facility_terms", "missing_term": term}
+			return _profile_ok({
+				"id": BIOME_WASTELAND,
+				"chunk_variant_count": 6,
+				"default_terrain_id": TERRAIN_WASTELAND_DRY_SOIL,
+				"default_walkable": true,
+				"path_terrain_id": TERRAIN_WASTELAND_DETOUR_PATH,
+				"bridge_terrain_id": TERRAIN_WASTELAND_DETOUR_PATH,
+				"path_render_id": RENDER_WASTELAND_DETOUR_PATH,
+				"required_terrain_terms": required_terms,
+				"facility_terms": facility_terms,
+				"facility_source_by_term": {
+					"폐촌": RENDER_WASTELAND_ABANDONED_VILLAGE,
+					"버려진 초소": RENDER_WASTELAND_ABANDONED_OUTPOST,
+					"무너진 다실": RENDER_WASTELAND_RUINED_TEA_ROOM,
+					"전쟁터 흔적": RENDER_WASTELAND_BATTLEFIELD_TRACE
+				},
+				"resource_source_by_id": {
+					"item_28": RENDER_RESOURCE_IRON_SCRAP
 				},
 				"minimum_facility_nodes": facility_terms.size()
 			})
