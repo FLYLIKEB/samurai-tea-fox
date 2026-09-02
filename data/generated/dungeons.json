@@ -1,5 +1,5 @@
 {
-  "content_hash": "a54dd9ed075b2e4a26bd2d27c2862a55e7a9b32e3c85657657475a7762f18501",
+  "content_hash": "d46a5fb2ec6da3255e928260d819d5263c791d57df14acb79a33052f247dcd21",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -59,6 +59,28 @@
         "unbroken_failure",
         "ash_stained_iron_kettle"
       ],
+      "status": "확정"
+    },
+    {
+      "base_attack": 18,
+      "biome": "백국",
+      "biome_ids": [
+        "baekguk"
+      ],
+      "boss": "센리큐",
+      "boss_hp": 240,
+      "core_gimmick": "다실 arena 전환 후 검 공격·회피·요술로 센리큐의 체력을 0까지 낮춘다.",
+      "id": "final_tea_room",
+      "layout": "최종 다실이 전장으로 전환되는 단일 arena",
+      "name": "최종 다실",
+      "pattern_count": 4,
+      "peaceful_resolution": false,
+      "phase_count": 2,
+      "resolution_types": [
+        "전투"
+      ],
+      "reward": "Phase 3 전환",
+      "reward_item_ids": [],
       "status": "확정"
     }
   ],

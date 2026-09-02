@@ -15,6 +15,7 @@ const TeaService = preload("res://src/tea/tea_service.gd")
 const BiomeProgressionState = preload("res://src/world/biome/biome_progression_state.gd")
 const RunState = preload("res://src/save/run_state.gd")
 const SenRikyuPhaseOneRuntime = preload("res://src/dungeon/sen_rikyu_phase_one_runtime.gd")
+const SenRikyuPhaseTwoRuntime = preload("res://src/dungeon/sen_rikyu_phase_two_runtime.gd")
 const AcquisitionService = preload("res://src/world/interactions/acquisition_service.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
@@ -43,6 +44,7 @@ var crafting_service
 var core_tea_ware_collection
 var final_room_state_builder
 var sen_rikyu_phase_one_runtime
+var sen_rikyu_phase_two_runtime
 var memory_tea_cutscene_runtime
 var acquisition_service
 var dungeon_runtime
@@ -266,6 +268,11 @@ func submit_action_command(command) -> bool:
 				_play_feedback_beep()
 			return accepted
 		_:
+			if _sen_rikyu_phase_two_accepts_command(command):
+				var accepted: bool = _handle_sen_rikyu_phase_two_action(command)
+				if accepted:
+					_play_feedback_beep()
+				return accepted
 			return player != null and player.submit_command(command)
 
 func movement_command_for_current_inputs(desktop_command) -> GameCommand:
@@ -358,6 +365,12 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 		if not phase_one_result.ok:
 			return phase_one_result
 		sen_rikyu_phase_one_runtime = phase_one_result.runtime
+	sen_rikyu_phase_two_runtime = null
+	if loaded_catalog.has_method("find_by_id") and not loaded_catalog.find_by_id("bosses", SenRikyuPhaseTwoRuntime.BOSS_ID).is_empty():
+		var phase_two_result: Dictionary = SenRikyuPhaseTwoRuntime.from_catalog(loaded_catalog)
+		if not phase_two_result.ok:
+			return phase_two_result
+		sen_rikyu_phase_two_runtime = phase_two_result.runtime
 	tea_service.drink_completed.connect(_on_tea_drink_completed)
 	memory_tea_cutscene_runtime = MemoryTeaCutsceneRuntime.new()
 	var memory_runtime_result: Dictionary = memory_tea_cutscene_runtime.configure(loaded_catalog.data_version)
@@ -396,6 +409,40 @@ func handle_sen_rikyu_phase_one_command(command_id: String, payload := {}, meta_
 	if run_state == null:
 		run_state = RunState.new()
 	return sen_rikyu_phase_one_runtime.handle_command(command_id, payload, run_state, meta_state, resources)
+
+func start_sen_rikyu_phase_two(phase_one_transition_command) -> Dictionary:
+	if sen_rikyu_phase_two_runtime == null:
+		return {"ok": false, "reason": "missing_sen_rikyu_phase_two", "error": "Sen Rikyu Phase 2 runtime is not configured."}
+	return sen_rikyu_phase_two_runtime.start_from_phase_one(phase_one_transition_command)
+
+func _sen_rikyu_phase_two_accepts_command(command) -> bool:
+	return sen_rikyu_phase_two_runtime != null \
+		and sen_rikyu_phase_two_runtime.to_projection().arena_state == SenRikyuPhaseTwoRuntime.ARENA_COMBAT \
+		and command is GameCommand \
+		and command.type in [GameCommand.Type.ATTACK, GameCommand.Type.DODGE, GameCommand.Type.CAST_ABILITY]
+
+func _handle_sen_rikyu_phase_two_action(command: GameCommand) -> bool:
+	if player == null:
+		return false
+	match command.type:
+		GameCommand.Type.ATTACK:
+			if player.combat_state == null or player.resources == null:
+				return false
+			return bool(sen_rikyu_phase_two_runtime.handle_player_attack(player.combat_state, player.resources.ki).ok)
+		GameCommand.Type.DODGE:
+			return player.combat_state != null and bool(sen_rikyu_phase_two_runtime.handle_player_dodge(player.combat_state).ok)
+		GameCommand.Type.CAST_ABILITY:
+			if player.ability_runtime == null or player.resources == null:
+				return false
+			var context := {
+				"source_id": player.get_combat_id() if player.has_method("get_combat_id") else "player",
+				"resources": player.resources,
+				"tail_query": player.ability_tail_query,
+				"time_state": player.ability_time_state,
+				"direction": Vector2(command.direction).normalized() if command.direction != Vector2i.ZERO else Vector2.RIGHT
+			}
+			return bool(sen_rikyu_phase_two_runtime.cast_player_ability(player.ability_runtime, command.slot, context).ok)
+	return false
 
 func record_boss_core_tea_ware_rewards(resolution_event: Dictionary) -> Dictionary:
 	if core_tea_ware_collection == null:
