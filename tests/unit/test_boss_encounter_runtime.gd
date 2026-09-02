@@ -22,6 +22,13 @@ class CatalogProgressionBoundary:
 		return biome_id
 
 	func complete_dungeon(value: String) -> Dictionary:
+		return complete_dungeon_transaction(value)
+
+	func complete_dungeon_transaction(value: String, commit_hook := Callable()) -> Dictionary:
+		if commit_hook.is_valid():
+			var hook_result = commit_hook.call()
+			if typeof(hook_result) != TYPE_DICTIONARY or not bool(hook_result.get("ok", false)):
+				return hook_result
 		completed_biome_ids.append(value)
 		return {"ok": true}
 

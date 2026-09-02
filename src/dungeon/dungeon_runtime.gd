@@ -18,8 +18,9 @@ func configure(run_state, progression_state, completion_resolver: Callable, rewa
 	if not run_state is RunState:
 		return _fail("invalid_run_state", "Dungeon runtime requires a RunState.")
 	if progression_state == null \
-		or not progression_state.has_method("complete_dungeon") \
-		or not progression_state.has_method("current_biome_id"):
+			or not progression_state.has_method("complete_dungeon") \
+			or not progression_state.has_method("complete_dungeon_transaction") \
+			or not progression_state.has_method("current_biome_id"):
 		return _fail("invalid_progression_state", "Dungeon runtime requires a biome progression boundary.")
 	if not completion_resolver.is_valid():
 		return _fail("invalid_completion_resolver", "Dungeon runtime requires a completion resolver.")
@@ -73,16 +74,22 @@ func complete_dungeon(completion_payload: Dictionary) -> Dictionary:
 		return _fail("completion_condition_not_met", "Dungeon completion resolver rejected the payload.")
 
 	var clear_event := _build_clear_event(completion_payload)
-	var reward_result := {"ok": true}
-	if _reward_hook.is_valid():
-		var hook_value = _reward_hook.call(clear_event.duplicate(true))
-		reward_result = _normalize_hook_result(hook_value)
-		if not bool(reward_result.get("ok", false)):
-			return _fail("reward_hook_rejected", String(reward_result.get("error", "Dungeon reward hook rejected completion.")))
-
-	var progression_result: Dictionary = _progression_state.complete_dungeon(_instance.biome_id)
+	var reward_result_holder := {"value": {"ok": true}}
+	var progression_result: Dictionary = _progression_state.complete_dungeon_transaction(
+		_instance.biome_id,
+		func() -> Dictionary:
+			if not _reward_hook.is_valid():
+				return {"ok": true}
+			var hook_value = _reward_hook.call(clear_event.duplicate(true))
+			var reward_result := _normalize_hook_result(hook_value)
+			reward_result_holder["value"] = reward_result
+			if not bool(reward_result.get("ok", false)):
+				return _fail("reward_hook_rejected", String(reward_result.get("error", "Dungeon reward hook rejected completion.")))
+			return {"ok": true}
+	)
 	if not progression_result.ok:
 		return _fail(String(progression_result.get("reason", "progression_rejected")), String(progression_result.get("error", "Biome progression rejected dungeon completion.")))
+	var reward_result: Dictionary = reward_result_holder.value
 
 	_instance.lifecycle_state = DungeonInstanceState.STATE_COMPLETED
 	_instance.completion_payload = completion_payload.duplicate(true)

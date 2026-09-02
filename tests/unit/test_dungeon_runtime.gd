@@ -20,6 +20,7 @@ func run(asserts) -> void:
 	_invalid_entry_boundaries(asserts)
 	_incomplete_progression_boundary_is_rejected(asserts)
 	_reward_failure_keeps_dungeon_retryable(asserts)
+	_progression_failure_does_not_grant_reward(asserts)
 
 func _lifecycle_clear_and_duplicate_guards(asserts) -> void:
 	var context := _runtime_context()
@@ -224,6 +225,28 @@ func _reward_failure_keeps_dungeon_retryable(asserts) -> void:
 	asserts.equal(reward_calls.attempts, 2, "duplicate guard prevents a third reward attempt")
 	asserts.equal(reward_calls.grants, 1, "duplicate guard prevents a duplicate reward grant")
 	asserts.equal(clear_events.size(), 1, "duplicate guard prevents a duplicate clear event")
+
+func _progression_failure_does_not_grant_reward(asserts) -> void:
+	var context := _runtime_context()
+	var runtime: DungeonRuntime = context.runtime
+	var reward_calls := {"count": 0}
+	asserts.true_value(runtime.configure(
+		context.run_state,
+		context.progression,
+		func(payload: Dictionary, _projection: Dictionary) -> bool: return bool(payload.get("objective_complete", false)),
+		func(_event: Dictionary) -> Dictionary:
+			reward_calls.count += 1
+			return {"ok": true}
+	).ok, "progression failure fixture configures")
+	asserts.true_value(runtime.enter_dungeon("progression_reject_instance", _fixture_definition(), WorldData.new(2, 2), _return_context()).ok, "progression failure fixture enters")
+	context.run_state.teleport_states["common_region"] = BiomeProgressionState.TELEPORT_REPAIRED
+
+	var rejected := runtime.complete_dungeon({"objective_complete": true, "reward_item_ids": ["fixture_reward"]})
+	asserts.false_value(rejected.ok, "progression rejection prevents completion")
+	asserts.equal(rejected.reason, "invalid_teleport_state", "progression rejection preserves its stable reason")
+	asserts.equal(reward_calls.count, 0, "progression validation runs before the side-effecting reward hook")
+	asserts.equal(runtime.to_projection().lifecycle_state, DungeonInstanceState.STATE_ACTIVE, "progression rejection leaves the dungeon retryable")
+	asserts.false_value(context.run_state.completed_runtime_dungeon_ids.has("fixture_dungeon"), "progression rejection does not record canonical completion")
 
 func _runtime_context() -> Dictionary:
 	var run_state := RunState.new()
