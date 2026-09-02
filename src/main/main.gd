@@ -14,6 +14,7 @@ const MovementCommandSelector = preload("res://src/core/commands/movement_comman
 const MemoryTeaCutsceneRuntime = preload("res://src/narrative/memory_tea_cutscene_runtime.gd")
 const EndingRouteRuntime = preload("res://src/meta/ending_route_runtime.gd")
 const PlayerMovementState = preload("res://src/player/player_movement_state.gd")
+const TeaBrewingCommandRuntime = preload("res://src/tea/tea_brewing_command_runtime.gd")
 const TeaService = preload("res://src/tea/tea_service.gd")
 const BiomeProgressionState = preload("res://src/world/biome/biome_progression_state.gd")
 const RunState = preload("res://src/save/run_state.gd")
@@ -47,6 +48,7 @@ var equipment
 var inventory_command_runtime
 var map_read_model_builder
 var tea_service
+var tea_brewing_command_runtime
 var crafting_service
 var consumable_service
 var core_tea_ware_collection
@@ -154,6 +156,23 @@ func _physics_process(_delta: float) -> void:
 		submit_desktop_action_command("dodge", desktop_command.direction)
 	if Input.is_action_just_pressed("drink_tea"):
 		submit_desktop_action_command("drink_tea")
+	if Input.is_action_just_pressed("open_tea_brewing"):
+		submit_desktop_action_command("open_tea_brewing")
+	if _is_hud_menu_open("tea_brewing"):
+		if Input.is_action_just_pressed("tea_brew_previous_leaf"):
+			submit_desktop_action_command("tea_brew_previous_leaf")
+		if Input.is_action_just_pressed("tea_brew_next_leaf"):
+			submit_desktop_action_command("tea_brew_next_leaf")
+		if Input.is_action_just_pressed("tea_brew_previous_vessel"):
+			submit_desktop_action_command("tea_brew_previous_vessel")
+		if Input.is_action_just_pressed("tea_brew_next_vessel"):
+			submit_desktop_action_command("tea_brew_next_vessel")
+		if Input.is_action_just_pressed("tea_brew_previous_slot"):
+			submit_desktop_action_command("tea_brew_previous_slot")
+		if Input.is_action_just_pressed("tea_brew_next_slot"):
+			submit_desktop_action_command("tea_brew_next_slot")
+		if Input.is_action_just_pressed("brew_tea"):
+			submit_desktop_action_command("brew_tea")
 	if Input.is_action_just_pressed("use_consumable"):
 		submit_desktop_action_command("use_consumable")
 	if Input.is_action_just_pressed("cast_ability"):
@@ -162,22 +181,23 @@ func _physics_process(_delta: float) -> void:
 		submit_desktop_action_command("interact", desktop_command.direction)
 	if Input.is_action_just_pressed("open_inventory"):
 		submit_desktop_action_command("open_inventory")
-	if Input.is_action_just_pressed("inventory_next"):
-		submit_desktop_action_command("inventory_next")
-	if Input.is_action_just_pressed("inventory_previous"):
-		submit_desktop_action_command("inventory_previous")
-	if Input.is_action_just_pressed("inventory_sort"):
-		submit_desktop_action_command("inventory_sort")
-	if Input.is_action_just_pressed("inventory_use_selected"):
-		submit_desktop_action_command("inventory_use_selected", Vector2i.ZERO, _selected_inventory_slot_index())
-	if Input.is_action_just_pressed("inventory_equip_selected"):
-		submit_desktop_action_command("inventory_equip_selected", Vector2i.ZERO, _selected_inventory_slot_index())
-	if Input.is_action_just_pressed("inventory_filter_all"):
-		submit_desktop_action_command("inventory_filter_all")
-	if Input.is_action_just_pressed("inventory_filter_consumable"):
-		submit_desktop_action_command("inventory_filter_consumable")
-	if Input.is_action_just_pressed("inventory_filter_equipment"):
-		submit_desktop_action_command("inventory_filter_equipment")
+	if _is_hud_menu_open("inventory"):
+		if Input.is_action_just_pressed("inventory_next"):
+			submit_desktop_action_command("inventory_next")
+		if Input.is_action_just_pressed("inventory_previous"):
+			submit_desktop_action_command("inventory_previous")
+		if Input.is_action_just_pressed("inventory_sort"):
+			submit_desktop_action_command("inventory_sort")
+		if Input.is_action_just_pressed("inventory_use_selected"):
+			submit_desktop_action_command("inventory_use_selected", Vector2i.ZERO, _selected_inventory_slot_index())
+		if Input.is_action_just_pressed("inventory_equip_selected"):
+			submit_desktop_action_command("inventory_equip_selected", Vector2i.ZERO, _selected_inventory_slot_index())
+		if Input.is_action_just_pressed("inventory_filter_all"):
+			submit_desktop_action_command("inventory_filter_all")
+		if Input.is_action_just_pressed("inventory_filter_consumable"):
+			submit_desktop_action_command("inventory_filter_consumable")
+		if Input.is_action_just_pressed("inventory_filter_equipment"):
+			submit_desktop_action_command("inventory_filter_equipment")
 	if Input.is_action_just_pressed("open_crafting"):
 		submit_desktop_action_command("open_crafting")
 	if Input.is_action_just_pressed("open_facilities"):
@@ -222,6 +242,9 @@ func submit_desktop_action_command(action: String, direction := Vector2i.ZERO, s
 	if command.type == GameCommand.Type.INTERACT and String(command.payload.get("target_id", "")).is_empty():
 		return submit_player_interaction(direction)
 	return submit_action_command(command)
+
+func _is_hud_menu_open(menu_id: String) -> bool:
+	return game_hud != null and game_hud.has_method("active_menu_id") and String(game_hud.active_menu_id()) == menu_id
 
 func submit_pointer_interaction(world_position: Vector2) -> bool:
 	var clicked_cell := world_cell_from_world_position(world_position)
@@ -269,6 +292,16 @@ func submit_action_command(command) -> bool:
 			return accepted
 		GameCommand.Type.DRINK_TEA:
 			var accepted: bool = _handle_tea_command(command)
+			if accepted:
+				_play_feedback_beep()
+			return accepted
+		GameCommand.Type.OPEN_TEA_BREWING:
+			var accepted: bool = game_hud != null and game_hud.show_tea_brewing_menu()
+			if accepted:
+				_play_feedback_beep()
+			return accepted
+		GameCommand.Type.TEA_BREW_SELECT_LEAF, GameCommand.Type.TEA_BREW_SELECT_VESSEL, GameCommand.Type.TEA_BREW_SELECT_SLOT, GameCommand.Type.TEA_BREW_NAVIGATE, GameCommand.Type.BREW_TEA:
+			var accepted: bool = _handle_tea_brewing_command(command)
 			if accepted:
 				_play_feedback_beep()
 			return accepted
@@ -329,6 +362,7 @@ func restore_run_state(state) -> Dictionary:
 		return {"ok": false, "reason": "invalid_run_state", "error": "Main runtime requires a RunState."}
 	var inventory_before: Dictionary = inventory.to_snapshot() if inventory != null else {}
 	var equipment_before: Dictionary = equipment.to_snapshot() if equipment != null else {}
+	var tea_before: Dictionary = tea_service.to_snapshot() if tea_service != null else {}
 	var acquisitions_before: Dictionary = acquisition_service.to_snapshot() if acquisition_service != null else {}
 	if inventory != null and not state.inventory.is_empty():
 		var inventory_result: Dictionary = inventory.load_snapshot(state.inventory)
@@ -350,13 +384,23 @@ func restore_run_state(state) -> Dictionary:
 			if inventory != null and not inventory_before.is_empty():
 				inventory.load_snapshot(inventory_before)
 			return equipment_result
+	if tea_service != null and not state.tea.is_empty():
+		var tea_load_result: Dictionary = tea_service.load_snapshot(state.tea)
+		if not tea_load_result.ok:
+			if inventory != null and not inventory_before.is_empty():
+				inventory.load_snapshot(inventory_before)
+			if equipment != null and not equipment_before.is_empty():
+				equipment.load_snapshot(equipment_before)
+			if not tea_before.is_empty():
+				tea_service.load_snapshot(tea_before)
+			return tea_load_result
 	run_state = state
 	if inventory != null:
 		run_state.inventory = inventory.to_snapshot()
 	if equipment != null:
 		run_state.equipment = equipment.to_snapshot()
-	if equipment != null:
-		run_state.equipment = equipment.to_snapshot()
+	if tea_service != null:
+		run_state.tea = tea_service.to_snapshot()
 	if acquisition_service != null:
 		run_state.acquisitions = acquisition_service.to_snapshot()
 	_configure_game_hud()
@@ -381,6 +425,8 @@ func snapshot_run_state() -> Dictionary:
 		run_state.acquisitions = acquisition_service.to_snapshot()
 	if memory_tea_cutscene_runtime != null:
 		run_state.memory_tea_cutscene = memory_tea_cutscene_runtime.to_snapshot()
+	if tea_service != null:
+		run_state.tea = tea_service.to_snapshot()
 	return run_state.to_dictionary()
 
 func _configure_run_services(loaded_catalog) -> Dictionary:
@@ -416,6 +462,10 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 		if not equipment_load_result.ok:
 			return equipment_load_result
 	tea_service = tea_result.tea_service
+	if run_state != null and not run_state.tea.is_empty():
+		var tea_load_result: Dictionary = tea_service.load_snapshot(run_state.tea)
+		if not tea_load_result.ok:
+			return tea_load_result
 	crafting_service = crafting_result.crafting_service
 	consumable_service = consumable_result.consumable_service if consumable_result.ok else null
 	core_tea_ware_collection = core_tea_ware_result.collection
@@ -450,6 +500,10 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	var map_result: Dictionary = map_read_model_builder.configure(loaded_catalog.data_version)
 	if not map_result.ok:
 		return map_result
+	tea_brewing_command_runtime = TeaBrewingCommandRuntime.new()
+	var tea_brewing_result: Dictionary = tea_brewing_command_runtime.configure(tea_service, inventory, equipment, Callable(self, "_tea_brewing_context"), loaded_catalog.data_version)
+	if not tea_brewing_result.ok:
+		return tea_brewing_result
 	tea_service.drink_completed.connect(_on_tea_drink_completed)
 	memory_tea_cutscene_runtime = MemoryTeaCutsceneRuntime.new()
 	var memory_runtime_result: Dictionary = memory_tea_cutscene_runtime.configure(loaded_catalog.data_version)
@@ -873,7 +927,29 @@ func _handle_tea_command(command: GameCommand) -> bool:
 	if not start_result.ok:
 		return false
 	var resources = player.resources if player != null else null
-	return bool(tea_service.complete_drinking(start_result.action, resources).ok)
+	var completed: Dictionary = tea_service.complete_drinking(start_result.action, resources)
+	_sync_tea_runtime_state()
+	return bool(completed.ok)
+
+func _handle_tea_brewing_command(command: GameCommand) -> bool:
+	if tea_brewing_command_runtime == null:
+		return false
+	var result: Dictionary = tea_brewing_command_runtime.handle_command(command)
+	if game_hud != null:
+		game_hud.show_command_feedback(
+			"차 우리기 완료"
+			if result.ok and command.type == GameCommand.Type.BREW_TEA
+			else "차 우리기 갱신"
+			if result.ok
+			else "차 우리기 실패: %s" % String(result.get("reason", "unknown"))
+		)
+	if not result.ok:
+		return false
+	_sync_inventory_runtime_state()
+	_sync_tea_runtime_state()
+	if game_hud != null:
+		game_hud.show_tea_brewing_menu()
+	return true
 
 func _handle_craft_recipe_command(command: GameCommand) -> bool:
 	if crafting_service == null or inventory == null:
@@ -937,6 +1013,29 @@ func _sync_inventory_runtime_state() -> void:
 		run_state.inventory = inventory.to_snapshot()
 	if equipment != null:
 		run_state.equipment = equipment.to_snapshot()
+
+func _sync_tea_runtime_state() -> void:
+	if run_state == null:
+		run_state = RunState.new()
+	if tea_service != null:
+		run_state.tea = tea_service.to_snapshot()
+
+func tea_brewing_read_model() -> Dictionary:
+	if tea_brewing_command_runtime == null:
+		return {"ok": false, "reason": "missing_tea_brewing_command_runtime", "error": "Tea brewing command runtime is not configured."}
+	var model: Dictionary = tea_brewing_command_runtime.read_model()
+	model["ok"] = true
+	return model
+
+func _tea_brewing_context() -> Dictionary:
+	var context := _crafting_context()
+	context["has_brewing_location"] = _has_brewing_location(context)
+	return context
+
+func _has_brewing_location(context: Dictionary) -> bool:
+	var facility_ids: Array = context.get("available_facility_item_ids", [])
+	var explicit_ids: Array = context.get("brewing_location_ids", [])
+	return not facility_ids.is_empty() or not explicit_ids.is_empty()
 
 func _player_world_cell() -> Vector2i:
 	if player == null:
@@ -1041,8 +1140,9 @@ func _configure_game_hud() -> void:
 		"world_data": world_data,
 		"run_state": run_state,
 		"tea_service": tea_service,
+		"tea_brewing_command_runtime": tea_brewing_command_runtime,
 		"crafting_service": crafting_service,
-		"crafting_context": _crafting_context()
+		"crafting_context": _tea_brewing_context()
 	})
 
 func _configure_audio_feedback() -> void:

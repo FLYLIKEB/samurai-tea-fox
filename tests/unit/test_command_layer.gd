@@ -23,6 +23,10 @@ func run(asserts) -> void:
 	var tea = mobile.command_for_button("drink_tea", Vector2i.ZERO, 1)
 	asserts.equal(tea.type, GameCommand.Type.DRINK_TEA, "mobile tea maps to shared command")
 	asserts.equal(tea.slot, 1, "mobile tea preserves slot")
+	var brewing = mobile.command_for_button("open_tea_brewing")
+	asserts.equal(brewing.type, GameCommand.Type.OPEN_TEA_BREWING, "mobile tea brewing menu maps to shared command")
+	var brew = mobile.command_for_button("brew_tea")
+	asserts.equal(brew.type, GameCommand.Type.BREW_TEA, "mobile brew action maps to shared command")
 
 	var consumable = mobile.command_for_button("use_consumable", Vector2i.ZERO, 3)
 	asserts.equal(consumable.type, GameCommand.Type.USE_CONSUMABLE, "mobile consumable maps to shared command")
@@ -37,7 +41,7 @@ func run(asserts) -> void:
 	var map = mobile.command_for_button("open_map")
 	asserts.equal(map.type, GameCommand.Type.OPEN_MAP, "mobile map menu maps to shared command")
 
-	for action in ["attack", "dodge", "drink_tea", "use_consumable", "cast_ability", "interact", "open_inventory", "open_crafting", "open_facilities", "open_map", "inventory_sort", "inventory_select", "inventory_next", "inventory_previous", "equip_inventory_slot", "use_inventory_slot"]:
+	for action in ["attack", "dodge", "drink_tea", "open_tea_brewing", "tea_brew_select_leaf", "tea_brew_select_vessel", "tea_brew_select_slot", "tea_brew_next_leaf", "tea_brew_previous_leaf", "tea_brew_next_vessel", "tea_brew_previous_vessel", "tea_brew_next_slot", "tea_brew_previous_slot", "brew_tea", "use_consumable", "cast_ability", "interact", "open_inventory", "open_crafting", "open_facilities", "open_map", "inventory_sort", "inventory_select", "inventory_next", "inventory_previous", "equip_inventory_slot", "use_inventory_slot"]:
 		var desktop_command = desktop.command_for_action(action, Vector2i.LEFT, 2)
 		var mobile_command = mobile.command_for_button(action, Vector2i.LEFT, 2)
 		asserts.equal(desktop_command.type, mobile_command.type, "%s type matches across platforms" % action)

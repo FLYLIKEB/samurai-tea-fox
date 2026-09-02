@@ -25,6 +25,7 @@ var narrative_flags := []
 var narrative_event_counts := {}
 var discovered_records := []
 var memory_tea_cutscene := {}
+var tea := {}
 var consumables := {}
 var choice_history := []
 var choice_group_selections := {}
@@ -62,6 +63,7 @@ static func from_dictionary(data: Dictionary):
 	state.narrative_event_counts = _dictionary_value(data.get("narrative_event_counts", {}))
 	state.discovered_records = _array_value(data.get("discovered_records", []))
 	state.memory_tea_cutscene = _dictionary_value(data.get("memory_tea_cutscene", {}))
+	state.tea = _dictionary_value(data.get("tea", {}))
 	state.consumables = _dictionary_value(data.get("consumables", {}))
 	state.choice_history = _array_value(data.get("choice_history", []))
 	state.choice_group_selections = _dictionary_value(data.get("choice_group_selections", {}))
@@ -87,6 +89,7 @@ func reset_run_growth() -> void:
 	tail_state = TailState.default_dictionary()
 	abilities.clear()
 	core_tea_ware_collection.clear()
+	tea.clear()
 
 func to_dictionary() -> Dictionary:
 	return {
@@ -112,6 +115,7 @@ func to_dictionary() -> Dictionary:
 		"narrative_event_counts": narrative_event_counts.duplicate(true),
 		"discovered_records": discovered_records.duplicate(true),
 		"memory_tea_cutscene": memory_tea_cutscene.duplicate(true),
+		"tea": tea.duplicate(true),
 		"consumables": consumables.duplicate(true),
 		"choice_history": choice_history.duplicate(true),
 		"choice_group_selections": choice_group_selections.duplicate(true),

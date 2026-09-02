@@ -52,6 +52,11 @@ func _assert_brewing_creates_prepared_tea_from_inventory(asserts) -> void:
 	asserts.true_value(inventory.add_item("green_tea", 2).ok, "tea leaves can be stocked")
 	asserts.true_value(inventory.add_item("plain_bowl", 1).ok, "vessel can be carried")
 
+	var preview: Dictionary = service.preview_brew("green_tea", "plain_bowl")
+	asserts.true_value(preview.ok, "valid tea and vessel can be previewed without mutation")
+	asserts.equal(preview.prepared_tea.ki_recovery, 18, "preview uses the same domain effect calculation as brew")
+	asserts.equal(inventory.get_total_quantity("green_tea"), 2, "preview does not consume tea leaf")
+
 	var brewed: Dictionary = service.brew("green_tea", "plain_bowl", inventory)
 	asserts.true_value(brewed.ok, "valid tea and vessel brew portable tea")
 	asserts.equal(brewed.slot, 0, "brewing fills first empty quickslot")

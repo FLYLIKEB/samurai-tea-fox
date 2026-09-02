@@ -33,6 +33,7 @@ var map_read_model_builder
 var world_data
 var run_state
 var tea_service
+var tea_brewing_command_runtime
 var crafting_service
 var crafting_context: Dictionary = {}
 var time_state
@@ -64,6 +65,7 @@ func configure(player_node, generated_world: Dictionary, generated_render_result
 		world_data = runtime_context.get("world_data", null)
 		run_state = runtime_context.get("run_state", null)
 		tea_service = runtime_context.get("tea_service", null)
+		tea_brewing_command_runtime = runtime_context.get("tea_brewing_command_runtime", null)
 		crafting_service = runtime_context.get("crafting_service", null)
 		crafting_context = runtime_context.get("crafting_context", {}).duplicate(true)
 		time_state = runtime_context.get("time_state", null)
@@ -120,6 +122,11 @@ func show_facilities_menu() -> bool:
 	_show_menu("시설", _facility_rows())
 	return true
 
+func show_tea_brewing_menu() -> bool:
+	_open_menu_id = "tea_brewing"
+	_show_menu("차 우리기", _tea_brewing_rows())
+	return true
+
 func show_map_menu() -> bool:
 	_open_menu_id = "map"
 	_show_menu("지도", _map_rows())
@@ -131,6 +138,9 @@ func hide_menu() -> bool:
 	if panel != null:
 		panel.visible = false
 	return true
+
+func active_menu_id() -> String:
+	return _open_menu_id
 
 func show_command_feedback(message: String) -> void:
 	var feedback := _labels.get("menu_feedback") as Label
@@ -262,6 +272,7 @@ func _bind_runtime_signals() -> void:
 	_connect_runtime_signal(inventory, &"changed", Callable(self, "_on_snapshot_changed"))
 	_connect_runtime_signal(inventory_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
 	_connect_runtime_signal(tea_service, &"changed", Callable(self, "_on_snapshot_changed"))
+	_connect_runtime_signal(tea_brewing_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
 	_connect_runtime_signal(time_state, &"phase_changed", Callable(self, "_on_phase_changed"))
 
 func _unbind_runtime_signals() -> void:
@@ -272,6 +283,7 @@ func _unbind_runtime_signals() -> void:
 	_disconnect_runtime_signal(inventory, &"changed", Callable(self, "_on_snapshot_changed"))
 	_disconnect_runtime_signal(inventory_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
 	_disconnect_runtime_signal(tea_service, &"changed", Callable(self, "_on_snapshot_changed"))
+	_disconnect_runtime_signal(tea_brewing_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
 	_disconnect_runtime_signal(time_state, &"phase_changed", Callable(self, "_on_phase_changed"))
 
 func _connect_runtime_signal(source, signal_name: StringName, callback: Callable) -> void:
@@ -336,6 +348,7 @@ func _rebuild_action_buttons() -> void:
 	for slot in range(_balance_integer(BALANCE_ABILITY_SLOTS_ID)):
 		_add_text_action(_action_grid, "AbilityButton%d" % (slot + 1), ICON_ABILITY, "요술%d" % (slot + 1), "cast_ability", Vector2i.ZERO, slot)
 	_add_text_action(_action_grid, "InventoryButton", ICON_BAG, "가방", "open_inventory", Vector2i.ZERO, 0)
+	_add_text_action(_action_grid, "TeaBrewingButton", ICON_TEA, "우리기", "open_tea_brewing", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "MapButton", ICON_MAP, "지도", "open_map", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "CraftingButton", ICON_CONSUMABLE, "제작", "open_crafting", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "FacilitiesButton", ICON_MAP, "시설", "open_facilities", Vector2i.ZERO, 0)
@@ -433,6 +446,8 @@ func _refresh_open_menu() -> void:
 			_show_menu("제작법", _crafting_rows())
 		"facilities":
 			_show_menu("시설", _facility_rows())
+		"tea_brewing":
+			_show_menu("차 우리기", _tea_brewing_rows())
 		"map":
 			_show_menu("지도", _map_rows())
 
@@ -492,6 +507,109 @@ func _inventory_page_start(rows: Array, selected_slot_index: int, page_size: int
 	if selected_position < 0:
 		return 0
 	return clampi(selected_position - 2, 0, rows.size() - page_size)
+
+func _tea_brewing_rows() -> Array:
+	var rows: Array = []
+	if tea_brewing_command_runtime == null or not tea_brewing_command_runtime.has_method("read_model"):
+		rows.append(_label("차 우리기 read model 없음", 11))
+		return rows
+	var model: Dictionary = tea_brewing_command_runtime.read_model()
+	rows.append(_label("찻잎 %d · 다구 %d · 휴대칸 %d · 장소 %s" % [
+		_array_value(model.get("leaves", [])).size(),
+		_array_value(model.get("vessels", [])).size(),
+		_array_value(model.get("quickslots", [])).size(),
+		"가능" if bool(model.get("has_brewing_location", false)) else "제한"
+	], 11))
+	rows.append(_tea_brewing_toolbar())
+	rows.append(_label("찻잎", 11))
+	var leaves := _array_value(model.get("leaves", []))
+	var leaf_page := _tea_brewing_page_start(leaves, "id", String(model.get("selected_leaf_id", "")), 4)
+	for leaf in leaves.slice(leaf_page, leaf_page + 4):
+		rows.append(_tea_brewing_option_row(
+			"▶ %s x%d" % [String(leaf.get("name", "")), int(leaf.get("quantity", 0))] if bool(leaf.get("selected", false)) else "%s x%d" % [String(leaf.get("name", "")), int(leaf.get("quantity", 0))],
+			GameCommand.new(GameCommand.Type.TEA_BREW_SELECT_LEAF, Vector2i.ZERO, -1, {"tea_id": String(leaf.get("id", ""))})
+		))
+	if leaves.size() > 4:
+		rows.append(_label("찻잎 %d-%d / %d" % [leaf_page + 1, mini(leaves.size(), leaf_page + 4), leaves.size()], 10))
+	rows.append(_label("다구", 11))
+	var vessels := _array_value(model.get("vessels", []))
+	var vessel_page := _tea_brewing_page_start(vessels, "selection_key", String(model.get("selected_vessel_key", "")), 4)
+	for vessel in vessels.slice(vessel_page, vessel_page + 4):
+		var source_label := "장착" if String(vessel.get("source", "")) == "equipped" else "보유"
+		rows.append(_tea_brewing_option_row(
+			"▶ %s · %s" % [String(vessel.get("name", "")), source_label] if bool(vessel.get("selected", false)) else "%s · %s" % [String(vessel.get("name", "")), source_label],
+			GameCommand.new(GameCommand.Type.TEA_BREW_SELECT_VESSEL, Vector2i.ZERO, -1, {"vessel_key": String(vessel.get("selection_key", ""))})
+		))
+	if vessels.size() > 4:
+		rows.append(_label("다구 %d-%d / %d" % [vessel_page + 1, mini(vessels.size(), vessel_page + 4), vessels.size()], 10))
+	rows.append(_label("휴대칸", 11))
+	for slot in _array_value(model.get("quickslots", [])):
+		rows.append(_tea_brewing_option_row(
+			"▶ %s" % String(slot.get("label", "")) if bool(slot.get("selected", false)) else String(slot.get("label", "")),
+			GameCommand.new(GameCommand.Type.TEA_BREW_SELECT_SLOT, Vector2i.ZERO, int(slot.get("slot_index", -1)), {"slot_index": int(slot.get("slot_index", -1))})
+		))
+	var preview: Dictionary = model.get("preview", {})
+	rows.append(_label(_tea_brewing_preview_label(preview), 11))
+	var brew_button := _tea_brewing_command_button("우리기", GameCommand.new(GameCommand.Type.BREW_TEA))
+	brew_button.disabled = not bool(model.get("can_brew", false))
+	rows.append(brew_button)
+	return rows
+
+func _tea_brewing_toolbar() -> HBoxContainer:
+	var toolbar := HBoxContainer.new()
+	_ignore_mouse(toolbar)
+	toolbar.add_theme_constant_override("separation", 4)
+	toolbar.add_child(_tea_brewing_command_button("찻잎‹", GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.LEFT, -1, {"target": "leaf"})))
+	toolbar.add_child(_tea_brewing_command_button("찻잎›", GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.RIGHT, -1, {"target": "leaf"})))
+	toolbar.add_child(_tea_brewing_command_button("다구‹", GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.LEFT, -1, {"target": "vessel"})))
+	toolbar.add_child(_tea_brewing_command_button("다구›", GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.RIGHT, -1, {"target": "vessel"})))
+	toolbar.add_child(_tea_brewing_command_button("칸›", GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.RIGHT, -1, {"target": "slot"})))
+	return toolbar
+
+func _tea_brewing_option_row(text: String, command: GameCommand) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	_ignore_mouse(row)
+	row.add_theme_constant_override("separation", 4)
+	var label := _label(text, 10)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(label)
+	row.add_child(_tea_brewing_command_button("선택", command))
+	return row
+
+func _tea_brewing_command_button(text: String, command: GameCommand) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(44, 28)
+	button.focus_mode = Control.FOCUS_ALL
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.pressed.connect(func(): mobile_command_issued.emit(command))
+	return button
+
+func _tea_brewing_page_start(rows: Array, key: String, selected: String, page_size: int) -> int:
+	if rows.size() <= page_size:
+		return 0
+	var selected_position := -1
+	for index in range(rows.size()):
+		if String(rows[index].get(key, "")) == selected:
+			selected_position = index
+			break
+	if selected_position < 0:
+		return 0
+	return clampi(selected_position - 1, 0, rows.size() - page_size)
+
+func _tea_brewing_preview_label(preview: Dictionary) -> String:
+	if not bool(preview.get("ok", false)):
+		return "미리보기 불가: %s" % String(preview.get("reason", "unknown"))
+	var prepared: Dictionary = preview.get("prepared_tea", {})
+	var slot_status := "빈 칸" if not bool(preview.get("target_slot_occupied", false)) else "차 있음"
+	return "미리보기 %s + %s · 기운 +%d · %d회 · %.1fs · %s" % [
+		String(prepared.get("tea_name", prepared.get("tea_id", ""))),
+		String(prepared.get("vessel_name", prepared.get("vessel_id", ""))),
+		int(prepared.get("ki_recovery", 0)),
+		int(prepared.get("remaining_uses", 0)),
+		float(prepared.get("drink_seconds", 0.0)),
+		slot_status
+	]
 
 func _crafting_rows() -> Array:
 	var rows: Array = []

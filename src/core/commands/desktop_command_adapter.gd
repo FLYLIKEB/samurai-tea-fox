@@ -26,6 +26,28 @@ func command_for_action(action: String, direction := Vector2i.ZERO, slot := 0, p
 			return GameCommand.new(GameCommand.Type.DODGE, direction)
 		"drink_tea":
 			return GameCommand.new(GameCommand.Type.DRINK_TEA, Vector2i.ZERO, slot)
+		"open_tea_brewing":
+			return GameCommand.new(GameCommand.Type.OPEN_TEA_BREWING)
+		"tea_brew_select_leaf":
+			return GameCommand.new(GameCommand.Type.TEA_BREW_SELECT_LEAF, Vector2i.ZERO, slot, payload)
+		"tea_brew_select_vessel":
+			return GameCommand.new(GameCommand.Type.TEA_BREW_SELECT_VESSEL, Vector2i.ZERO, slot, payload)
+		"tea_brew_select_slot":
+			return GameCommand.new(GameCommand.Type.TEA_BREW_SELECT_SLOT, Vector2i.ZERO, slot, {"slot_index": slot})
+		"tea_brew_next_leaf":
+			return GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.RIGHT, -1, {"target": "leaf"})
+		"tea_brew_previous_leaf":
+			return GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.LEFT, -1, {"target": "leaf"})
+		"tea_brew_next_vessel":
+			return GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.RIGHT, -1, {"target": "vessel"})
+		"tea_brew_previous_vessel":
+			return GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.LEFT, -1, {"target": "vessel"})
+		"tea_brew_next_slot":
+			return GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.RIGHT, -1, {"target": "slot"})
+		"tea_brew_previous_slot":
+			return GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.LEFT, -1, {"target": "slot"})
+		"brew_tea":
+			return GameCommand.new(GameCommand.Type.BREW_TEA)
 		"use_consumable":
 			return GameCommand.new(GameCommand.Type.USE_CONSUMABLE, Vector2i.ZERO, slot)
 		"cast_ability":

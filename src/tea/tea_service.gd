@@ -120,6 +120,12 @@ func brew(tea_id: String, vessel_id: String, inventory, slot_index := -1, contex
 	_emit_changed()
 	return {"ok": true, "slot": target_slot, "prepared_tea": _duplicate_dictionary(prepared)}
 
+func preview_brew(tea_id: String, vessel_id: String, context := {}) -> Dictionary:
+	var definition_result := _build_prepared_tea(tea_id, get_vessel_modifier_query(vessel_id), context)
+	if not definition_result.ok:
+		return definition_result
+	return {"ok": true, "prepared_tea": _duplicate_dictionary(definition_result.prepared_tea)}
+
 func brew_with_modifier_query(tea_id: String, modifier_query: Dictionary, inventory, slot_index := -1, context := {}) -> Dictionary:
 	var definition_result := _build_prepared_tea(tea_id, modifier_query, context)
 	if not definition_result.ok:
@@ -149,6 +155,12 @@ func brew_with_modifier_query(tea_id: String, modifier_query: Dictionary, invent
 	tea_prepared.emit(_duplicate_dictionary(prepared))
 	_emit_changed()
 	return {"ok": true, "slot": target_slot, "prepared_tea": _duplicate_dictionary(prepared)}
+
+func preview_brew_with_modifier_query(tea_id: String, modifier_query: Dictionary, context := {}) -> Dictionary:
+	var definition_result := _build_prepared_tea(tea_id, modifier_query, context)
+	if not definition_result.ok:
+		return definition_result
+	return {"ok": true, "prepared_tea": _duplicate_dictionary(definition_result.prepared_tea)}
 
 func get_vessel_modifier_query(vessel_id: String) -> Dictionary:
 	if not vessel_definitions.has(vessel_id):
