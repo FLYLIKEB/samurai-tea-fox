@@ -169,6 +169,21 @@ func _fixture_biomes() -> Array:
 		{"id": "mountain_region", "progression_order": 2}
 	]
 
+func _assert_meta_save_rejects_malformed_previous_run_ids(asserts) -> void:
+	for field in ["past_choice_ids", "reached_place_ids", "death_record_ids"]:
+		var non_string := MetaState.new().to_dictionary()
+		non_string.run_count = 1
+		non_string[field] = [42]
+		asserts.false_value(SaveCodec.decode_meta({"schema_version": 1, "kind": "meta", "meta": non_string}).ok, "meta save rejects non-string %s entries" % field)
+		var empty_id := MetaState.new().to_dictionary()
+		empty_id.run_count = 1
+		empty_id[field] = [""]
+		asserts.false_value(SaveCodec.decode_meta({"schema_version": 1, "kind": "meta", "meta": empty_id}).ok, "meta save rejects empty %s stable ids" % field)
+		var malformed_id := MetaState.new().to_dictionary()
+		malformed_id.run_count = 1
+		malformed_id[field] = ["Display Name"]
+		asserts.false_value(SaveCodec.decode_meta({"schema_version": 1, "kind": "meta", "meta": malformed_id}).ok, "meta save rejects malformed %s stable ids" % field)
+
 func _tail_snapshot(stage: int, flags: Array) -> Dictionary:
 	var tail := TailState.new()
 	if stage > 1 or not flags.is_empty():

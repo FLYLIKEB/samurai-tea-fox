@@ -277,6 +277,27 @@ func _assert_malformed_meta_conditions_are_rejected(asserts) -> void:
 		asserts.false_value(result.ok, "malformed meta condition is rejected: %s" % condition)
 		asserts.equal(result.reason, "invalid_meta_condition", "malformed meta condition returns stable explicit reason")
 
+func _assert_malformed_meta_queries_are_rejected(asserts) -> void:
+	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": ""}
+	var meta_state := {"run_count": 3, "past_choice_ids": ["daimyo_relinquish_tea"]}
+	var missing_run_count: NarrativeRuntime = _runtime_from_events(asserts, [_meta_query_event("CHR-5", [{"type": "meta_run_count_at_least"}])])
+	var missing_result: Dictionary = missing_run_count.read_model_for_event("meta_query_event", run_state, meta_state)
+	asserts.false_value(missing_result.ok, "meta run-count query requires an explicit threshold")
+	asserts.equal(missing_result.reason, "invalid_meta_condition_value", "missing run-count threshold returns stable failure")
+	var negative_run_count: NarrativeRuntime = _runtime_from_events(asserts, [_meta_query_event("CHR-5", [{"type": "meta_run_count_at_least", "value": -1}])])
+	var negative_result: Dictionary = negative_run_count.read_model_for_event("meta_query_event", run_state, meta_state)
+	asserts.false_value(negative_result.ok, "meta run-count query threshold cannot be negative")
+	asserts.equal(negative_result.reason, "invalid_meta_condition_value", "negative run-count threshold returns stable failure")
+	var string_run_count: NarrativeRuntime = _runtime_from_events(asserts, [_meta_query_event("CHR-5", [{"type": "meta_run_count_at_least", "value": "2"}])])
+	var string_result: Dictionary = string_run_count.read_model_for_event("meta_query_event", run_state, meta_state)
+	asserts.false_value(string_result.ok, "meta run-count query threshold must be numeric")
+	asserts.equal(string_result.reason, "invalid_meta_condition_value", "string run-count threshold returns stable failure")
+	for condition_type in ["meta_flag", "meta_not_flag", "meta_past_choice", "meta_reached_place", "meta_death_record"]:
+		var invalid_id_runtime: NarrativeRuntime = _runtime_from_events(asserts, [_meta_query_event("CHR-5", [{"type": condition_type, "id": "Display Name"}])])
+		var invalid_id_result: Dictionary = invalid_id_runtime.read_model_for_event("meta_query_event", run_state, meta_state)
+		asserts.false_value(invalid_id_result.ok, "%s query requires a stable id" % condition_type)
+		asserts.equal(invalid_id_result.reason, "invalid_meta_condition_id", "%s malformed id returns stable failure" % condition_type)
+
 func _assert_meta_query_speaker_rejections(asserts) -> void:
 	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": ""}
 	var meta_state := {"past_choice_ids": ["daimyo_relinquish_tea"]}

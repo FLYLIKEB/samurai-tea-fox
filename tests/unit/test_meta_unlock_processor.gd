@@ -15,6 +15,8 @@ func run(asserts) -> void:
 	_assert_unknown_reward_type_fails(asserts)
 	_assert_data_driven_path_ignores_undeclared_earned_meta_flags(asserts)
 	_assert_unrelated_events_do_not_create_cumulative_counters(asserts)
+	_assert_malformed_previous_run_query_inputs_are_rejected(asserts)
+	_assert_meta_unlock_run_count_threshold_shape_is_validated(asserts)
 	_assert_previous_run_query_inputs_are_accumulated(asserts)
 	_assert_malformed_previous_run_ids_are_not_persisted(asserts)
 	_assert_meta_save_round_trip_preserves_unlock_state(asserts)
@@ -168,6 +170,44 @@ func _assert_meta_save_round_trip_preserves_unlock_state(asserts) -> void:
 	asserts.equal(decoded.state.past_choice_ids, ["daimyo_relinquish_tea"], "meta save preserves past choice query inputs")
 	asserts.equal(decoded.state.reached_place_ids, ["mountain_region"], "meta save preserves reached place query inputs")
 	asserts.equal(decoded.state.death_record_ids, ["wild_dog_ambush"], "meta save preserves death record query inputs")
+
+func _assert_malformed_previous_run_query_inputs_are_rejected(asserts) -> void:
+	var processor := RunEndProcessor.new()
+	var valid_meta := _empty_meta()
+	var non_array := processor.apply_run_end(valid_meta, {"choice_history": "daimyo_relinquish_tea"})
+	asserts.false_value(non_array.ok, "run summary previous-run arrays must be arrays")
+	asserts.equal(non_array.reason, "invalid_run_summary_stable_id_array", "non-array previous-run input returns stable reason")
+	var non_string := processor.apply_run_end(valid_meta, {"past_choice_ids": [42]})
+	asserts.false_value(non_string.ok, "run summary previous-run ids must be strings")
+	asserts.equal(non_string.reason, "invalid_run_summary_stable_id", "non-string previous-run input returns stable reason")
+	var malformed_id := processor.apply_run_end(valid_meta, {"reached_place_ids": ["Mountain Region"]})
+	asserts.false_value(malformed_id.ok, "run summary previous-run ids must be stable ids")
+	asserts.equal(malformed_id.reason, "invalid_run_summary_stable_id", "malformed previous-run id returns stable reason")
+	var scalar_id := processor.apply_run_end(valid_meta, {"death_record_id": "Wild Dog"})
+	asserts.false_value(scalar_id.ok, "run summary scalar previous-run ids must be stable ids")
+	asserts.equal(scalar_id.reason, "invalid_run_summary_stable_id", "malformed scalar previous-run id returns stable reason")
+	asserts.equal(valid_meta.past_choice_ids, [], "malformed run summary is rejected without mutating existing meta choices")
+	asserts.equal(valid_meta.reached_place_ids, [], "malformed run summary is rejected without mutating existing meta places")
+	asserts.equal(valid_meta.death_record_ids, [], "malformed run summary is rejected without mutating existing meta deaths")
+
+func _assert_meta_unlock_run_count_threshold_shape_is_validated(asserts) -> void:
+	var missing_threshold := {
+		"id": "missing_threshold",
+		"condition_event": "run_count_at_least",
+		"condition_target": "run_count",
+		"condition_operator": "at_least",
+		"reward_kind": "unlock_flag",
+		"reward_target": "missing_threshold_reward",
+		"reward_quantity": 1
+	}
+	var missing_result: Dictionary = RunEndProcessor.new().apply_run_end_with_unlocks(_empty_meta(), {}, [missing_threshold])
+	asserts.false_value(missing_result.ok, "run-count meta unlock condition requires a threshold")
+	asserts.equal(missing_result.reason, "invalid_condition_threshold", "missing run-count threshold returns stable reason")
+	asserts.equal(missing_result.definition_id, "missing_threshold", "threshold failure names definition id")
+	var negative_threshold := _definition("negative_threshold", "run_count_at_least", "run_count", "unlock_flag", "negative_threshold_reward", -1)
+	var negative_result: Dictionary = RunEndProcessor.new().apply_run_end_with_unlocks(_empty_meta(), {}, [negative_threshold])
+	asserts.false_value(negative_result.ok, "run-count meta unlock threshold cannot be negative")
+	asserts.equal(negative_result.reason, "invalid_condition_threshold", "negative run-count threshold returns stable reason")
 
 func _assert_previous_run_query_inputs_are_accumulated(asserts) -> void:
 	var processor := RunEndProcessor.new()
