@@ -22,6 +22,8 @@ var repaired_teleports := []
 var crafting_unlocks := []
 var narrative_flags := []
 var narrative_event_counts := {}
+var discovered_records := []
+var memory_tea_cutscene := {}
 var consumables := {}
 var choice_history := []
 var choice_group_selections := {}
@@ -55,6 +57,8 @@ static func from_dictionary(data: Dictionary):
 	state.crafting_unlocks = _array_value(data.get("crafting_unlocks", []))
 	state.narrative_flags = _array_value(data.get("narrative_flags", []))
 	state.narrative_event_counts = _dictionary_value(data.get("narrative_event_counts", {}))
+	state.discovered_records = _array_value(data.get("discovered_records", []))
+	state.memory_tea_cutscene = _dictionary_value(data.get("memory_tea_cutscene", {}))
 	state.consumables = _dictionary_value(data.get("consumables", {}))
 	state.choice_history = _array_value(data.get("choice_history", []))
 	state.choice_group_selections = _dictionary_value(data.get("choice_group_selections", {}))
@@ -99,6 +103,8 @@ func to_dictionary() -> Dictionary:
 		"crafting_unlocks": crafting_unlocks.duplicate(true),
 		"narrative_flags": narrative_flags.duplicate(true),
 		"narrative_event_counts": narrative_event_counts.duplicate(true),
+		"discovered_records": discovered_records.duplicate(true),
+		"memory_tea_cutscene": memory_tea_cutscene.duplicate(true),
 		"consumables": consumables.duplicate(true),
 		"choice_history": choice_history.duplicate(true),
 		"choice_group_selections": choice_group_selections.duplicate(true),

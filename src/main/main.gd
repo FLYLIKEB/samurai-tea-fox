@@ -6,6 +6,7 @@ const GameCommand = preload("res://src/core/commands/game_command.gd")
 const EquipmentModel = preload("res://src/inventory/equipment_model.gd")
 const InventoryModel = preload("res://src/inventory/inventory_model.gd")
 const MovementCommandSelector = preload("res://src/core/commands/movement_command_selector.gd")
+const MemoryTeaCutsceneRuntime = preload("res://src/narrative/memory_tea_cutscene_runtime.gd")
 const PlayerMovementState = preload("res://src/player/player_movement_state.gd")
 const TeaService = preload("res://src/tea/tea_service.gd")
 const BiomeProgressionState = preload("res://src/world/biome/biome_progression_state.gd")
@@ -35,6 +36,7 @@ var inventory
 var equipment
 var tea_service
 var crafting_service
+var memory_tea_cutscene_runtime
 var acquisition_service
 var run_lifecycle_service
 var save_store = SaveStore.new()
@@ -309,6 +311,8 @@ func snapshot_run_state() -> Dictionary:
 		run_state.inventory = inventory.to_snapshot()
 	if acquisition_service != null:
 		run_state.acquisitions = acquisition_service.to_snapshot()
+	if memory_tea_cutscene_runtime != null:
+		run_state.memory_tea_cutscene = memory_tea_cutscene_runtime.to_snapshot()
 	return run_state.to_dictionary()
 
 func _configure_run_services(loaded_catalog) -> Dictionary:
@@ -333,6 +337,14 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	tea_service = tea_result.tea_service
 	crafting_service = crafting_result.crafting_service
 	tea_service.drink_completed.connect(_on_tea_drink_completed)
+	memory_tea_cutscene_runtime = MemoryTeaCutsceneRuntime.new()
+	var memory_runtime_result: Dictionary = memory_tea_cutscene_runtime.configure(loaded_catalog.data_version)
+	if not memory_runtime_result.ok:
+		return memory_runtime_result
+	if run_state != null and not run_state.memory_tea_cutscene.is_empty():
+		var memory_load_result: Dictionary = memory_tea_cutscene_runtime.load_snapshot(run_state.memory_tea_cutscene)
+		if not memory_load_result.ok:
+			return memory_load_result
 	return {"ok": true}
 
 func _configure_acquisition_for_generated_world() -> Dictionary:
@@ -665,6 +677,28 @@ func _on_tea_drink_completed(result: Dictionary) -> void:
 	var accounting_result: Dictionary = equipment.record_tea_ware_use_completion(result, inventory)
 	if not accounting_result.ok:
 		push_error(accounting_result.error)
+	if memory_tea_cutscene_runtime != null:
+		var memory_result: Dictionary = memory_tea_cutscene_runtime.start_from_drink_completion(result, run_state)
+		if not memory_result.ok:
+			push_error(memory_result.error)
+		elif memory_result.started and run_state != null:
+			run_state.memory_tea_cutscene = memory_tea_cutscene_runtime.to_snapshot()
+
+func complete_memory_tea_cutscene() -> Dictionary:
+	if memory_tea_cutscene_runtime == null:
+		return {"ok": false, "reason": "missing_memory_cutscene_runtime", "error": "Memory tea cutscene runtime is not configured."}
+	var result: Dictionary = memory_tea_cutscene_runtime.complete_current(run_state)
+	if result.ok and run_state != null:
+		run_state.memory_tea_cutscene = memory_tea_cutscene_runtime.to_snapshot()
+	return result
+
+func skip_memory_tea_cutscene() -> Dictionary:
+	if memory_tea_cutscene_runtime == null:
+		return {"ok": false, "reason": "missing_memory_cutscene_runtime", "error": "Memory tea cutscene runtime is not configured."}
+	var result: Dictionary = memory_tea_cutscene_runtime.skip_current(run_state)
+	if result.ok and run_state != null:
+		run_state.memory_tea_cutscene = memory_tea_cutscene_runtime.to_snapshot()
+	return result
 
 func _render_generated_world(world: Dictionary) -> void:
 	_hide_prototype_visuals()

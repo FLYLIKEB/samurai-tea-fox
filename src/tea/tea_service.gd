@@ -372,6 +372,16 @@ static func _tea_definition_from_row(row: Dictionary) -> Dictionary:
 	var recovery_mode := String(row.get("recovery_mode", DEFAULT_RECOVERY_MODE))
 	if not VALID_RECOVERY_MODES.has(recovery_mode):
 		return _fail("invalid_recovery_mode", "Unknown tea recovery mode: %s" % recovery_mode)
+	var memory_event_id := String(row.get("memory_event_id", "memory_tea_%s" % String(row.id)))
+	var memory_strength := int(row.get("memory_strength", recovery_result.value))
+	var memory_evidence := String(row.get("memory_evidence", row.get("origin", row.get("name", row.id))))
+	if bool(row.get("memory", false)):
+		if not _is_stable_id(memory_event_id):
+			return _fail("invalid_memory_event_id", "Memory tea event id must be a stable id: %s" % memory_event_id)
+		if memory_strength <= 0:
+			return _fail("invalid_memory_strength", "Memory tea strength must be positive: %s" % String(row.id))
+		if memory_evidence.strip_edges().is_empty():
+			return _fail("missing_memory_evidence", "Memory tea evidence must be non-empty: %s" % String(row.id))
 
 	return {"ok": true, "definition": {
 		"id": String(row.id),
@@ -383,7 +393,11 @@ static func _tea_definition_from_row(row: Dictionary) -> Dictionary:
 		"recovery_mode": recovery_mode,
 		"condition_key": String(row.get("condition_key", "")),
 		"requires_brewing_location": bool(row.get("requires_brewing_location", false)),
-		"sustain_modifier": sustain_result.value
+		"sustain_modifier": sustain_result.value,
+		"memory": bool(row.get("memory", false)),
+		"memory_event_id": memory_event_id,
+		"memory_strength": memory_strength,
+		"memory_evidence": memory_evidence
 	}}
 
 static func _vessel_definition_from_row(row: Dictionary) -> Dictionary:
@@ -454,7 +468,11 @@ func _build_prepared_tea(tea_id: String, modifier_query: Dictionary, context: Di
 		"condition_key": tea.condition_key,
 		"sustain_modifier": sustain_modifier,
 		"core_tea_ware": bool(vessel.get("core_tea_ware", false)),
-		"core_tea_ware_order": int(vessel.get("core_tea_ware_order", 0))
+		"core_tea_ware_order": int(vessel.get("core_tea_ware_order", 0)),
+		"memory": bool(tea.get("memory", false)),
+		"memory_event_id": String(tea.get("memory_event_id", "")),
+		"memory_strength": int(tea.get("memory_strength", ki_recovery)),
+		"memory_evidence": String(tea.get("memory_evidence", tea.name))
 	}}
 
 func _validate_modifier_query(query: Dictionary) -> Dictionary:
@@ -492,6 +510,15 @@ func _apply_effect(prepared: Dictionary, context, resources) -> Dictionary:
 		"ki_recovery_requested": int(prepared.ki_recovery),
 		"sustain_modifier": float(prepared.sustain_modifier)
 	}
+	if bool(prepared.get("memory", false)):
+		effect["memory"] = {
+			"has_memory": true,
+			"event_id": String(prepared.get("memory_event_id", "")),
+			"tea_id": String(prepared.get("tea_id", "")),
+			"tea_name": String(prepared.get("tea_name", "")),
+			"strength": int(prepared.get("memory_strength", prepared.get("ki_recovery", 0))),
+			"evidence": String(prepared.get("memory_evidence", prepared.get("tea_name", "")))
+		}
 	if String(prepared.recovery_mode) == RECOVERY_CONDITIONAL:
 		effect.condition_passed = _condition_passes(prepared, context)
 	if not bool(effect.condition_passed):
@@ -517,6 +544,16 @@ func _condition_passes(prepared: Dictionary, context) -> bool:
 	if typeof(conditions) == TYPE_DICTIONARY and conditions.has(condition_key):
 		return bool(conditions[condition_key])
 	return false
+
+static func _is_stable_id(value: String) -> bool:
+	if value.is_empty():
+		return false
+	for index in range(value.length()):
+		var code := value.unicode_at(index)
+		var allowed := (code >= 48 and code <= 57) or (code >= 65 and code <= 90) or (code >= 97 and code <= 122) or code == 95 or code == 45
+		if not allowed:
+			return false
+	return true
 
 func _normalize_snapshot_slot(raw_slot) -> Dictionary:
 	if _is_empty_slot(raw_slot):
