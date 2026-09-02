@@ -11,6 +11,7 @@ func project(world_data: Dictionary, progression_projection := {}) -> Dictionary
 	var facility_cells := []
 	var entity_cells := []
 	var interactable_cells := []
+	var owner_source_ids := _owner_source_ids(world_data)
 
 	for cell in world_data.get("cells", []):
 		var position: Dictionary = cell.get("position", {})
@@ -24,9 +25,9 @@ func project(world_data: Dictionary, progression_projection := {}) -> Dictionary
 			"position": position.duplicate(true),
 			"source_id": terrain.get("render_id", terrain.get("id", ""))
 		})
-		_add_owner_cells(facility_cells, position, layers.get(WorldData.LAYER_FACILITIES, []))
-		_add_owner_cells(entity_cells, position, layers.get(WorldData.LAYER_ENTITIES, []))
-		_add_owner_cells(interactable_cells, position, layers.get(WorldData.LAYER_INTERACTABLES, []))
+		_add_owner_cells(facility_cells, position, layers.get(WorldData.LAYER_FACILITIES, []), owner_source_ids)
+		_add_owner_cells(entity_cells, position, layers.get(WorldData.LAYER_ENTITIES, []), owner_source_ids)
+		_add_owner_cells(interactable_cells, position, layers.get(WorldData.LAYER_INTERACTABLES, []), owner_source_ids)
 
 	return {
 		"schema_version": 1,
@@ -58,9 +59,23 @@ func _project_landmarks(world_data: Dictionary, progression_projection) -> Array
 		landmark["teleport_state"] = String(teleport_states[biome_id])
 	return landmarks
 
-func _add_owner_cells(output: Array, position: Dictionary, owners: Array) -> void:
+func _add_owner_cells(output: Array, position: Dictionary, owners: Array, owner_source_ids: Dictionary) -> void:
 	for owner_id in owners:
-		output.append({
+		var cell := {
 			"position": position.duplicate(true),
 			"owner_id": owner_id
-		})
+		}
+		var source_id := String(owner_source_ids.get(String(owner_id), ""))
+		if not source_id.is_empty():
+			cell["source_id"] = source_id
+		output.append(cell)
+
+func _owner_source_ids(world_data: Dictionary) -> Dictionary:
+	var sources := {}
+	for reservation in world_data.get("reservations", []):
+		var owner_id := String(reservation.get("owner_id", ""))
+		var metadata: Dictionary = reservation.get("metadata", {})
+		var source_id := String(metadata.get("source_id", ""))
+		if not owner_id.is_empty() and not source_id.is_empty():
+			sources[owner_id] = source_id
+	return sources

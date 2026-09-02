@@ -23,6 +23,7 @@ class MovementPlayer:
 func run(asserts) -> void:
 	var catalog := DataCatalog.new()
 	asserts.true_value(catalog.load_from_directory("res://data/generated").ok, "runtime acquisition fixture loads generated definitions")
+	_assert_main_generates_current_mountain_biome(asserts, catalog)
 	var runtime := _configured_runtime(catalog, RunState.new())
 	asserts.true_value(runtime.result.ok, "main configures acquisition against generated world data: %s" % runtime.result.get("error", ""))
 	if not runtime.result.ok:
@@ -123,6 +124,29 @@ func run(asserts) -> void:
 	movement_runtime.main.free()
 	restored.main.free()
 	drop_restored.main.free()
+
+func _assert_main_generates_current_mountain_biome(asserts, catalog: DataCatalog) -> void:
+	var state := RunState.new()
+	state.current_biome_id = "mountain_region"
+	state.teleport_states = {"common_region": "repaired", "mountain_region": "broken"}
+	var runtime := Main.new()
+	var combat_source := DropSource.new()
+	var world_root := Node2D.new()
+	runtime.catalog = catalog
+	runtime.run_state = state
+	runtime.combat_dummy = combat_source
+	runtime.world_visuals = world_root
+	var services: Dictionary = runtime._configure_run_services(catalog)
+	asserts.true_value(services.ok, "mountain runtime fixture configures run services")
+	if services.ok:
+		var result: Dictionary = runtime._configure_world_for_current_run()
+		asserts.true_value(result.ok, "main configures generated world for current mountain biome: %s" % result.get("error", ""))
+		asserts.equal(runtime.generated_world.get("biome_id", ""), "mountain_region", "main uses current_biome_id instead of hard-coded common_region")
+		asserts.equal(runtime.generated_world.get("biome_generation_rule_id", ""), "mountain_region", "main feeds the mountain definition into WorldGenerator")
+		asserts.true_value(runtime.world_render_result.get("ok", false), "mountain runtime render uses generated renderer input")
+	runtime.free()
+	combat_source.free()
+	world_root.free()
 
 func _configured_runtime(catalog, state: RunState, resource_position := Vector2i.ZERO) -> Dictionary:
 	var runtime := Main.new()
