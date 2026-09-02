@@ -26,6 +26,7 @@ const RUN_FIELD_TYPES := {
 	"dungeon_runtime_state": TYPE_DICTIONARY,
 	"teleport_states": TYPE_DICTIONARY,
 	"repaired_teleports": TYPE_ARRAY,
+	"map_discovery": TYPE_DICTIONARY,
 	"crafting_unlocks": TYPE_ARRAY,
 	"narrative_flags": TYPE_ARRAY,
 	"narrative_event_counts": TYPE_DICTIONARY,

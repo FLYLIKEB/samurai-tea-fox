@@ -39,5 +39,7 @@ func command_for_button(button_id: String, direction := Vector2i.ZERO, slot := 0
 			return GameCommand.new(GameCommand.Type.OPEN_CRAFTING)
 		"open_facilities":
 			return GameCommand.new(GameCommand.Type.OPEN_FACILITIES)
+		"open_map":
+			return GameCommand.new(GameCommand.Type.OPEN_MAP)
 		_:
 			return null

@@ -29,6 +29,9 @@ var render_result: Dictionary = {}
 var catalog
 var inventory
 var inventory_command_runtime
+var map_read_model_builder
+var world_data
+var run_state
 var tea_service
 var crafting_service
 var crafting_context: Dictionary = {}
@@ -57,6 +60,9 @@ func configure(player_node, generated_world: Dictionary, generated_render_result
 		catalog = runtime_context.get("catalog", null)
 		inventory = runtime_context.get("inventory", null)
 		inventory_command_runtime = runtime_context.get("inventory_command_runtime", null)
+		map_read_model_builder = runtime_context.get("map_read_model_builder", null)
+		world_data = runtime_context.get("world_data", null)
+		run_state = runtime_context.get("run_state", null)
 		tea_service = runtime_context.get("tea_service", null)
 		crafting_service = runtime_context.get("crafting_service", null)
 		crafting_context = runtime_context.get("crafting_context", {}).duplicate(true)
@@ -88,7 +94,8 @@ func runtime_read_model() -> Dictionary:
 		"time_progress_percent": _time_progress_percent(),
 		"biome_label": _biome_label(String(world.get("biome_id", "common_region"))),
 		"terrain_count": _render_count("terrain"),
-		"object_count": _render_count("entities") + _render_count("Landmarks")
+		"object_count": _render_count("entities") + _render_count("Landmarks"),
+		"minimap": _minimap_read_model()
 	}
 
 func press_mobile_button(button_id: String, direction := Vector2i.ZERO, slot := 0) -> bool:
@@ -111,6 +118,11 @@ func show_crafting_menu() -> bool:
 func show_facilities_menu() -> bool:
 	_open_menu_id = "facilities"
 	_show_menu("시설", _facility_rows())
+	return true
+
+func show_map_menu() -> bool:
+	_open_menu_id = "map"
+	_show_menu("지도", _map_rows())
 	return true
 
 func hide_menu() -> bool:
@@ -177,6 +189,8 @@ func _build() -> void:
 	_labels.time = _add_icon_row(map_rows, "res://assets/ui/icons/atlas/moon.png", "낮 0%")
 	_labels.map_stats = _label("타일 0 · 사물 0", 11)
 	map_rows.add_child(_labels.map_stats)
+	_labels.minimap = _label("", 9)
+	map_rows.add_child(_labels.minimap)
 
 	var quickslot_panel := _panel(Vector2(304, 42))
 	quickslot_panel.name = "QuickSlotPanel"
@@ -228,11 +242,13 @@ func _update() -> void:
 	if time_label != null:
 		time_label.get_parent().visible = time_state != null
 	var map_panel := _panels.get("map") as Control
-	var map_height := 78.0 if time_state != null else 54.0
+	var map_height := 118.0 if time_state != null else 94.0
 	if map_panel != null and not is_equal_approx(map_panel.custom_minimum_size.y, map_height):
 		map_panel.custom_minimum_size.y = map_height
 		_apply_safe_area_layout()
-	_set_label("map_stats", "타일 %d · 사물 %d" % [model.terrain_count, model.object_count])
+	var minimap: Dictionary = model.get("minimap", {})
+	_set_label("map_stats", "발견 %d · 표식 %d" % [int(minimap.get("discovered_count", 0)), int(minimap.get("marker_count", 0))] if bool(minimap.get("ok", false)) else "타일 %d · 사물 %d" % [model.terrain_count, model.object_count])
+	_set_label("minimap", _minimap_text(minimap.get("minimap", {})) if bool(minimap.get("ok", false)) else "")
 	_set_label("inventory", "%d / %d" % [model.inventory_used_slots, model.inventory_slot_count])
 	_set_label("tea_slots", "%d / %d" % [model.tea_ready_slots, model.tea_quickslot_count])
 	_set_label("consumable", "준비" if model.consumable_ready else "없음")
@@ -320,6 +336,7 @@ func _rebuild_action_buttons() -> void:
 	for slot in range(_balance_integer(BALANCE_ABILITY_SLOTS_ID)):
 		_add_text_action(_action_grid, "AbilityButton%d" % (slot + 1), ICON_ABILITY, "요술%d" % (slot + 1), "cast_ability", Vector2i.ZERO, slot)
 	_add_text_action(_action_grid, "InventoryButton", ICON_BAG, "가방", "open_inventory", Vector2i.ZERO, 0)
+	_add_text_action(_action_grid, "MapButton", ICON_MAP, "지도", "open_map", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "CraftingButton", ICON_CONSUMABLE, "제작", "open_crafting", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "FacilitiesButton", ICON_MAP, "시설", "open_facilities", Vector2i.ZERO, 0)
 	var row_count := maxi(1, int(ceil(float(_action_grid.get_child_count()) / float(_action_grid.columns))))
@@ -416,6 +433,8 @@ func _refresh_open_menu() -> void:
 			_show_menu("제작법", _crafting_rows())
 		"facilities":
 			_show_menu("시설", _facility_rows())
+		"map":
+			_show_menu("지도", _map_rows())
 
 func _inventory_rows() -> Array:
 	var rows: Array = []
@@ -518,6 +537,107 @@ func _facility_rows() -> Array:
 			int(position.get("y", 0))
 		], 11))
 	return rows
+
+func _map_rows() -> Array:
+	var rows: Array = []
+	var model := _map_read_model({"minimap_width": 21, "minimap_height": 13})
+	if not bool(model.get("ok", false)):
+		rows.append(_label("지도 read model 없음", 11))
+		return rows
+	var bounds: Dictionary = model.bounds
+	rows.append(_label("지도 %dx%d · 발견 %d · 안개 %d" % [int(bounds.width), int(bounds.height), int(model.discovered_count), int(model.fog_count)], 11))
+	rows.append(_label("플레이어 (%d,%d)" % [int(model.player.position.x), int(model.player.position.y)], 11))
+	for line in _minimap_text_lines(model.minimap):
+		rows.append(_label(line, 9))
+	var markers: Array = model.markers
+	for index in range(mini(markers.size(), 8)):
+		var marker: Dictionary = markers[index]
+		var position: Dictionary = marker.position
+		rows.append(_label("%s %s (%d,%d)%s" % [
+			_marker_label(String(marker.marker_type)),
+			String(marker.id),
+			int(position.x),
+			int(position.y),
+			"" if bool(marker.get("discovered", true)) else " · 미발견"
+		], 10))
+	if markers.size() > 8:
+		rows.append(_label("… 표식 %d개 더 있음" % (markers.size() - 8), 10))
+	return rows
+
+func _minimap_read_model() -> Dictionary:
+	var model := _map_read_model({"minimap_width": 11, "minimap_height": 7})
+	if not bool(model.get("ok", false)):
+		return model
+	return {
+		"ok": true,
+		"discovered_count": int(model.discovered_count),
+		"marker_count": _array_value(model.get("markers", [])).size(),
+		"minimap": model.minimap
+	}
+
+func _map_read_model(options := {}) -> Dictionary:
+	if map_read_model_builder == null or not map_read_model_builder.has_method("build"):
+		return {"ok": false, "reason": "missing_map_read_model_builder"}
+	return map_read_model_builder.build(world_data if world_data != null else world, run_state, _player_cell(), options)
+
+func _player_cell() -> Vector2i:
+	var position := Vector2.ZERO
+	if player != null and player.has_method("get"):
+		position = player.get("global_position")
+	var tile_size := 32
+	if world_data != null and world_data.has_method("get"):
+		tile_size = max(1, int(world_data.get("tile_size")))
+	return Vector2i(int(floor(position.x / float(tile_size))), int(floor(position.y / float(tile_size))))
+
+func _marker_label(marker_type: String) -> String:
+	match marker_type:
+		"player":
+			return "플레이어"
+		"dungeon":
+			return "던전"
+		"teleport":
+			return "텔레포트"
+		_:
+			return "표식"
+
+func _minimap_text(minimap: Dictionary) -> String:
+	var lines := _minimap_text_lines(minimap)
+	return "\n".join(lines)
+
+func _minimap_text_lines(minimap: Dictionary) -> Array:
+	if minimap.is_empty() or typeof(minimap.get("cells", [])) != TYPE_ARRAY:
+		return []
+	var origin: Dictionary = minimap.get("origin", {})
+	var size: Dictionary = minimap.get("size", {})
+	var width := int(size.get("width", 0))
+	var height := int(size.get("height", 0))
+	if width <= 0 or height <= 0:
+		return []
+	var glyphs := {}
+	for cell in minimap.cells:
+		var position: Dictionary = cell.get("position", {})
+		glyphs["%d,%d" % [int(position.x), int(position.y)]] = "?" if bool(cell.get("fog", true)) else "."
+	for marker in _array_value(minimap.get("markers", [])):
+		var position: Dictionary = marker.get("position", {})
+		glyphs["%d,%d" % [int(position.x), int(position.y)]] = _marker_glyph(String(marker.get("marker_type", "")))
+	var lines := []
+	for y in range(int(origin.get("y", 0)), int(origin.get("y", 0)) + height):
+		var line := ""
+		for x in range(int(origin.get("x", 0)), int(origin.get("x", 0)) + width):
+			line += String(glyphs.get("%d,%d" % [x, y], "?"))
+		lines.append(line)
+	return lines
+
+func _marker_glyph(marker_type: String) -> String:
+	match marker_type:
+		"player":
+			return "@"
+		"dungeon":
+			return "D"
+		"teleport":
+			return "T"
+		_:
+			return "L"
 
 func _inventory_definition(item_id: String) -> Dictionary:
 	if inventory != null and inventory.has_method("definition_for"):
@@ -786,6 +906,11 @@ func _object_property(object, property: String, fallback = null):
 		return fallback
 	var value = object.get(property)
 	return fallback if value == null else value
+
+func _array_value(value) -> Array:
+	if typeof(value) != TYPE_ARRAY:
+		return []
+	return value.duplicate(true)
 
 func _load_texture(path: String) -> Texture2D:
 	if ResourceLoader.exists(path, "Texture2D"):
