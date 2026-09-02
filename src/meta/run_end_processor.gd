@@ -21,12 +21,18 @@ const CONDITION_TYPES := [
 const REWARD_KINDS := [REWARD_UNLOCK_FLAG, REWARD_DIALOGUE_MEMORY_FLAG, REWARD_DISCOVERED_RECORD]
 
 func apply_run_end(meta_state: Dictionary, run_summary: Dictionary) -> Dictionary:
+	var validation := _validate_previous_run_inputs(run_summary)
+	if not validation.ok:
+		return validation
 	var next_meta := _prepare_next_meta(meta_state, run_summary)
 	for flag in run_summary.get("earned_meta_flags", []):
 		_append_unique(next_meta.unlocked_meta_flags, String(flag))
 	return next_meta
 
 func apply_run_end_with_unlocks(meta_state: Dictionary, run_summary: Dictionary, unlock_definitions: Array) -> Dictionary:
+	var validation := _validate_previous_run_inputs(run_summary)
+	if not validation.ok:
+		return validation
 	var next_meta := _prepare_next_meta(meta_state, run_summary)
 	var events := _events_from_run_summary(run_summary)
 	var allowed_counter_targets := _cumulative_counter_targets(unlock_definitions)
@@ -39,7 +45,11 @@ func apply_run_end_with_unlocks(meta_state: Dictionary, run_summary: Dictionary,
 		var definition_id := String(definition.get("id", ""))
 		if next_meta.unlocked_meta_flags.has(definition_id):
 			continue
-		var condition := _definition_condition(definition)
+		var condition_shape := _definition_condition(definition)
+		if not condition_shape.ok:
+			condition_shape["definition_id"] = definition_id
+			return condition_shape
+		var condition: Dictionary = condition_shape.condition
 		var condition_result := _condition_passes(condition, next_meta, events)
 		if not condition_result.ok:
 			condition_result["definition_id"] = definition_id
@@ -115,12 +125,15 @@ func _prepare_next_meta(meta_state: Dictionary, run_summary: Dictionary) -> Dict
 	return next_meta
 
 func _definition_condition(definition: Dictionary) -> Dictionary:
-	return {
+	var threshold = definition.get("threshold", null)
+	if threshold == null or not _is_non_negative_integer(threshold):
+		return _failure("invalid_condition_threshold", "Meta unlock condition threshold must be a non-negative integer.")
+	return {"ok": true, "condition": {
 		"type": String(definition.get("condition_event", definition.get("condition_kind", definition.get("condition_type", "")))),
 		"target": String(definition.get("condition_target", "")),
 		"operator": String(definition.get("condition_operator", "equals")),
-		"threshold": int(definition.get("threshold", 1))
-	}
+		"threshold": int(threshold)
+	}}
 
 func _definition_reward(definition: Dictionary) -> Dictionary:
 	return {
@@ -206,7 +219,10 @@ func _cumulative_counter_targets(unlock_definitions: Array) -> Dictionary:
 		var definition_id := String(definition.get("id", ""))
 		if definition_id.is_empty():
 			return _failure("missing_definition_id", "Meta unlock definition is missing id.")
-		var condition := _definition_condition(definition)
+		var condition_result := _definition_condition(definition)
+		if not condition_result.ok:
+			return condition_result
+		var condition: Dictionary = condition_result.condition
 		if String(condition.type) == CONDITION_CUMULATIVE_EVENT_COUNT_AT_LEAST:
 			var target := _counter_key(String(condition.target))
 			if not target.is_empty():
@@ -259,6 +275,41 @@ func _compare(actual: int, condition: Dictionary) -> bool:
 
 func _counter_key(event_key: String) -> String:
 	return event_key
+
+func _validate_previous_run_inputs(run_summary: Dictionary) -> Dictionary:
+	for field in ["past_choice_ids", "choice_history", "reached_place_ids", "reached_biome_ids", "death_record_ids"]:
+		if run_summary.has(field):
+			var result := _validate_stable_id_array(run_summary[field], field)
+			if not result.ok:
+				return result
+	for field in ["current_biome_id", "death_record_id"]:
+		if run_summary.has(field):
+			var value := String(run_summary.get(field, ""))
+			if not value.is_empty() and not _is_stable_id(value):
+				return _failure("invalid_run_summary_stable_id", "Run summary field '%s' must be a stable id." % field)
+	return {"ok": true}
+
+func _validate_stable_id_array(value, field: String) -> Dictionary:
+	if typeof(value) != TYPE_ARRAY:
+		return _failure("invalid_run_summary_stable_id_array", "Run summary field '%s' must be an array of stable ids." % field)
+	for entry in value:
+		if typeof(entry) != TYPE_STRING or not _is_stable_id(String(entry)):
+			return _failure("invalid_run_summary_stable_id", "Run summary field '%s' contains a malformed stable id." % field)
+	return {"ok": true}
+
+func _is_non_negative_integer(value) -> bool:
+	if typeof(value) == TYPE_INT:
+		return int(value) >= 0
+	if typeof(value) == TYPE_FLOAT:
+		return is_equal_approx(float(value), floor(float(value))) and int(value) >= 0
+	return false
+
+func _is_stable_id(value: String) -> bool:
+	if value.is_empty():
+		return false
+	var id_pattern := RegEx.new()
+	id_pattern.compile("^[a-z][a-z0-9_]*$")
+	return id_pattern.search(value) != null
 
 func _append_unique(values: Array, id: String) -> void:
 	if id.is_empty():
