@@ -8,8 +8,18 @@ const HAS_ITEM := "has_item"
 const META_FLAG := "meta_flag"
 const META_NOT_FLAG := "meta_not_flag"
 const META_RUN_COUNT_AT_LEAST := "meta_run_count_at_least"
+const META_PAST_CHOICE := "meta_past_choice"
+const META_REACHED_PLACE := "meta_reached_place"
+const META_DEATH_RECORD := "meta_death_record"
 
-const META_CONDITION_TYPES := [META_FLAG, META_NOT_FLAG, META_RUN_COUNT_AT_LEAST]
+const META_CONDITION_TYPES := [
+	META_FLAG,
+	META_NOT_FLAG,
+	META_RUN_COUNT_AT_LEAST,
+	META_PAST_CHOICE,
+	META_REACHED_PLACE,
+	META_DEATH_RECORD
+]
 
 func resolve(condition: Dictionary, run_query: Dictionary, meta_query := {}) -> Dictionary:
 	if condition.is_empty():
@@ -32,6 +42,12 @@ func resolve(condition: Dictionary, run_query: Dictionary, meta_query := {}) -> 
 			return {"ok": true, "passed": not (_has_string(meta_query.get("dialogue_memory_flags", []), String(condition.get("id", ""))) or _has_string(meta_query.get("unlocked_meta_flags", []), String(condition.get("id", ""))))}
 		META_RUN_COUNT_AT_LEAST:
 			return {"ok": true, "passed": int(meta_query.get("run_count", 0)) >= int(condition.get("value", 0))}
+		META_PAST_CHOICE:
+			return {"ok": true, "passed": _has_string(meta_query.get("past_choice_ids", []), String(condition.get("id", "")))}
+		META_REACHED_PLACE:
+			return {"ok": true, "passed": _has_string(meta_query.get("reached_place_ids", []), String(condition.get("id", "")))}
+		META_DEATH_RECORD:
+			return {"ok": true, "passed": _has_string(meta_query.get("death_record_ids", []), String(condition.get("id", "")))}
 	return {"ok": false, "passed": false, "reason": "unknown_condition_type", "error": "Unknown narrative condition type '%s'." % condition_type}
 
 func requires_meta(condition: Dictionary) -> bool:

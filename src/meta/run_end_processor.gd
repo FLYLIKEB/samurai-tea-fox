@@ -93,6 +93,19 @@ func _prepare_next_meta(meta_state: Dictionary, run_summary: Dictionary) -> Dict
 		next_meta["dialogue_memory_flags"] = []
 	if typeof(next_meta.get("meta_unlock_counters", {})) != TYPE_DICTIONARY:
 		next_meta["meta_unlock_counters"] = {}
+	for field in ["past_choice_ids", "reached_place_ids", "death_record_ids"]:
+		if typeof(next_meta.get(field, [])) != TYPE_ARRAY:
+			next_meta[field] = []
+
+	_append_ids(next_meta.past_choice_ids, run_summary.get("past_choice_ids", []))
+	_append_ids(next_meta.past_choice_ids, run_summary.get("choice_history", []))
+	_append_ids(next_meta.reached_place_ids, run_summary.get("reached_place_ids", []))
+	_append_ids(next_meta.reached_place_ids, run_summary.get("reached_biome_ids", []))
+	_append_unique(next_meta.reached_place_ids, String(run_summary.get("current_biome_id", "")))
+	if bool(run_summary.get("final_tea_room_reached", false)):
+		_append_unique(next_meta.reached_place_ids, "final_tea_room")
+	_append_ids(next_meta.death_record_ids, run_summary.get("death_record_ids", []))
+	_append_unique(next_meta.death_record_ids, String(run_summary.get("death_record_id", "")))
 
 	next_meta["run_count"] = int(next_meta.get("run_count", 0)) + 1
 	next_meta["best_reached_biome_order"] = max(
@@ -252,6 +265,13 @@ func _append_unique(values: Array, id: String) -> void:
 		return
 	if not values.has(id):
 		values.append(id)
+
+func _append_ids(values: Array, ids) -> void:
+	if typeof(ids) != TYPE_ARRAY:
+		return
+	for id in ids:
+		if typeof(id) == TYPE_STRING:
+			_append_unique(values, id)
 
 func _array_value(value) -> Array:
 	if typeof(value) != TYPE_ARRAY:

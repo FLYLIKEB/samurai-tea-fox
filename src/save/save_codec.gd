@@ -44,7 +44,10 @@ const META_FIELD_TYPES := {
 	"discovered_records": TYPE_ARRAY,
 	"unlocked_meta_flags": TYPE_ARRAY,
 	"dialogue_memory_flags": TYPE_ARRAY,
-	"meta_unlock_counters": TYPE_DICTIONARY
+	"meta_unlock_counters": TYPE_DICTIONARY,
+	"past_choice_ids": TYPE_ARRAY,
+	"reached_place_ids": TYPE_ARRAY,
+	"death_record_ids": TYPE_ARRAY
 }
 
 const REQUIRED_FIELDS := {
