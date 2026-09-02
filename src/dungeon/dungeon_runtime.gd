@@ -98,6 +98,18 @@ func complete_dungeon(completion_payload: Dictionary) -> Dictionary:
 		"projection": to_projection()
 	}
 
+func complete_boss_encounter(resolution_event: Dictionary) -> Dictionary:
+	if String(resolution_event.get("event_type", "")) != "boss_encounter_resolved":
+		return _fail("invalid_boss_resolution", "Dungeon runtime requires the common boss resolution event.")
+	if String(resolution_event.get("dungeon_id", "")) != String(to_projection().get("dungeon_id", "")):
+		return _fail("invalid_boss_resolution", "Boss resolution must match the active dungeon.")
+	var resolution_type := String(resolution_event.get("resolution_type", ""))
+	if not ["combat", "peaceful"].has(resolution_type):
+		return _fail("invalid_boss_resolution", "Only combat or peaceful boss outcomes clear a dungeon.")
+	var completion_payload := resolution_event.duplicate(true)
+	completion_payload["objective_complete"] = true
+	return complete_dungeon(completion_payload)
+
 func begin_return() -> Dictionary:
 	var transition := _require_state(DungeonInstanceState.STATE_COMPLETED, "invalid_return_transition")
 	if not transition.ok:

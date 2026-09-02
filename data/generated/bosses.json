@@ -1,0 +1,112 @@
+{
+  "content_hash": "bd4c2419854fa11db91004f5d14e639b6e47d3435e8b58a83cb8a65916c0ebde",
+  "data_version": "notion-2026-09-01",
+  "items": [
+    {
+      "biome_id": "common_region",
+      "dungeon_id": "sample_bamboo_trial",
+      "id": "sample_bamboo_guardian",
+      "max_hp": 120,
+      "name": "대나무 수문장 (런타임 샘플)",
+      "phases": [
+        {
+          "health_ratio_threshold": 1.0,
+          "id": "opening",
+          "patterns": [
+            {
+              "id": "sweeping_strike",
+              "interval_seconds": 1.0,
+              "summon_monster_ids": []
+            },
+            {
+              "id": "bandit_call",
+              "interval_seconds": 2.0,
+              "summon_monster_ids": [
+                "road_bandit"
+              ]
+            }
+          ]
+        },
+        {
+          "health_ratio_threshold": 0.5,
+          "id": "desperate",
+          "patterns": [
+            {
+              "id": "rapid_sweep",
+              "interval_seconds": 0.75,
+              "summon_monster_ids": []
+            }
+          ]
+        }
+      ],
+      "progression_unlock_ids": [
+        "common_region"
+      ],
+      "resolution_types": [
+        "combat",
+        "peaceful"
+      ],
+      "reward_item_ids": [
+        "humble_clay_bowl"
+      ],
+      "status": "테스트",
+      "summon_monster_ids": [
+        "road_bandit"
+      ]
+    },
+    {
+      "biome_id": "wasteland",
+      "dungeon_id": "sample_ash_trial",
+      "id": "sample_ash_warden",
+      "max_hp": 180,
+      "name": "잿빛 문지기 (런타임 샘플)",
+      "phases": [
+        {
+          "health_ratio_threshold": 1.0,
+          "id": "watch",
+          "patterns": [
+            {
+              "id": "ash_wave",
+              "interval_seconds": 1.5,
+              "summon_monster_ids": []
+            }
+          ]
+        },
+        {
+          "health_ratio_threshold": 0.4,
+          "id": "flock",
+          "patterns": [
+            {
+              "id": "crow_call",
+              "interval_seconds": 2.5,
+              "summon_monster_ids": [
+                "ash_crow_flock"
+              ]
+            },
+            {
+              "id": "iron_guard",
+              "interval_seconds": 1.0,
+              "summon_monster_ids": []
+            }
+          ]
+        }
+      ],
+      "progression_unlock_ids": [
+        "wasteland"
+      ],
+      "resolution_types": [
+        "combat"
+      ],
+      "reward_item_ids": [
+        "ash_stained_iron_kettle"
+      ],
+      "status": "테스트",
+      "summon_monster_ids": [
+        "ash_crow_flock"
+      ]
+    }
+  ],
+  "profile": "confirmed-test",
+  "schema_version": 1,
+  "source": "fixture://dev_28_boss_runtime"
+}

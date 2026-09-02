@@ -17,6 +17,8 @@ func run(asserts) -> void:
 	asserts.equal(catalog.sources.get("shops", ""), "collection://3f6354ff-02fb-4b92-9b81-9f821ae6408b", "authoritative shop table source is registered")
 	asserts.equal(catalog.get_definitions("shops").size(), 14, "all authoritative shop rows load")
 	asserts.equal(catalog.find_by_id("shops", "shop_14").get("sell_price", 0), 25, "shop sell price is explicit generated data")
+	asserts.equal(catalog.get_definitions("bosses").size(), 2, "two boss runtime sample definitions are present")
+	asserts.equal(catalog.find_by_id("bosses", "sample_bamboo_guardian").get("dungeon_id", ""), "sample_bamboo_trial", "boss definition keeps its stable dungeon id")
 
 	var validator := DataSchemaValidator.new()
 	var duplicate_result := validator.validate_export_file({
