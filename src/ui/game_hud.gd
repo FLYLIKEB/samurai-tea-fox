@@ -28,6 +28,7 @@ var world: Dictionary = {}
 var render_result: Dictionary = {}
 var catalog
 var inventory
+var inventory_command_runtime
 var tea_service
 var crafting_service
 var crafting_context: Dictionary = {}
@@ -55,6 +56,7 @@ func configure(player_node, generated_world: Dictionary, generated_render_result
 	if typeof(runtime_context) == TYPE_DICTIONARY:
 		catalog = runtime_context.get("catalog", null)
 		inventory = runtime_context.get("inventory", null)
+		inventory_command_runtime = runtime_context.get("inventory_command_runtime", null)
 		tea_service = runtime_context.get("tea_service", null)
 		crafting_service = runtime_context.get("crafting_service", null)
 		crafting_context = runtime_context.get("crafting_context", {}).duplicate(true)
@@ -242,6 +244,7 @@ func _bind_runtime_signals() -> void:
 	_connect_runtime_signal(resources, &"ki_changed", Callable(self, "_on_resources_changed"))
 	_connect_runtime_signal(resources, &"kokoro_changed", Callable(self, "_on_resources_changed"))
 	_connect_runtime_signal(inventory, &"changed", Callable(self, "_on_snapshot_changed"))
+	_connect_runtime_signal(inventory_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
 	_connect_runtime_signal(tea_service, &"changed", Callable(self, "_on_snapshot_changed"))
 	_connect_runtime_signal(time_state, &"phase_changed", Callable(self, "_on_phase_changed"))
 
@@ -251,6 +254,7 @@ func _unbind_runtime_signals() -> void:
 	_disconnect_runtime_signal(resources, &"ki_changed", Callable(self, "_on_resources_changed"))
 	_disconnect_runtime_signal(resources, &"kokoro_changed", Callable(self, "_on_resources_changed"))
 	_disconnect_runtime_signal(inventory, &"changed", Callable(self, "_on_snapshot_changed"))
+	_disconnect_runtime_signal(inventory_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
 	_disconnect_runtime_signal(tea_service, &"changed", Callable(self, "_on_snapshot_changed"))
 	_disconnect_runtime_signal(time_state, &"phase_changed", Callable(self, "_on_phase_changed"))
 
@@ -415,20 +419,60 @@ func _refresh_open_menu() -> void:
 
 func _inventory_rows() -> Array:
 	var rows: Array = []
-	var slots = _object_property(inventory, "slots", [])
-	if typeof(slots) != TYPE_ARRAY:
+	if inventory_command_runtime != null and inventory_command_runtime.has_method("read_model"):
+		var model: Dictionary = inventory_command_runtime.read_model()
+		rows.append(_label("가방 %d/%d · 필터 %s" % [int(model.capacity.used), int(model.capacity.total), String(model.filter_kind)], 11))
+		var toolbar := HBoxContainer.new()
+		_ignore_mouse(toolbar)
+		toolbar.add_theme_constant_override("separation", 4)
+		toolbar.add_child(_inventory_command_button("이전", GameCommand.new(GameCommand.Type.INVENTORY_NAVIGATE, Vector2i.LEFT)))
+		toolbar.add_child(_inventory_command_button("다음", GameCommand.new(GameCommand.Type.INVENTORY_NAVIGATE, Vector2i.RIGHT)))
+		toolbar.add_child(_inventory_command_button("정렬", GameCommand.new(GameCommand.Type.INVENTORY_SORT)))
+		for kind in model.available_filters:
+			toolbar.add_child(_inventory_command_button(String(kind), GameCommand.new(GameCommand.Type.INVENTORY_SET_FILTER, Vector2i.ZERO, -1, {"kind": kind})))
+		rows.append(toolbar)
+		var visible_rows: Array = model.slots
+		var page_start := _inventory_page_start(visible_rows, int(model.get("selected_slot_index", -1)), 6)
+		var page_end := mini(visible_rows.size(), page_start + 6)
+		for row_index in range(page_start, page_end):
+			var row: Dictionary = visible_rows[row_index]
+			var line := HBoxContainer.new()
+			_ignore_mouse(line)
+			line.add_theme_constant_override("separation", 4)
+			var prefix := "▶ " if bool(row.get("selected", false)) else ""
+			line.add_child(_label("%s%s" % [prefix, String(row.get("label", ""))], 11))
+			line.add_child(_inventory_command_button("선택", GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, int(row.slot_index), {"slot_index": int(row.slot_index)})))
+			if bool(row.get("can_use", false)):
+				line.add_child(_inventory_command_button("사용", GameCommand.new(GameCommand.Type.USE_INVENTORY_SLOT, Vector2i.ZERO, int(row.slot_index), {"slot_index": int(row.slot_index)})))
+			if bool(row.get("can_equip", false)):
+				line.add_child(_inventory_command_button("장착", GameCommand.new(GameCommand.Type.EQUIP_INVENTORY_SLOT, Vector2i.ZERO, int(row.slot_index), {"slot_index": int(row.slot_index)})))
+			rows.append(line)
+		if visible_rows.size() > 6:
+			rows.append(_label("%d-%d / %d" % [page_start + 1, page_end, visible_rows.size()], 11))
 		return rows
-	for index in range(mini(slots.size(), 6)):
-		var slot = slots[index]
-		if typeof(slot) != TYPE_DICTIONARY or slot.is_empty():
-			rows.append(_label("%02d 빈 슬롯" % (index + 1), 11))
-			continue
-		var item_id := String(slot.get("item_id", ""))
-		var definition := _inventory_definition(item_id)
-		rows.append(_label("%02d %s x%d" % [index + 1, String(definition.get("name", item_id)), int(slot.get("quantity", 0))], 11))
-	if slots.size() > 6:
-		rows.append(_label("… %d칸 더 있음" % (slots.size() - 6), 11))
+	rows.append(_label("인벤토리 read model 없음", 11))
 	return rows
+
+func _inventory_command_button(text: String, command: GameCommand) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(44, 28)
+	button.focus_mode = Control.FOCUS_ALL
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.pressed.connect(func(): mobile_command_issued.emit(command))
+	return button
+
+func _inventory_page_start(rows: Array, selected_slot_index: int, page_size: int) -> int:
+	if rows.size() <= page_size:
+		return 0
+	var selected_position := -1
+	for index in range(rows.size()):
+		if int(rows[index].get("slot_index", -1)) == selected_slot_index:
+			selected_position = index
+			break
+	if selected_position < 0:
+		return 0
+	return clampi(selected_position - 2, 0, rows.size() - page_size)
 
 func _crafting_rows() -> Array:
 	var rows: Array = []

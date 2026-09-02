@@ -46,6 +46,27 @@ class FakeInventory:
 				total += int(slot.get("quantity", 0))
 		return total
 
+class FakeInventoryCommandRuntime:
+	signal read_model_changed(read_model: Dictionary)
+
+	func read_model() -> Dictionary:
+		return {
+			"schema_version": 1,
+			"data_version": "hud-fixture",
+			"read_only": true,
+			"filter_kind": "all",
+			"sort_mode": "kind_name",
+			"selected_slot_index": 0,
+			"capacity": {"used": 2, "total": 14, "empty": 12, "full": false},
+			"available_filters": ["all", "재료", "소모품"],
+			"equipment": {},
+			"slots": [
+				{"slot_index": 0, "empty": false, "selected": true, "item_id": "wood", "name": "wood", "kind": "재료", "quantity": 3, "max_stack": 20, "stack_label": "3/20", "can_use": false, "can_equip": false, "label": "01 wood x3 (3/20)", "commands": {}},
+				{"slot_index": 1, "empty": true, "selected": false, "item_id": "", "name": "", "kind": "", "quantity": 0, "max_stack": 0, "stack_label": "0/0", "can_use": false, "can_equip": false, "label": "02 빈 슬롯", "commands": {}},
+				{"slot_index": 2, "empty": false, "selected": false, "item_id": "bandage", "name": "bandage", "kind": "소모품", "quantity": 1, "max_stack": 5, "stack_label": "1/5", "can_use": true, "can_equip": false, "label": "03 bandage x1 (1/5)", "commands": {}}
+			]
+		}
+
 class FakeTeaService:
 	signal changed(snapshot: Dictionary)
 
@@ -207,7 +228,7 @@ func _assert_dodge_control_does_not_use_baked_dash_asset(asserts) -> void:
 func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	var hud := _configured_hud()
 	asserts.true_value(hud.show_inventory_menu(), "HUD opens the inventory menu")
-	asserts.true_value(_tree_has_text(hud, "01 wood x3"), "inventory menu lists occupied runtime slots")
+	asserts.true_value(_tree_has_text(hud, "▶ 01 wood x3 (3/20)"), "inventory menu lists occupied runtime slots")
 	asserts.true_value(hud.show_facilities_menu(), "HUD opens the facilities menu")
 	asserts.true_value(_tree_has_text(hud, "우물 (4,5)"), "facilities menu lists generated facility nodes")
 	var received: Array = []
@@ -231,6 +252,7 @@ func _configured_hud() -> GameHud:
 	}, {"counts": {}}, {
 		"catalog": FakeCatalog.new(),
 		"inventory": FakeInventory.new(),
+		"inventory_command_runtime": FakeInventoryCommandRuntime.new(),
 		"tea_service": FakeTeaService.new(),
 		"crafting_service": FakeCraftingService.new(),
 		"crafting_context": {"unlocked_biome_ids": ["common_region"]},

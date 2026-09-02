@@ -7,6 +7,7 @@ const DungeonRuntime = preload("res://src/dungeon/dungeon_runtime.gd")
 const FinalRoomStateBuilder = preload("res://src/meta/final_room_state_builder.gd")
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const EquipmentModel = preload("res://src/inventory/equipment_model.gd")
+const InventoryCommandRuntime = preload("res://src/inventory/inventory_command_runtime.gd")
 const InventoryModel = preload("res://src/inventory/inventory_model.gd")
 const MovementCommandSelector = preload("res://src/core/commands/movement_command_selector.gd")
 const MemoryTeaCutsceneRuntime = preload("res://src/narrative/memory_tea_cutscene_runtime.gd")
@@ -25,6 +26,7 @@ const WorldSceneRenderer = preload("res://src/world/rendering/world_scene_render
 const RunLifecycleService = preload("res://src/save/run_lifecycle_service.gd")
 const SaveStore = preload("res://src/save/save_store.gd")
 const CraftingService = preload("res://src/crafting/crafting_service.gd")
+const ConsumableService = preload("res://src/consumable/consumable_service.gd")
 
 const DEFAULT_RUN_SEED := 11037
 const FRESH_RUN_SEED := 0
@@ -41,8 +43,10 @@ const FEEDBACK_BEEP_FREQUENCY := 880.0
 var catalog
 var inventory
 var equipment
+var inventory_command_runtime
 var tea_service
 var crafting_service
+var consumable_service
 var core_tea_ware_collection
 var final_room_state_builder
 var sen_rikyu_phase_one_runtime
@@ -154,6 +158,22 @@ func _physics_process(_delta: float) -> void:
 		submit_desktop_action_command("interact", desktop_command.direction)
 	if Input.is_action_just_pressed("open_inventory"):
 		submit_desktop_action_command("open_inventory")
+	if Input.is_action_just_pressed("inventory_next"):
+		submit_desktop_action_command("inventory_next")
+	if Input.is_action_just_pressed("inventory_previous"):
+		submit_desktop_action_command("inventory_previous")
+	if Input.is_action_just_pressed("inventory_sort"):
+		submit_desktop_action_command("inventory_sort")
+	if Input.is_action_just_pressed("inventory_use_selected"):
+		submit_desktop_action_command("inventory_use_selected", Vector2i.ZERO, _selected_inventory_slot_index())
+	if Input.is_action_just_pressed("inventory_equip_selected"):
+		submit_desktop_action_command("inventory_equip_selected", Vector2i.ZERO, _selected_inventory_slot_index())
+	if Input.is_action_just_pressed("inventory_filter_all"):
+		submit_desktop_action_command("inventory_filter_all")
+	if Input.is_action_just_pressed("inventory_filter_consumable"):
+		submit_desktop_action_command("inventory_filter_consumable")
+	if Input.is_action_just_pressed("inventory_filter_equipment"):
+		submit_desktop_action_command("inventory_filter_equipment")
 	if Input.is_action_just_pressed("open_crafting"):
 		submit_desktop_action_command("open_crafting")
 	if Input.is_action_just_pressed("open_facilities"):
@@ -271,6 +291,11 @@ func submit_action_command(command) -> bool:
 			if accepted:
 				_play_feedback_beep()
 			return accepted
+		GameCommand.Type.INVENTORY_SET_FILTER, GameCommand.Type.INVENTORY_SORT, GameCommand.Type.INVENTORY_SELECT_SLOT, GameCommand.Type.INVENTORY_NAVIGATE, GameCommand.Type.EQUIP_INVENTORY_SLOT, GameCommand.Type.UNEQUIP_SLOT, GameCommand.Type.USE_INVENTORY_SLOT:
+			var accepted: bool = _handle_inventory_command(command)
+			if accepted:
+				_play_feedback_beep()
+			return accepted
 		_:
 			if _sen_rikyu_phase_two_accepts_command(command):
 				var accepted: bool = _handle_sen_rikyu_phase_two_action(command)
@@ -292,6 +317,7 @@ func restore_run_state(state) -> Dictionary:
 	if not state is RunState:
 		return {"ok": false, "reason": "invalid_run_state", "error": "Main runtime requires a RunState."}
 	var inventory_before: Dictionary = inventory.to_snapshot() if inventory != null else {}
+	var equipment_before: Dictionary = equipment.to_snapshot() if equipment != null else {}
 	var acquisitions_before: Dictionary = acquisition_service.to_snapshot() if acquisition_service != null else {}
 	if inventory != null and not state.inventory.is_empty():
 		var inventory_result: Dictionary = inventory.load_snapshot(state.inventory)
@@ -302,12 +328,24 @@ func restore_run_state(state) -> Dictionary:
 		if not acquisition_result.ok:
 			if inventory != null and not inventory_before.is_empty():
 				inventory.load_snapshot(inventory_before)
+			if equipment != null and not equipment_before.is_empty():
+				equipment.load_snapshot(equipment_before)
 			if not acquisitions_before.is_empty():
 				acquisition_service.load_snapshot(acquisitions_before)
 			return acquisition_result
+	if equipment != null and not state.equipment.is_empty():
+		var equipment_result: Dictionary = equipment.load_snapshot(state.equipment)
+		if not equipment_result.ok:
+			if inventory != null and not inventory_before.is_empty():
+				inventory.load_snapshot(inventory_before)
+			return equipment_result
 	run_state = state
 	if inventory != null:
 		run_state.inventory = inventory.to_snapshot()
+	if equipment != null:
+		run_state.equipment = equipment.to_snapshot()
+	if equipment != null:
+		run_state.equipment = equipment.to_snapshot()
 	if acquisition_service != null:
 		run_state.acquisitions = acquisition_service.to_snapshot()
 	_configure_game_hud()
@@ -347,6 +385,9 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	var crafting_result: Dictionary = CraftingService.from_catalog(loaded_catalog)
 	if not crafting_result.ok:
 		return crafting_result
+	var consumable_result: Dictionary = ConsumableService.from_catalog(loaded_catalog)
+	if not consumable_result.ok and String(consumable_result.get("reason", "")) not in ["missing_balance", "missing_consumable_definitions"]:
+		return consumable_result
 	var core_tea_ware_result: Dictionary = CoreTeaWareCollection.from_catalog(loaded_catalog)
 	if not core_tea_ware_result.ok:
 		return core_tea_ware_result
@@ -359,8 +400,13 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 		if not inventory_load_result.ok:
 			return inventory_load_result
 	equipment = equipment_result.equipment
+	if run_state != null and not run_state.equipment.is_empty():
+		var equipment_load_result: Dictionary = equipment.load_snapshot(run_state.equipment)
+		if not equipment_load_result.ok:
+			return equipment_load_result
 	tea_service = tea_result.tea_service
 	crafting_service = crafting_result.crafting_service
+	consumable_service = consumable_result.consumable_service if consumable_result.ok else null
 	core_tea_ware_collection = core_tea_ware_result.collection
 	final_room_state_builder = final_room_result.builder
 	sen_rikyu_phase_one_runtime = null
@@ -385,6 +431,10 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	var ending_result: Dictionary = EndingRouteRuntime.from_catalog(loaded_catalog)
 	if ending_result.ok:
 		ending_route_runtime = ending_result.runtime
+	inventory_command_runtime = InventoryCommandRuntime.new()
+	var inventory_command_result: Dictionary = inventory_command_runtime.configure(inventory, equipment, consumable_service, loaded_catalog.data_version)
+	if not inventory_command_result.ok:
+		return inventory_command_result
 	tea_service.drink_completed.connect(_on_tea_drink_completed)
 	memory_tea_cutscene_runtime = MemoryTeaCutsceneRuntime.new()
 	var memory_runtime_result: Dictionary = memory_tea_cutscene_runtime.configure(loaded_catalog.data_version)
@@ -823,7 +873,46 @@ func _handle_craft_recipe_command(command: GameCommand) -> bool:
 			if result.ok
 			else "제작 불가: %s" % String(result.get("reason", "unknown"))
 		)
+	if result.ok:
+		_sync_inventory_runtime_state()
 	return bool(result.ok)
+
+func _handle_inventory_command(command: GameCommand) -> bool:
+	if inventory_command_runtime == null:
+		return false
+	var result: Dictionary = inventory_command_runtime.handle_command(command)
+	if game_hud != null:
+		game_hud.show_command_feedback(
+			"인벤토리 갱신"
+			if result.ok
+			else "인벤토리 명령 실패: %s" % String(result.get("reason", "unknown"))
+		)
+	if not result.ok:
+		return false
+	_sync_inventory_runtime_state()
+	if game_hud != null:
+		game_hud.show_inventory_menu()
+	return true
+
+func inventory_read_model() -> Dictionary:
+	if inventory_command_runtime == null:
+		return {"ok": false, "reason": "missing_inventory_command_runtime", "error": "Inventory command runtime is not configured."}
+	var model: Dictionary = inventory_command_runtime.read_model()
+	model["ok"] = true
+	return model
+
+func _selected_inventory_slot_index() -> int:
+	if inventory_command_runtime == null:
+		return -1
+	return int(inventory_command_runtime.read_model().get("selected_slot_index", -1))
+
+func _sync_inventory_runtime_state() -> void:
+	if run_state == null:
+		run_state = RunState.new()
+	if inventory != null:
+		run_state.inventory = inventory.to_snapshot()
+	if equipment != null:
+		run_state.equipment = equipment.to_snapshot()
 
 func _crafting_context() -> Dictionary:
 	return {
@@ -908,6 +997,7 @@ func _configure_game_hud() -> void:
 	game_hud.configure(player, generated_world, world_render_result, {
 		"catalog": catalog,
 		"inventory": inventory,
+		"inventory_command_runtime": inventory_command_runtime,
 		"tea_service": tea_service,
 		"crafting_service": crafting_service,
 		"crafting_context": _crafting_context()
