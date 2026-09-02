@@ -29,6 +29,7 @@ const TESTS := [
 	preload("res://tests/unit/test_meta_unlock_processor.gd"),
 	preload("res://tests/unit/test_final_room_state_builder.gd"),
 	preload("res://tests/unit/test_sen_rikyu_phase_one_runtime.gd"),
+	preload("res://tests/unit/test_sen_rikyu_phase_two_runtime.gd"),
 	preload("res://tests/unit/test_run_lifecycle_service.gd"),
 	preload("res://tests/unit/test_save_codec.gd"),
 	preload("res://tests/unit/test_save_store.gd"),

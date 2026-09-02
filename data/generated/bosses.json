@@ -1,7 +1,59 @@
 {
-  "content_hash": "8e6cd3af0d88a0e3020e522d1bae73431b5d99757339f24b4416075b56ae878a",
+  "content_hash": "8e6c9c09affe73a07447f73cd5874d3e573c6dae165a085924325159cd67370d",
   "data_version": "notion-2026-09-01",
   "items": [
+    {
+      "biome_id": "wasteland",
+      "dungeon_id": "dungeon_1",
+      "id": "sample_ash_warden",
+      "max_hp": 180,
+      "name": "잿빛 문지기 (런타임 샘플)",
+      "phases": [
+        {
+          "health_ratio_threshold": 1.0,
+          "id": "watch",
+          "patterns": [
+            {
+              "id": "ash_wave",
+              "interval_seconds": 1.5,
+              "summon_monster_ids": []
+            }
+          ]
+        },
+        {
+          "health_ratio_threshold": 0.4,
+          "id": "flock",
+          "patterns": [
+            {
+              "id": "crow_call",
+              "interval_seconds": 2.5,
+              "summon_monster_ids": [
+                "ash_crow_flock"
+              ]
+            },
+            {
+              "id": "iron_guard",
+              "interval_seconds": 1.0,
+              "summon_monster_ids": []
+            }
+          ]
+        }
+      ],
+      "progression_unlock_ids": [
+        "wasteland"
+      ],
+      "resolution_types": [
+        "combat"
+      ],
+      "reward_item_ids": [
+        "war_tea_caddy",
+        "old_incense_box"
+      ],
+      "status": "테스트",
+      "summon_monster_ids": [
+        "ash_crow_flock"
+      ]
+    },
     {
       "biome_id": "common_region",
       "dungeon_id": "dungeon_4",
@@ -57,55 +109,57 @@
       ]
     },
     {
-      "biome_id": "wasteland",
-      "dungeon_id": "dungeon_1",
-      "id": "sample_ash_warden",
-      "max_hp": 180,
-      "name": "잿빛 문지기 (런타임 샘플)",
+      "biome_id": "baekguk",
+      "dungeon_id": "final_tea_room",
+      "id": "sen_rikyu_phase_2",
+      "max_hp": 240,
+      "name": "센리큐 Phase 2 — 검 전투",
       "phases": [
         {
           "health_ratio_threshold": 1.0,
-          "id": "watch",
+          "id": "measured_draw",
           "patterns": [
             {
-              "id": "ash_wave",
-              "interval_seconds": 1.5,
+              "id": "single_cut",
+              "interval_seconds": 1.0,
+              "summon_monster_ids": []
+            },
+            {
+              "id": "tea_room_step",
+              "interval_seconds": 1.25,
               "summon_monster_ids": []
             }
           ]
         },
         {
-          "health_ratio_threshold": 0.4,
-          "id": "flock",
+          "health_ratio_threshold": 0.45,
+          "id": "empty_cup_pressure",
           "patterns": [
             {
-              "id": "crow_call",
-              "interval_seconds": 2.5,
-              "summon_monster_ids": [
-                "ash_crow_flock"
-              ]
+              "id": "returning_cut",
+              "interval_seconds": 0.75,
+              "summon_monster_ids": []
             },
             {
-              "id": "iron_guard",
-              "interval_seconds": 1.0,
-              "summon_monster_ids": []
+              "id": "memory_foxfire_call",
+              "interval_seconds": 2.0,
+              "summon_monster_ids": [
+                "foxfire"
+              ]
             }
           ]
         }
       ],
       "progression_unlock_ids": [
-        "wasteland"
+        "sen_rikyu_phase_3"
       ],
       "resolution_types": [
         "combat"
       ],
-      "reward_item_ids": [
-        "war_tea_caddy",
-        "old_incense_box"
-      ],
-      "status": "테스트",
+      "reward_item_ids": [],
+      "status": "확정",
       "summon_monster_ids": [
-        "ash_crow_flock"
+        "foxfire"
       ]
     }
   ],

@@ -22,7 +22,7 @@ func run(asserts) -> void:
 	asserts.equal(catalog.find_by_id("shops", "shop_14").get("sell_price", 0), 25, "shop sell price is explicit generated data")
 	asserts.equal(catalog.sources.get("dungeons", ""), "collection://cd97553c-f51f-44fe-9604-c257cc9d9342", "authoritative dungeon table source is registered")
 	asserts.equal(catalog.find_by_id("dungeons", "dungeon_4").get("name", ""), "오리베의 다실", "canonical common dungeon row loads")
-	asserts.equal(catalog.get_definitions("bosses").size(), 2, "two boss runtime sample definitions are present")
+	asserts.equal(catalog.get_definitions("bosses").size(), 3, "boss runtime definitions include Sen Rikyu Phase 2")
 	asserts.equal(catalog.find_by_id("bosses", "sample_bamboo_guardian").get("dungeon_id", ""), "dungeon_4", "boss definition keeps its canonical dungeon id")
 	asserts.equal(catalog.sources.get("characters", ""), "collection://86d9c16b-e60e-4434-9c84-26b4b00d16c8", "authoritative character memory policy source is registered")
 	asserts.true_value(catalog.character_has_meta_memory("CHR-1"), "Muchau's father may observe previous-run memory")
