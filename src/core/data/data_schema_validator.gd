@@ -174,6 +174,12 @@ func _validate_event_result_references(events: Array, ids_by_dataset: Dictionary
 	return {"ok": true}
 
 func _validate_item_contract(dataset_name: String, item: Dictionary) -> Dictionary:
+	if dataset_name == "characters":
+		if typeof(item.get("character_id")) != TYPE_STRING or not _stable_character_id(String(item.get("character_id", ""))):
+			return {"ok": false, "error": "characters item '%s' character_id must match CHR-<number>." % item.id}
+		if typeof(item.get("meta_memory")) != TYPE_BOOL:
+			return {"ok": false, "error": "characters item '%s' meta_memory must be a boolean." % item.id}
+		return {"ok": true}
 	if dataset_name == "drops":
 		return _validate_drop_contract(item)
 	if dataset_name == "choices":
@@ -249,6 +255,11 @@ func _validate_boss_tea_hooks(item: Dictionary, hooks) -> Dictionary:
 func _stable_id(value: String) -> bool:
 	var pattern := RegEx.new()
 	pattern.compile("^[a-z][a-z0-9_]*$")
+	return pattern.search(value) != null
+
+func _stable_character_id(value: String) -> bool:
+	var pattern := RegEx.new()
+	pattern.compile("^CHR-[1-9][0-9]*$")
 	return pattern.search(value) != null
 
 func _stable_hook_key(value: String) -> bool:

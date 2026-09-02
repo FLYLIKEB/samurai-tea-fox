@@ -124,6 +124,16 @@ class CaptureBuilder:
             "name": row.get(notion["title_field"]),
             "status": row.get(notion["status_field"]),
         }
+        unique_id_output_field = notion.get("unique_id_output_field")
+        if unique_id_output_field:
+            unique_id = row.get(notion["unique_id_field"])
+            prefix = unique_id.get("prefix") if isinstance(unique_id, dict) else None
+            number = unique_id.get("number") if isinstance(unique_id, dict) else None
+            if not isinstance(prefix, str) or not prefix or not isinstance(number, int):
+                raise ExportValidationError(
+                    f"{dataset_name} item {item['id']}: invalid Notion unique id"
+                )
+            item[unique_id_output_field] = f"{prefix}-{number}"
         for source_field, output_field in notion.get("field_map", {}).items():
             value = row.get(source_field)
             if value not in (None, "", []):
