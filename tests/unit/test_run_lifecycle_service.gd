@@ -43,6 +43,10 @@ func run(asserts) -> void:
 	_cleanup()
 	_assert_crash_retry_and_rollback_do_not_restore_dead_run(asserts)
 	_cleanup()
+	_assert_invalidation_high_water_survives_lower_epoch_and_restart(asserts)
+	_cleanup()
+	_assert_invalidation_failures_do_not_expose_fresh_run_and_retry(asserts)
+	_cleanup()
 
 func _assert_generated_catalog_exposes_dev24_canon(asserts) -> void:
 	var catalog := DataCatalog.new()
@@ -119,21 +123,92 @@ func _assert_crash_retry_and_rollback_do_not_restore_dead_run(asserts) -> void:
 	runtime.lifecycle.death_pending = true
 	var confirmed: Dictionary = runtime.lifecycle.confirm_death(store, old_run)
 	asserts.true_value(confirmed.ok, "death confirmation invalidates old epoch")
-	asserts.false_value(store.load_run().ok, "crash retry after invalidation cannot resume a dead run")
+	asserts.false_value(SaveStore.new(RUN_PATH, META_PATH).load_run().ok, "process restart after invalidation cannot resume a dead run")
 
 	_write_text(RUN_PATH, old_run_bytes)
-	var rollback: Dictionary = store.load_run()
+	var rollback: Dictionary = SaveStore.new(RUN_PATH, META_PATH).load_run()
 	asserts.false_value(rollback.ok, "restored pre-death run save is rejected")
 	asserts.equal(rollback.reason, "stale_run_save", "rollback rejection uses lifecycle epoch high-water mark")
 
 	var fresh_run: RunState = runtime.lifecycle.create_fresh_run_after_confirmed_death(confirmed.invalidated_lifecycle_epoch, 99)
 	asserts.true_value(store.save_run(fresh_run).ok, "fresh run with newer lifecycle epoch can be persisted")
-	var loaded_fresh := store.load_run()
+	var loaded_fresh := SaveStore.new(RUN_PATH, META_PATH).load_run()
 	asserts.true_value(loaded_fresh.ok, "fresh run resumes after confirmed death")
 	asserts.equal(loaded_fresh.state.seed, 99, "fresh run seed replaces the discarded run")
 	asserts.equal(loaded_fresh.state.lifecycle_epoch, 1, "fresh run advances lifecycle epoch")
 	_write_text(RUN_PATH, old_run_bytes)
-	asserts.false_value(store.load_run().ok, "older pre-death save remains rejected after fresh run exists")
+	asserts.false_value(SaveStore.new(RUN_PATH, META_PATH).load_run().ok, "older pre-death save remains rejected after fresh run exists")
+
+func _assert_invalidation_high_water_survives_lower_epoch_and_restart(asserts) -> void:
+	var store := SaveStore.new(RUN_PATH, META_PATH)
+	var high_run := _run_state(51, 5)
+	asserts.true_value(store.save_run(high_run).ok, "high epoch run is persisted before invalidation")
+	asserts.true_value(store.invalidate_run(high_run).ok, "high epoch invalidation succeeds")
+
+	var restarted := SaveStore.new(RUN_PATH, META_PATH)
+	var lower: Dictionary = restarted.invalidate_run(_run_state(52, 1))
+	asserts.true_value(lower.ok, "lower epoch invalidation retry is idempotent")
+	asserts.equal(lower.invalidated_lifecycle_epoch, 5, "lower retry preserves invalidation high-water")
+	_write_text(RUN_PATH, JSON.stringify(SaveCodec.encode_run(_run_state(53, 3))))
+	var rollback := SaveStore.new(RUN_PATH, META_PATH).load_run()
+	asserts.false_value(rollback.ok, "restart still rejects epoch below preserved high-water")
+	asserts.equal(rollback.reason, "stale_run_save", "preserved high-water rejects restored stale bytes")
+
+func _assert_invalidation_failures_do_not_expose_fresh_run_and_retry(asserts) -> void:
+	var old_run := _run_state(61, 0)
+	var baseline_store := SaveStore.new(RUN_PATH, META_PATH)
+	asserts.true_value(baseline_store.save_run(old_run).ok, "failure fixture persists the old run")
+	var injector := SaveFailureInjector.new(RUN_PATH)
+	var failing_store := SaveStore.new(RUN_PATH, META_PATH, injector.replace, injector.remove)
+	var runtime := _fixture_runtime()
+	runtime.lifecycle.death_pending = true
+
+	injector.fail_marker_replace = true
+	var marker_failure: Dictionary = runtime.lifecycle.confirm_death(failing_store, old_run)
+	asserts.false_value(marker_failure.ok, "marker replacement failure aborts death confirmation")
+	asserts.false_value(runtime.lifecycle.death_confirmed, "failed marker replacement exposes no confirmed/fresh lifecycle")
+	asserts.equal(SaveStore.new(RUN_PATH, META_PATH).load_run().state.seed, 61, "failed marker replacement leaves old run resumable")
+	injector.fail_marker_replace = false
+	var marker_retry: Dictionary = runtime.lifecycle.confirm_death(failing_store, old_run)
+	asserts.true_value(marker_retry.ok, "marker replacement retry succeeds safely")
+
+	_cleanup()
+	old_run = _run_state(62, 0)
+	asserts.true_value(baseline_store.save_run(old_run).ok, "remove failure fixture persists the old run")
+	runtime = _fixture_runtime()
+	runtime.lifecycle.death_pending = true
+	injector.fail_run_remove = true
+	var remove_failure: Dictionary = runtime.lifecycle.confirm_death(failing_store, old_run)
+	asserts.false_value(remove_failure.ok, "old run removal failure aborts death confirmation")
+	asserts.false_value(runtime.lifecycle.death_confirmed, "failed old run removal exposes no confirmed/fresh lifecycle")
+	asserts.equal(SaveStore.new(RUN_PATH, META_PATH).load_run().reason, "stale_run_save", "written marker rejects old bytes after remove failure")
+	injector.fail_run_remove = false
+	var remove_retry: Dictionary = runtime.lifecycle.confirm_death(failing_store, old_run)
+	asserts.true_value(remove_retry.ok, "old run removal retry succeeds safely")
+	var fresh: RunState = runtime.lifecycle.create_fresh_run_after_confirmed_death(remove_retry.invalidated_lifecycle_epoch, 63)
+	asserts.true_value(failing_store.save_run(fresh).ok, "fresh run is persisted only after successful invalidation retry")
+	var restarted_fresh := SaveStore.new(RUN_PATH, META_PATH).load_run()
+	asserts.true_value(restarted_fresh.ok, "restart loads the fresh run after confirmed death")
+	asserts.equal(restarted_fresh.state.seed, 63, "restart exposes only the fresh run")
+
+class SaveFailureInjector:
+	extends RefCounted
+	var run_save_path: String
+	var fail_marker_replace := false
+	var fail_run_remove := false
+
+	func _init(path: String) -> void:
+		run_save_path = path
+
+	func replace(from_path: String, to_path: String) -> int:
+		if fail_marker_replace and to_path.ends_with(".invalidated.json"):
+			return ERR_CANT_CREATE
+		return DirAccess.rename_absolute(ProjectSettings.globalize_path(from_path), ProjectSettings.globalize_path(to_path))
+
+	func remove(path: String) -> int:
+		if fail_run_remove and path == run_save_path:
+			return ERR_CANT_CREATE
+		return DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 func _fixture_runtime() -> Dictionary:
 	var catalog := _fixture_catalog()

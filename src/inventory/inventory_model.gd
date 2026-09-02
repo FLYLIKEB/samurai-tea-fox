@@ -219,7 +219,12 @@ func insert_slot(slot: Dictionary, to_index := -1) -> Dictionary:
 	if not _is_empty_slot(slots[target_index]):
 		return _fail_and_emit({"ok": false, "reason": "occupied_slot", "error": "Inventory slot is occupied: %d" % target_index})
 
-	slots[target_index] = normalized_slot
+	var candidate := _duplicate_slots(slots)
+	candidate[target_index] = normalized_slot
+	var max_owned_result := _validate_max_owned(candidate)
+	if not max_owned_result.ok:
+		return _fail_and_emit(max_owned_result)
+	slots = candidate
 	_emit_changed()
 	return {"ok": true, "slot_index": target_index, "slot": _duplicate_dictionary(normalized_slot)}
 
@@ -288,6 +293,9 @@ func load_snapshot(snapshot: Dictionary) -> Dictionary:
 		normalized_slots.append(slot_result.slot)
 	while normalized_slots.size() < loaded_slot_count:
 		normalized_slots.append({})
+	var max_owned_result := _validate_max_owned(normalized_slots)
+	if not max_owned_result.ok:
+		return max_owned_result
 
 	slot_count = loaded_slot_count
 	data_version = String(snapshot.get("data_version", ""))
@@ -419,6 +427,20 @@ func _normalize_snapshot_slot(raw_slot) -> Dictionary:
 	if _requires_instance(definition) and instance_id.is_empty():
 		return _fail("missing_instance_id", "Inventory snapshot instance item is missing an instance id: %s" % item_id)
 	return {"ok": true, "slot": _new_slot(item_id, quantity, instance_id, raw_slot.get("metadata", {}))}
+
+func _validate_max_owned(source_slots: Array) -> Dictionary:
+	var quantities := {}
+	for slot in source_slots:
+		if _is_empty_slot(slot):
+			continue
+		var item_id := String(slot.get("item_id", ""))
+		quantities[item_id] = int(quantities.get(item_id, 0)) + int(slot.get("quantity", 0))
+	for item_id in quantities:
+		var definition: Dictionary = item_definitions.get(item_id, {})
+		var max_owned := int(definition.get("max_owned", 0))
+		if max_owned > 0 and int(quantities[item_id]) > max_owned:
+			return _fail("max_owned_exceeded", "Item ownership limit exceeded: %s" % item_id)
+	return {"ok": true}
 
 func _next_instance_id() -> String:
 	var value := "inst_%06d" % next_instance_id

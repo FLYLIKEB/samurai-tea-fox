@@ -10,15 +10,18 @@ const RUN_INVALIDATION_KIND := "run_invalidation"
 var run_path: String
 var meta_path: String
 var _replace_operation: Callable
+var _remove_operation: Callable
 
 func _init(
 	run_save_path: String = DEFAULT_RUN_PATH,
 	meta_save_path: String = DEFAULT_META_PATH,
-	replace_operation: Callable = Callable()
+	replace_operation: Callable = Callable(),
+	remove_operation: Callable = Callable()
 ) -> void:
 	run_path = run_save_path
 	meta_path = meta_save_path
 	_replace_operation = replace_operation
+	_remove_operation = remove_operation
 
 func save_run(run_state) -> Dictionary:
 	var validation := SaveCodec.validate_run_snapshot(run_state)
@@ -54,30 +57,39 @@ func load_meta() -> Dictionary:
 	return SaveCodec.decode_meta(loaded.envelope)
 
 func invalidate_run(run_state = null) -> Dictionary:
-	var invalidated_epoch := 0
+	var candidate_epoch := 0
 	if run_state != null:
 		var validation := SaveCodec.validate_run_snapshot(run_state)
 		if not validation.ok:
 			return validation
-		invalidated_epoch = int(validation.snapshot.get("lifecycle_epoch", 0))
+		candidate_epoch = int(validation.snapshot.get("lifecycle_epoch", 0))
 	else:
 		var loaded := _read_envelope(run_path)
 		if loaded.ok:
 			var decoded := SaveCodec.decode_run(loaded.envelope)
 			if not decoded.ok:
 				return decoded
-			invalidated_epoch = int(decoded.state.get("lifecycle_epoch", 0))
+			candidate_epoch = int(decoded.state.get("lifecycle_epoch", 0))
 
-	var marker := {
-		"schema_version": SaveCodec.CURRENT_SCHEMA_VERSION,
-		"kind": RUN_INVALIDATION_KIND,
-		"invalidated_lifecycle_epoch": invalidated_epoch
-	}
-	var marker_result := _write_envelope(_invalidation_path(), marker)
-	if not marker_result.ok:
+	var marker_result := _load_invalidation_marker()
+	var invalidated_epoch := candidate_epoch
+	var marker_exists: bool = bool(marker_result.ok)
+	if marker_exists:
+		invalidated_epoch = maxi(candidate_epoch, int(marker_result.marker.invalidated_lifecycle_epoch))
+	elif String(marker_result.get("reason", "")) != "missing_invalidation":
 		return marker_result
+
+	if not marker_exists or invalidated_epoch > int(marker_result.marker.invalidated_lifecycle_epoch):
+		var marker := {
+			"schema_version": SaveCodec.CURRENT_SCHEMA_VERSION,
+			"kind": RUN_INVALIDATION_KIND,
+			"invalidated_lifecycle_epoch": invalidated_epoch
+		}
+		var write_result := _write_envelope(_invalidation_path(), marker)
+		if not write_result.ok:
+			return write_result
 	if FileAccess.file_exists(run_path):
-		var remove_error := DirAccess.remove_absolute(ProjectSettings.globalize_path(run_path))
+		var remove_error := _remove(run_path)
 		if remove_error != OK:
 			return _failure("Could not remove invalidated run save '%s': %s." % [run_path, error_string(remove_error)], "remove_failed")
 	return {"ok": true, "invalidated_lifecycle_epoch": invalidated_epoch}
@@ -136,6 +148,11 @@ func _replace(from_path: String, to_path: String) -> int:
 	if _replace_operation.is_valid():
 		return int(_replace_operation.call(from_path, to_path))
 	return DirAccess.rename_absolute(ProjectSettings.globalize_path(from_path), ProjectSettings.globalize_path(to_path))
+
+func _remove(path: String) -> int:
+	if _remove_operation.is_valid():
+		return int(_remove_operation.call(path))
+	return DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 func _remove_if_present(path: String) -> void:
 	if FileAccess.file_exists(path):
