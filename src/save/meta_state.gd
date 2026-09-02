@@ -6,6 +6,7 @@ var best_reached_biome_order := 0
 var discovered_records := []
 var unlocked_meta_flags := []
 var dialogue_memory_flags := []
+var meta_unlock_counters := {}
 
 static func from_dictionary(data: Dictionary):
 	var state: MetaState = load("res://src/save/meta_state.gd").new()
@@ -14,6 +15,7 @@ static func from_dictionary(data: Dictionary):
 	state.discovered_records = _array_value(data.get("discovered_records", []))
 	state.unlocked_meta_flags = _array_value(data.get("unlocked_meta_flags", []))
 	state.dialogue_memory_flags = _array_value(data.get("dialogue_memory_flags", []))
+	state.meta_unlock_counters = _dictionary_value(data.get("meta_unlock_counters", {}))
 	return state
 
 func to_dictionary() -> Dictionary:
@@ -22,8 +24,14 @@ func to_dictionary() -> Dictionary:
 		"best_reached_biome_order": best_reached_biome_order,
 		"discovered_records": discovered_records.duplicate(true),
 		"unlocked_meta_flags": unlocked_meta_flags.duplicate(true),
-		"dialogue_memory_flags": dialogue_memory_flags.duplicate(true)
+		"dialogue_memory_flags": dialogue_memory_flags.duplicate(true),
+		"meta_unlock_counters": meta_unlock_counters.duplicate(true)
 	}
+
+static func _dictionary_value(value) -> Dictionary:
+	if typeof(value) != TYPE_DICTIONARY:
+		return {}
+	return value.duplicate(true)
 
 static func _array_value(value) -> Array:
 	if typeof(value) != TYPE_ARRAY:
