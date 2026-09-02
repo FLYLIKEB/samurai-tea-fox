@@ -14,6 +14,7 @@ const PlayerMovementState = preload("res://src/player/player_movement_state.gd")
 const TeaService = preload("res://src/tea/tea_service.gd")
 const BiomeProgressionState = preload("res://src/world/biome/biome_progression_state.gd")
 const RunState = preload("res://src/save/run_state.gd")
+const SenRikyuPhaseOneRuntime = preload("res://src/dungeon/sen_rikyu_phase_one_runtime.gd")
 const AcquisitionService = preload("res://src/world/interactions/acquisition_service.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
@@ -41,6 +42,7 @@ var tea_service
 var crafting_service
 var core_tea_ware_collection
 var final_room_state_builder
+var sen_rikyu_phase_one_runtime
 var memory_tea_cutscene_runtime
 var acquisition_service
 var dungeon_runtime
@@ -350,6 +352,12 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	crafting_service = crafting_result.crafting_service
 	core_tea_ware_collection = core_tea_ware_result.collection
 	final_room_state_builder = final_room_result.builder
+	sen_rikyu_phase_one_runtime = null
+	if loaded_catalog.has_method("find_by_id") and not loaded_catalog.find_by_id("events", SenRikyuPhaseOneRuntime.EVENT_ID).is_empty():
+		var phase_one_result: Dictionary = SenRikyuPhaseOneRuntime.from_catalog(loaded_catalog, tea_service)
+		if not phase_one_result.ok:
+			return phase_one_result
+		sen_rikyu_phase_one_runtime = phase_one_result.runtime
 	tea_service.drink_completed.connect(_on_tea_drink_completed)
 	memory_tea_cutscene_runtime = MemoryTeaCutsceneRuntime.new()
 	var memory_runtime_result: Dictionary = memory_tea_cutscene_runtime.configure(loaded_catalog.data_version)
@@ -374,6 +382,20 @@ func final_room_state_read_model() -> Dictionary:
 	if run_state == null:
 		run_state = RunState.new()
 	return final_room_state_builder.build(run_state)
+
+func start_sen_rikyu_phase_one(meta_state = null) -> Dictionary:
+	if sen_rikyu_phase_one_runtime == null:
+		return {"ok": false, "reason": "missing_sen_rikyu_phase_one", "error": "Sen Rikyu Phase 1 runtime is not configured."}
+	if run_state == null:
+		run_state = RunState.new()
+	return sen_rikyu_phase_one_runtime.start(run_state, meta_state)
+
+func handle_sen_rikyu_phase_one_command(command_id: String, payload := {}, meta_state = null, resources = null) -> Dictionary:
+	if sen_rikyu_phase_one_runtime == null:
+		return {"ok": false, "reason": "missing_sen_rikyu_phase_one", "error": "Sen Rikyu Phase 1 runtime is not configured."}
+	if run_state == null:
+		run_state = RunState.new()
+	return sen_rikyu_phase_one_runtime.handle_command(command_id, payload, run_state, meta_state, resources)
 
 func record_boss_core_tea_ware_rewards(resolution_event: Dictionary) -> Dictionary:
 	if core_tea_ware_collection == null:

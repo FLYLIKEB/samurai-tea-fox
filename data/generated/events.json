@@ -1,107 +1,292 @@
 {
-  "schema_version": 1,
+  "content_hash": "587c3bcf154ffaaf34cfcec2a79d0751f41c99176a38432c3553f5602af4ec93",
   "data_version": "notion-2026-09-01",
-  "profile": "confirmed-test",
-  "source": "fixture://dev_25_story_events",
-  "content_hash": "fb2bf90d646522a433d6bae9c643b9c0e0a785bffea1513781037f1726df7c66",
   "items": [
-    {
-      "id": "roadside_teahouse_intro",
-      "name": "길가 찻집 첫 만남",
-      "status": "확정",
-      "replay_policy": "once",
-      "start_node_id": "start",
-      "nodes": [
-        {
-          "id": "start",
-          "speaker_id": "traveler_host",
-          "text": "찻집 주인이 낡은 다관을 조심스레 내민다.",
-          "options": [
-            {
-              "id": "accept_kettle",
-              "display_text": "다관을 받는다",
-              "conditions": [
-                {"type": "run_not_flag", "id": "accepted_roadside_kettle"}
-              ],
-              "results": [
-                {"type": "set_run_flag", "id": "accepted_roadside_kettle"},
-                {"type": "grant_item", "id": "ash_stained_iron_kettle", "quantity": 1}
-              ],
-              "next_node_id": "thanks",
-              "completes_event": false
-            },
-            {
-              "id": "ask_again",
-              "display_text": "이미 받은 다관을 보여준다",
-              "conditions": [
-                {"type": "run_flag", "id": "accepted_roadside_kettle"}
-              ],
-              "results": [
-                {"type": "set_run_flag", "id": "showed_roadside_kettle"}
-              ],
-              "next_node_id": "",
-              "completes_event": true
-            }
-          ]
-        },
-        {
-          "id": "thanks",
-          "speaker_id": "traveler_host",
-          "text": "주인은 여행길의 첫 물맛을 잊지 말라고 말한다.",
-          "options": [
-            {
-              "id": "bow_and_leave",
-              "display_text": "고개 숙여 인사한다",
-              "conditions": [],
-              "results": [
-                {"type": "set_run_flag", "id": "left_roadside_teahouse"}
-              ],
-              "next_node_id": "",
-              "completes_event": true
-            }
-          ]
-        }
-      ]
-    },
     {
       "id": "mountain_shrine_echo",
       "name": "산길 신사의 메아리",
-      "status": "확정",
-      "replay_policy": "repeat",
-      "start_node_id": "start",
       "nodes": [
         {
           "id": "start",
-          "speaker_id": "shrine_keeper",
-          "text": "신사 지기가 오늘 길에 남은 향을 묻는다.",
           "options": [
             {
-              "id": "ordinary_prayer",
-              "display_text": "무사한 길을 빈다",
+              "completes_event": true,
               "conditions": [
-                {"type": "meta_not_flag", "id": "remembered_old_shrine"}
+                {
+                  "id": "remembered_old_shrine",
+                  "type": "meta_not_flag"
+                }
               ],
-              "results": [
-                {"type": "set_run_flag", "id": "offered_ordinary_prayer"}
-              ],
+              "display_text": "무사한 길을 빈다",
+              "id": "ordinary_prayer",
               "next_node_id": "",
-              "completes_event": true
+              "results": [
+                {
+                  "id": "offered_ordinary_prayer",
+                  "type": "set_run_flag"
+                }
+              ]
             },
             {
-              "id": "remembered_prayer",
-              "display_text": "전에 들은 종소리를 떠올린다",
+              "completes_event": true,
               "conditions": [
-                {"type": "meta_flag", "id": "remembered_old_shrine"}
+                {
+                  "id": "remembered_old_shrine",
+                  "type": "meta_flag"
+                }
               ],
-              "results": [
-                {"type": "set_run_flag", "id": "answered_shrine_memory"}
-              ],
+              "display_text": "전에 들은 종소리를 떠올린다",
+              "id": "remembered_prayer",
               "next_node_id": "",
-              "completes_event": true
+              "results": [
+                {
+                  "id": "answered_shrine_memory",
+                  "type": "set_run_flag"
+                }
+              ]
             }
-          ]
+          ],
+          "speaker_id": "shrine_keeper",
+          "text": "신사 지기가 오늘 길에 남은 향을 묻는다."
         }
-      ]
+      ],
+      "replay_policy": "repeat",
+      "start_node_id": "start",
+      "status": "확정"
+    },
+    {
+      "id": "roadside_teahouse_intro",
+      "name": "길가 찻집 첫 만남",
+      "nodes": [
+        {
+          "id": "start",
+          "options": [
+            {
+              "completes_event": false,
+              "conditions": [
+                {
+                  "id": "accepted_roadside_kettle",
+                  "type": "run_not_flag"
+                }
+              ],
+              "display_text": "다관을 받는다",
+              "id": "accept_kettle",
+              "next_node_id": "thanks",
+              "results": [
+                {
+                  "id": "accepted_roadside_kettle",
+                  "type": "set_run_flag"
+                },
+                {
+                  "id": "ash_stained_iron_kettle",
+                  "quantity": 1,
+                  "type": "grant_item"
+                }
+              ]
+            },
+            {
+              "completes_event": true,
+              "conditions": [
+                {
+                  "id": "accepted_roadside_kettle",
+                  "type": "run_flag"
+                }
+              ],
+              "display_text": "이미 받은 다관을 보여준다",
+              "id": "ask_again",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "showed_roadside_kettle",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "traveler_host",
+          "text": "찻집 주인이 낡은 다관을 조심스레 내민다."
+        },
+        {
+          "id": "thanks",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "고개 숙여 인사한다",
+              "id": "bow_and_leave",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "left_roadside_teahouse",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "traveler_host",
+          "text": "주인은 여행길의 첫 물맛을 잊지 말라고 말한다."
+        }
+      ],
+      "replay_policy": "once",
+      "start_node_id": "start",
+      "status": "확정"
+    },
+    {
+      "id": "sen_rikyu_phase_1_last_tea",
+      "name": "센리큐 Phase 1 — 마지막 다도",
+      "nodes": [
+        {
+          "id": "start",
+          "options": [
+            {
+              "completes_event": false,
+              "conditions": [],
+              "display_text": "마지막 차를 함께 마신다",
+              "id": "share_last_tea",
+              "next_node_id": "shared_dialogue",
+              "results": [
+                {
+                  "id": "sen_rikyu_phase1_shared_tea",
+                  "type": "set_run_flag"
+                }
+              ]
+            },
+            {
+              "completes_event": false,
+              "conditions": [],
+              "display_text": "마지막 차를 거절한다",
+              "id": "refuse_last_tea",
+              "next_node_id": "refused_dialogue",
+              "results": [
+                {
+                  "id": "sen_rikyu_phase1_refused_tea",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "???가 마지막 다실의 찻잔을 사이에 두고 이름을 감춘 채 앉아 있다."
+        },
+        {
+          "id": "shared_dialogue",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [
+                {
+                  "id": "daimyo_relinquished_tea",
+                  "type": "run_flag"
+                }
+              ],
+              "display_text": "dialogue.sen_rikyu.phase1.shared_past_choice",
+              "id": "shared_past_mercy",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "sen_rikyu_phase1_dialogue_past_choice",
+                  "type": "set_run_flag"
+                }
+              ]
+            },
+            {
+              "completes_event": true,
+              "conditions": [
+                {
+                  "type": "meta_run_count_at_least",
+                  "value": 2
+                }
+              ],
+              "display_text": "dialogue.sen_rikyu.phase1.shared_repetition",
+              "id": "shared_repetition",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "sen_rikyu_phase1_dialogue_repetition",
+                  "type": "set_run_flag"
+                }
+              ]
+            },
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "dialogue.sen_rikyu.phase1.shared_plain",
+              "id": "shared_plain",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "sen_rikyu_phase1_dialogue_plain",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "노다인은 이름을 밝힌다. 센리큐는 네가 건넨 차의 온도에서 지나온 선택을 읽는다."
+        },
+        {
+          "id": "refused_dialogue",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [
+                {
+                  "id": "daimyo_defeated",
+                  "type": "run_flag"
+                }
+              ],
+              "display_text": "dialogue.sen_rikyu.phase1.refused_past_choice",
+              "id": "refused_past_defeat",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "sen_rikyu_phase1_dialogue_refused_past_choice",
+                  "type": "set_run_flag"
+                }
+              ]
+            },
+            {
+              "completes_event": true,
+              "conditions": [
+                {
+                  "type": "meta_run_count_at_least",
+                  "value": 2
+                }
+              ],
+              "display_text": "dialogue.sen_rikyu.phase1.refused_repetition",
+              "id": "refused_repetition",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "sen_rikyu_phase1_dialogue_refused_repetition",
+                  "type": "set_run_flag"
+                }
+              ]
+            },
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "dialogue.sen_rikyu.phase1.refused_plain",
+              "id": "refused_plain",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "sen_rikyu_phase1_dialogue_refused_plain",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "노다인은 이름을 밝힌다. 센리큐는 비운 찻잔 대신 네가 남긴 침묵을 바라본다."
+        }
+      ],
+      "replay_policy": "once",
+      "start_node_id": "start",
+      "status": "확정"
     }
-  ]
+  ],
+  "profile": "confirmed-test",
+  "schema_version": 1,
+  "source": "fixture://dev_25_story_events"
 }
