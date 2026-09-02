@@ -169,6 +169,9 @@ class ExportPipeline:
         if dataset_name == "shops":
             self._validate_shop_contract(row)
             return
+        if dataset_name == "bosses":
+            self._validate_boss_contract(row)
+            return
         if dataset_name != "items":
             return
         if row.get("type") != "다구" or row.get("equipment_slot") != "다구":
@@ -272,6 +275,26 @@ class ExportPipeline:
                     f"items item {item_id}: attachment_description_keys must contain non-empty strings"
                 )
 
+    def _validate_boss_contract(self, row: dict[str, Any]) -> None:
+        boss_id = row.get("id", "")
+        phases = row.get("phases")
+        if not isinstance(phases, list):
+            raise ExportValidationError(f"bosses item {boss_id}: phases must be an array")
+        for phase in phases:
+            if not isinstance(phase, dict):
+                continue
+            patterns = phase.get("patterns", [])
+            if not isinstance(patterns, list):
+                continue
+            for pattern in patterns:
+                if not isinstance(pattern, dict):
+                    continue
+                summon_ids = pattern.get("summon_monster_ids", [])
+                if not isinstance(summon_ids, list):
+                    raise ExportValidationError(
+                        f"bosses item {boss_id} pattern {pattern.get('id', '')}: summon_monster_ids must be an array"
+                    )
+
     def _validate_snapshot(self, dataset_name: str, snapshot: dict[str, Any]) -> None:
         if not isinstance(snapshot, dict):
             raise ExportValidationError(f"{dataset_name}: snapshot must be an object")
@@ -330,6 +353,38 @@ class ExportPipeline:
                 ids_by_dataset.get("choices", set()),
                 "choices" in ids_by_dataset,
             )
+        if "bosses" in snapshots:
+            self._validate_boss_nested_summons(
+                snapshots["bosses"]["items"],
+                ids_by_dataset.get("monsters", set()),
+                "monsters" in ids_by_dataset,
+            )
+
+    def _validate_boss_nested_summons(
+        self,
+        bosses: list[dict[str, Any]],
+        monster_ids: set[str],
+        monsters_available: bool,
+    ) -> None:
+        for boss in bosses:
+            for phase in boss.get("phases", []):
+                if not isinstance(phase, dict):
+                    continue
+                for pattern in phase.get("patterns", []):
+                    if not isinstance(pattern, dict):
+                        continue
+                    summon_ids = pattern.get("summon_monster_ids", [])
+                    if not summon_ids:
+                        continue
+                    if not monsters_available:
+                        raise ExportValidationError(
+                            f"bosses item {boss['id']} pattern {pattern.get('id', '')}: summon_monster_ids targets missing dataset monsters"
+                        )
+                    for monster_id in summon_ids:
+                        if monster_id not in monster_ids:
+                            raise ExportValidationError(
+                                f"bosses item {boss['id']} pattern {pattern.get('id', '')}: summon_monster_ids targets monsters missing id {monster_id}"
+                            )
 
     def _validate_events(
         self,

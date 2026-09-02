@@ -17,8 +17,10 @@ func run(asserts) -> void:
 	asserts.equal(catalog.sources.get("shops", ""), "collection://3f6354ff-02fb-4b92-9b81-9f821ae6408b", "authoritative shop table source is registered")
 	asserts.equal(catalog.get_definitions("shops").size(), 14, "all authoritative shop rows load")
 	asserts.equal(catalog.find_by_id("shops", "shop_14").get("sell_price", 0), 25, "shop sell price is explicit generated data")
+	asserts.equal(catalog.sources.get("dungeons", ""), "collection://cd97553c-f51f-44fe-9604-c257cc9d9342", "authoritative dungeon table source is registered")
+	asserts.equal(catalog.find_by_id("dungeons", "dungeon_4").get("name", ""), "오리베의 다실", "canonical common dungeon row loads")
 	asserts.equal(catalog.get_definitions("bosses").size(), 2, "two boss runtime sample definitions are present")
-	asserts.equal(catalog.find_by_id("bosses", "sample_bamboo_guardian").get("dungeon_id", ""), "sample_bamboo_trial", "boss definition keeps its stable dungeon id")
+	asserts.equal(catalog.find_by_id("bosses", "sample_bamboo_guardian").get("dungeon_id", ""), "dungeon_4", "boss definition keeps its canonical dungeon id")
 
 	var validator := DataSchemaValidator.new()
 	var duplicate_result := validator.validate_export_file({
@@ -53,6 +55,40 @@ func run(asserts) -> void:
 	if not relation_result.ok:
 		asserts.true_value("broken_recipe" in relation_result.error, "relation error names the source item")
 		asserts.true_value("missing_item" in relation_result.error, "relation error names the missing target")
+
+	var missing_boss_dungeon := validator.validate_catalog({
+		"dungeons": [{"id": "dungeon_4"}],
+		"biomes": [{"id": "common_region"}],
+		"items": [{"id": "oribe_green_glazed_bowl"}],
+		"monsters": [{"id": "road_bandit"}],
+		"bosses": [_boss_definition({"dungeon_id": "missing_dungeon"})]
+	}, {
+		"dungeons": {"required_fields": ["id"]},
+		"biomes": {"required_fields": ["id"]},
+		"items": {"required_fields": ["id"]},
+		"monsters": {"required_fields": ["id"]},
+		"bosses": {"required_fields": ["id"], "relations": {"dungeon_id": "dungeons", "biome_id": "biomes", "reward_item_ids": "items", "summon_monster_ids": "monsters"}}
+	})
+	asserts.false_value(missing_boss_dungeon.ok, "boss dungeon_id relation must target a loaded dungeon definition")
+	if not missing_boss_dungeon.ok:
+		asserts.true_value("missing_dungeon" in missing_boss_dungeon.error, "boss dungeon relation error names the missing id")
+
+	var missing_nested_summon := validator.validate_catalog({
+		"dungeons": [{"id": "dungeon_4"}],
+		"biomes": [{"id": "common_region"}],
+		"items": [{"id": "oribe_green_glazed_bowl"}],
+		"monsters": [{"id": "road_bandit"}],
+		"bosses": [_boss_definition({"nested_summon_id": "missing_monster"})]
+	}, {
+		"dungeons": {"required_fields": ["id"]},
+		"biomes": {"required_fields": ["id"]},
+		"items": {"required_fields": ["id"]},
+		"monsters": {"required_fields": ["id"]},
+		"bosses": {"required_fields": ["id"], "relations": {"dungeon_id": "dungeons", "biome_id": "biomes", "reward_item_ids": "items", "summon_monster_ids": "monsters"}}
+	})
+	asserts.false_value(missing_nested_summon.ok, "nested summon monster IDs must resolve through the monsters catalog")
+	if not missing_nested_summon.ok:
+		asserts.true_value("missing_monster" in missing_nested_summon.error, "nested summon relation error names the missing monster")
 
 	var required_result := validator.validate_catalog({
 		"balance": [{"id": "player_hp_max", "name": "플레이어 HP 최대치", "status": "확정"}]
@@ -153,3 +189,26 @@ func _event_with_result(result: Dictionary) -> Dictionary:
 			}]
 		}]
 	}
+
+func _boss_definition(overrides: Dictionary = {}) -> Dictionary:
+	var nested_summon_id := String(overrides.get("nested_summon_id", "road_bandit"))
+	var boss := {
+		"id": "fixture_boss",
+		"dungeon_id": "dungeon_4",
+		"biome_id": "common_region",
+		"reward_item_ids": ["oribe_green_glazed_bowl"],
+		"summon_monster_ids": ["road_bandit"],
+		"phases": [{
+			"id": "opening",
+			"patterns": [{
+				"id": "call",
+				"interval_seconds": 1.0,
+				"summon_monster_ids": [nested_summon_id]
+			}]
+		}]
+	}
+	for key in overrides:
+		if key == "nested_summon_id":
+			continue
+		boss[key] = overrides[key]
+	return boss

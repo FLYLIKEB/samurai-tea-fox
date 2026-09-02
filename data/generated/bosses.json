@@ -1,10 +1,10 @@
 {
-  "content_hash": "bd4c2419854fa11db91004f5d14e639b6e47d3435e8b58a83cb8a65916c0ebde",
+  "content_hash": "63a7a4fa369f0ad8f4ddad77b7a65080818ea34ddd8ba93bc763194af719ba49",
   "data_version": "notion-2026-09-01",
   "items": [
     {
       "biome_id": "common_region",
-      "dungeon_id": "sample_bamboo_trial",
+      "dungeon_id": "dungeon_4",
       "id": "sample_bamboo_guardian",
       "max_hp": 120,
       "name": "대나무 수문장 (런타임 샘플)",
@@ -47,7 +47,7 @@
         "peaceful"
       ],
       "reward_item_ids": [
-        "humble_clay_bowl"
+        "oribe_green_glazed_bowl"
       ],
       "status": "테스트",
       "summon_monster_ids": [
@@ -56,7 +56,7 @@
     },
     {
       "biome_id": "wasteland",
-      "dungeon_id": "sample_ash_trial",
+      "dungeon_id": "dungeon_1",
       "id": "sample_ash_warden",
       "max_hp": 180,
       "name": "잿빛 문지기 (런타임 샘플)",
@@ -98,7 +98,7 @@
         "combat"
       ],
       "reward_item_ids": [
-        "ash_stained_iron_kettle"
+        "war_tea_caddy"
       ],
       "status": "테스트",
       "summon_monster_ids": [

@@ -74,12 +74,14 @@ class ProjectContractTests(unittest.TestCase):
         self.assertEqual(
             bosses["relations"],
             {
+                "dungeon_id": "dungeons",
                 "biome_id": "biomes",
                 "reward_item_ids": "items",
                 "summon_monster_ids": "monsters",
             },
         )
         self.assertTrue((ROOT / "data/generated/bosses.json").is_file())
+        self.assertTrue((ROOT / "data/generated/dungeons.json").is_file())
 
 
 if __name__ == "__main__":

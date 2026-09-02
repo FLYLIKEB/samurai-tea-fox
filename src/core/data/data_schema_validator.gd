@@ -74,10 +74,39 @@ func validate_catalog(definitions: Dictionary, dataset_rules: Dictionary) -> Dic
 				for target_id in values:
 					if not ids_by_dataset[target_dataset].has(target_id):
 						return {"ok": false, "error": "%s item '%s' relation '%s' targets missing id '%s'." % [dataset_name, item.id, field, target_id]}
+			if dataset_name == "bosses":
+				var boss_result := _validate_boss_nested_summon_references(item, ids_by_dataset)
+				if not boss_result.ok:
+					return boss_result
 	if definitions.has("events"):
 		var event_result := _validate_event_result_references(definitions.events, ids_by_dataset)
 		if not event_result.ok:
 			return event_result
+	return {"ok": true}
+
+func _validate_boss_nested_summon_references(boss: Dictionary, ids_by_dataset: Dictionary) -> Dictionary:
+	var phases = boss.get("phases", [])
+	if typeof(phases) != TYPE_ARRAY:
+		return {"ok": true}
+	for phase in phases:
+		if typeof(phase) != TYPE_DICTIONARY:
+			continue
+		var patterns = phase.get("patterns", [])
+		if typeof(patterns) != TYPE_ARRAY:
+			continue
+		for pattern in patterns:
+			if typeof(pattern) != TYPE_DICTIONARY:
+				continue
+			var summon_ids = pattern.get("summon_monster_ids", [])
+			if summon_ids == null or summon_ids == []:
+				continue
+			if typeof(summon_ids) != TYPE_ARRAY:
+				return {"ok": false, "error": "bosses item '%s' pattern '%s' summon_monster_ids must be an array." % [boss.id, pattern.get("id", "")]}
+			if not ids_by_dataset.has("monsters"):
+				return {"ok": false, "error": "bosses item '%s' pattern '%s' summon_monster_ids targets missing dataset 'monsters'." % [boss.id, pattern.get("id", "")]}
+			for monster_id in summon_ids:
+				if not ids_by_dataset.monsters.has(monster_id):
+					return {"ok": false, "error": "bosses item '%s' pattern '%s' summon_monster_ids targets missing monster id '%s'." % [boss.id, pattern.get("id", ""), monster_id]}
 	return {"ok": true}
 
 func _validate_event_result_references(events: Array, ids_by_dataset: Dictionary) -> Dictionary:
