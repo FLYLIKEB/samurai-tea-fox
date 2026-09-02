@@ -16,6 +16,7 @@ const EndingRouteRuntime = preload("res://src/meta/ending_route_runtime.gd")
 const PlayerMovementState = preload("res://src/player/player_movement_state.gd")
 const TeaBrewingCommandRuntime = preload("res://src/tea/tea_brewing_command_runtime.gd")
 const TeaService = preload("res://src/tea/tea_service.gd")
+const MetaCodexCommandRuntime = preload("res://src/meta/meta_codex_command_runtime.gd")
 const BiomeProgressionState = preload("res://src/world/biome/biome_progression_state.gd")
 const RunState = preload("res://src/save/run_state.gd")
 const SenRikyuPhaseOneRuntime = preload("res://src/dungeon/sen_rikyu_phase_one_runtime.gd")
@@ -49,6 +50,7 @@ var inventory_command_runtime
 var map_read_model_builder
 var tea_service
 var tea_brewing_command_runtime
+var meta_codex_command_runtime
 var crafting_service
 var consumable_service
 var core_tea_ware_collection
@@ -181,6 +183,8 @@ func _physics_process(_delta: float) -> void:
 		submit_desktop_action_command("interact", desktop_command.direction)
 	if Input.is_action_just_pressed("open_inventory"):
 		submit_desktop_action_command("open_inventory")
+	if Input.is_action_just_pressed("open_meta_codex"):
+		submit_desktop_action_command("open_meta_codex")
 	if _is_hud_menu_open("inventory"):
 		if Input.is_action_just_pressed("inventory_next"):
 			submit_desktop_action_command("inventory_next")
@@ -198,6 +202,11 @@ func _physics_process(_delta: float) -> void:
 			submit_desktop_action_command("inventory_filter_consumable")
 		if Input.is_action_just_pressed("inventory_filter_equipment"):
 			submit_desktop_action_command("inventory_filter_equipment")
+	if _is_hud_menu_open("meta_codex"):
+		if Input.is_action_just_pressed("meta_codex_next"):
+			submit_desktop_action_command("meta_codex_next")
+		if Input.is_action_just_pressed("meta_codex_previous"):
+			submit_desktop_action_command("meta_codex_previous")
 	if Input.is_action_just_pressed("open_crafting"):
 		submit_desktop_action_command("open_crafting")
 	if Input.is_action_just_pressed("open_facilities"):
@@ -302,6 +311,16 @@ func submit_action_command(command) -> bool:
 			return accepted
 		GameCommand.Type.TEA_BREW_SELECT_LEAF, GameCommand.Type.TEA_BREW_SELECT_VESSEL, GameCommand.Type.TEA_BREW_SELECT_SLOT, GameCommand.Type.TEA_BREW_NAVIGATE, GameCommand.Type.BREW_TEA:
 			var accepted: bool = _handle_tea_brewing_command(command)
+			if accepted:
+				_play_feedback_beep()
+			return accepted
+		GameCommand.Type.OPEN_META_CODEX:
+			var accepted: bool = game_hud != null and game_hud.show_meta_codex_menu()
+			if accepted:
+				_play_feedback_beep()
+			return accepted
+		GameCommand.Type.META_CODEX_SET_TAB, GameCommand.Type.META_CODEX_SET_FILTER, GameCommand.Type.META_CODEX_SELECT_DETAIL, GameCommand.Type.META_CODEX_NAVIGATE:
+			var accepted: bool = _handle_meta_codex_command(command)
 			if accepted:
 				_play_feedback_beep()
 			return accepted
@@ -504,6 +523,10 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	var tea_brewing_result: Dictionary = tea_brewing_command_runtime.configure(tea_service, inventory, equipment, Callable(self, "_tea_brewing_context"), loaded_catalog.data_version)
 	if not tea_brewing_result.ok:
 		return tea_brewing_result
+	meta_codex_command_runtime = MetaCodexCommandRuntime.new()
+	var meta_codex_result: Dictionary = meta_codex_command_runtime.configure(loaded_catalog, Callable(self, "_current_run_state_snapshot"), Callable(self, "_current_meta_state_snapshot"), loaded_catalog.data_version)
+	if not meta_codex_result.ok:
+		return meta_codex_result
 	tea_service.drink_completed.connect(_on_tea_drink_completed)
 	memory_tea_cutscene_runtime = MemoryTeaCutsceneRuntime.new()
 	var memory_runtime_result: Dictionary = memory_tea_cutscene_runtime.configure(loaded_catalog.data_version)
@@ -951,6 +974,18 @@ func _handle_tea_brewing_command(command: GameCommand) -> bool:
 		game_hud.show_tea_brewing_menu()
 	return true
 
+func _handle_meta_codex_command(command: GameCommand) -> bool:
+	if meta_codex_command_runtime == null:
+		return false
+	var result: Dictionary = meta_codex_command_runtime.handle_command(command)
+	if game_hud != null:
+		game_hud.show_command_feedback("도감 갱신" if result.ok else "도감 실패: %s" % String(result.get("reason", "unknown")))
+	if not result.ok:
+		return false
+	if game_hud != null:
+		game_hud.show_meta_codex_menu()
+	return true
+
 func _handle_craft_recipe_command(command: GameCommand) -> bool:
 	if crafting_service == null or inventory == null:
 		return false
@@ -1026,6 +1061,22 @@ func tea_brewing_read_model() -> Dictionary:
 	var model: Dictionary = tea_brewing_command_runtime.read_model()
 	model["ok"] = true
 	return model
+
+func meta_codex_read_model() -> Dictionary:
+	if meta_codex_command_runtime == null:
+		return {"ok": false, "reason": "missing_meta_codex_runtime", "error": "Meta codex runtime is not configured."}
+	var model: Dictionary = meta_codex_command_runtime.read_model()
+	model["ok"] = true
+	return model
+
+func _current_run_state_snapshot() -> Dictionary:
+	return run_state.to_dictionary() if run_state != null else {}
+
+func _current_meta_state_snapshot() -> Dictionary:
+	var loaded: Dictionary = save_store.load_meta() if save_store != null else {}
+	if bool(loaded.get("ok", false)):
+		return loaded.meta_state.to_dictionary()
+	return {}
 
 func _tea_brewing_context() -> Dictionary:
 	var context := _crafting_context()
@@ -1141,6 +1192,7 @@ func _configure_game_hud() -> void:
 		"run_state": run_state,
 		"tea_service": tea_service,
 		"tea_brewing_command_runtime": tea_brewing_command_runtime,
+		"meta_codex_command_runtime": meta_codex_command_runtime,
 		"crafting_service": crafting_service,
 		"crafting_context": _tea_brewing_context()
 	})

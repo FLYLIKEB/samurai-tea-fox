@@ -149,11 +149,13 @@ func _has_discovered_event(run_state, meta_state, event_id: String) -> bool:
 func _record_discovery(run_state, meta_state, event_id: String) -> void:
 	completed_memory_event_ids[event_id] = true
 	_append_unique_to_run_array(run_state, "discovered_records", DISCOVERY_RECORD_ID)
+	_append_unique_to_run_array(run_state, "discovered_records", event_id)
 	var counts := _run_event_counts(run_state)
 	counts[event_id] = max(1, int(counts.get(event_id, 0)))
 	_set_run_event_counts(run_state, counts)
 	if meta_state != null:
 		_append_unique_to_meta_array(meta_state, "discovered_records", DISCOVERY_RECORD_ID)
+		_append_unique_to_meta_array(meta_state, "discovered_records", event_id)
 
 func _run_array(run_state, field: String) -> Array:
 	if run_state == null:
