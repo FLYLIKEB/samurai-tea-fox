@@ -3,6 +3,7 @@ extends RefCounted
 const SaveCodec = preload("res://src/save/save_codec.gd")
 const BiomeProgressionState = preload("res://src/world/biome/biome_progression_state.gd")
 const RunState = preload("res://src/save/run_state.gd")
+const MetaState = preload("res://src/save/meta_state.gd")
 const TailState = preload("res://src/player/tail_state.gd")
 
 func run(asserts) -> void:
@@ -17,7 +18,14 @@ func run(asserts) -> void:
 	var run_payload := {"seed": 11037, "inventory": ["wood"], "equipment": run_equipment, "tail_state": _tail_snapshot(2, ["humanity"])}
 	run_payload.merge(choice_state)
 	var run_save := SaveCodec.encode_run(run_payload)
-	var meta_save := SaveCodec.encode_meta({"run_count": 2, "discovered_records": ["oribe_bowl"], "unlocked_meta_flags": ["sen_rikyu_reunion_dialogue_1"]})
+	var meta_save := SaveCodec.encode_meta({
+		"run_count": 2,
+		"discovered_records": ["oribe_bowl"],
+		"unlocked_meta_flags": ["sen_rikyu_reunion_dialogue_1"],
+		"past_choice_ids": ["daimyo_relinquish_tea"],
+		"reached_place_ids": ["mountain_region"],
+		"death_record_ids": ["wild_dog_ambush"]
+	})
 
 	asserts.equal(run_save.kind, "run", "run save kind is separate")
 	asserts.equal(meta_save.kind, "meta", "meta save kind is separate")
@@ -33,10 +41,25 @@ func run(asserts) -> void:
 		asserts.equal(decoded_choice.state[field], choice_state[field], "run save preserves choice field '%s'" % field)
 		asserts.equal(decoded_choice.run_state.get(field), choice_state[field], "hydrated RunState preserves choice field '%s'" % field)
 	asserts.true_value(SaveCodec.decode_meta(meta_save).ok, "meta save decodes")
+	asserts.equal(SaveCodec.decode_meta(meta_save).state.past_choice_ids, ["daimyo_relinquish_tea"], "meta save preserves past choice stable IDs")
+	asserts.equal(SaveCodec.decode_meta(meta_save).state.reached_place_ids, ["mountain_region"], "meta save preserves reached place stable IDs")
+	asserts.equal(SaveCodec.decode_meta(meta_save).state.death_record_ids, ["wild_dog_ambush"], "meta save preserves death record stable IDs")
 	asserts.false_value(SaveCodec.decode_meta(meta_save).state.has("tea_ware_use_count"), "meta save does not gain tea ware attachment state")
+	asserts.false_value(run_save.run.has("past_choice_ids"), "run save remains separate from previous-run choice memory")
+	asserts.false_value(run_save.run.has("reached_place_ids"), "run save remains separate from reached-place memory")
+	asserts.false_value(run_save.run.has("death_record_ids"), "run save remains separate from death memory")
 	asserts.false_value(SaveCodec.decode_meta(run_save).ok, "run save cannot decode as meta")
 	asserts.false_value(SaveCodec.decode_run({"schema_version": SaveCodec.CURRENT_SCHEMA_VERSION, "kind": "run", "run": []}).ok, "run save rejects non-dictionary payload")
 	asserts.false_value(SaveCodec.decode_meta({"schema_version": SaveCodec.CURRENT_SCHEMA_VERSION, "kind": "meta", "meta": []}).ok, "meta save rejects non-dictionary payload")
+	var legacy_meta := SaveCodec.decode_meta({"schema_version": 1, "kind": "meta", "meta": {"run_count": 4}})
+	asserts.true_value(legacy_meta.ok, "legacy schema-v1 meta save receives new query defaults")
+	asserts.equal(legacy_meta.state.past_choice_ids, [], "legacy schema-v1 defaults past choices")
+	asserts.equal(legacy_meta.state.reached_place_ids, [], "legacy schema-v1 defaults reached places")
+	asserts.equal(legacy_meta.state.death_record_ids, [], "legacy schema-v1 defaults death records")
+	var malformed_meta := MetaState.new().to_dictionary()
+	malformed_meta.run_count = 1
+	malformed_meta.death_record_ids = "wild_dog_ambush"
+	asserts.false_value(SaveCodec.decode_meta({"schema_version": 1, "kind": "meta", "meta": malformed_meta}).ok, "meta save rejects malformed query input types")
 	asserts.false_value(SaveCodec.decode_run({"schema_version": SaveCodec.CURRENT_SCHEMA_VERSION, "kind": "run", "run": {"seed": 1, "tail_state": {"stage": 3, "tail_count": 2, "path_flags": [], "transition_history": []}}}).ok, "run save rejects malformed tail state")
 	var invalid_history_flag := TailState.default_dictionary()
 	invalid_history_flag.transition_history[0].path_flags = ["morality_score"]

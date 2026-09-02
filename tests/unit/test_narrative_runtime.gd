@@ -16,6 +16,16 @@ class FakeCatalog:
 	func get_definitions(dataset: String) -> Array:
 		return definitions.get(dataset, [])
 
+	func find_character_by_id(character_id: String) -> Dictionary:
+		var normalized := character_id.to_lower().replace("-", "_")
+		for character in get_definitions("characters"):
+			if String(character.get("id", "")) == normalized:
+				return character
+		return {}
+
+	func character_has_meta_memory(character_id: String) -> bool:
+		return bool(find_character_by_id(character_id).get("meta_memory", false))
+
 func run(asserts) -> void:
 	_assert_generated_events_execute_from_data(asserts)
 	_assert_true_false_conditions_alter_options(asserts)
@@ -26,6 +36,8 @@ func run(asserts) -> void:
 	_assert_result_contracts_are_rejected(asserts)
 	_assert_grant_item_requires_item_definitions(asserts)
 	_assert_run_meta_boundary(asserts)
+	_assert_allowed_memory_speakers_can_query_previous_runs(asserts)
+	_assert_meta_query_speaker_rejections(asserts)
 	_assert_read_model_does_not_mutate_state(asserts)
 
 func _assert_generated_events_execute_from_data(asserts) -> void:
@@ -39,7 +51,8 @@ func _assert_generated_events_execute_from_data(asserts) -> void:
 	var teahouse_model: Dictionary = runtime_result.runtime.read_model_for_event("roadside_teahouse_intro", run_state, meta_state)
 	var shrine_model: Dictionary = runtime_result.runtime.read_model_for_event("mountain_shrine_echo", run_state, meta_state)
 	asserts.true_value(teahouse_model.ok, "first sample story event opens from generated data")
-	asserts.true_value(shrine_model.ok, "second sample story event opens from generated data")
+	asserts.false_value(shrine_model.ok, "ordinary generated speaker cannot query meta state")
+	asserts.equal(shrine_model.reason, "unknown_meta_memory_speaker", "generated speaker without a character policy returns stable rejection")
 
 func _assert_true_false_conditions_alter_options(asserts) -> void:
 	var runtime: NarrativeRuntime = _fixture_runtime(asserts)
@@ -205,24 +218,60 @@ func _assert_grant_item_requires_item_definitions(asserts) -> void:
 	asserts.true_value(events_only_flag.ok, "set_run_flag-only events do not require item definitions")
 
 func _assert_run_meta_boundary(asserts) -> void:
-	var runtime: NarrativeRuntime = _fixture_runtime(asserts)
+	var runtime: NarrativeRuntime = _runtime_from_events(asserts, [_meta_query_event("CHR-5", [{"type": "meta_flag", "id": "remembered_old_shrine"}, {"type": "meta_run_count_at_least", "value": 3}])])
 	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": "common_region"}
-	var no_meta: Dictionary = runtime.read_model_for_event("mountain_shrine_echo", run_state)
+	var no_meta: Dictionary = runtime.read_model_for_event("meta_query_event", run_state)
 	asserts.true_value(no_meta.ok, "allowed meta condition can evaluate without leaking run state")
-	asserts.equal(_option_ids(no_meta.read_model), ["ordinary_prayer"], "missing meta defaults to false for meta_flag and true for meta_not_flag")
+	asserts.equal(_option_ids(no_meta.read_model), [], "missing previous-run state keeps positive meta queries false")
 	var meta_state := {"dialogue_memory_flags": ["remembered_old_shrine"], "unlocked_meta_flags": [], "run_count": 3}
-	var with_meta: Dictionary = runtime.read_model_for_event("mountain_shrine_echo", run_state, meta_state)
-	asserts.equal(_option_ids(with_meta.read_model), ["remembered_prayer"], "explicit allowed meta condition can alter options")
+	var with_meta: Dictionary = runtime.read_model_for_event("meta_query_event", run_state, meta_state)
+	asserts.equal(_option_ids(with_meta.read_model), ["remember"], "allowed Sen Rikyu speaker can query run count and memory flags")
 	var boundary_runtime: NarrativeRuntime = _runtime_from_events(asserts, [{
 		"id": "bad_meta_condition",
 		"name": "Bad Meta Condition",
 		"status": "확정",
 		"replay_policy": "repeat",
 		"start_node_id": "start",
-		"nodes": [{"id": "start", "text": "", "options": [{"id": "bad", "display_text": "Bad", "conditions": [{"type": "meta_inventory_has_item", "id": "wood"}], "results": [], "next_node_id": "", "completes_event": true}]}]
+		"nodes": [{"id": "start", "speaker_id": "CHR-5", "text": "", "options": [{"id": "bad", "display_text": "Bad", "conditions": [{"type": "meta_inventory_has_item", "id": "wood"}], "results": [], "next_node_id": "", "completes_event": true}]}]
 	}])
 	var boundary_result: Dictionary = boundary_runtime.read_model_for_event("bad_meta_condition", run_state, meta_state)
 	asserts.false_value(boundary_result.ok, "non-allowlisted meta condition type cannot query meta state")
+	asserts.equal(boundary_result.reason, "meta_boundary_violation", "unsupported meta query returns stable rejection")
+
+func _assert_allowed_memory_speakers_can_query_previous_runs(asserts) -> void:
+	var conditions := [
+		{"type": "meta_run_count_at_least", "value": 2},
+		{"type": "meta_past_choice", "id": "daimyo_relinquish_tea"},
+		{"type": "meta_reached_place", "id": "mountain_region"},
+		{"type": "meta_death_record", "id": "wild_dog_ambush"}
+	]
+	var meta_state := {
+		"run_count": 2,
+		"past_choice_ids": ["daimyo_relinquish_tea"],
+		"reached_place_ids": ["mountain_region"],
+		"death_record_ids": ["wild_dog_ambush"]
+	}
+	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": ""}
+	for speaker_id in ["CHR-1", "CHR-5"]:
+		var runtime: NarrativeRuntime = _runtime_from_events(asserts, [_meta_query_event(speaker_id, conditions)])
+		var result: Dictionary = runtime.read_model_for_event("meta_query_event", run_state, meta_state)
+		asserts.true_value(result.ok, "%s can query previous-run state" % speaker_id)
+		asserts.equal(_option_ids(result.read_model), ["remember"], "%s can satisfy all four previous-run query classes" % speaker_id)
+
+func _assert_meta_query_speaker_rejections(asserts) -> void:
+	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": ""}
+	var meta_state := {"past_choice_ids": ["daimyo_relinquish_tea"]}
+	var ordinary: NarrativeRuntime = _runtime_from_events(asserts, [_meta_query_event("CHR-2", [{"type": "meta_past_choice", "id": "daimyo_relinquish_tea"}])])
+	var ordinary_result: Dictionary = ordinary.read_model_for_event("meta_query_event", run_state, meta_state)
+	asserts.false_value(ordinary_result.ok, "ordinary speaker cannot query previous runs")
+	asserts.equal(ordinary_result.reason, "meta_memory_not_allowed", "ordinary speaker returns stable explicit rejection")
+	var unknown: NarrativeRuntime = _runtime_from_events(asserts, [_meta_query_event("CHR-404", [{"type": "meta_past_choice", "id": "daimyo_relinquish_tea"}])])
+	var unknown_result: Dictionary = unknown.read_model_for_event("meta_query_event", run_state, meta_state)
+	asserts.false_value(unknown_result.ok, "unknown speaker cannot query previous runs")
+	asserts.equal(unknown_result.reason, "unknown_meta_memory_speaker", "unknown speaker returns stable explicit rejection")
+	var selection: Dictionary = ordinary.select_option("meta_query_event", "start", "remember", run_state, meta_state)
+	asserts.false_value(selection.ok, "option selection enforces the same speaker gate")
+	asserts.equal(selection.reason, "meta_memory_not_allowed", "selection returns the ordinary speaker rejection")
 
 func _assert_read_model_does_not_mutate_state(asserts) -> void:
 	var runtime: NarrativeRuntime = _fixture_runtime(asserts)
@@ -238,6 +287,11 @@ func _fixture_runtime(asserts) -> NarrativeRuntime:
 func _runtime_result_from_events(events: Array) -> Dictionary:
 	return NarrativeRuntime.new().from_catalog(FakeCatalog.new({
 		"items": [{"id": "ash_stained_iron_kettle", "name": "재 묻은 철솥", "status": "초안"}],
+		"characters": [
+			{"id": "chr_1", "meta_memory": true},
+			{"id": "chr_2", "meta_memory": false},
+			{"id": "chr_5", "meta_memory": true}
+		],
 		"events": events
 	}))
 
@@ -260,6 +314,21 @@ func _single_result_event(result: Dictionary) -> Dictionary:
 		"replay_policy": "repeat",
 		"start_node_id": "start",
 		"nodes": [{"id": "start", "text": "", "options": [{"id": "done", "display_text": "Done", "results": [result], "next_node_id": "", "completes_event": true}]}]
+	}
+
+func _meta_query_event(speaker_id: String, conditions: Array) -> Dictionary:
+	return {
+		"id": "meta_query_event",
+		"name": "Meta Query Event",
+		"status": "확정",
+		"replay_policy": "repeat",
+		"start_node_id": "start",
+		"nodes": [{
+			"id": "start",
+			"speaker_id": speaker_id,
+			"text": "",
+			"options": [{"id": "remember", "display_text": "Remember", "conditions": conditions, "results": [], "next_node_id": "", "completes_event": true}]
+		}]
 	}
 
 func _fixture_events() -> Array:
