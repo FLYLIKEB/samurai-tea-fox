@@ -52,6 +52,11 @@ func run() -> void:
 	if sprite == null or sprite.texture == null:
 		failures.append("player sprite remains visible in main scene")
 
+	var dummy = main.get_node_or_null("CombatDummy")
+	var dummy_sprite := dummy.get_node_or_null("Sprite2D") as Sprite2D if dummy != null else null
+	if dummy_sprite == null or dummy_sprite.texture == null:
+		failures.append("combat dummy renders with a promoted enemy character sprite")
+
 	_assert_runtime_death_replaces_run(main, player)
 	_assert_stale_full_death_retry_preserves_newer_run(main)
 
@@ -68,6 +73,8 @@ func run() -> void:
 			failures.append("runtime HUD status panel renders icon-backed resource rows")
 		elif _texture_rect_count(quickslot_panel) < 4 or _label_count(quickslot_panel) < 4:
 			failures.append("runtime HUD quickslots render icon-backed rows")
+		if not _all_controls_ignore_mouse(hud):
+			failures.append("runtime HUD does not block world click and touch input")
 
 	main.queue_free()
 	_cleanup_lifecycle_files()
@@ -94,6 +101,14 @@ func _label_count(node: Node) -> int:
 	for child in node.get_children():
 		count += _label_count(child)
 	return count
+
+func _all_controls_ignore_mouse(node: Node) -> bool:
+	if node is Control and (node as Control).mouse_filter != Control.MOUSE_FILTER_IGNORE:
+		return false
+	for child in node.get_children():
+		if not _all_controls_ignore_mouse(child):
+			return false
+	return true
 
 func _assert_runtime_death_replaces_run(main, player) -> void:
 	_cleanup_lifecycle_files()

@@ -6,6 +6,7 @@ const GameCommand = preload("res://src/core/commands/game_command.gd")
 const EquipmentModel = preload("res://src/inventory/equipment_model.gd")
 const InventoryModel = preload("res://src/inventory/inventory_model.gd")
 const MovementCommandSelector = preload("res://src/core/commands/movement_command_selector.gd")
+const PlayerMovementState = preload("res://src/player/player_movement_state.gd")
 const TeaService = preload("res://src/tea/tea_service.gd")
 const BiomeProgressionState = preload("res://src/world/biome/biome_progression_state.gd")
 const RunState = preload("res://src/save/run_state.gd")
@@ -102,17 +103,75 @@ func _physics_process(_delta: float) -> void:
 	var desktop_command = _desktop_adapter.poll_movement_command()
 	player.submit_command(_movement_selector.select(desktop_command))
 	if Input.is_action_just_pressed("attack"):
-		player.submit_command(_desktop_adapter.command_for_action("attack", desktop_command.direction))
+		submit_desktop_action_command("attack", desktop_command.direction)
 	if Input.is_action_just_pressed("dodge"):
-		player.submit_command(_desktop_adapter.command_for_action("dodge", desktop_command.direction))
+		submit_desktop_action_command("dodge", desktop_command.direction)
+	if Input.is_action_just_pressed("drink_tea"):
+		submit_desktop_action_command("drink_tea")
+	if Input.is_action_just_pressed("cast_ability"):
+		submit_desktop_action_command("cast_ability", desktop_command.direction)
+	if Input.is_action_just_pressed("interact"):
+		submit_desktop_action_command("interact", desktop_command.direction)
+
+func _unhandled_input(event) -> void:
+	var handled := false
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		handled = submit_pointer_interaction(world_position_from_viewport_position(event.position))
+	elif event is InputEventScreenTouch and event.pressed:
+		handled = submit_pointer_interaction(world_position_from_viewport_position(event.position))
+	if handled:
+		get_viewport().set_input_as_handled()
 
 func submit_mobile_movement_command(command) -> bool:
 	return _movement_selector.submit_mobile_command(command)
 
 func submit_mobile_action_command(command) -> bool:
-	if command is GameCommand and command.type == GameCommand.Type.INTERACT and not String(command.payload.get("target_id", "")).is_empty():
-		return acquisition_service != null and bool(acquisition_service.handle_command(command).ok)
-	return player.submit_command(command)
+	return submit_action_command(command)
+
+func submit_desktop_action_command(action: String, direction := Vector2i.ZERO, slot := 0) -> bool:
+	var command = _desktop_adapter.command_for_action(action, direction, slot)
+	if not command is GameCommand:
+		return false
+	if command.type == GameCommand.Type.INTERACT and String(command.payload.get("target_id", "")).is_empty():
+		return submit_player_interaction(direction)
+	return submit_action_command(command)
+
+func submit_pointer_interaction(world_position: Vector2) -> bool:
+	var clicked_cell := world_cell_from_world_position(world_position)
+	for cell in _pointer_candidate_cells(clicked_cell):
+		if submit_interaction_at_world_cell(cell):
+			return true
+	return false
+
+func submit_player_interaction(direction := Vector2i.ZERO) -> bool:
+	var origin_cell := Vector2i.ZERO
+	if player != null:
+		origin_cell = world_cell_from_world_position(player.global_position)
+	var cells := _interaction_candidate_cells(origin_cell, direction)
+	for cell in cells:
+		if submit_interaction_at_world_cell(cell):
+			return true
+	return false
+
+func submit_interaction_at_world_cell(cell: Vector2i) -> bool:
+	var target_id := _interaction_target_id_for_cell(cell)
+	if target_id.is_empty():
+		return false
+	return submit_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": target_id}))
+
+func submit_action_command(command) -> bool:
+	if not command is GameCommand:
+		return false
+	match command.type:
+		GameCommand.Type.INTERACT:
+			var target_id := String(command.payload.get("target_id", ""))
+			if target_id.is_empty():
+				return submit_player_interaction(command.direction)
+			return acquisition_service != null and bool(acquisition_service.handle_command(command).ok)
+		GameCommand.Type.DRINK_TEA:
+			return _handle_tea_command(command)
+		_:
+			return player != null and player.submit_command(command)
 
 func restore_run_state(state) -> Dictionary:
 	if not state is RunState:
@@ -333,6 +392,100 @@ func _activate_run_state(state: RunState) -> Dictionary:
 
 func _vector_from_dictionary(data: Dictionary) -> Vector2i:
 	return Vector2i(int(data.get("x", 0)), int(data.get("y", 0)))
+
+func world_cell_from_world_position(world_position: Vector2) -> Vector2i:
+	var tile_size := _runtime_tile_size()
+	var local_position := world_position - _runtime_world_origin()
+	return Vector2i(int(floor(local_position.x / tile_size)), int(floor(local_position.y / tile_size)))
+
+func world_position_from_viewport_position(viewport_position: Vector2) -> Vector2:
+	return get_viewport().get_canvas_transform().affine_inverse() * viewport_position
+
+func world_position_for_cell_center(cell: Vector2i) -> Vector2:
+	var tile_size := _runtime_tile_size()
+	return _runtime_world_origin() + Vector2(
+		cell.x * tile_size + tile_size * 0.5,
+		cell.y * tile_size + tile_size * 0.5
+	)
+
+func _runtime_tile_size() -> float:
+	if world_data != null:
+		return float(world_data.tile_size)
+	var renderer_input: Dictionary = generated_world.get("renderer_input", {})
+	return float(int(renderer_input.get("tile_size", 32)))
+
+func _runtime_world_origin() -> Vector2:
+	if world_visuals != null:
+		return world_visuals.global_position
+	var renderer_input: Dictionary = generated_world.get("renderer_input", {})
+	if not renderer_input.is_empty():
+		return _centered_world_origin(renderer_input)
+	return Vector2.ZERO
+
+func _interaction_candidate_cells(origin_cell: Vector2i, direction := Vector2i.ZERO) -> Array:
+	var forward: Vector2i = _resolved_grid_direction(direction)
+	var candidates := [origin_cell]
+	if forward != Vector2i.ZERO:
+		candidates.append(origin_cell + forward)
+	for adjacent in [Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP]:
+		var cell: Vector2i = origin_cell + adjacent
+		if not candidates.has(cell):
+			candidates.append(cell)
+	return candidates
+
+func _pointer_candidate_cells(clicked_cell: Vector2i) -> Array:
+	return [
+		clicked_cell,
+		clicked_cell + Vector2i.RIGHT,
+		clicked_cell + Vector2i.LEFT,
+		clicked_cell + Vector2i.DOWN,
+		clicked_cell + Vector2i.UP,
+		clicked_cell + Vector2i(1, 1),
+		clicked_cell + Vector2i(1, -1),
+		clicked_cell + Vector2i(-1, 1),
+		clicked_cell + Vector2i(-1, -1)
+	]
+
+func _resolved_grid_direction(direction: Vector2i) -> Vector2i:
+	if direction != Vector2i.ZERO:
+		return Vector2i(clampi(direction.x, -1, 1), clampi(direction.y, -1, 1))
+	if player != null and player.get("movement_state") != null:
+		match player.movement_state.facing:
+			PlayerMovementState.Facing.DOWN:
+				return Vector2i.DOWN
+			PlayerMovementState.Facing.LEFT:
+				return Vector2i.LEFT
+			PlayerMovementState.Facing.RIGHT:
+				return Vector2i.RIGHT
+			PlayerMovementState.Facing.UP:
+				return Vector2i.UP
+	return Vector2i.DOWN
+
+func _interaction_target_id_for_cell(cell: Vector2i) -> String:
+	if world_data == null or not world_data.contains(cell):
+		return ""
+	for target_id_value in world_data.get_interactables(cell):
+		var target_id := String(target_id_value)
+		if _is_available_acquisition_target(target_id):
+			return target_id
+	return ""
+
+func _is_available_acquisition_target(target_id: String) -> bool:
+	if acquisition_service == null or target_id.is_empty():
+		return false
+	var gatherable: Dictionary = acquisition_service.gatherable_for(target_id)
+	if not gatherable.is_empty():
+		return not bool(gatherable.get("depleted", false))
+	return not acquisition_service.pickup_for(target_id).is_empty()
+
+func _handle_tea_command(command: GameCommand) -> bool:
+	if tea_service == null:
+		return false
+	var start_result: Dictionary = tea_service.start_drinking(maxi(command.slot, 0))
+	if not start_result.ok:
+		return false
+	var resources = player.resources if player != null else null
+	return bool(tea_service.complete_drinking(start_result.action, resources).ok)
 
 func _on_tea_drink_completed(result: Dictionary) -> void:
 	if equipment == null:

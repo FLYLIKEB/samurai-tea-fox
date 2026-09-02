@@ -31,6 +31,42 @@ func run(asserts) -> void:
 	asserts.equal(runtime.main.inventory.get_total_quantity("wood"), 1, "live interaction grants the confirmed resource")
 	asserts.true_value(runtime.main.run_state.acquisitions.gatherables[0].depleted, "live acquisition changes persist into RunState")
 
+	var desktop_runtime := _configured_runtime(catalog, RunState.new(), Vector2i.RIGHT)
+	asserts.true_value(desktop_runtime.result.ok, "desktop interaction fixture configures")
+	asserts.true_value(desktop_runtime.main.submit_desktop_action_command("interact", Vector2i.RIGHT), "desktop interact resolves the forward world target")
+	asserts.equal(desktop_runtime.main.inventory.get_total_quantity("wood"), 1, "desktop interact grants through the shared acquisition command")
+
+	var mobile_button_runtime := _configured_runtime(catalog, RunState.new(), Vector2i.RIGHT)
+	asserts.true_value(mobile_button_runtime.result.ok, "mobile button interaction fixture configures")
+	asserts.true_value(mobile_button_runtime.main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.RIGHT)), "mobile interact without target resolves through the shared nearby target path")
+	asserts.equal(mobile_button_runtime.main.inventory.get_total_quantity("wood"), 1, "mobile interact without target grants through the shared acquisition command")
+
+	var pointer_runtime := _configured_runtime(catalog, RunState.new(), Vector2i.ZERO)
+	asserts.true_value(pointer_runtime.result.ok, "pointer interaction fixture configures")
+	var pointer_position: Vector2 = pointer_runtime.main.world_position_for_cell_center(Vector2i.ZERO)
+	asserts.true_value(pointer_runtime.main.submit_pointer_interaction(pointer_position), "pointer click resolves the clicked interactable cell")
+	asserts.equal(pointer_runtime.main.inventory.get_total_quantity("wood"), 1, "pointer click grants through the shared acquisition command")
+
+	var near_pointer_runtime := _configured_runtime(catalog, RunState.new(), Vector2i.RIGHT)
+	asserts.true_value(near_pointer_runtime.result.ok, "nearby pointer interaction fixture configures")
+	var near_pointer_position: Vector2 = near_pointer_runtime.main.world_position_for_cell_center(Vector2i.ZERO)
+	asserts.true_value(near_pointer_runtime.main.submit_pointer_interaction(near_pointer_position), "pointer click tolerates one-cell sprite edge misses")
+	asserts.equal(near_pointer_runtime.main.inventory.get_total_quantity("wood"), 1, "nearby pointer click grants through the shared acquisition command")
+
+	var empty_click_runtime := _configured_runtime(catalog, RunState.new(), Vector2i.ZERO)
+	asserts.true_value(empty_click_runtime.result.ok, "empty pointer fixture configures")
+	var inventory_before_empty_click: Dictionary = empty_click_runtime.main.inventory.to_snapshot()
+	asserts.false_value(empty_click_runtime.main.submit_pointer_interaction(empty_click_runtime.main.world_position_for_cell_center(Vector2i(2, 0))), "empty pointer click is ignored")
+	asserts.equal(empty_click_runtime.main.inventory.to_snapshot(), inventory_before_empty_click, "empty pointer click does not mutate inventory")
+
+	var tea_runtime := _configured_runtime(catalog, RunState.new())
+	asserts.true_value(tea_runtime.result.ok, "tea command fixture configures")
+	asserts.true_value(tea_runtime.main.inventory.add_item("tea_8", 1).ok, "generated tea leaf can be stocked for command routing")
+	asserts.true_value(tea_runtime.main.inventory.add_item("humble_clay_bowl", 1).ok, "generated tea vessel can be stocked for command routing")
+	asserts.true_value(tea_runtime.main.tea_service.brew("tea_8", "humble_clay_bowl", tea_runtime.main.inventory, 0).ok, "prepared tea can occupy quickslot 0")
+	asserts.true_value(tea_runtime.main.submit_desktop_action_command("drink_tea", Vector2i.ZERO, 0), "desktop tea command routes into TeaService")
+	asserts.false_value(tea_runtime.main.tea_service.has_prepared_tea(0), "routed tea command consumes the prepared quickslot use")
+
 	var saved_state: RunState = RunState.from_dictionary(runtime.main.snapshot_run_state())
 	var restored := _configured_runtime(catalog, saved_state)
 	asserts.true_value(restored.result.ok, "main reloads acquisition state during world lifecycle configuration")
@@ -61,10 +97,16 @@ func run(asserts) -> void:
 	asserts.equal(probe.reasons, ["drop_already_processed"], "duplicate drop failure is observable without mutating inventory")
 	source.free()
 	runtime.main.free()
+	desktop_runtime.main.free()
+	mobile_button_runtime.main.free()
+	pointer_runtime.main.free()
+	near_pointer_runtime.main.free()
+	empty_click_runtime.main.free()
+	tea_runtime.main.free()
 	restored.main.free()
 	drop_restored.main.free()
 
-func _configured_runtime(catalog, state: RunState) -> Dictionary:
+func _configured_runtime(catalog, state: RunState, resource_position := Vector2i.ZERO) -> Dictionary:
 	var runtime := Main.new()
 	runtime.catalog = catalog
 	runtime.run_state = state
@@ -72,10 +114,10 @@ func _configured_runtime(catalog, state: RunState) -> Dictionary:
 	if not services.ok:
 		return {"main": runtime, "result": services}
 	var world := WorldData.new(3, 1, "grass", true)
-	world.reserve_entity("resource_0", Vector2i.ZERO, Vector2i.ONE, true, {"resource_id": "wood"})
+	world.reserve_entity("resource_0", resource_position, Vector2i.ONE, true, {"resource_id": "wood"})
 	runtime.generated_world = {
 		"ok": true,
 		"world_data": world.to_dictionary(),
-		"resource_nodes": [{"id": "resource_0", "resource_id": "wood", "position": {"x": 0, "y": 0}}]
+		"resource_nodes": [{"id": "resource_0", "resource_id": "wood", "position": {"x": resource_position.x, "y": resource_position.y}}]
 	}
 	return {"main": runtime, "result": runtime._configure_acquisition_for_generated_world()}
