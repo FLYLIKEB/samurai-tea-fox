@@ -4,6 +4,7 @@ class_name ChoiceRuntime
 const ChoiceDefinition = preload("res://src/choice/choice_definition.gd")
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const NarrativeConditionResolver = preload("res://src/narrative/narrative_condition_resolver.gd")
+const TailState = preload("res://src/player/tail_state.gd")
 
 var definitions: Dictionary = {}
 var condition_resolver := NarrativeConditionResolver.new()
@@ -62,6 +63,9 @@ func can_apply(choice_id: String, run_state, context := {}) -> Dictionary:
 			return condition_result
 		if not condition_result.passed:
 			return _fail("choice_condition_failed", "Choice '%s' is not currently available." % choice_id)
+	var tail_preflight := _preflight_tail_choice(definition, run_state)
+	if not tail_preflight.ok:
+		return tail_preflight
 	return {"ok": true}
 
 func apply_choice(choice_id: String, run_state, context := {}) -> Dictionary:
@@ -92,6 +96,9 @@ func apply_choice(choice_id: String, run_state, context := {}) -> Dictionary:
 	_write_state_field(run_state, "target_survival", survival)
 	_write_state_field(run_state, "philosophy_marks", marks)
 	_write_state_field(run_state, "final_room_effects", effects)
+	var tail_result := _apply_tail_choice(definition, run_state)
+	if not tail_result.ok:
+		return tail_result
 	var meta_events: Array = []
 	if bool(definition.meta_record):
 		meta_events.append({
@@ -99,6 +106,15 @@ func apply_choice(choice_id: String, run_state, context := {}) -> Dictionary:
 			"choice_id": choice_id,
 			"choice_key": String(definition.choice_key),
 			"run_flag": String(definition.run_flag)
+		})
+	if bool(tail_result.get("advanced", false)):
+		meta_events.append({
+			"type": "tail_stage_reached",
+			"target": "tail_stage",
+			"value": int(tail_result.stage),
+			"source_kind": "choice",
+			"source_id": choice_id,
+			"choice_key": String(definition.choice_key)
 		})
 	return {"ok": true, "choice": definition.duplicate(true), "meta_events": meta_events}
 
@@ -142,7 +158,35 @@ func _validate_run_state(run_state) -> Dictionary:
 		var value = _state_field(run_state, field, {})
 		if typeof(value) != TYPE_DICTIONARY:
 			return _fail("invalid_choice_state", "Choice run state field '%s' must be a dictionary." % field)
+	var tail_state = _state_field(run_state, "tail_state", TailState.default_dictionary())
+	if typeof(tail_state) != TYPE_DICTIONARY:
+		return _fail("invalid_choice_state", "Choice run state field 'tail_state' must be a dictionary.")
 	return {"ok": true}
+
+func _preflight_tail_choice(definition: Dictionary, run_state) -> Dictionary:
+	if not _has_tail_effect(definition):
+		return {"ok": true}
+	var tail_result := TailState.from_dictionary(_state_field(run_state, "tail_state", TailState.default_dictionary()))
+	if not tail_result.ok:
+		return tail_result
+	return tail_result.tail_state.apply_choice_result(definition)
+
+func _apply_tail_choice(definition: Dictionary, run_state) -> Dictionary:
+	if not _has_tail_effect(definition):
+		return {"ok": true, "advanced": false}
+	var tail_result := TailState.from_dictionary(_state_field(run_state, "tail_state", TailState.default_dictionary()))
+	if not tail_result.ok:
+		return tail_result
+	var tail_state: TailState = tail_result.tail_state
+	var apply_result: Dictionary = tail_state.apply_choice_result(definition)
+	if not apply_result.ok:
+		return apply_result
+	_write_state_field(run_state, "tail_state", tail_state.to_dictionary())
+	_write_state_field(run_state, "tails", tail_state.tail_count)
+	return apply_result
+
+func _has_tail_effect(definition: Dictionary) -> bool:
+	return definition.has("tail_stage") or definition.has("tail_path_flags") or definition.has("path_flags")
 
 func _write_state_field(run_state, field: String, value) -> void:
 	if run_state is Dictionary:

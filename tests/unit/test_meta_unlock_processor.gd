@@ -24,7 +24,10 @@ func _assert_generated_unlocks_evaluate_from_data(asserts) -> void:
 	var result: Dictionary = RunEndProcessor.new().apply_run_end_with_unlocks(_empty_meta(), {
 		"reached_biome_ids": ["common_region"],
 		"best_reached_biome_order": 1,
-		"tail_stage": 3,
+		"tail_state": {"stage": 3, "tail_count": 3, "path_flags": ["harmony"], "transition_history": [
+			{"source_kind": "run_start", "source_id": "run_start", "source_key": "RUN_START", "stage": 1, "path_flags": []},
+			{"source_kind": "event", "source_id": "harmony_resolution", "source_key": "", "stage": 3, "path_flags": ["harmony"]}
+		]},
 		"discovered_records": ["memory_tea"],
 		"final_tea_room_reached": true
 	}, catalog.get_definitions("meta_unlocks"))
@@ -36,6 +39,7 @@ func _assert_generated_unlocks_evaluate_from_data(asserts) -> void:
 	asserts.true_value(result.meta_state.discovered_records.has("memory_tea_first_record"), "discovery event grants discovered record reward")
 	asserts.true_value(result.meta_state.unlocked_meta_flags.has("tail_stage_3_record"), "tail stage unlock definition is recorded")
 	asserts.true_value(result.meta_state.unlocked_meta_flags.has("tail_stage_3_start_choice"), "tail stage reward target is unlocked")
+	asserts.false_value(result.meta_state.has("tails"), "meta state does not persist tail count")
 	asserts.true_value(result.meta_state.dialogue_memory_flags.has("sen_rikyu_reunion_dialogue_1"), "run count reward grants Sen Rikyu dialogue memory flag")
 	asserts.true_value(result.meta_state.dialogue_memory_flags.has("gumiho_father_loop_dialogue_1"), "run count reward grants father dialogue memory flag")
 	asserts.true_value(RunEndProcessor.new().is_unlocked(result.meta_state, "common_biome_first_entry"), "query API reports unlocked definition ids")

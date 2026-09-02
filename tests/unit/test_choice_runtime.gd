@@ -4,6 +4,7 @@ const ChoiceRuntime = preload("res://src/choice/choice_runtime.gd")
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const MetaState = preload("res://src/save/meta_state.gd")
 const NarrativeRuntime = preload("res://src/narrative/narrative_runtime.gd")
+const TailState = preload("res://src/player/tail_state.gd")
 
 class FakeCatalog:
 	extends RefCounted
@@ -19,6 +20,7 @@ class FakeCatalog:
 func run(asserts) -> void:
 	_asserts_catalog_definitions_are_data_driven(asserts)
 	_asserts_choice_results_apply_to_run_state(asserts)
+	_asserts_choice_tail_effects_apply_to_run_state_only(asserts)
 	_asserts_duplicate_and_exclusive_choices_are_rejected(asserts)
 	_asserts_availability_conditions_and_target_state_are_checked(asserts)
 	_asserts_narrative_commands_apply_choices(asserts)
@@ -54,6 +56,32 @@ func _asserts_choice_results_apply_to_run_state(asserts) -> void:
 	asserts.equal(projection.target_survival.daimyo, true, "projection exposes target survival")
 	asserts.equal(projection.philosophy_marks, ["和·공존", "敬·마주봄"], "projection exposes philosophy marks")
 	asserts.equal(projection.final_room_effects.size(), 1, "projection exposes final room effects")
+
+func _asserts_choice_tail_effects_apply_to_run_state_only(asserts) -> void:
+	var tail_choice := _definition("spare_old_yokai", "SPARE_OLD_YOKAI", "spared_old_yokai", true, true, ["和·공존"], "조화 경로 영향")
+	tail_choice["tail_stage"] = 3
+	tail_choice["tail_path_flags"] = ["humanity", "harmony"]
+	var runtime := ChoiceRuntime.new()
+	asserts.true_value(runtime.from_catalog(FakeCatalog.new({"choices": [tail_choice]})).ok, "choice with optional tail effect loads")
+	var run_state := _empty_run()
+	var meta_state := MetaState.new().to_dictionary()
+	var result: Dictionary = runtime.apply_choice("spare_old_yokai", run_state)
+	asserts.true_value(result.ok, "choice tail effect applies")
+	asserts.equal(run_state.tails, 3, "choice tail effect mirrors tail count in run state")
+	asserts.equal(run_state.tail_state.stage, 3, "choice tail effect advances run-scoped TailState")
+	asserts.equal(run_state.tail_state.path_flags, ["humanity", "harmony"], "choice tail effect records stable path flags")
+	asserts.equal(result.meta_events[1].type, "tail_stage_reached", "choice emits meta fact event for tail experience")
+	asserts.equal(result.meta_events[1].value, 3, "tail meta event carries reached stage only")
+	asserts.false_value(meta_state.has("tails"), "choice tail effect does not create persistent tail count")
+
+	var invalid_tail_choice := _definition("yokai_regret", "YOKAI_REGRET", "yokai_regret", false, true, [], "퇴행 없음")
+	invalid_tail_choice["tail_stage"] = 2
+	var blocked: Dictionary = runtime.register_definition(invalid_tail_choice)
+	asserts.true_value(blocked.ok, "lower tail choice data can be registered")
+	var regression: Dictionary = runtime.apply_choice("yokai_regret", run_state)
+	asserts.false_value(regression.ok, "choice cannot regress tail stage")
+	asserts.equal(regression.reason, "tail_stage_regression", "choice tail regression has stable reason")
+	asserts.false_value(run_state.choice_history.has("yokai_regret"), "failed tail preflight does not record choice")
 
 func _asserts_duplicate_and_exclusive_choices_are_rejected(asserts) -> void:
 	var runtime := _runtime(asserts)
@@ -133,7 +161,9 @@ func _empty_run() -> Dictionary:
 		"choice_group_selections": {},
 		"target_survival": {},
 		"philosophy_marks": [],
-		"final_room_effects": []
+		"final_room_effects": [],
+		"tail_state": TailState.default_dictionary(),
+		"tails": 1
 	}
 
 func _definitions() -> Array:
