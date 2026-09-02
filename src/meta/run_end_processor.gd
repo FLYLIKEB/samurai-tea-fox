@@ -112,6 +112,7 @@ func _prepare_next_meta(meta_state: Dictionary, run_summary: Dictionary) -> Dict
 		_append_unique(next_meta.reached_place_ids, "final_tea_room")
 	_append_ids(next_meta.death_record_ids, run_summary.get("death_record_ids", []))
 	_append_stable_id(next_meta.death_record_ids, run_summary.get("death_record_id", ""))
+	_append_ids(next_meta.discovered_records, run_summary.get("discovered_records", []))
 
 	next_meta["run_count"] = int(next_meta.get("run_count", 0)) + 1
 	next_meta["best_reached_biome_order"] = max(
@@ -267,7 +268,7 @@ func _counter_key(event_key: String) -> String:
 	return event_key
 
 func _validate_previous_run_inputs(run_summary: Dictionary) -> Dictionary:
-	for field in ["past_choice_ids", "choice_history", "reached_place_ids", "reached_biome_ids", "death_record_ids"]:
+	for field in ["past_choice_ids", "choice_history", "reached_place_ids", "reached_biome_ids", "death_record_ids", "discovered_records"]:
 		if run_summary.has(field):
 			var result := _validate_stable_id_array(run_summary[field], field)
 			if not result.ok:
