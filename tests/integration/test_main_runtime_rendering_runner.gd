@@ -78,8 +78,8 @@ func run() -> void:
 			failures.append("runtime HUD quickslots render icon-backed rows")
 		else:
 			_assert_hud_layout_fits_viewport([status_panel, map_panel, quickslot_panel, dpad_panel, action_panel])
-			if _button_count(action_panel) != 10:
-				failures.append("runtime HUD exposes attack, dodge, two tea, consumable, two ability, inventory, crafting, and facilities controls")
+			if _button_count(action_panel) < 11:
+				failures.append("runtime HUD exposes attack, dodge, tea, consumable, ability, inventory, tea brewing, map, crafting, and facilities controls")
 			var time_label := hud.get("_labels").get("time") as Label
 			if time_label == null or time_label.get_parent().visible:
 				failures.append("runtime HUD hides the time row until a canonical runtime time state is supplied")

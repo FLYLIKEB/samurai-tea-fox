@@ -32,6 +32,7 @@ const RUN_FIELD_TYPES := {
 	"narrative_event_counts": TYPE_DICTIONARY,
 	"discovered_records": TYPE_ARRAY,
 	"memory_tea_cutscene": TYPE_DICTIONARY,
+	"tea": TYPE_DICTIONARY,
 	"consumables": TYPE_DICTIONARY,
 	"choice_history": TYPE_ARRAY,
 	"choice_group_selections": TYPE_DICTIONARY,
