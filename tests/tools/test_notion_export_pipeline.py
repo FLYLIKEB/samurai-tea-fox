@@ -448,6 +448,54 @@ class NotionExportPipelineTests(unittest.TestCase):
             self.assertEqual(validated["data_version"], "fixture-2026-09-01")
             self.assertEqual(validated["profile"], "confirmed-test")
 
+    def test_meta_unlock_contract_accepts_canonical_fields(self):
+        capture = self._minimal_meta_unlock_capture()
+        snapshot = self.pipeline.build_snapshots(capture, "confirmed-test")["meta_unlocks"]
+        item = snapshot["items"][0]
+        self.assertEqual(item["condition_event"], "cumulative_event_count_at_least")
+        self.assertEqual(item["condition_target"], "discovered_record:memory_tea")
+        self.assertEqual(item["condition_operator"], "at_least")
+        self.assertEqual(item["reward_kind"], "discovered_record")
+        self.assertEqual(item["reward_quantity"], 1)
+
+    def test_meta_unlock_contract_rejects_unknown_types_and_operator(self):
+        for field, value, message in (
+            ("condition_event", "unknown_condition", "invalid condition_event"),
+            ("condition_operator", "approximately", "invalid condition_operator"),
+            ("reward_kind", "permanent_attack", "invalid reward_kind"),
+        ):
+            with self.subTest(field=field):
+                capture = self._minimal_meta_unlock_capture()
+                capture["datasets"]["meta_unlocks"]["items"][0][field] = value
+                with self.assertRaisesRegex(ExportValidationError, message):
+                    self.pipeline.build_snapshots(capture, "confirmed-test")
+
+    def _minimal_meta_unlock_capture(self):
+        return {
+            "schema_version": 1,
+            "data_version": "fixture-meta-unlocks-2026-09-02",
+            "datasets": {
+                "meta_unlocks": {
+                    "source": "collection://meta-unlocks",
+                    "items": [{
+                        "id": "third_memory_tea",
+                        "name": "Third Memory Tea",
+                        "status": "테스트",
+                        "condition_type": "기억 발견",
+                        "condition_event": "cumulative_event_count_at_least",
+                        "condition_target": "discovered_record:memory_tea",
+                        "condition_operator": "at_least",
+                        "cumulative": True,
+                        "threshold": 3,
+                        "reward_type": "도감",
+                        "reward_kind": "discovered_record",
+                        "reward_target": "third_memory_tea",
+                        "reward_quantity": 1,
+                    }],
+                },
+            },
+        }
+
     def _minimal_event_capture(self):
         return {
             "schema_version": 1,
