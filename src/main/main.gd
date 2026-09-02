@@ -19,6 +19,7 @@ const SaveStore = preload("res://src/save/save_store.gd")
 
 const DEFAULT_RUN_SEED := 11037
 const FRESH_RUN_SEED := 0
+const POINTER_MOVE_STOP_DISTANCE_PIXELS := 4.0
 
 @onready var player = $Player
 @onready var combat_dummy = $CombatDummy
@@ -38,6 +39,8 @@ var generated_world: Dictionary = {}
 var world_render_result: Dictionary = {}
 var _desktop_adapter := DesktopCommandAdapter.new()
 var _movement_selector := MovementCommandSelector.new()
+var _has_pointer_move_target := false
+var _pointer_move_target_world := Vector2.ZERO
 
 func _ready() -> void:
 	catalog = DataCatalog.new()
@@ -97,11 +100,12 @@ func _configure_world_for_current_run() -> Dictionary:
 		return drop_connection
 	_render_generated_world(generated_world)
 	game_hud.configure(player, generated_world, world_render_result)
+	_connect_hud_commands()
 	return {"ok": true}
 
 func _physics_process(_delta: float) -> void:
 	var desktop_command = _desktop_adapter.poll_movement_command()
-	player.submit_command(_movement_selector.select(desktop_command))
+	player.submit_command(movement_command_for_current_inputs(desktop_command))
 	if Input.is_action_just_pressed("attack"):
 		submit_desktop_action_command("attack", desktop_command.direction)
 	if Input.is_action_just_pressed("dodge"):
@@ -116,14 +120,26 @@ func _physics_process(_delta: float) -> void:
 func _unhandled_input(event) -> void:
 	var handled := false
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		handled = submit_pointer_interaction(world_position_from_viewport_position(event.position))
+		var mouse_world_position := world_position_from_viewport_position(event.position)
+		handled = submit_pointer_interaction(mouse_world_position)
+		if not handled:
+			handled = submit_pointer_movement(mouse_world_position)
 	elif event is InputEventScreenTouch and event.pressed:
-		handled = submit_pointer_interaction(world_position_from_viewport_position(event.position))
+		var touch_world_position := world_position_from_viewport_position(event.position)
+		handled = submit_pointer_interaction(touch_world_position)
+		if not handled:
+			handled = submit_pointer_movement(touch_world_position)
 	if handled:
 		get_viewport().set_input_as_handled()
 
 func submit_mobile_movement_command(command) -> bool:
-	return _movement_selector.submit_mobile_command(command)
+	var accepted := _movement_selector.submit_mobile_command(command)
+	if accepted and command.direction != Vector2i.ZERO:
+		_clear_pointer_movement()
+	return accepted
+
+func submit_mobile_movement_direction(direction: Vector2i) -> bool:
+	return submit_mobile_movement_command(GameCommand.new(GameCommand.Type.MOVE, direction))
 
 func submit_mobile_action_command(command) -> bool:
 	return submit_action_command(command)
@@ -142,6 +158,15 @@ func submit_pointer_interaction(world_position: Vector2) -> bool:
 		if submit_interaction_at_world_cell(cell):
 			return true
 	return false
+
+func submit_pointer_movement(world_position: Vector2) -> bool:
+	var target_cell := world_cell_from_world_position(world_position)
+	if world_data == null or not world_data.is_walkable(target_cell):
+		return false
+	_pointer_move_target_world = world_position_for_cell_center(target_cell)
+	_has_pointer_move_target = true
+	_movement_selector.submit_mobile_command(GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO))
+	return true
 
 func submit_player_interaction(direction := Vector2i.ZERO) -> bool:
 	var origin_cell := Vector2i.ZERO
@@ -173,6 +198,15 @@ func submit_action_command(command) -> bool:
 		_:
 			return player != null and player.submit_command(command)
 
+func movement_command_for_current_inputs(desktop_command) -> GameCommand:
+	if desktop_command is GameCommand and desktop_command.type == GameCommand.Type.MOVE and desktop_command.direction != Vector2i.ZERO:
+		_clear_pointer_movement()
+		return desktop_command
+	var pointer_command: GameCommand = _pointer_movement_command()
+	if pointer_command.direction != Vector2i.ZERO:
+		return pointer_command
+	return _movement_selector.select(desktop_command)
+
 func restore_run_state(state) -> Dictionary:
 	if not state is RunState:
 		return {"ok": false, "reason": "invalid_run_state", "error": "Main runtime requires a RunState."}
@@ -196,6 +230,16 @@ func restore_run_state(state) -> Dictionary:
 	if acquisition_service != null:
 		run_state.acquisitions = acquisition_service.to_snapshot()
 	return {"ok": true}
+
+func _connect_hud_commands() -> void:
+	if game_hud == null or not game_hud.has_signal("movement_button_changed"):
+		return
+	var callback := Callable(self, "_on_hud_movement_button_changed")
+	if not game_hud.is_connected("movement_button_changed", callback):
+		game_hud.connect("movement_button_changed", callback)
+
+func _on_hud_movement_button_changed(direction: Vector2i) -> void:
+	submit_mobile_movement_direction(direction)
 
 func snapshot_run_state() -> Dictionary:
 	if run_state == null:
@@ -407,6 +451,25 @@ func world_position_for_cell_center(cell: Vector2i) -> Vector2:
 		cell.x * tile_size + tile_size * 0.5,
 		cell.y * tile_size + tile_size * 0.5
 	)
+
+func _pointer_movement_command() -> GameCommand:
+	if not _has_pointer_move_target or player == null:
+		return GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO)
+	var delta: Vector2 = _pointer_move_target_world - player.global_position
+	if delta.length() <= POINTER_MOVE_STOP_DISTANCE_PIXELS:
+		_clear_pointer_movement()
+		return GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO)
+	var direction := Vector2i(
+		0 if absf(delta.x) <= POINTER_MOVE_STOP_DISTANCE_PIXELS else int(signf(delta.x)),
+		0 if absf(delta.y) <= POINTER_MOVE_STOP_DISTANCE_PIXELS else int(signf(delta.y))
+	)
+	if direction == Vector2i.ZERO:
+		_clear_pointer_movement()
+	return GameCommand.new(GameCommand.Type.MOVE, direction)
+
+func _clear_pointer_movement() -> void:
+	_has_pointer_move_target = false
+	_pointer_move_target_world = Vector2.ZERO
 
 func _runtime_tile_size() -> float:
 	if world_data != null:

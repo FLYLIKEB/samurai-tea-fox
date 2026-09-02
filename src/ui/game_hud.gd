@@ -7,6 +7,8 @@ const ICON_KOKORO := "res://assets/ui/icons/tea_leaf_32.png"
 const ICON_COIN := "res://assets/ui/icons/coin_32.png"
 const ICON_MAP := "res://assets/ui/icons/map_pin_32.png"
 
+signal movement_button_changed(direction: Vector2i)
+
 var player
 var world: Dictionary = {}
 var render_result: Dictionary = {}
@@ -71,6 +73,43 @@ func _build() -> void:
 	_add_icon_row(quick_rows, ICON_KI, "차")
 	_add_icon_row(quick_rows, "res://assets/ui/icons/scroll_32.png", "기록")
 	_add_icon_row(quick_rows, "res://assets/ui/icons/key_32.png", "상호작용")
+
+	var movement_pad := _panel(Vector2(-156, -156), Vector2(140, 140), true, true)
+	movement_pad.name = "MovementPadPanel"
+	root.add_child(movement_pad)
+	var movement_grid := GridContainer.new()
+	_ignore_mouse(movement_grid)
+	movement_grid.columns = 3
+	movement_grid.add_theme_constant_override("h_separation", 6)
+	movement_grid.add_theme_constant_override("v_separation", 6)
+	movement_pad.add_child(movement_grid)
+	_add_pad_spacer(movement_grid)
+	_add_movement_button(movement_grid, "▲", Vector2i.UP)
+	_add_pad_spacer(movement_grid)
+	_add_movement_button(movement_grid, "◀", Vector2i.LEFT)
+	_add_movement_button(movement_grid, "▼", Vector2i.DOWN)
+	_add_movement_button(movement_grid, "▶", Vector2i.RIGHT)
+
+func _add_pad_spacer(parent: Container) -> void:
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(36, 36)
+	_ignore_mouse(spacer)
+	parent.add_child(spacer)
+
+func _add_movement_button(parent: Container, text: String, direction: Vector2i) -> void:
+	var button := Button.new()
+	button.custom_minimum_size = Vector2(36, 36)
+	button.text = text
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.focus_mode = Control.FOCUS_NONE
+	button.add_theme_font_size_override("font_size", 20)
+	button.add_theme_color_override("font_color", Color(0.93, 0.83, 0.63, 1.0))
+	button.add_theme_color_override("font_hover_color", Color(1.0, 0.95, 0.79, 1.0))
+	button.add_theme_color_override("font_pressed_color", Color(1.0, 0.95, 0.79, 1.0))
+	button.button_down.connect(func(): movement_button_changed.emit(direction))
+	button.button_up.connect(func(): movement_button_changed.emit(Vector2i.ZERO))
+	button.focus_exited.connect(func(): movement_button_changed.emit(Vector2i.ZERO))
+	parent.add_child(button)
 
 func _ignore_mouse(control: Control) -> void:
 	control.mouse_filter = Control.MOUSE_FILTER_IGNORE
