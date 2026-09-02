@@ -39,6 +39,13 @@ class FakeInventory:
 	func definition_for(item_id: String) -> Dictionary:
 		return {"id": item_id, "type": "소모품"} if item_id == "bandage" else {"id": item_id, "type": "재료"}
 
+	func get_total_quantity(item_id: String) -> int:
+		var total := 0
+		for slot in slots:
+			if typeof(slot) == TYPE_DICTIONARY and String(slot.get("item_id", "")) == item_id:
+				total += int(slot.get("quantity", 0))
+		return total
+
 class FakeTeaService:
 	signal changed(snapshot: Dictionary)
 
@@ -48,6 +55,26 @@ class FakeTeaService:
 		{},
 		{}
 	]
+
+class FakeCraftingService:
+	var recipe_definitions := {
+		"wooden_workbench": {
+			"id": "wooden_workbench",
+			"name": "목재 작업대 제작",
+			"materials": [{"item_id": "wood", "quantity": 2}],
+			"facility_item_ids": [],
+			"result_item_id": "wooden_workbench",
+			"result_quantity": 1
+		}
+	}
+
+	func recipe_for(recipe_id: String) -> Dictionary:
+		return recipe_definitions.get(recipe_id, {}).duplicate(true)
+
+	func can_craft(recipe_id: String, inventory, _context := {}) -> Dictionary:
+		if recipe_id == "wooden_workbench" and inventory.get_total_quantity("wood") >= 2:
+			return {"ok": true, "craftable": true}
+		return {"ok": false, "craftable": false, "reason": "missing_materials"}
 
 class FakeTimeConfig:
 	func phase_duration_seconds(_phase: StringName) -> float:
@@ -86,6 +113,7 @@ func run(asserts) -> void:
 	_assert_dpad_emits_press_and_release_movement(asserts)
 	_assert_mobile_controls_emit_shared_commands(asserts)
 	_assert_dodge_control_does_not_use_baked_dash_asset(asserts)
+	_assert_fast_menus_show_runtime_read_models(asserts)
 
 func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:
 	var hud := _configured_hud()
@@ -149,7 +177,9 @@ func _assert_mobile_controls_emit_shared_commands(asserts) -> void:
 	asserts.true_value(hud.press_mobile_button("cast_ability", Vector2i.UP, 0), "HUD accepts mobile ability control")
 	asserts.true_value(hud.press_mobile_button("cast_ability", Vector2i.UP, 1), "HUD accepts the second mobile ability slot")
 	asserts.true_value(hud.press_mobile_button("open_inventory"), "HUD accepts inventory command control")
-	asserts.equal(received.size(), 8, "HUD emits exactly one command per valid mobile control")
+	asserts.true_value(hud.press_mobile_button("open_crafting"), "HUD accepts crafting command control")
+	asserts.true_value(hud.press_mobile_button("open_facilities"), "HUD accepts facilities command control")
+	asserts.equal(received.size(), 10, "HUD emits exactly one command per valid mobile control")
 	asserts.equal(received[0].type, GameCommand.Type.MOVE, "movement control emits shared move command")
 	asserts.equal(received[1].type, GameCommand.Type.ATTACK, "attack control emits shared attack command")
 	asserts.equal(received[2].type, GameCommand.Type.DODGE, "dodge control emits shared dodge command")
@@ -159,6 +189,8 @@ func _assert_mobile_controls_emit_shared_commands(asserts) -> void:
 	asserts.equal(received[6].type, GameCommand.Type.CAST_ABILITY, "second ability control emits shared ability command")
 	asserts.equal(received[6].slot, 1, "second ability control preserves its stable slot index")
 	asserts.equal(received[7].type, GameCommand.Type.OPEN_INVENTORY, "inventory control emits shared inventory command")
+	asserts.equal(received[8].type, GameCommand.Type.OPEN_CRAFTING, "crafting control emits shared crafting menu command")
+	asserts.equal(received[9].type, GameCommand.Type.OPEN_FACILITIES, "facilities control emits shared facilities menu command")
 	var untouched_hud := _configured_hud()
 	asserts.equal(untouched_hud.player.resources.hp, 82, "HUD button emission does not mutate player resources")
 	untouched_hud.free()
@@ -172,12 +204,36 @@ func _assert_dodge_control_does_not_use_baked_dash_asset(asserts) -> void:
 	asserts.true_value(_tree_has_text(root, "회피"), "HUD renders official dodge term as font text")
 	hud.free()
 
+func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
+	var hud := _configured_hud()
+	asserts.true_value(hud.show_inventory_menu(), "HUD opens the inventory menu")
+	asserts.true_value(_tree_has_text(hud, "01 wood x3"), "inventory menu lists occupied runtime slots")
+	asserts.true_value(hud.show_facilities_menu(), "HUD opens the facilities menu")
+	asserts.true_value(_tree_has_text(hud, "우물 (4,5)"), "facilities menu lists generated facility nodes")
+	var received: Array = []
+	hud.mobile_command_issued.connect(func(command): received.append(command))
+	asserts.true_value(hud.show_crafting_menu(), "HUD opens the crafting menu")
+	asserts.true_value(_tree_has_text(hud, "제작"), "crafting menu exposes craft buttons")
+	var craft_button := _first_enabled_button(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuContent"))
+	if craft_button != null:
+		craft_button.pressed.emit()
+	asserts.equal(received.size(), 1, "crafting button emits one command")
+	if not received.is_empty():
+		asserts.equal(received[0].type, GameCommand.Type.CRAFT_RECIPE, "crafting button emits the shared craft command")
+		asserts.equal(received[0].payload.get("recipe_id", ""), "wooden_workbench", "crafting command preserves the stable recipe id")
+	hud.free()
+
 func _configured_hud() -> GameHud:
 	var hud := GameHud.new()
-	hud.configure(FakePlayer.new(), {"biome_id": "common_region"}, {"counts": {}}, {
+	hud.configure(FakePlayer.new(), {
+		"biome_id": "common_region",
+		"facility_nodes": [{"id": "facility_0", "facility_term": "우물", "position": {"x": 4, "y": 5}}]
+	}, {"counts": {}}, {
 		"catalog": FakeCatalog.new(),
 		"inventory": FakeInventory.new(),
 		"tea_service": FakeTeaService.new(),
+		"crafting_service": FakeCraftingService.new(),
+		"crafting_context": {"unlocked_biome_ids": ["common_region"]},
 		"time_state": FakeTimeState.new()
 	})
 	return hud
@@ -204,3 +260,14 @@ func _tree_has_text(node: Node, text: String) -> bool:
 		if _tree_has_text(child, text):
 			return true
 	return false
+
+func _first_enabled_button(node: Node) -> Button:
+	if node == null:
+		return null
+	if node is Button and not (node as Button).disabled:
+		return node as Button
+	for child in node.get_children():
+		var found := _first_enabled_button(child)
+		if found != null:
+			return found
+	return null

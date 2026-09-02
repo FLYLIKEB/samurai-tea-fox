@@ -16,10 +16,14 @@ const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 const WorldSceneRenderer = preload("res://src/world/rendering/world_scene_renderer.gd")
 const RunLifecycleService = preload("res://src/save/run_lifecycle_service.gd")
 const SaveStore = preload("res://src/save/save_store.gd")
+const CraftingService = preload("res://src/crafting/crafting_service.gd")
 
 const DEFAULT_RUN_SEED := 11037
 const FRESH_RUN_SEED := 0
 const POINTER_MOVE_STOP_DISTANCE_PIXELS := 4.0
+const FEEDBACK_BEEP_MIX_RATE := 22050.0
+const FEEDBACK_BEEP_SECONDS := 0.045
+const FEEDBACK_BEEP_FREQUENCY := 880.0
 
 @onready var player = $Player
 @onready var combat_dummy = $CombatDummy
@@ -30,6 +34,7 @@ var catalog
 var inventory
 var equipment
 var tea_service
+var crafting_service
 var acquisition_service
 var run_lifecycle_service
 var save_store = SaveStore.new()
@@ -41,8 +46,12 @@ var _desktop_adapter := DesktopCommandAdapter.new()
 var _movement_selector := MovementCommandSelector.new()
 var _has_pointer_move_target := false
 var _pointer_move_target_world := Vector2.ZERO
+var _feedback_player: AudioStreamPlayer
+var _feedback_playback: AudioStreamGeneratorPlayback
+var feedback_beep_count := 0
 
 func _ready() -> void:
+	_configure_audio_feedback()
 	catalog = DataCatalog.new()
 	var result: Dictionary = catalog.load_from_directory("res://data/generated")
 	if not result.ok:
@@ -70,6 +79,7 @@ func _configure_combat_lifecycle() -> Dictionary:
 	var player_combat_result: Dictionary = player.configure_combat(catalog)
 	if not player_combat_result.ok:
 		return player_combat_result
+	_connect_player_feedback_signals()
 	var lifecycle_result: Dictionary = RunLifecycleService.from_catalog(catalog)
 	if not lifecycle_result.ok:
 		return lifecycle_result
@@ -79,6 +89,14 @@ func _configure_combat_lifecycle() -> Dictionary:
 	if not dummy_combat_result.ok:
 		return dummy_combat_result
 	return {"ok": true}
+
+func _connect_player_feedback_signals() -> void:
+	for signal_name in [&"attack_started", &"ability_cast", &"dodge_started", &"grid_step_started"]:
+		if player.has_signal(signal_name) and not player.is_connected(signal_name, Callable(self, "_on_player_activity_feedback")):
+			player.connect(signal_name, Callable(self, "_on_player_activity_feedback"))
+
+func _on_player_activity_feedback(_a = null, _b = null, _c = null) -> void:
+	_play_feedback_beep()
 
 func _configure_world_for_current_run() -> Dictionary:
 	var generator := WorldGenerator.new()
@@ -120,6 +138,10 @@ func _physics_process(_delta: float) -> void:
 		submit_desktop_action_command("interact", desktop_command.direction)
 	if Input.is_action_just_pressed("open_inventory"):
 		submit_desktop_action_command("open_inventory")
+	if Input.is_action_just_pressed("open_crafting"):
+		submit_desktop_action_command("open_crafting")
+	if Input.is_action_just_pressed("open_facilities"):
+		submit_desktop_action_command("open_facilities")
 
 func _unhandled_input(event) -> void:
 	var handled := false
@@ -140,6 +162,7 @@ func submit_mobile_movement_command(command) -> bool:
 	var accepted := _movement_selector.submit_mobile_command(command)
 	if accepted and command.direction != Vector2i.ZERO:
 		_clear_pointer_movement()
+		_play_feedback_beep()
 	return accepted
 
 func submit_mobile_movement_direction(direction: Vector2i) -> bool:
@@ -198,11 +221,40 @@ func submit_action_command(command) -> bool:
 			var target_id := String(command.payload.get("target_id", ""))
 			if target_id.is_empty():
 				return submit_player_interaction(command.direction)
-			return acquisition_service != null and bool(acquisition_service.handle_command(command).ok)
+			var accepted: bool = acquisition_service != null and bool(acquisition_service.handle_command(command).ok)
+			if accepted:
+				_play_feedback_beep()
+			return accepted
 		GameCommand.Type.DRINK_TEA:
-			return _handle_tea_command(command)
+			var accepted: bool = _handle_tea_command(command)
+			if accepted:
+				_play_feedback_beep()
+			return accepted
 		GameCommand.Type.OPEN_INVENTORY:
-			return false
+			var accepted: bool = game_hud != null and game_hud.show_inventory_menu()
+			if accepted:
+				_play_feedback_beep()
+			return accepted
+		GameCommand.Type.OPEN_CRAFTING:
+			var accepted: bool = game_hud != null and game_hud.show_crafting_menu()
+			if accepted:
+				_play_feedback_beep()
+			return accepted
+		GameCommand.Type.OPEN_FACILITIES:
+			var accepted: bool = game_hud != null and game_hud.show_facilities_menu()
+			if accepted:
+				_play_feedback_beep()
+			return accepted
+		GameCommand.Type.HIDE_MENU:
+			var accepted: bool = game_hud != null and game_hud.hide_menu()
+			if accepted:
+				_play_feedback_beep()
+			return accepted
+		GameCommand.Type.CRAFT_RECIPE:
+			var accepted: bool = _handle_craft_recipe_command(command)
+			if accepted:
+				_play_feedback_beep()
+			return accepted
 		_:
 			return player != null and player.submit_command(command)
 
@@ -269,6 +321,9 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	var tea_result: Dictionary = TeaService.from_catalog(loaded_catalog)
 	if not tea_result.ok:
 		return tea_result
+	var crafting_result: Dictionary = CraftingService.from_catalog(loaded_catalog)
+	if not crafting_result.ok:
+		return crafting_result
 	inventory = inventory_result.inventory
 	if run_state != null and not run_state.inventory.is_empty():
 		var inventory_load_result: Dictionary = inventory.load_snapshot(run_state.inventory)
@@ -276,6 +331,7 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 			return inventory_load_result
 	equipment = equipment_result.equipment
 	tea_service = tea_result.tea_service
+	crafting_service = crafting_result.crafting_service
 	tea_service.drink_completed.connect(_on_tea_drink_completed)
 	return {"ok": true}
 
@@ -559,6 +615,47 @@ func _handle_tea_command(command: GameCommand) -> bool:
 	var resources = player.resources if player != null else null
 	return bool(tea_service.complete_drinking(start_result.action, resources).ok)
 
+func _handle_craft_recipe_command(command: GameCommand) -> bool:
+	if crafting_service == null or inventory == null:
+		return false
+	var recipe_id := String(command.payload.get("recipe_id", ""))
+	if recipe_id.is_empty():
+		return false
+	var result: Dictionary = crafting_service.craft(recipe_id, inventory, _crafting_context())
+	if game_hud != null:
+		game_hud.show_command_feedback(
+			"제작 완료: %s" % result.get("result_item_id", recipe_id)
+			if result.ok
+			else "제작 불가: %s" % String(result.get("reason", "unknown"))
+		)
+	return bool(result.ok)
+
+func _crafting_context() -> Dictionary:
+	return {
+		"available_facility_item_ids": _available_facility_item_ids(),
+		"unlocked_biome_ids": _unlocked_biome_ids()
+	}
+
+func _available_facility_item_ids() -> Array:
+	var ids: Array = []
+	if crafting_service == null:
+		return ids
+	var name_to_id = crafting_service.get("item_name_to_id")
+	if typeof(name_to_id) != TYPE_DICTIONARY:
+		return ids
+	for node in generated_world.get("facility_nodes", []):
+		var term := String(node.get("facility_term", ""))
+		if name_to_id.has(term) and not ids.has(String(name_to_id[term])):
+			ids.append(String(name_to_id[term]))
+	return ids
+
+func _unlocked_biome_ids() -> Array:
+	var ids := []
+	var biome_id := String(generated_world.get("biome_id", ""))
+	if not biome_id.is_empty():
+		ids.append(biome_id)
+	return ids
+
 func _on_tea_drink_completed(result: Dictionary) -> void:
 	if equipment == null:
 		return
@@ -578,6 +675,8 @@ func _render_generated_world(world: Dictionary) -> void:
 	)
 	if not world_render_result.ok:
 		push_error(world_render_result.error)
+	if player != null and player.has_method("configure_grid_navigation"):
+		player.configure_grid_navigation(world_data, _runtime_world_origin(), _runtime_tile_size())
 
 func _on_hud_mobile_command_issued(command) -> void:
 	submit_mobile_action_command(command)
@@ -592,8 +691,34 @@ func _configure_game_hud() -> void:
 	game_hud.configure(player, generated_world, world_render_result, {
 		"catalog": catalog,
 		"inventory": inventory,
-		"tea_service": tea_service
+		"tea_service": tea_service,
+		"crafting_service": crafting_service,
+		"crafting_context": _crafting_context()
 	})
+
+func _configure_audio_feedback() -> void:
+	if _feedback_player != null:
+		return
+	var stream := AudioStreamGenerator.new()
+	stream.mix_rate = FEEDBACK_BEEP_MIX_RATE
+	stream.buffer_length = 0.08
+	_feedback_player = AudioStreamPlayer.new()
+	_feedback_player.name = "FeedbackAudio"
+	_feedback_player.stream = stream
+	add_child(_feedback_player)
+	_feedback_player.play()
+	_feedback_playback = _feedback_player.get_stream_playback() as AudioStreamGeneratorPlayback
+
+func _play_feedback_beep() -> void:
+	feedback_beep_count += 1
+	if _feedback_playback == null:
+		return
+	var frame_count := mini(int(FEEDBACK_BEEP_MIX_RATE * FEEDBACK_BEEP_SECONDS), _feedback_playback.get_frames_available())
+	for index in range(frame_count):
+		var t := float(index) / FEEDBACK_BEEP_MIX_RATE
+		var envelope := 1.0 - (float(index) / maxf(float(frame_count), 1.0))
+		var sample := sin(TAU * FEEDBACK_BEEP_FREQUENCY * t) * 0.12 * envelope
+		_feedback_playback.push_frame(Vector2(sample, sample))
 
 func _centered_world_origin(renderer_input: Dictionary) -> Vector2:
 	var bounds: Dictionary = renderer_input.get("bounds", {})

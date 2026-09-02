@@ -97,6 +97,11 @@ func run() -> void:
 		failures.append("attack command damages a generic combat dummy")
 	if dummy.received_hit_count() != dummy_hit_count_before + 1:
 		failures.append("one swing damages the same dummy only once")
+	if dummy.get("_hit_effect_remaining") <= 0.0:
+		failures.append("monster hit starts a visible hit flash effect")
+	var dummy_sprite := dummy.get_node_or_null("Sprite2D") as Sprite2D
+	if dummy_sprite != null and dummy_sprite.modulate == Color.WHITE:
+		failures.append("monster hit flash tints the promoted sprite")
 	var directional_cases := [
 		[Vector2i.UP, Vector2(0.0, -32.0)],
 		[Vector2i.LEFT, Vector2(-32.0, 0.0)],
@@ -132,6 +137,21 @@ func run() -> void:
 	if dummy.attack_target(player) != 10 or player.resources.hp != player_hp_before - 10:
 		failures.append("dummy attack applies exported monster damage to player HP")
 	player.resources.heal_hp(player.resources.hp_max)
+
+	dummy.automatic_attacks = true
+	dummy.position = Vector2(160.0, 0.0)
+	player.position = Vector2.ZERO
+	var monster_steps: Array = []
+	dummy.grid_step_started.connect(func(from_cell: Vector2i, to_cell: Vector2i): monster_steps.append([from_cell, to_cell]))
+	for _frame in 180:
+		await physics_frame
+	if monster_steps.is_empty():
+		failures.append("automatic monster movement starts as cardinal grid steps")
+	elif monster_steps[0][0] != Vector2i(5, 0) or monster_steps[0][1] != Vector2i(4, 0):
+		failures.append("automatic monster movement targets one adjacent tile toward the player")
+	if absf(fmod(absf(dummy.position.x), 32.0)) > 0.6 and absf(fmod(absf(dummy.position.x), 32.0) - 32.0) > 0.6:
+		failures.append("automatic monster movement remains aligned to tile units")
+	dummy.automatic_attacks = false
 
 	if not player.submit_command(GameCommand.new(GameCommand.Type.DODGE, Vector2i.LEFT)):
 		failures.append("dodge command is accepted off cooldown")

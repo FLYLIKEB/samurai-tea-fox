@@ -21,5 +21,9 @@ func command_for_button(button_id: String, direction := Vector2i.ZERO, slot := 0
 			return GameCommand.new(GameCommand.Type.INTERACT)
 		"open_inventory":
 			return GameCommand.new(GameCommand.Type.OPEN_INVENTORY)
+		"open_crafting":
+			return GameCommand.new(GameCommand.Type.OPEN_CRAFTING)
+		"open_facilities":
+			return GameCommand.new(GameCommand.Type.OPEN_FACILITIES)
 		_:
 			return null

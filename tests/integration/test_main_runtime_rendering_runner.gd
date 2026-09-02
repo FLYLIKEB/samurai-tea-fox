@@ -78,8 +78,8 @@ func run() -> void:
 			failures.append("runtime HUD quickslots render icon-backed rows")
 		else:
 			_assert_hud_layout_fits_viewport([status_panel, map_panel, quickslot_panel, dpad_panel, action_panel])
-			if _button_count(action_panel) != 8:
-				failures.append("runtime HUD exposes attack, dodge, two tea, consumable, two ability, and inventory controls")
+			if _button_count(action_panel) != 10:
+				failures.append("runtime HUD exposes attack, dodge, two tea, consumable, two ability, inventory, crafting, and facilities controls")
 			var time_label := hud.get("_labels").get("time") as Label
 			if time_label == null or time_label.get_parent().visible:
 				failures.append("runtime HUD hides the time row until a canonical runtime time state is supplied")
@@ -89,8 +89,14 @@ func run() -> void:
 			failures.append("runtime HUD passive controls do not block world click and touch input")
 
 	var unopened_inventory := GameCommand.new(GameCommand.Type.OPEN_INVENTORY)
-	if main.submit_mobile_action_command(unopened_inventory):
-		failures.append("OPEN_INVENTORY remains rejected until the DEV-45 menu provides a visible effect")
+	if not main.submit_mobile_action_command(unopened_inventory):
+		failures.append("OPEN_INVENTORY opens the fast inventory menu")
+	if hud != null:
+		var inventory_menu := hud.get_node_or_null("Root/MenuPanel")
+		if inventory_menu == null or not inventory_menu.visible:
+			failures.append("inventory command makes the side menu visible without covering screen center")
+	if main.feedback_beep_count <= 0:
+		failures.append("accepted runtime UI command plays feedback beep")
 
 	main.queue_free()
 	_cleanup_lifecycle_files()
