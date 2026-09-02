@@ -29,6 +29,8 @@ var render_result: Dictionary = {}
 var catalog
 var inventory
 var tea_service
+var crafting_service
+var crafting_context: Dictionary = {}
 var time_state
 var _labels: Dictionary = {}
 var _panels: Dictionary = {}
@@ -37,6 +39,8 @@ var _built := false
 var _theme: Theme
 var _time_refresh_elapsed := 0.0
 var _action_grid: GridContainer
+var _menu_content: VBoxContainer
+var _open_menu_id := ""
 
 func _ready() -> void:
 	_build()
@@ -52,6 +56,8 @@ func configure(player_node, generated_world: Dictionary, generated_render_result
 		catalog = runtime_context.get("catalog", null)
 		inventory = runtime_context.get("inventory", null)
 		tea_service = runtime_context.get("tea_service", null)
+		crafting_service = runtime_context.get("crafting_service", null)
+		crafting_context = runtime_context.get("crafting_context", {}).duplicate(true)
 		time_state = runtime_context.get("time_state", null)
 	_build()
 	_rebuild_action_buttons()
@@ -89,6 +95,35 @@ func press_mobile_button(button_id: String, direction := Vector2i.ZERO, slot := 
 		return false
 	mobile_command_issued.emit(command)
 	return true
+
+func show_inventory_menu() -> bool:
+	_open_menu_id = "inventory"
+	_show_menu("인벤토리", _inventory_rows())
+	return true
+
+func show_crafting_menu() -> bool:
+	_open_menu_id = "crafting"
+	_show_menu("제작법", _crafting_rows())
+	return true
+
+func show_facilities_menu() -> bool:
+	_open_menu_id = "facilities"
+	_show_menu("시설", _facility_rows())
+	return true
+
+func hide_menu() -> bool:
+	_open_menu_id = ""
+	var panel := _panels.get("menu") as Control
+	if panel != null:
+		panel.visible = false
+	return true
+
+func show_command_feedback(message: String) -> void:
+	var feedback := _labels.get("menu_feedback") as Label
+	if feedback != null:
+		feedback.text = message
+	if not _open_menu_id.is_empty():
+		_refresh_open_menu()
 
 func _process(delta: float) -> void:
 	if time_state == null:
@@ -166,6 +201,13 @@ func _build() -> void:
 	_panels.action = action_panel
 	_build_actions(action_panel)
 
+	var menu_panel := _panel(Vector2(244, 184))
+	menu_panel.name = "MenuPanel"
+	menu_panel.visible = false
+	root.add_child(menu_panel)
+	_panels.menu = menu_panel
+	_build_menu_panel(menu_panel)
+
 	_apply_safe_area_layout()
 
 func _ignore_mouse(control: Control) -> void:
@@ -225,6 +267,7 @@ func _on_resources_changed(_previous, _current, _maximum) -> void:
 
 func _on_snapshot_changed(_snapshot) -> void:
 	_update()
+	_refresh_open_menu()
 
 func _on_phase_changed(_previous, _current) -> void:
 	_time_refresh_elapsed = 0.0
@@ -273,6 +316,8 @@ func _rebuild_action_buttons() -> void:
 	for slot in range(_balance_integer(BALANCE_ABILITY_SLOTS_ID)):
 		_add_text_action(_action_grid, "AbilityButton%d" % (slot + 1), ICON_ABILITY, "요술%d" % (slot + 1), "cast_ability", Vector2i.ZERO, slot)
 	_add_text_action(_action_grid, "InventoryButton", ICON_BAG, "가방", "open_inventory", Vector2i.ZERO, 0)
+	_add_text_action(_action_grid, "CraftingButton", ICON_CONSUMABLE, "제작", "open_crafting", Vector2i.ZERO, 0)
+	_add_text_action(_action_grid, "FacilitiesButton", ICON_MAP, "시설", "open_facilities", Vector2i.ZERO, 0)
 	var row_count := maxi(1, int(ceil(float(_action_grid.get_child_count()) / float(_action_grid.columns))))
 	var action_size := Vector2(294, 12 + row_count * 44 + (row_count - 1) * 6)
 	var action_panel := _panels.get("action") as Control
@@ -312,11 +357,152 @@ func _add_text_action(parent: Container, name: String, icon_path: String, text: 
 	button.pressed.connect(func(): press_mobile_button(button_id, direction, slot))
 	parent.add_child(button)
 
+func _build_menu_panel(parent: PanelContainer) -> void:
+	var rows := VBoxContainer.new()
+	rows.name = "MenuRows"
+	_ignore_mouse(rows)
+	rows.add_theme_constant_override("separation", 4)
+	parent.add_child(rows)
+	var header := HBoxContainer.new()
+	_ignore_mouse(header)
+	header.add_theme_constant_override("separation", 8)
+	rows.add_child(header)
+	_labels.menu_title = _label("메뉴", 14)
+	header.add_child(_labels.menu_title)
+	var spacer := Control.new()
+	_ignore_mouse(spacer)
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(spacer)
+	var close := Button.new()
+	close.name = "CloseMenuButton"
+	close.text = "닫기"
+	close.focus_mode = Control.FOCUS_NONE
+	close.mouse_filter = Control.MOUSE_FILTER_STOP
+	close.pressed.connect(func(): mobile_command_issued.emit(GameCommand.new(GameCommand.Type.HIDE_MENU)))
+	header.add_child(close)
+	_menu_content = VBoxContainer.new()
+	_menu_content.name = "MenuContent"
+	_ignore_mouse(_menu_content)
+	_menu_content.add_theme_constant_override("separation", 3)
+	rows.add_child(_menu_content)
+	_labels.menu_feedback = _label("", 11)
+	rows.add_child(_labels.menu_feedback)
+
+func _show_menu(title: String, rows: Array) -> void:
+	_build()
+	var panel := _panels.get("menu") as Control
+	if panel == null or _menu_content == null:
+		return
+	_set_label("menu_title", title)
+	for child in _menu_content.get_children():
+		child.free()
+	if rows.is_empty():
+		_menu_content.add_child(_label("표시할 항목 없음", 11))
+	else:
+		for row in rows:
+			_menu_content.add_child(row)
+	panel.visible = true
+	_apply_safe_area_layout()
+
+func _refresh_open_menu() -> void:
+	match _open_menu_id:
+		"inventory":
+			_show_menu("인벤토리", _inventory_rows())
+		"crafting":
+			_show_menu("제작법", _crafting_rows())
+		"facilities":
+			_show_menu("시설", _facility_rows())
+
+func _inventory_rows() -> Array:
+	var rows: Array = []
+	var slots = _object_property(inventory, "slots", [])
+	if typeof(slots) != TYPE_ARRAY:
+		return rows
+	for index in range(mini(slots.size(), 6)):
+		var slot = slots[index]
+		if typeof(slot) != TYPE_DICTIONARY or slot.is_empty():
+			rows.append(_label("%02d 빈 슬롯" % (index + 1), 11))
+			continue
+		var item_id := String(slot.get("item_id", ""))
+		var definition := _inventory_definition(item_id)
+		rows.append(_label("%02d %s x%d" % [index + 1, String(definition.get("name", item_id)), int(slot.get("quantity", 0))], 11))
+	if slots.size() > 6:
+		rows.append(_label("… %d칸 더 있음" % (slots.size() - 6), 11))
+	return rows
+
+func _crafting_rows() -> Array:
+	var rows: Array = []
+	if crafting_service == null:
+		return rows
+	var recipe_ids: Array = crafting_service.recipe_definitions.keys()
+	recipe_ids.sort()
+	for index in range(mini(recipe_ids.size(), 5)):
+		var recipe_id := String(recipe_ids[index])
+		var recipe: Dictionary = crafting_service.recipe_for(recipe_id)
+		var availability: Dictionary = crafting_service.can_craft(recipe_id, inventory, crafting_context)
+		rows.append(_crafting_row(recipe, availability))
+	if recipe_ids.size() > 5:
+		rows.append(_label("… 제작법 %d개 더 있음" % (recipe_ids.size() - 5), 11))
+	return rows
+
+func _crafting_row(recipe: Dictionary, availability: Dictionary) -> Control:
+	var row := HBoxContainer.new()
+	_ignore_mouse(row)
+	row.add_theme_constant_override("separation", 4)
+	var label := _label("%s · %s" % [String(recipe.get("name", recipe.get("id", ""))), _crafting_reason_label(availability)], 10)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(label)
+	var button := Button.new()
+	button.text = "제작"
+	button.disabled = not bool(availability.get("craftable", false))
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	var recipe_id := String(recipe.get("id", ""))
+	button.pressed.connect(func():
+		mobile_command_issued.emit(GameCommand.new(GameCommand.Type.CRAFT_RECIPE, Vector2i.ZERO, 0, {"recipe_id": recipe_id}))
+	)
+	row.add_child(button)
+	return row
+
+func _facility_rows() -> Array:
+	var rows: Array = []
+	for node in world.get("facility_nodes", []):
+		var position: Dictionary = node.get("position", {})
+		rows.append(_label("%s (%d,%d)" % [
+			String(node.get("facility_term", node.get("id", ""))),
+			int(position.get("x", 0)),
+			int(position.get("y", 0))
+		], 11))
+	return rows
+
+func _inventory_definition(item_id: String) -> Dictionary:
+	if inventory != null and inventory.has_method("definition_for"):
+		return inventory.definition_for(item_id)
+	if catalog != null and catalog.has_method("find_by_id"):
+		return catalog.find_by_id("items", item_id)
+	return {"id": item_id, "name": item_id}
+
+func _crafting_reason_label(availability: Dictionary) -> String:
+	if bool(availability.get("craftable", false)):
+		return "가능"
+	match String(availability.get("reason", "")):
+		"missing_materials":
+			return "재료 부족"
+		"missing_facilities":
+			return "시설 필요"
+		"locked":
+			return "미해금"
+		"invalid_recipe_definition":
+			return "정의 확인"
+		_:
+			return "불가"
+
 func _apply_safe_area_layout() -> void:
 	var margin := _safe_margin()
 	_place_panel(_panels.status, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y))
 	_place_panel(_panels.map, Control.PRESET_TOP_RIGHT, Vector2(-margin.z, margin.y))
-	_place_panel(_panels.quickslot, Control.PRESET_CENTER_TOP, Vector2(0, margin.y + 88.0))
+	_place_panel(_panels.quickslot, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y + 90.0))
+	_place_panel(_panels.menu, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y + 140.0))
 	_place_panel(_panels.dpad, Control.PRESET_BOTTOM_LEFT, Vector2(margin.x, -margin.w))
 	_place_panel(_panels.action, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w))
 

@@ -4,12 +4,17 @@ class_name CombatDummy
 const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
 const MonsterSpawnFactory = preload("res://src/enemy/monster_spawn_factory.gd")
 const TILE_SIZE_PIXELS := 32.0
+const HIT_FLASH_SECONDS := 0.16
+const HIT_FLASH_COLOR := Color(1.0, 0.26, 0.18, 1.0)
 
 signal damaged(event: Dictionary, applied_damage: int)
 signal defeated()
 signal monster_defeated(event: Dictionary)
 signal defeat_event(event: Dictionary)
 signal drop_requested(event: Dictionary)
+signal grid_step_started(from_cell: Vector2i, to_cell: Vector2i)
+signal grid_step_blocked(from_cell: Vector2i, to_cell: Vector2i)
+signal grid_step_finished(cell: Vector2i)
 
 @export var monster_id := "road_bandit"
 @export var sprite_asset_id := "wasteland_daimyo_front_idle"
@@ -23,6 +28,12 @@ var hit_invulnerability_seconds := 0.0
 var _attack_cooldown_remaining := 0.0
 var _attack_sequence := 0
 var _pending_knockback := Vector2.ZERO
+var _hit_effect_remaining := 0.0
+var _grid_target_position := Vector2.ZERO
+var _grid_source_position := Vector2.ZERO
+var _grid_source_cell := Vector2i.ZERO
+var _grid_step_direction := Vector2.ZERO
+var _grid_moving := false
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var body: Polygon2D = $Body
@@ -52,15 +63,21 @@ func has_runtime_sprite() -> bool:
 	return sprite != null and sprite.texture != null
 
 func _physics_process(delta: float) -> void:
+	_update_hit_effect(delta)
 	if _pending_knockback != Vector2.ZERO:
 		move_and_collide(_pending_knockback)
 		_pending_knockback = Vector2.ZERO
 	if not automatic_attacks or combatant == null or target == null:
 		return
+	if _grid_moving:
+		_advance_grid_step(delta)
+		return
 	_attack_cooldown_remaining = maxf(0.0, _attack_cooldown_remaining - delta)
 	if _attack_cooldown_remaining <= 0.0 and global_position.distance_to(target.global_position) <= attack_range_pixels:
 		attack_target(target, hit_invulnerability_seconds)
 		_attack_cooldown_remaining = attack_period_seconds
+	elif global_position.distance_to(target.global_position) > attack_range_pixels:
+		_start_grid_step_toward(target.global_position)
 
 func get_combat_id() -> String:
 	return combatant.get_combat_id() if combatant != null else ""
@@ -74,6 +91,7 @@ func apply_damage_event(event: Dictionary) -> int:
 		var direction = event.get("direction", Vector2.ZERO)
 		if knockback_tiles > 0.0 and direction is Vector2 and direction != Vector2.ZERO:
 			_pending_knockback = direction.normalized() * knockback_tiles * TILE_SIZE_PIXELS
+		_start_hit_effect()
 		damaged.emit(event, applied)
 		_update_health_bar()
 	return applied
@@ -125,6 +143,80 @@ func _hide_placeholder_shapes() -> void:
 		body.visible = false
 	if headband != null:
 		headband.visible = false
+
+func _start_hit_effect() -> void:
+	_hit_effect_remaining = HIT_FLASH_SECONDS
+	if sprite != null:
+		sprite.modulate = HIT_FLASH_COLOR
+		sprite.scale = Vector2(1.18, 1.18)
+	if body != null:
+		body.color = HIT_FLASH_COLOR
+
+func _update_hit_effect(delta: float) -> void:
+	if _hit_effect_remaining <= 0.0:
+		return
+	_hit_effect_remaining = maxf(0.0, _hit_effect_remaining - maxf(delta, 0.0))
+	if _hit_effect_remaining > 0.0:
+		var pulse := 1.0 + 0.18 * (_hit_effect_remaining / HIT_FLASH_SECONDS)
+		if sprite != null:
+			sprite.modulate = HIT_FLASH_COLOR
+			sprite.scale = Vector2(pulse, pulse)
+		return
+	if sprite != null:
+		sprite.modulate = Color.WHITE
+		sprite.scale = Vector2.ONE
+	if body != null:
+		body.color = Color(0.45, 0.23, 0.19, 1)
+
+func _start_grid_step_toward(target_position: Vector2) -> bool:
+	var from_cell := _grid_cell_for_position(global_position)
+	var target_cell := _grid_cell_for_position(target_position)
+	var direction := _cardinal_direction(target_cell - from_cell)
+	if direction == Vector2i.ZERO:
+		return false
+	var to_cell := from_cell + direction
+	_grid_source_cell = from_cell
+	_grid_source_position = _grid_position_for_cell_center(from_cell)
+	_grid_target_position = _grid_position_for_cell_center(to_cell)
+	_grid_step_direction = Vector2(direction)
+	_grid_moving = true
+	grid_step_started.emit(from_cell, to_cell)
+	return true
+
+func _advance_grid_step(delta: float) -> void:
+	var speed_pixels := maxf(float(combatant.movement_speed) * TILE_SIZE_PIXELS, TILE_SIZE_PIXELS) if combatant != null else TILE_SIZE_PIXELS
+	var remaining := _grid_target_position - global_position
+	var distance := remaining.length()
+	if distance <= 0.01:
+		_finish_grid_step()
+		return
+	var motion := _grid_step_direction * minf(speed_pixels * maxf(delta, 0.0), distance)
+	var collision := move_and_collide(motion)
+	if collision != null:
+		global_position = _grid_source_position
+		_grid_moving = false
+		grid_step_blocked.emit(_grid_source_cell, _grid_cell_for_position(_grid_target_position))
+		return
+	if global_position.distance_to(_grid_target_position) <= 0.5:
+		global_position = _grid_target_position
+		_finish_grid_step()
+
+func _finish_grid_step() -> void:
+	_grid_moving = false
+	grid_step_finished.emit(_grid_cell_for_position(global_position))
+
+func _grid_cell_for_position(world_position: Vector2) -> Vector2i:
+	return Vector2i(int(round(world_position.x / TILE_SIZE_PIXELS)), int(round(world_position.y / TILE_SIZE_PIXELS)))
+
+func _grid_position_for_cell_center(cell: Vector2i) -> Vector2:
+	return Vector2(float(cell.x) * TILE_SIZE_PIXELS, float(cell.y) * TILE_SIZE_PIXELS)
+
+func _cardinal_direction(offset: Vector2i) -> Vector2i:
+	if absi(offset.x) >= absi(offset.y) and offset.x != 0:
+		return Vector2i(signi(offset.x), 0)
+	if offset.y != 0:
+		return Vector2i(0, signi(offset.y))
+	return Vector2i.ZERO
 
 func _on_monster_defeated(event: Dictionary) -> void:
 	defeated.emit()

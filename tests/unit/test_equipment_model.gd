@@ -128,7 +128,10 @@ func _assert_drink_completed_signal_accounts_without_manual_call(asserts) -> voi
 			{"id": "tea_drink_base_seconds", "name": "차 마시기 기본 시간", "status": "테스트", "value": 1.2}
 		],
 		"items": _item_rows(),
-		"teas": _tea_rows()
+		"teas": _tea_rows(),
+		"recipes": [
+			{"id": "clay", "name": "점토 묶음", "status": "테스트", "materials": [], "facility": "손제작", "result_item_id": "clay", "result_quantity": 1}
+		]
 	}))
 	asserts.true_value(configure_result.ok, "production runtime services configure")
 	asserts.true_value(runtime.inventory.add_item("green_tea", 1).ok, "signal test tea leaf add succeeds")
