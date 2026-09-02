@@ -12,9 +12,12 @@ const RunState = preload("res://src/save/run_state.gd")
 const AcquisitionService = preload("res://src/world/interactions/acquisition_service.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
+const WorldSceneRenderer = preload("res://src/world/rendering/world_scene_renderer.gd")
 
 @onready var player = $Player
 @onready var combat_dummy = $CombatDummy
+@onready var world_visuals: Node2D = $WorldVisuals
+@onready var game_hud = $GameHud
 
 var catalog
 var inventory
@@ -24,6 +27,7 @@ var acquisition_service
 var run_state: RunState
 var world_data
 var generated_world: Dictionary = {}
+var world_render_result: Dictionary = {}
 var _desktop_adapter := DesktopCommandAdapter.new()
 var _movement_selector := MovementCommandSelector.new()
 
@@ -72,6 +76,8 @@ func _ready() -> void:
 	var drop_connection := _connect_acquisition_combat_source(combat_dummy)
 	if not drop_connection.ok:
 		push_error(drop_connection.error)
+	_render_generated_world(generated_world)
+	game_hud.configure(player, generated_world, world_render_result)
 
 func _physics_process(_delta: float) -> void:
 	var desktop_command = _desktop_adapter.poll_movement_command()
@@ -245,3 +251,45 @@ func _on_tea_drink_completed(result: Dictionary) -> void:
 	var accounting_result: Dictionary = equipment.record_tea_ware_use_completion(result, inventory)
 	if not accounting_result.ok:
 		push_error(accounting_result.error)
+
+func _render_generated_world(world: Dictionary) -> void:
+	_hide_prototype_visuals()
+	var renderer_input: Dictionary = world.get("renderer_input", {})
+	var origin := _centered_world_origin(renderer_input)
+	world_render_result = WorldSceneRenderer.new().render(
+		world_visuals,
+		renderer_input,
+		_owner_sprite_sources(world),
+		origin
+	)
+	if not world_render_result.ok:
+		push_error(world_render_result.error)
+
+func _centered_world_origin(renderer_input: Dictionary) -> Vector2:
+	var bounds: Dictionary = renderer_input.get("bounds", {})
+	var tile_size := int(renderer_input.get("tile_size", 32))
+	return Vector2(
+		-float(int(bounds.get("width", 0)) * tile_size) * 0.5,
+		-float(int(bounds.get("height", 0)) * tile_size) * 0.5
+	)
+
+func _owner_sprite_sources(world: Dictionary) -> Dictionary:
+	var sources := {
+		WorldData.LANDMARK_ENTRY: "res://assets/sprites/objects/structures/small_signpost_32x32.png",
+		WorldData.LANDMARK_CORE_DUNGEON: "res://assets/sprites/objects/structures/dungeon_entry_small_32x32.png",
+		WorldData.LANDMARK_TELEPORT_ZONE: "res://assets/sprites/objects/shrine-props/stone_pagoda_lantern_32x32.png",
+		"wood": "res://assets/sprites/objects/nature/log_32x32.png",
+		"stone": "res://assets/sprites/objects/natural-props/small_rock_32x32.png",
+		"clay": "res://assets/sprites/objects/natural-props/mud_patch_32x32.png"
+	}
+	for node in world.get("resource_nodes", []):
+		var owner_id := String(node.get("id", ""))
+		var resource_id := String(node.get("resource_id", ""))
+		if owner_id != "" and sources.has(resource_id):
+			sources[owner_id] = sources[resource_id]
+	return sources
+
+func _hide_prototype_visuals() -> void:
+	for child in get_children():
+		if child is Polygon2D:
+			child.visible = false
