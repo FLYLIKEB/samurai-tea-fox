@@ -10,6 +10,7 @@ var meta_unlock_counters := {}
 var past_choice_ids := []
 var reached_place_ids := []
 var death_record_ids := []
+var ending_records := []
 
 static func from_dictionary(data: Dictionary):
 	var state: MetaState = load("res://src/save/meta_state.gd").new()
@@ -22,6 +23,7 @@ static func from_dictionary(data: Dictionary):
 	state.past_choice_ids = _array_value(data.get("past_choice_ids", []))
 	state.reached_place_ids = _array_value(data.get("reached_place_ids", []))
 	state.death_record_ids = _array_value(data.get("death_record_ids", []))
+	state.ending_records = _array_value(data.get("ending_records", []))
 	return state
 
 func to_dictionary() -> Dictionary:
@@ -34,7 +36,8 @@ func to_dictionary() -> Dictionary:
 		"meta_unlock_counters": meta_unlock_counters.duplicate(true),
 		"past_choice_ids": past_choice_ids.duplicate(true),
 		"reached_place_ids": reached_place_ids.duplicate(true),
-		"death_record_ids": death_record_ids.duplicate(true)
+		"death_record_ids": death_record_ids.duplicate(true),
+		"ending_records": ending_records.duplicate(true)
 	}
 
 static func _dictionary_value(value) -> Dictionary:

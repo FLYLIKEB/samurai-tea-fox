@@ -50,7 +50,8 @@ const META_FIELD_TYPES := {
 	"meta_unlock_counters": TYPE_DICTIONARY,
 	"past_choice_ids": TYPE_ARRAY,
 	"reached_place_ids": TYPE_ARRAY,
-	"death_record_ids": TYPE_ARRAY
+	"death_record_ids": TYPE_ARRAY,
+	"ending_records": TYPE_ARRAY
 }
 
 const REQUIRED_FIELDS := {

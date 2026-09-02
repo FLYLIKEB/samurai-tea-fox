@@ -95,6 +95,7 @@ func complete_with_ability(ability_id: String, run_state) -> Dictionary:
 	if bool(selected.ichigo_ichie):
 		_append_unique(run_state, "narrative_flags", ICHIGO_ICHIE_USED_FLAG)
 	_append_unique(run_state, "narrative_flags", "sen_rikyu_phase3_victory")
+	_append_unique(run_state, "narrative_flags", "sen_rikyu_phase3_ability_%s" % ability_id)
 	_increment_event_count(run_state, EVENT_ID)
 	selected_ability_id = ability_id
 	lifecycle_state = STATE_RESOLVED

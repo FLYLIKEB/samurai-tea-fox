@@ -37,6 +37,7 @@ const TESTS := [
 	preload("res://tests/unit/test_biome_progression.gd"),
 	preload("res://tests/unit/test_dungeon_runtime.gd"),
 	preload("res://tests/unit/test_core_tea_ware_collection.gd"),
+	preload("res://tests/unit/test_ending_route_runtime.gd"),
 	preload("res://tests/unit/test_boss_encounter_runtime.gd"),
 	preload("res://tests/unit/test_boss_tea_resolution_runtime.gd"),
 	preload("res://tests/unit/test_world_data.gd"),
