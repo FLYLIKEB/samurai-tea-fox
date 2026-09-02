@@ -27,7 +27,8 @@ exports/
 !.env.example
 .pixellab.config.json
 
-# Local Codex/OMX runtime state
+# Local GJC/Codex/OMX runtime state
+.gjc/
 .omx/
 
 # Python tooling caches
