@@ -34,6 +34,7 @@ var world_data
 var run_state
 var tea_service
 var tea_brewing_command_runtime
+var meta_codex_command_runtime
 var crafting_service
 var crafting_context: Dictionary = {}
 var time_state
@@ -66,6 +67,7 @@ func configure(player_node, generated_world: Dictionary, generated_render_result
 		run_state = runtime_context.get("run_state", null)
 		tea_service = runtime_context.get("tea_service", null)
 		tea_brewing_command_runtime = runtime_context.get("tea_brewing_command_runtime", null)
+		meta_codex_command_runtime = runtime_context.get("meta_codex_command_runtime", null)
 		crafting_service = runtime_context.get("crafting_service", null)
 		crafting_context = runtime_context.get("crafting_context", {}).duplicate(true)
 		time_state = runtime_context.get("time_state", null)
@@ -125,6 +127,11 @@ func show_facilities_menu() -> bool:
 func show_tea_brewing_menu() -> bool:
 	_open_menu_id = "tea_brewing"
 	_show_menu("차 우리기", _tea_brewing_rows())
+	return true
+
+func show_meta_codex_menu() -> bool:
+	_open_menu_id = "meta_codex"
+	_show_menu("도감", _meta_codex_rows())
 	return true
 
 func show_map_menu() -> bool:
@@ -273,6 +280,7 @@ func _bind_runtime_signals() -> void:
 	_connect_runtime_signal(inventory_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
 	_connect_runtime_signal(tea_service, &"changed", Callable(self, "_on_snapshot_changed"))
 	_connect_runtime_signal(tea_brewing_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
+	_connect_runtime_signal(meta_codex_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
 	_connect_runtime_signal(time_state, &"phase_changed", Callable(self, "_on_phase_changed"))
 
 func _unbind_runtime_signals() -> void:
@@ -284,6 +292,7 @@ func _unbind_runtime_signals() -> void:
 	_disconnect_runtime_signal(inventory_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
 	_disconnect_runtime_signal(tea_service, &"changed", Callable(self, "_on_snapshot_changed"))
 	_disconnect_runtime_signal(tea_brewing_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
+	_disconnect_runtime_signal(meta_codex_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
 	_disconnect_runtime_signal(time_state, &"phase_changed", Callable(self, "_on_phase_changed"))
 
 func _connect_runtime_signal(source, signal_name: StringName, callback: Callable) -> void:
@@ -349,6 +358,7 @@ func _rebuild_action_buttons() -> void:
 		_add_text_action(_action_grid, "AbilityButton%d" % (slot + 1), ICON_ABILITY, "요술%d" % (slot + 1), "cast_ability", Vector2i.ZERO, slot)
 	_add_text_action(_action_grid, "InventoryButton", ICON_BAG, "가방", "open_inventory", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "TeaBrewingButton", ICON_TEA, "우리기", "open_tea_brewing", Vector2i.ZERO, 0)
+	_add_text_action(_action_grid, "MetaCodexButton", ICON_BAG, "도감", "open_meta_codex", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "MapButton", ICON_MAP, "지도", "open_map", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "CraftingButton", ICON_CONSUMABLE, "제작", "open_crafting", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "FacilitiesButton", ICON_MAP, "시설", "open_facilities", Vector2i.ZERO, 0)
@@ -448,6 +458,8 @@ func _refresh_open_menu() -> void:
 			_show_menu("시설", _facility_rows())
 		"tea_brewing":
 			_show_menu("차 우리기", _tea_brewing_rows())
+		"meta_codex":
+			_show_menu("도감", _meta_codex_rows())
 		"map":
 			_show_menu("지도", _map_rows())
 
@@ -610,6 +622,113 @@ func _tea_brewing_preview_label(preview: Dictionary) -> String:
 		float(prepared.get("drink_seconds", 0.0)),
 		slot_status
 	]
+
+func _meta_codex_rows() -> Array:
+	var rows: Array = []
+	if meta_codex_command_runtime == null or not meta_codex_command_runtime.has_method("read_model"):
+		rows.append(_label("도감 read model 없음", 11))
+		return rows
+	var model: Dictionary = meta_codex_command_runtime.read_model()
+	rows.append(_label("탭 %s · 필터 %s · 발견 %d · 엔딩 %d" % [
+		String(model.get("selected_tab", "")),
+		String(model.get("filter_mode", "")),
+		int(_dictionary_value(model.get("counts", {})).get("discovered_records", 0)),
+		int(_dictionary_value(model.get("counts", {})).get("endings", 0))
+	], 11))
+	var tabs := HBoxContainer.new()
+	_ignore_mouse(tabs)
+	tabs.add_theme_constant_override("separation", 4)
+	for tab in _array_value(model.get("available_tabs", [])):
+		tabs.add_child(_meta_codex_command_button(_meta_tab_label(String(tab)), GameCommand.new(GameCommand.Type.META_CODEX_SET_TAB, Vector2i.ZERO, -1, {"tab": String(tab)})))
+	rows.append(tabs)
+	var filters := HBoxContainer.new()
+	_ignore_mouse(filters)
+	filters.add_theme_constant_override("separation", 4)
+	filters.add_child(_meta_codex_command_button("전체", GameCommand.new(GameCommand.Type.META_CODEX_SET_FILTER, Vector2i.ZERO, -1, {"filter": "all"})))
+	filters.add_child(_meta_codex_command_button("발견", GameCommand.new(GameCommand.Type.META_CODEX_SET_FILTER, Vector2i.ZERO, -1, {"filter": "discovered"})))
+	filters.add_child(_meta_codex_command_button("미발견", GameCommand.new(GameCommand.Type.META_CODEX_SET_FILTER, Vector2i.ZERO, -1, {"filter": "masked"})))
+	filters.add_child(_meta_codex_command_button("‹", GameCommand.new(GameCommand.Type.META_CODEX_NAVIGATE, Vector2i.LEFT)))
+	filters.add_child(_meta_codex_command_button("›", GameCommand.new(GameCommand.Type.META_CODEX_NAVIGATE, Vector2i.RIGHT)))
+	rows.append(filters)
+	var model_rows := _array_value(model.get("rows", []))
+	var detail := _dictionary_value(model.get("detail", {}))
+	var page_start := _meta_codex_page_start(model_rows, String(detail.get("id", "")), 5)
+	for index in range(page_start, mini(model_rows.size(), page_start + 5)):
+		var row: Dictionary = model_rows[index]
+		rows.append(_meta_codex_option_row(
+			"▶ %s · %s" % [String(row.get("name", "")), String(row.get("summary", ""))] if bool(row.get("selected", false)) else "%s · %s" % [String(row.get("name", "")), String(row.get("summary", ""))],
+			GameCommand.new(GameCommand.Type.META_CODEX_SELECT_DETAIL, Vector2i.ZERO, -1, {"id": String(row.get("id", ""))})
+		))
+	if model_rows.size() > 5:
+		rows.append(_label("항목 %d-%d / %d" % [page_start + 1, mini(model_rows.size(), page_start + 5), model_rows.size()], 10))
+	rows.append(_label("상세: %s" % _meta_detail_text(detail), 10))
+	return rows
+
+func _meta_codex_option_row(text: String, command: GameCommand) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	_ignore_mouse(row)
+	row.add_theme_constant_override("separation", 4)
+	var label := _label(text, 10)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(label)
+	row.add_child(_meta_codex_command_button("보기", command))
+	return row
+
+func _meta_codex_command_button(text: String, command: GameCommand) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(44, 28)
+	button.focus_mode = Control.FOCUS_ALL
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.pressed.connect(func(): mobile_command_issued.emit(command))
+	return button
+
+func _meta_codex_page_start(rows: Array, selected: String, page_size: int) -> int:
+	if rows.size() <= page_size:
+		return 0
+	for index in range(rows.size()):
+		if String(rows[index].get("id", "")) == selected:
+			return clampi(index - 2, 0, rows.size() - page_size)
+	return 0
+
+func _meta_detail_text(detail: Dictionary) -> String:
+	if detail.is_empty():
+		return "표시할 항목 없음"
+	if bool(detail.get("masked", false)):
+		return "미발견 항목 — 스포일러를 가립니다"
+	var related := _dictionary_value(detail.get("related", {}))
+	var characters := _array_value(related.get("characters", []))
+	var memories := _array_value(related.get("memories", []))
+	var parts := [String(detail.get("name", detail.get("id", "")))]
+	if not characters.is_empty():
+		parts.append("인물 %s" % ", ".join(_related_names(characters)))
+	if not memories.is_empty():
+		parts.append("기억 %s" % ", ".join(_related_names(memories)))
+	return " · ".join(parts)
+
+func _related_names(rows: Array) -> Array:
+	var names := []
+	for row in rows:
+		if typeof(row) == TYPE_DICTIONARY:
+			names.append(String(row.get("name", row.get("id", ""))))
+		else:
+			names.append(String(row))
+	return names
+
+func _meta_tab_label(tab: String) -> String:
+	match tab:
+		"quests":
+			return "퀘스트"
+		"teas":
+			return "차"
+		"tea_ware":
+			return "다구"
+		"yokai":
+			return "요괴"
+		"memories":
+			return "기억"
+		_:
+			return tab
 
 func _crafting_rows() -> Array:
 	var rows: Array = []
@@ -1028,6 +1147,11 @@ func _object_property(object, property: String, fallback = null):
 func _array_value(value) -> Array:
 	if typeof(value) != TYPE_ARRAY:
 		return []
+	return value.duplicate(true)
+
+func _dictionary_value(value) -> Dictionary:
+	if typeof(value) != TYPE_DICTIONARY:
+		return {}
 	return value.duplicate(true)
 
 func _load_texture(path: String) -> Texture2D:

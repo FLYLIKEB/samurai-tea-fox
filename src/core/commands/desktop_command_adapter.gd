@@ -48,6 +48,18 @@ func command_for_action(action: String, direction := Vector2i.ZERO, slot := 0, p
 			return GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.LEFT, -1, {"target": "slot"})
 		"brew_tea":
 			return GameCommand.new(GameCommand.Type.BREW_TEA)
+		"open_meta_codex":
+			return GameCommand.new(GameCommand.Type.OPEN_META_CODEX)
+		"meta_codex_set_tab":
+			return GameCommand.new(GameCommand.Type.META_CODEX_SET_TAB, Vector2i.ZERO, -1, payload)
+		"meta_codex_set_filter":
+			return GameCommand.new(GameCommand.Type.META_CODEX_SET_FILTER, Vector2i.ZERO, -1, payload)
+		"meta_codex_select_detail":
+			return GameCommand.new(GameCommand.Type.META_CODEX_SELECT_DETAIL, Vector2i.ZERO, -1, payload)
+		"meta_codex_next":
+			return GameCommand.new(GameCommand.Type.META_CODEX_NAVIGATE, Vector2i.RIGHT)
+		"meta_codex_previous":
+			return GameCommand.new(GameCommand.Type.META_CODEX_NAVIGATE, Vector2i.LEFT)
 		"use_consumable":
 			return GameCommand.new(GameCommand.Type.USE_CONSUMABLE, Vector2i.ZERO, slot)
 		"cast_ability":
