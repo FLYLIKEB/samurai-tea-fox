@@ -197,6 +197,16 @@ class ExportPipeline:
             raise ExportValidationError(
                 f"characters item {row['id']}: meta_memory must be a boolean"
             )
+        target_ids = row.get("final_room_target_ids", [])
+        if not isinstance(target_ids, list):
+            raise ExportValidationError(
+                f"characters item {row['id']}: final_room_target_ids must be an array"
+            )
+        for target_id in target_ids:
+            if not isinstance(target_id, str) or not re.fullmatch(self.schema["stable_id_pattern"], target_id):
+                raise ExportValidationError(
+                    f"characters item {row['id']}: final_room_target_ids must contain stable ids"
+                )
 
 
     def _validate_meta_unlock_contract(self, row: dict[str, Any]) -> None:

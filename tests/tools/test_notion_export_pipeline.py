@@ -112,13 +112,14 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(character_notion["source"], "collection://86d9c16b-e60e-4434-9c84-26b4b00d16c8")
         self.assertEqual(character_notion["unique_id_output_field"], "character_id")
         self.assertEqual(character_notion["field_map"]["메타 기억 허용"], "meta_memory")
+        self.assertEqual(character_notion["field_map"]["최종 다실 대상 ID"], "final_room_target_ids")
 
         rows = {
             "characters": [
-                {"_notion_id": "father", "캐릭터 ID": {"prefix": "CHR", "number": 1}, "이름": "아버지", "설정 상태": "확정", "메타 기억 허용": True},
-                {"_notion_id": "ordinary", "캐릭터 ID": {"prefix": "CHR", "number": 2}, "이름": "보통 인물", "설정 상태": "확정", "메타 기억 허용": False},
-                {"_notion_id": "rikyu", "캐릭터 ID": {"prefix": "CHR", "number": 5}, "이름": "센리큐", "설정 상태": "확정", "메타 기억 허용": True},
-                {"_notion_id": "merchant", "캐릭터 ID": {"prefix": "CHR", "number": 9}, "이름": "떠돌이 차 상인", "설정 상태": "확정", "메타 기억 허용": False},
+                {"_notion_id": "father", "캐릭터 ID": {"prefix": "CHR", "number": 1}, "이름": "아버지", "설정 상태": "확정", "메타 기억 허용": True, "최종 다실 대상 ID": []},
+                {"_notion_id": "ordinary", "캐릭터 ID": {"prefix": "CHR", "number": 2}, "이름": "보통 인물", "설정 상태": "확정", "메타 기억 허용": False, "최종 다실 대상 ID": ["daimyo"]},
+                {"_notion_id": "rikyu", "캐릭터 ID": {"prefix": "CHR", "number": 5}, "이름": "센리큐", "설정 상태": "확정", "메타 기억 허용": True, "최종 다실 대상 ID": []},
+                {"_notion_id": "merchant", "캐릭터 ID": {"prefix": "CHR", "number": 9}, "이름": "떠돌이 차 상인", "설정 상태": "확정", "메타 기억 허용": False, "최종 다실 대상 ID": []},
             ]
         }
         capture = CaptureBuilder(schema, {"merchant": "wandering_tea_merchant"}).build_from_rows(rows, "character-memory-fixture-v1")
@@ -127,6 +128,7 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual([item["id"] for item in characters], ["chr_1", "chr_2", "chr_5", "wandering_tea_merchant"])
         self.assertEqual([item["character_id"] for item in characters], ["CHR-1", "CHR-2", "CHR-5", "CHR-9"])
         self.assertEqual([item["meta_memory"] for item in characters], [True, False, True, False])
+        self.assertEqual([item.get("final_room_target_ids", []) for item in characters], [[], ["daimyo"], [], []])
 
     def test_character_export_rejects_missing_or_non_boolean_meta_memory(self):
         schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
@@ -145,6 +147,14 @@ class NotionExportPipelineTests(unittest.TestCase):
 
         base["datasets"]["characters"]["items"][0]["meta_memory"] = "true"
         with self.assertRaisesRegex(ExportValidationError, "chr_1.*meta_memory must be a boolean"):
+            ExportPipeline(schema).build_snapshots(base)
+
+        base["datasets"]["characters"]["items"][0]["meta_memory"] = True
+        characters = ExportPipeline(schema).build_snapshots(base)["characters"]["items"]
+        self.assertNotIn("final_room_target_ids", characters[0])
+
+        base["datasets"]["characters"]["items"][0]["final_room_target_ids"] = ["Bad Target"]
+        with self.assertRaisesRegex(ExportValidationError, "chr_1.*final_room_target_ids must contain stable ids"):
             ExportPipeline(schema).build_snapshots(base)
 
     def test_fixture_monsters_export_regenerates_runtime_stats_and_hash(self):
@@ -824,6 +834,8 @@ class NotionExportPipelineTests(unittest.TestCase):
             {"CHR-1", "CHR-5"},
         )
         self.assertTrue(all(isinstance(item["meta_memory"], bool) for item in characters))
+        self.assertTrue(all(isinstance(item["final_room_target_ids"], list) for item in characters))
+        self.assertEqual(by_character_id["CHR-2"]["final_room_target_ids"], ["daimyo"])
         self.assertEqual(by_character_id["CHR-9"]["id"], "wandering_tea_merchant")
 
     def test_dev_12_static_ability_exports_include_effect_contract_fields(self):

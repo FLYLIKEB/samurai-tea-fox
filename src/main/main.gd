@@ -4,6 +4,7 @@ const DataCatalog = preload("res://src/core/data/data_catalog.gd")
 const CoreTeaWareCollection = preload("res://src/dungeon/core_tea_ware_collection.gd")
 const DesktopCommandAdapter = preload("res://src/core/commands/desktop_command_adapter.gd")
 const DungeonRuntime = preload("res://src/dungeon/dungeon_runtime.gd")
+const FinalRoomStateBuilder = preload("res://src/meta/final_room_state_builder.gd")
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const EquipmentModel = preload("res://src/inventory/equipment_model.gd")
 const InventoryModel = preload("res://src/inventory/inventory_model.gd")
@@ -39,6 +40,7 @@ var equipment
 var tea_service
 var crafting_service
 var core_tea_ware_collection
+var final_room_state_builder
 var memory_tea_cutscene_runtime
 var acquisition_service
 var dungeon_runtime
@@ -335,6 +337,9 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	var core_tea_ware_result: Dictionary = CoreTeaWareCollection.from_catalog(loaded_catalog)
 	if not core_tea_ware_result.ok:
 		return core_tea_ware_result
+	var final_room_result: Dictionary = FinalRoomStateBuilder.from_catalog(loaded_catalog)
+	if not final_room_result.ok:
+		return final_room_result
 	inventory = inventory_result.inventory
 	if run_state != null and not run_state.inventory.is_empty():
 		var inventory_load_result: Dictionary = inventory.load_snapshot(run_state.inventory)
@@ -344,6 +349,7 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	tea_service = tea_result.tea_service
 	crafting_service = crafting_result.crafting_service
 	core_tea_ware_collection = core_tea_ware_result.collection
+	final_room_state_builder = final_room_result.builder
 	tea_service.drink_completed.connect(_on_tea_drink_completed)
 	memory_tea_cutscene_runtime = MemoryTeaCutsceneRuntime.new()
 	var memory_runtime_result: Dictionary = memory_tea_cutscene_runtime.configure(loaded_catalog.data_version)
@@ -361,6 +367,13 @@ func final_room_gate_query() -> Dictionary:
 	if run_state == null:
 		run_state = RunState.new()
 	return core_tea_ware_collection.final_room_gate_query(run_state)
+
+func final_room_state_read_model() -> Dictionary:
+	if final_room_state_builder == null:
+		return {"ok": false, "reason": "missing_final_room_state_builder", "error": "Final room state builder is not configured."}
+	if run_state == null:
+		run_state = RunState.new()
+	return final_room_state_builder.build(run_state)
 
 func record_boss_core_tea_ware_rewards(resolution_event: Dictionary) -> Dictionary:
 	if core_tea_ware_collection == null:
