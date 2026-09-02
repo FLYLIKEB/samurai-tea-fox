@@ -24,7 +24,10 @@ func _assert_generated_unlocks_evaluate_from_data(asserts) -> void:
 	var result: Dictionary = RunEndProcessor.new().apply_run_end_with_unlocks(_empty_meta(), {
 		"reached_biome_ids": ["common_region"],
 		"best_reached_biome_order": 1,
-		"tail_state": {"stage": 3, "tail_count": 3, "path_flags": ["harmony"], "transition_history": []},
+		"tail_state": {"stage": 3, "tail_count": 3, "path_flags": ["harmony"], "transition_history": [
+			{"source_kind": "run_start", "source_id": "run_start", "source_key": "RUN_START", "stage": 1, "path_flags": []},
+			{"source_kind": "event", "source_id": "harmony_resolution", "source_key": "", "stage": 3, "path_flags": ["harmony"]}
+		]},
 		"discovered_records": ["memory_tea"],
 		"final_tea_room_reached": true
 	}, catalog.get_definitions("meta_unlocks"))

@@ -7,6 +7,7 @@ func run(asserts) -> void:
 	_assert_default_run_state(asserts)
 	_assert_choice_and_event_transitions_use_stable_ids(asserts)
 	_assert_forward_only_stage_contract(asserts)
+	_assert_transition_history_validation(asserts)
 	_assert_ability_candidates_are_tail_gated(asserts)
 	_assert_serialization_round_trip_is_detached(asserts)
 
@@ -57,14 +58,49 @@ func _assert_choice_and_event_transitions_use_stable_ids(asserts) -> void:
 
 func _assert_forward_only_stage_contract(asserts) -> void:
 	var tail := TailState.new({"stage": 3, "tail_count": 3})
+	var history_size := tail.transition_history.size()
 	var same := tail.apply_transition("event", "same_stage_echo", 3, ["harmony"])
 	asserts.true_value(same.ok, "same-stage path projection can apply")
 	asserts.false_value(same.advanced, "same-stage transition is not an advance")
+	asserts.true_value(same.changed, "same-stage transition reports a newly added path flag")
 	asserts.equal(tail.stage, 3, "same-stage transition keeps stage")
+	asserts.equal(tail.transition_history.size(), history_size + 1, "same-stage path change records a transition")
+	asserts.equal(tail.transition_history[-1].source_kind, "event", "same-stage transition records the stable source kind")
+	asserts.equal(tail.transition_history[-1].source_id, "same_stage_echo", "same-stage transition records the stable source ID")
+	asserts.equal(tail.transition_history[-1].stage, 3, "same-stage transition records the current stage")
+	asserts.equal(tail.transition_history[-1].path_flags, ["harmony"], "same-stage transition records newly added flags")
+	var duplicate := tail.apply_transition("event", "same_stage_echo", 3, ["harmony"])
+	asserts.false_value(duplicate.changed, "same-stage duplicate flag reports no state change")
+	asserts.equal(tail.transition_history.size(), history_size + 1, "same-stage duplicate flag does not add history")
 	var backward := tail.apply_transition("event", "old_echo", 2)
 	asserts.false_value(backward.ok, "tail stage cannot regress")
 	asserts.equal(backward.reason, "tail_stage_regression", "regression has stable reason")
 	asserts.equal(tail.stage, 3, "failed regression does not mutate stage")
+
+func _assert_transition_history_validation(asserts) -> void:
+	var malformed_start := _snapshot_with_history(2, [
+		_history_entry("run_start", "run_start", 2)
+	])
+	var start_result := TailState.validate_dictionary(malformed_start)
+	asserts.false_value(start_result.ok, "tail history rejects a run start above stage one")
+	asserts.equal(start_result.reason, "invalid_tail_history_start", "malformed history start has a stable reason")
+
+	var backward := _snapshot_with_history(3, [
+		_history_entry("run_start", "run_start", 1),
+		_history_entry("event", "fox_fire_trial", 3),
+		_history_entry("choice", "mercy_at_old_gate", 2)
+	])
+	var backward_result := TailState.validate_dictionary(backward)
+	asserts.false_value(backward_result.ok, "tail history rejects backward recorded stages")
+	asserts.equal(backward_result.reason, "tail_history_stage_regression", "backward history has a stable reason")
+
+	var current_exceed := _snapshot_with_history(2, [
+		_history_entry("run_start", "run_start", 1),
+		_history_entry("event", "fox_fire_trial", 3)
+	])
+	var exceed_result := TailState.validate_dictionary(current_exceed)
+	asserts.false_value(exceed_result.ok, "tail history rejects a recorded stage above current stage")
+	asserts.equal(exceed_result.reason, "tail_history_stage_exceeds_current", "current-stage exceed has a stable reason")
 
 func _assert_ability_candidates_are_tail_gated(asserts) -> void:
 	var tail := TailState.new({"stage": 3, "tail_count": 3})
@@ -88,3 +124,20 @@ func _assert_serialization_round_trip_is_detached(asserts) -> void:
 	snapshot.transition_history[0].stage = 9
 	asserts.equal(restored.path_flags, ["humanity"], "tail state restores detached path flags")
 	asserts.equal(restored.transition_history[0].stage, 1, "tail state restores detached transition history")
+
+func _snapshot_with_history(current_stage: int, history: Array) -> Dictionary:
+	return {
+		"stage": current_stage,
+		"tail_count": current_stage,
+		"path_flags": [],
+		"transition_history": history
+	}
+
+func _history_entry(source_kind: String, source_id: String, entry_stage: int) -> Dictionary:
+	return {
+		"source_kind": source_kind,
+		"source_id": source_id,
+		"source_key": "RUN_START" if source_kind == "run_start" else "",
+		"stage": entry_stage,
+		"path_flags": []
+	}

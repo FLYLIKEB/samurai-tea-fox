@@ -23,7 +23,9 @@ func _init(values := {}) -> void:
 	path_flags = _string_array(snapshot.get("path_flags", []))
 	transition_history = _history_array(snapshot.get("transition_history", []))
 	if transition_history.is_empty():
-		transition_history.append(_transition_record(SOURCE_RUN_START, SOURCE_RUN_START, "RUN_START", stage, []))
+		transition_history.append(_transition_record(SOURCE_RUN_START, SOURCE_RUN_START, "RUN_START", 1, []))
+		if stage > 1:
+			transition_history.append(_transition_record(SOURCE_SYSTEM, "state_initialization", "", stage, []))
 
 static func from_dictionary(data: Dictionary) -> Dictionary:
 	var validation := validate_dictionary(data)
@@ -35,7 +37,15 @@ static func default_dictionary() -> Dictionary:
 	return load("res://src/player/tail_state.gd").new().to_dictionary()
 
 static func from_tail_count(count: int) -> TailState:
-	return load("res://src/player/tail_state.gd").new({"stage": maxi(1, count), "tail_count": maxi(1, count)})
+	var normalized_count := maxi(1, count)
+	var history := [_transition_record(SOURCE_RUN_START, SOURCE_RUN_START, "RUN_START", 1, [])]
+	if normalized_count > 1:
+		history.append(_transition_record(SOURCE_SYSTEM, "legacy_tail_count", "", normalized_count, []))
+	return load("res://src/player/tail_state.gd").new({
+		"stage": normalized_count,
+		"tail_count": normalized_count,
+		"transition_history": history
+	})
 
 static func validate_dictionary(data: Dictionary) -> Dictionary:
 	var raw_stage = data.get("stage", data.get("tail_count", 1))
@@ -55,20 +65,32 @@ static func validate_dictionary(data: Dictionary) -> Dictionary:
 	var raw_history = data.get("transition_history", [])
 	if typeof(raw_history) != TYPE_ARRAY:
 		return _fail("invalid_tail_history", "Tail transition history must be an array.")
-	for entry in raw_history:
+	if raw_history.is_empty():
+		return _fail("invalid_tail_history_start", "Tail transition history must start at run stage one.")
+	var previous_stage := 0
+	for index in raw_history.size():
+		var entry = raw_history[index]
 		if typeof(entry) != TYPE_DICTIONARY:
 			return _fail("invalid_tail_history", "Tail transition history entries must be dictionaries.")
 		if not _is_positive_integer(entry.get("stage", 0)):
 			return _fail("invalid_tail_history", "Tail transition history entry has an invalid stage.")
+		var entry_stage := int(entry.stage)
 		var source_kind := String(entry.get("source_kind", ""))
 		if not VALID_SOURCE_KINDS.has(source_kind):
 			return _fail("invalid_tail_source_kind", "Tail source kind '%s' is not supported." % source_kind)
+		if index == 0 and (source_kind != SOURCE_RUN_START or entry_stage != 1):
+			return _fail("invalid_tail_history_start", "Tail transition history must start at run stage one.")
+		if entry_stage < previous_stage:
+			return _fail("tail_history_stage_regression", "Tail transition history stages must not move backward.")
+		if entry_stage > int(raw_stage):
+			return _fail("tail_history_stage_exceeds_current", "Tail transition history stage cannot exceed the current stage.")
 		var source_id := String(entry.get("source_id", ""))
 		if source_id.is_empty() or not _is_stable_source_id(source_id):
 			return _fail("invalid_tail_source_id", "Tail source id '%s' is not stable." % source_id)
 		var source_key := String(entry.get("source_key", ""))
 		if not source_key.is_empty() and not _is_stable_source_key(source_key):
 			return _fail("invalid_tail_source_key", "Tail source key '%s' is not stable." % source_key)
+		previous_stage = entry_stage
 	return {"ok": true}
 
 func apply_choice_result(choice: Dictionary) -> Dictionary:
@@ -93,22 +115,30 @@ func apply_transition(source_kind: String, source_id: String, target_stage: int,
 	var normalized_flags_result := _normalized_path_flags(new_path_flags)
 	if not normalized_flags_result.ok:
 		return normalized_flags_result
+	var added_flags: Array[String] = []
 	for flag in normalized_flags_result.flags:
-		_append_unique(path_flags, String(flag))
+		if not path_flags.has(String(flag)):
+			path_flags.append(String(flag))
+			added_flags.append(String(flag))
 	if target_stage == stage:
+		var changed := not added_flags.is_empty()
+		if changed:
+			transition_history.append(_transition_record(source_kind, source_id, String(source_key), stage, added_flags))
 		return {
 			"ok": true,
 			"advanced": false,
+			"changed": changed,
 			"stage": stage,
 			"tail_count": tail_count,
 			"path_flags": path_flags.duplicate()
 		}
 	stage = target_stage
 	tail_count = target_stage
-	transition_history.append(_transition_record(source_kind, source_id, String(source_key), stage, normalized_flags_result.flags))
+	transition_history.append(_transition_record(source_kind, source_id, String(source_key), stage, added_flags))
 	return {
 		"ok": true,
 		"advanced": true,
+		"changed": true,
 		"stage": stage,
 		"tail_count": tail_count,
 		"path_flags": path_flags.duplicate()
@@ -152,7 +182,7 @@ func to_dictionary() -> Dictionary:
 
 func _apply_result(source_kind: String, source_id: String, source_key: String, result: Dictionary) -> Dictionary:
 	if not result.has("tail_stage") and not result.has("tail_path_flags") and not result.has("path_flags"):
-		return {"ok": true, "advanced": false, "stage": stage, "tail_count": tail_count}
+		return {"ok": true, "advanced": false, "changed": false, "stage": stage, "tail_count": tail_count}
 	var target_stage := int(result.get("tail_stage", stage))
 	var flags = result.get("tail_path_flags", result.get("path_flags", []))
 	return apply_transition(source_kind, source_id, target_stage, flags, source_key)

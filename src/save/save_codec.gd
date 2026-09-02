@@ -132,6 +132,8 @@ static func _migrate_payload(schema_version: int, kind: String, payload: Diction
 	match schema_version:
 		1:
 			var migrated := payload.duplicate(true)
+			if kind == RUN_KIND and not migrated.has("tail_state") and migrated.has("tails") and _is_integer_value(migrated.tails):
+				migrated["tail_state"] = TailState.from_tail_count(int(migrated.tails)).to_dictionary()
 			var defaults := RunState.new().to_dictionary() if kind == RUN_KIND else MetaState.new().to_dictionary()
 			for field in defaults:
 				if not migrated.has(field) and not field in REQUIRED_FIELDS[kind]:

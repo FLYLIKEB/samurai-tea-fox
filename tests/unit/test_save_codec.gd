@@ -14,7 +14,7 @@ func run(asserts) -> void:
 		"philosophy_marks": ["和·공존"],
 		"final_room_effects": [{"choice_id": "daimyo_relinquish_tea", "effect": "관계형 지원 효과"}]
 	}
-	var run_payload := {"seed": 11037, "inventory": ["wood"], "equipment": run_equipment, "tail_state": {"stage": 2, "tail_count": 2, "path_flags": ["humanity"], "transition_history": []}}
+	var run_payload := {"seed": 11037, "inventory": ["wood"], "equipment": run_equipment, "tail_state": _tail_snapshot(2, ["humanity"])}
 	run_payload.merge(choice_state)
 	var run_save := SaveCodec.encode_run(run_payload)
 	var meta_save := SaveCodec.encode_meta({"run_count": 2, "discovered_records": ["oribe_bowl"], "unlocked_meta_flags": ["sen_rikyu_reunion_dialogue_1"]})
@@ -38,6 +38,12 @@ func run(asserts) -> void:
 	asserts.false_value(SaveCodec.decode_run({"schema_version": SaveCodec.CURRENT_SCHEMA_VERSION, "kind": "run", "run": []}).ok, "run save rejects non-dictionary payload")
 	asserts.false_value(SaveCodec.decode_meta({"schema_version": SaveCodec.CURRENT_SCHEMA_VERSION, "kind": "meta", "meta": []}).ok, "meta save rejects non-dictionary payload")
 	asserts.false_value(SaveCodec.decode_run({"schema_version": SaveCodec.CURRENT_SCHEMA_VERSION, "kind": "run", "run": {"seed": 1, "tail_state": {"stage": 3, "tail_count": 2, "path_flags": [], "transition_history": []}}}).ok, "run save rejects malformed tail state")
+	var legacy_run := SaveCodec.decode_run({"schema_version": 1, "kind": "run", "run": {"seed": 77, "tails": 4}})
+	asserts.true_value(legacy_run.ok, "legacy v1 run without tail state decodes")
+	asserts.equal(legacy_run.state.tails, 4, "legacy v1 run preserves tail count")
+	asserts.equal(legacy_run.state.tail_state.stage, 4, "legacy v1 run synthesizes tail stage before defaults")
+	asserts.equal(legacy_run.state.tail_state.transition_history[0].stage, 1, "legacy v1 synthesized history starts at stage one")
+	asserts.equal(legacy_run.state.tail_state.transition_history[-1].source_id, "legacy_tail_count", "legacy v1 synthesized history records a stable migration source")
 
 	var state := RunState.new()
 	state.current_biome_id = "common_region"
@@ -76,7 +82,7 @@ func run(asserts) -> void:
 		"processed_drop_request_ids": []
 	}
 	state.trade_stock = {"shop_1": 2}
-	state.tail_state = {"stage": 3, "tail_count": 3, "path_flags": ["yokai_nature"], "transition_history": [{"source_kind": "event", "source_id": "fox_fire_trial", "source_key": "", "stage": 3, "path_flags": ["yokai_nature"]}]}
+	state.tail_state = _tail_snapshot(3, ["yokai_nature"])
 	state.tails = 3
 	var progression_save := SaveCodec.encode_run(state.to_dictionary())
 	asserts.equal(SaveCodec.decode_run(progression_save).state.teleport_states.common_region, "repairable", "run save preserves teleport progression")
@@ -127,3 +133,11 @@ func _fixture_biomes() -> Array:
 		{"id": "common_region", "progression_order": 1},
 		{"id": "mountain_region", "progression_order": 2}
 	]
+
+func _tail_snapshot(stage: int, flags: Array) -> Dictionary:
+	var tail := TailState.new()
+	if stage > 1 or not flags.is_empty():
+		var result := tail.apply_transition("event", "test_tail_growth", stage, flags)
+		if not result.ok:
+			return {}
+	return tail.to_dictionary()
