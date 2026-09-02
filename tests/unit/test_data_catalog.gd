@@ -3,7 +3,10 @@ extends RefCounted
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
 const DataSchemaValidator = preload("res://src/core/data/data_schema_validator.gd")
 
+const TEST_DIRECTORY := "user://dev16_data_catalog_tests"
+
 func run(asserts) -> void:
+	_cleanup_test_directory()
 	var catalog := DataCatalog.new()
 	var result := catalog.load_from_directory("res://data/generated")
 	asserts.true_value(result.ok, "generated Notion export files load: %s" % result.get("error", ""))
@@ -21,6 +24,19 @@ func run(asserts) -> void:
 	asserts.equal(catalog.find_by_id("dungeons", "dungeon_4").get("name", ""), "오리베의 다실", "canonical common dungeon row loads")
 	asserts.equal(catalog.get_definitions("bosses").size(), 2, "two boss runtime sample definitions are present")
 	asserts.equal(catalog.find_by_id("bosses", "sample_bamboo_guardian").get("dungeon_id", ""), "dungeon_4", "boss definition keeps its canonical dungeon id")
+	asserts.equal(catalog.sources.get("characters", ""), "collection://86d9c16b-e60e-4434-9c84-26b4b00d16c8", "authoritative character memory policy source is registered")
+	asserts.true_value(catalog.character_has_meta_memory("CHR-1"), "Muchau's father may observe previous-run memory")
+	asserts.true_value(catalog.character_has_meta_memory("CHR-5"), "Sen Rikyu may observe previous-run memory")
+	asserts.false_value(catalog.character_has_meta_memory("CHR-2"), "ordinary characters may not observe previous-run memory")
+	asserts.false_value(catalog.character_has_meta_memory("unknown_character"), "unknown characters may not observe previous-run memory")
+
+	_create_generated_fixture_without_characters()
+	var missing_characters := DataCatalog.new().load_from_directory(TEST_DIRECTORY)
+	asserts.false_value(missing_characters.ok, "characters.json is required generated policy data")
+	if not missing_characters.ok:
+		asserts.true_value("Missing generated data file" in missing_characters.error, "missing character policy reports a generated file error")
+		asserts.true_value("characters.json" in missing_characters.error, "missing character policy error names characters.json")
+	_cleanup_test_directory()
 
 	var validator := DataSchemaValidator.new()
 	var duplicate_result := validator.validate_export_file({
@@ -262,3 +278,21 @@ func _catalog_choice() -> Dictionary:
 		"target_survives": true,
 		"philosophy_marks": []
 	}
+
+func _create_generated_fixture_without_characters() -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(TEST_DIRECTORY))
+	for file_name in DataCatalog.FILES.values():
+		if file_name == "characters.json":
+			continue
+		var target := FileAccess.open("%s/%s" % [TEST_DIRECTORY, file_name], FileAccess.WRITE)
+		target.store_buffer(FileAccess.get_file_as_bytes("res://data/generated/%s" % file_name))
+		target.close()
+
+func _cleanup_test_directory() -> void:
+	for file_name in DataCatalog.FILES.values():
+		var path := "%s/%s" % [TEST_DIRECTORY, file_name]
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	var directory := ProjectSettings.globalize_path(TEST_DIRECTORY)
+	if DirAccess.dir_exists_absolute(directory):
+		DirAccess.remove_absolute(directory)

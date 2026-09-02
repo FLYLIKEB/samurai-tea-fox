@@ -16,6 +16,7 @@ const FILES := {
 	"meta_unlocks": "meta_unlocks.json",
 	"events": "events.json",
 	"choices": "choices.json",
+	"characters": "characters.json",
 	"shops": "shops.json",
 	"bosses": "bosses.json"
 }
@@ -79,3 +80,13 @@ func find_balance_value(id: String, fallback := 0.0) -> float:
 	if item.is_empty():
 		return fallback
 	return float(item.get("value", fallback))
+
+func find_character_by_id(character_id: String) -> Dictionary:
+	for item in get_definitions("characters"):
+		if item.get("character_id", "") == character_id or item.get("id", "") == character_id:
+			return item
+	return {}
+
+func character_has_meta_memory(character_id: String) -> bool:
+	var character := find_character_by_id(character_id)
+	return not character.is_empty() and character.get("meta_memory") == true

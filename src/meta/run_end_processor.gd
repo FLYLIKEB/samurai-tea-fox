@@ -21,12 +21,18 @@ const CONDITION_TYPES := [
 const REWARD_KINDS := [REWARD_UNLOCK_FLAG, REWARD_DIALOGUE_MEMORY_FLAG, REWARD_DISCOVERED_RECORD]
 
 func apply_run_end(meta_state: Dictionary, run_summary: Dictionary) -> Dictionary:
+	var validation := _validate_previous_run_inputs(run_summary)
+	if not validation.ok:
+		return validation
 	var next_meta := _prepare_next_meta(meta_state, run_summary)
 	for flag in run_summary.get("earned_meta_flags", []):
 		_append_unique(next_meta.unlocked_meta_flags, String(flag))
 	return next_meta
 
 func apply_run_end_with_unlocks(meta_state: Dictionary, run_summary: Dictionary, unlock_definitions: Array) -> Dictionary:
+	var validation := _validate_previous_run_inputs(run_summary)
+	if not validation.ok:
+		return validation
 	var next_meta := _prepare_next_meta(meta_state, run_summary)
 	var events := _events_from_run_summary(run_summary)
 	var allowed_counter_targets := _cumulative_counter_targets(unlock_definitions)
@@ -93,6 +99,19 @@ func _prepare_next_meta(meta_state: Dictionary, run_summary: Dictionary) -> Dict
 		next_meta["dialogue_memory_flags"] = []
 	if typeof(next_meta.get("meta_unlock_counters", {})) != TYPE_DICTIONARY:
 		next_meta["meta_unlock_counters"] = {}
+	for field in ["past_choice_ids", "reached_place_ids", "death_record_ids"]:
+		if typeof(next_meta.get(field, [])) != TYPE_ARRAY:
+			next_meta[field] = []
+
+	_append_ids(next_meta.past_choice_ids, run_summary.get("past_choice_ids", []))
+	_append_ids(next_meta.past_choice_ids, run_summary.get("choice_history", []))
+	_append_ids(next_meta.reached_place_ids, run_summary.get("reached_place_ids", []))
+	_append_ids(next_meta.reached_place_ids, run_summary.get("reached_biome_ids", []))
+	_append_stable_id(next_meta.reached_place_ids, run_summary.get("current_biome_id", ""))
+	if bool(run_summary.get("final_tea_room_reached", false)):
+		_append_unique(next_meta.reached_place_ids, "final_tea_room")
+	_append_ids(next_meta.death_record_ids, run_summary.get("death_record_ids", []))
+	_append_stable_id(next_meta.death_record_ids, run_summary.get("death_record_id", ""))
 
 	next_meta["run_count"] = int(next_meta.get("run_count", 0)) + 1
 	next_meta["best_reached_biome_order"] = max(
@@ -247,11 +266,50 @@ func _compare(actual: int, condition: Dictionary) -> bool:
 func _counter_key(event_key: String) -> String:
 	return event_key
 
+func _validate_previous_run_inputs(run_summary: Dictionary) -> Dictionary:
+	for field in ["past_choice_ids", "choice_history", "reached_place_ids", "reached_biome_ids", "death_record_ids"]:
+		if run_summary.has(field):
+			var result := _validate_stable_id_array(run_summary[field], field)
+			if not result.ok:
+				return result
+	for field in ["current_biome_id", "death_record_id"]:
+		if run_summary.has(field):
+			var value = run_summary.get(field, "")
+			if typeof(value) != TYPE_STRING or (not value.is_empty() and not _is_stable_id(value)):
+				return _failure("invalid_run_summary_stable_id", "Run summary field '%s' must be a stable id." % field)
+	return {"ok": true}
+
+func _validate_stable_id_array(value, field: String) -> Dictionary:
+	if typeof(value) != TYPE_ARRAY:
+		return _failure("invalid_run_summary_stable_id_array", "Run summary field '%s' must be an array of stable ids." % field)
+	for entry in value:
+		if typeof(entry) != TYPE_STRING or not _is_stable_id(String(entry)):
+			return _failure("invalid_run_summary_stable_id", "Run summary field '%s' contains a malformed stable id." % field)
+	return {"ok": true}
+
+func _is_stable_id(value: String) -> bool:
+	if value.is_empty():
+		return false
+	var id_pattern := RegEx.new()
+	id_pattern.compile("^[a-z][a-z0-9_]*$")
+	return id_pattern.search(value) != null
+
 func _append_unique(values: Array, id: String) -> void:
 	if id.is_empty():
 		return
 	if not values.has(id):
 		values.append(id)
+
+func _append_ids(values: Array, ids) -> void:
+	if typeof(ids) != TYPE_ARRAY:
+		return
+	for id in ids:
+		_append_stable_id(values, id)
+
+func _append_stable_id(values: Array, value) -> void:
+	if typeof(value) != TYPE_STRING or not _is_stable_id(value):
+		return
+	_append_unique(values, value)
 
 func _array_value(value) -> Array:
 	if typeof(value) != TYPE_ARRAY:

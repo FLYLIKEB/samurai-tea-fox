@@ -15,6 +15,8 @@ func run(asserts) -> void:
 	_assert_unknown_reward_type_fails(asserts)
 	_assert_data_driven_path_ignores_undeclared_earned_meta_flags(asserts)
 	_assert_unrelated_events_do_not_create_cumulative_counters(asserts)
+	_assert_malformed_previous_run_query_inputs_are_rejected(asserts)
+	_assert_previous_run_query_inputs_are_accumulated(asserts)
 	_assert_meta_save_round_trip_preserves_unlock_state(asserts)
 
 func _assert_generated_unlocks_evaluate_from_data(asserts) -> void:
@@ -153,6 +155,9 @@ func _assert_meta_save_round_trip_preserves_unlock_state(asserts) -> void:
 	meta.unlocked_meta_flags = ["memory_tea_first_record"]
 	meta.dialogue_memory_flags = ["sen_rikyu_reunion_dialogue_1"]
 	meta.meta_unlock_counters = {"discovered_record:memory_tea": 3}
+	meta.past_choice_ids = ["daimyo_relinquish_tea"]
+	meta.reached_place_ids = ["mountain_region"]
+	meta.death_record_ids = ["wild_dog_ambush"]
 	var save := SaveCodec.encode_meta(meta)
 	var decoded: Dictionary = SaveCodec.decode_meta(save)
 	asserts.true_value(decoded.ok, "meta save with unlock counters decodes")
@@ -160,6 +165,47 @@ func _assert_meta_save_round_trip_preserves_unlock_state(asserts) -> void:
 	asserts.equal(decoded.state.unlocked_meta_flags, ["memory_tea_first_record"], "meta save preserves unlocked definition ids")
 	asserts.equal(decoded.state.dialogue_memory_flags, ["sen_rikyu_reunion_dialogue_1"], "meta save preserves dialogue memory flags")
 	asserts.equal(int(decoded.state.meta_unlock_counters["discovered_record:memory_tea"]), 3, "meta save preserves cumulative counters")
+	asserts.equal(decoded.state.past_choice_ids, ["daimyo_relinquish_tea"], "meta save preserves past choice query inputs")
+	asserts.equal(decoded.state.reached_place_ids, ["mountain_region"], "meta save preserves reached place query inputs")
+	asserts.equal(decoded.state.death_record_ids, ["wild_dog_ambush"], "meta save preserves death record query inputs")
+
+func _assert_malformed_previous_run_query_inputs_are_rejected(asserts) -> void:
+	var processor := RunEndProcessor.new()
+	var valid_meta := _empty_meta()
+	var non_array := processor.apply_run_end(valid_meta, {"choice_history": "daimyo_relinquish_tea"})
+	asserts.false_value(non_array.ok, "run summary previous-run arrays must be arrays")
+	asserts.equal(non_array.reason, "invalid_run_summary_stable_id_array", "non-array previous-run input returns stable reason")
+	var non_string := processor.apply_run_end(valid_meta, {"past_choice_ids": [42]})
+	asserts.false_value(non_string.ok, "run summary previous-run ids must be strings")
+	asserts.equal(non_string.reason, "invalid_run_summary_stable_id", "non-string previous-run input returns stable reason")
+	var malformed_id := processor.apply_run_end(valid_meta, {"reached_place_ids": ["Mountain Region"]})
+	asserts.false_value(malformed_id.ok, "run summary previous-run ids must be stable ids")
+	asserts.equal(malformed_id.reason, "invalid_run_summary_stable_id", "malformed previous-run id returns stable reason")
+	var scalar_id := processor.apply_run_end(valid_meta, {"death_record_id": "Wild Dog"})
+	asserts.false_value(scalar_id.ok, "run summary scalar previous-run ids must be stable ids")
+	asserts.equal(scalar_id.reason, "invalid_run_summary_stable_id", "malformed scalar previous-run id returns stable reason")
+	asserts.equal(valid_meta.past_choice_ids, [], "malformed run summary is rejected without mutating existing meta choices")
+	asserts.equal(valid_meta.reached_place_ids, [], "malformed run summary is rejected without mutating existing meta places")
+	asserts.equal(valid_meta.death_record_ids, [], "malformed run summary is rejected without mutating existing meta deaths")
+
+func _assert_previous_run_query_inputs_are_accumulated(asserts) -> void:
+	var processor := RunEndProcessor.new()
+	var first := processor.apply_run_end(_empty_meta(), {
+		"choice_history": ["daimyo_relinquish_tea"],
+		"reached_biome_ids": ["common_region"],
+		"current_biome_id": "mountain_region",
+		"final_tea_room_reached": true,
+		"death_record_id": "wild_dog_ambush"
+	})
+	var second := processor.apply_run_end(first, {
+		"choice_history": ["daimyo_relinquish_tea"],
+		"reached_place_ids": ["mountain_shrine"],
+		"death_record_ids": ["wild_dog_ambush", "boss_defeat"]
+	})
+	asserts.equal(second.past_choice_ids, ["daimyo_relinquish_tea"], "past choice IDs accumulate without duplicates")
+	asserts.equal(second.reached_place_ids, ["common_region", "mountain_region", "final_tea_room", "mountain_shrine"], "reached place IDs accumulate from stable run summary fields")
+	asserts.equal(second.death_record_ids, ["wild_dog_ambush", "boss_defeat"], "death record IDs accumulate without duplicates")
+	asserts.equal(int(second.run_count), 2, "query input accumulation preserves run count behavior")
 
 func _empty_meta() -> Dictionary:
 	return {
@@ -168,7 +214,10 @@ func _empty_meta() -> Dictionary:
 		"discovered_records": [],
 		"unlocked_meta_flags": [],
 		"dialogue_memory_flags": [],
-		"meta_unlock_counters": {}
+		"meta_unlock_counters": {},
+		"past_choice_ids": [],
+		"reached_place_ids": [],
+		"death_record_ids": []
 	}
 
 func _definition(id: String, condition_event: String, condition_target: String, reward_kind: String, reward_target: String, threshold := 1) -> Dictionary:

@@ -11,6 +11,7 @@
     "monsters": "collection://8058308e-e875-45aa-929c-49fd8575601a",
     "abilities": "collection://011bff45-d1e8-4d8a-a52d-bbf6c06a3566",
     "meta_unlocks": "collection://7927bdc1-70eb-4fe7-82c5-971c74caa5d3",
-    "shops": "collection://3f6354ff-02fb-4b92-9b81-9f821ae6408b"
+    "shops": "collection://3f6354ff-02fb-4b92-9b81-9f821ae6408b",
+    "characters": "collection://86d9c16b-e60e-4434-9c84-26b4b00d16c8"
   }
 }

@@ -14,10 +14,12 @@ const ALLOWED_RESULT_TYPES := [RESULT_SET_RUN_FLAG, RESULT_GRANT_ITEM, RESULT_AP
 var event_definitions: Dictionary = {}
 var data_version := ""
 var condition_resolver := NarrativeConditionResolver.new()
+var data_catalog = null
 
 func from_catalog(catalog) -> Dictionary:
 	if not catalog.has_method("get_definitions"):
 		return _fail("invalid_catalog", "Catalog cannot provide narrative event definitions.")
+	data_catalog = catalog
 	var items_available := _catalog_has_dataset(catalog, "items")
 	var choices_available := _catalog_has_dataset(catalog, "choices")
 	var item_ids: Dictionary = {}
@@ -72,7 +74,7 @@ func read_model_for_node(event_id: String, node_id: String, run_state, meta_stat
 	var meta_query := _meta_query(meta_state)
 	var visible_options: Array = []
 	for option in node.options:
-		var visibility := _option_is_visible(option, run_query, meta_query)
+		var visibility := _option_is_visible(option, String(node.speaker_id), run_query, meta_query)
 		if not visibility.ok:
 			return visibility
 		if visibility.passed:
@@ -107,7 +109,7 @@ func select_option(event_id: String, node_id: String, option_id: String, run_sta
 	for option in node_result.node.options:
 		if String(option.id) != option_id:
 			continue
-		var visibility := _option_is_visible(option, run_query, meta_query)
+		var visibility := _option_is_visible(option, String(node_result.node.speaker_id), run_query, meta_query)
 		if not visibility.ok:
 			return visibility
 		if not visibility.passed:
@@ -286,7 +288,7 @@ func _validate_node_completion_path(event_id: String, node_id: String, nodes: Di
 			return path_result
 	return {"ok": true}
 
-func _option_is_visible(option: Dictionary, run_query: Dictionary, meta_query: Dictionary) -> Dictionary:
+func _option_is_visible(option: Dictionary, speaker_id: String, run_query: Dictionary, meta_query: Dictionary) -> Dictionary:
 	var conditions = option.get("conditions", [])
 	if typeof(conditions) != TYPE_ARRAY:
 		return _fail("invalid_conditions", "Narrative option '%s' conditions must be an array." % option.id)
@@ -294,6 +296,10 @@ func _option_is_visible(option: Dictionary, run_query: Dictionary, meta_query: D
 		if typeof(condition) != TYPE_DICTIONARY:
 			return _fail("invalid_condition", "Narrative option '%s' contains a non-object condition." % option.id)
 		var condition_type := String(condition.get("type", ""))
+		if condition_type.begins_with("meta_"):
+			var speaker_access := _meta_access_for_speaker(speaker_id)
+			if not speaker_access.ok:
+				return speaker_access
 		if condition_type.begins_with("meta_") and not condition_resolver.requires_meta(condition):
 			return _fail("meta_boundary_violation", "Narrative condition type '%s' is not allowed to query meta state." % condition_type)
 		var result := condition_resolver.resolve(condition, run_query, meta_query)
@@ -302,6 +308,16 @@ func _option_is_visible(option: Dictionary, run_query: Dictionary, meta_query: D
 		if not result.passed:
 			return {"ok": true, "passed": false}
 	return {"ok": true, "passed": true}
+
+func _meta_access_for_speaker(speaker_id: String) -> Dictionary:
+	if data_catalog == null or not data_catalog.has_method("find_character_by_id") or not data_catalog.has_method("character_has_meta_memory"):
+		return _fail("unknown_meta_memory_speaker", "Narrative speaker '%s' has no character memory policy." % speaker_id)
+	var character = data_catalog.find_character_by_id(speaker_id)
+	if typeof(character) != TYPE_DICTIONARY or character.is_empty():
+		return _fail("unknown_meta_memory_speaker", "Narrative speaker '%s' has no character memory policy." % speaker_id)
+	if not data_catalog.character_has_meta_memory(speaker_id):
+		return _fail("meta_memory_not_allowed", "Narrative speaker '%s' cannot query previous-run state." % speaker_id)
+	return {"ok": true}
 
 func _commands_for_results(event_id: String, node_id: String, option: Dictionary) -> Array:
 	var commands: Array = []
@@ -348,7 +364,10 @@ func _meta_query(meta_state) -> Dictionary:
 	return {
 		"run_count": int(data.get("run_count", 0)),
 		"unlocked_meta_flags": data.get("unlocked_meta_flags", []),
-		"dialogue_memory_flags": data.get("dialogue_memory_flags", [])
+		"dialogue_memory_flags": data.get("dialogue_memory_flags", []),
+		"past_choice_ids": data.get("past_choice_ids", []),
+		"reached_place_ids": data.get("reached_place_ids", []),
+		"death_record_ids": data.get("death_record_ids", [])
 	}
 
 func _event_count(run_state, event_id: String) -> int:

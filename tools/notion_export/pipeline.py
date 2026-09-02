@@ -163,6 +163,9 @@ class ExportPipeline:
         return sorted(included, key=lambda item: item["id"])
 
     def _validate_row_contract(self, dataset_name: str, row: dict[str, Any]) -> None:
+        if dataset_name == "characters":
+            self._validate_character_contract(row)
+            return
         if dataset_name == "drops":
             self._validate_drop_contract(row)
             return
@@ -183,6 +186,17 @@ class ExportPipeline:
         if row.get("type") != "다구" or row.get("equipment_slot") != "다구":
             return
         self._validate_attachment_stage_data(row)
+
+    def _validate_character_contract(self, row: dict[str, Any]) -> None:
+        character_id = row.get("character_id")
+        if not isinstance(character_id, str) or not re.fullmatch(r"CHR-[1-9][0-9]*", character_id):
+            raise ExportValidationError(
+                f"characters item {row.get('id', '')}: character_id must match CHR-<number>"
+            )
+        if not isinstance(row.get("meta_memory"), bool):
+            raise ExportValidationError(
+                f"characters item {row['id']}: meta_memory must be a boolean"
+            )
 
 
     def _validate_meta_unlock_contract(self, row: dict[str, Any]) -> None:

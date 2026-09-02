@@ -1,0 +1,81 @@
+{
+  "content_hash": "f8132061ec9c9d291d28fac8e77dba31e90b9c8d4212d45b7e7f3d2a95404cf4",
+  "data_version": "notion-2026-09-01",
+  "items": [
+    {
+      "character_id": "CHR-1",
+      "id": "chr_1",
+      "meta_memory": true,
+      "name": "아버지 — 차를 사랑하는 구미호",
+      "notion_id": "3c937369-9e66-812e-a87e-e1d40d915b67",
+      "status": "확정"
+    },
+    {
+      "character_id": "CHR-2",
+      "id": "chr_2",
+      "meta_memory": false,
+      "name": "황무지 보스 — 다이묘",
+      "notion_id": "3cd37369-9e66-8129-b5ea-e148ce999421",
+      "status": "확정"
+    },
+    {
+      "character_id": "CHR-3",
+      "id": "chr_3",
+      "meta_memory": false,
+      "name": "후루타 오리베 — 불완전함의 다인",
+      "notion_id": "3cd37369-9e66-8133-9012-e19ec23a43ce",
+      "status": "확정"
+    },
+    {
+      "character_id": "CHR-4",
+      "id": "chr_4",
+      "meta_memory": false,
+      "name": "설원 보스 — 승려",
+      "notion_id": "3cd37369-9e66-8184-9e5d-cfc0da41644c",
+      "status": "확정"
+    },
+    {
+      "character_id": "CHR-5",
+      "id": "chr_5",
+      "meta_memory": true,
+      "name": "센리큐 — 이름 없는 노다인",
+      "notion_id": "3cd37369-9e66-81a7-b2f6-f899c24fd27b",
+      "status": "확정"
+    },
+    {
+      "character_id": "CHR-6",
+      "id": "chr_6",
+      "meta_memory": false,
+      "name": "열대우림 보스 — 요괴 다인",
+      "notion_id": "3cd37369-9e66-81ab-985e-e8acf01fc6e8",
+      "status": "확정"
+    },
+    {
+      "character_id": "CHR-7",
+      "id": "chr_7",
+      "meta_memory": false,
+      "name": "산악 지역 보스 — 도공",
+      "notion_id": "3cd37369-9e66-81ca-82b5-fb6006c5d86a",
+      "status": "확정"
+    },
+    {
+      "character_id": "CHR-8",
+      "id": "chr_8",
+      "meta_memory": false,
+      "name": "무차우",
+      "notion_id": "3cd37369-9e66-814d-836b-ec75551f0ae1",
+      "status": "확정"
+    },
+    {
+      "character_id": "CHR-9",
+      "id": "wandering_tea_merchant",
+      "meta_memory": false,
+      "name": "떠돌이 차 상인",
+      "notion_id": "3ce37369-9e66-818d-934e-c07894388bde",
+      "status": "확정"
+    }
+  ],
+  "profile": "confirmed-test",
+  "schema_version": 1,
+  "source": "collection://86d9c16b-e60e-4434-9c84-26b4b00d16c8"
+}
