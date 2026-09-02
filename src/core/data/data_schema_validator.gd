@@ -124,11 +124,33 @@ func _validate_item_contract(dataset_name: String, item: Dictionary) -> Dictiona
 		return _validate_choice_contract(item)
 	if dataset_name == "shops":
 		return _validate_shop_contract(item)
+	if dataset_name == "meta_unlocks":
+		return _validate_meta_unlock_contract(item)
 	if dataset_name != "items":
 		return {"ok": true}
 	if String(item.get("type", "")) != "다구" or String(item.get("equipment_slot", "")) != "다구":
 		return {"ok": true}
 	return _validate_attachment_stage_data(item)
+
+
+func _validate_meta_unlock_contract(item: Dictionary) -> Dictionary:
+	var condition_type := String(item.get("condition_event", ""))
+	if not ["event_seen", "cumulative_event_count_at_least", "run_count_at_least", "best_biome_order_at_least", "value_at_least"].has(condition_type):
+		return {"ok": false, "error": "meta_unlocks item '%s' has unknown condition_event '%s'." % [item.id, condition_type]}
+	var reward_kind := String(item.get("reward_kind", ""))
+	if not ["unlock_flag", "dialogue_memory_flag", "discovered_record"].has(reward_kind):
+		return {"ok": false, "error": "meta_unlocks item '%s' has unknown reward_kind '%s'." % [item.id, reward_kind]}
+	if String(item.get("condition_target", "")).is_empty():
+		return {"ok": false, "error": "meta_unlocks item '%s' condition_target must be non-empty." % item.id}
+	if String(item.get("reward_target", "")).is_empty():
+		return {"ok": false, "error": "meta_unlocks item '%s' reward_target must be non-empty." % item.id}
+	var threshold = item.get("threshold", 1)
+	if typeof(threshold) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(threshold)) or float(threshold) != floor(float(threshold)) or int(threshold) < 0:
+		return {"ok": false, "error": "meta_unlocks item '%s' threshold must be a non-negative integer." % item.id}
+	var reward_quantity = item.get("reward_quantity", 1)
+	if typeof(reward_quantity) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(reward_quantity)) or float(reward_quantity) != floor(float(reward_quantity)) or int(reward_quantity) <= 0:
+		return {"ok": false, "error": "meta_unlocks item '%s' reward_quantity must be a positive integer." % item.id}
+	return {"ok": true}
 
 func _validate_shop_contract(item: Dictionary) -> Dictionary:
 	if not item.has("item_id") and not item.has("tea_id"):

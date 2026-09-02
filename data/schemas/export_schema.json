@@ -1,127 +1,615 @@
 {
-  "schema_version": 1,
-  "stable_id_pattern": "^[a-z][a-z0-9_]*$",
-  "required_file_keys": ["schema_version", "data_version", "profile", "source", "content_hash", "items"],
-  "profiles": {"confirmed": {"include_test": false}, "confirmed-test": {"include_test": true}},
   "datasets": {
     "abilities": {
-      "file": "abilities.json", "required_fields": ["id", "name", "status", "type", "tail_requirement", "ki_cost", "cooldown_seconds", "base_damage", "range", "duration_seconds"],
+      "file": "abilities.json",
       "notion": {
-        "source": "collection://011bff45-d1e8-4d8a-a52d-bbf6c06a3566", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "요술 ID", "id_prefix": "ability",
-        "field_map": {"유형": "type", "꼬리 조건": "tail_requirement", "기운 소모": "ki_cost", "쿨타임(초)": "cooldown_seconds", "기본 피해": "base_damage", "범위": "range", "지속시간(초)": "duration_seconds", "설명": "description", "상태효과": "status_effect"}
-      }
+        "field_map": {
+          "기본 피해": "base_damage",
+          "기운 소모": "ki_cost",
+          "꼬리 조건": "tail_requirement",
+          "범위": "range",
+          "상태효과": "status_effect",
+          "설명": "description",
+          "유형": "type",
+          "지속시간(초)": "duration_seconds",
+          "쿨타임(초)": "cooldown_seconds"
+        },
+        "id_prefix": "ability",
+        "source": "collection://011bff45-d1e8-4d8a-a52d-bbf6c06a3566",
+        "status_field": "설정 상태",
+        "title_field": "이름",
+        "unique_id_field": "요술 ID"
+      },
+      "required_fields": [
+        "id",
+        "name",
+        "status",
+        "type",
+        "tail_requirement",
+        "ki_cost",
+        "cooldown_seconds",
+        "base_damage",
+        "range",
+        "duration_seconds"
+      ]
     },
     "art_assets": {
-      "file": "art_assets.json", "required_fields": ["id", "name", "status"],
-      "confirmed_statuses": ["스펙 확정", "완료"], "test_statuses": ["아이디어", "제작 필요", "제작 중", "수정 필요"],
-      "relations": {"ability_ids": "abilities", "biome_ids": "biomes", "dungeon_ids": "dungeons", "item_ids": "items", "monster_ids": "monsters", "tea_ids": "teas"},
+      "confirmed_statuses": [
+        "스펙 확정",
+        "완료"
+      ],
+      "file": "art_assets.json",
       "notion": {
-        "source": "collection://744f6e01-4531-42b4-82fd-b66b468e45fa", "title_field": "이름", "status_field": "제작 상태", "unique_id_field": "에셋 ID", "id_prefix": "art",
-        "field_map": {"종류": "kind", "바이옴": "biome", "가로(px)": "width", "세로(px)": "height", "방향 수": "direction_count", "프레임 수": "frame_count", "연결형": "connected", "연결 규칙": "connection_rule", "팔레트·형태": "palette_form", "비고": "note", "파일": "files"},
+        "field_map": {
+          "가로(px)": "width",
+          "바이옴": "biome",
+          "방향 수": "direction_count",
+          "비고": "note",
+          "세로(px)": "height",
+          "연결 규칙": "connection_rule",
+          "연결형": "connected",
+          "종류": "kind",
+          "파일": "files",
+          "팔레트·형태": "palette_form",
+          "프레임 수": "frame_count"
+        },
+        "id_prefix": "art",
         "relation_map": {
-          "관련 던전": {"field": "dungeon_ids", "target": "dungeons", "many": true}, "관련 몬스터": {"field": "monster_ids", "target": "monsters", "many": true},
-          "관련 아이템": {"field": "item_ids", "target": "items", "many": true}, "관련 요술": {"field": "ability_ids", "target": "abilities", "many": true},
-          "관련 지역": {"field": "biome_ids", "target": "biomes", "many": true}, "관련 차": {"field": "tea_ids", "target": "teas", "many": true}
-        }
-      }
+          "관련 던전": {
+            "field": "dungeon_ids",
+            "many": true,
+            "target": "dungeons"
+          },
+          "관련 몬스터": {
+            "field": "monster_ids",
+            "many": true,
+            "target": "monsters"
+          },
+          "관련 아이템": {
+            "field": "item_ids",
+            "many": true,
+            "target": "items"
+          },
+          "관련 요술": {
+            "field": "ability_ids",
+            "many": true,
+            "target": "abilities"
+          },
+          "관련 지역": {
+            "field": "biome_ids",
+            "many": true,
+            "target": "biomes"
+          },
+          "관련 차": {
+            "field": "tea_ids",
+            "many": true,
+            "target": "teas"
+          }
+        },
+        "source": "collection://744f6e01-4531-42b4-82fd-b66b468e45fa",
+        "status_field": "제작 상태",
+        "title_field": "이름",
+        "unique_id_field": "에셋 ID"
+      },
+      "relations": {
+        "ability_ids": "abilities",
+        "biome_ids": "biomes",
+        "dungeon_ids": "dungeons",
+        "item_ids": "items",
+        "monster_ids": "monsters",
+        "tea_ids": "teas"
+      },
+      "required_fields": [
+        "id",
+        "name",
+        "status"
+      ],
+      "test_statuses": [
+        "아이디어",
+        "제작 필요",
+        "제작 중",
+        "수정 필요"
+      ]
     },
     "balance": {
-      "file": "balance.json", "required_fields": ["id", "name", "status", "value"],
+      "file": "balance.json",
       "notion": {
-        "source": "collection://dd8249a2-14e5-4a96-b26d-77ce33fdc43c", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "상수 ID", "id_prefix": "balance",
-        "field_map": {"값": "value", "분류": "category", "단위": "unit", "공식·메모": "formula_note", "설명": "description"}
-      }
+        "field_map": {
+          "값": "value",
+          "공식·메모": "formula_note",
+          "단위": "unit",
+          "분류": "category",
+          "설명": "description"
+        },
+        "id_prefix": "balance",
+        "source": "collection://dd8249a2-14e5-4a96-b26d-77ce33fdc43c",
+        "status_field": "설정 상태",
+        "title_field": "이름",
+        "unique_id_field": "상수 ID"
+      },
+      "required_fields": [
+        "id",
+        "name",
+        "status",
+        "value"
+      ]
     },
     "biomes": {
-      "file": "biomes.json", "required_fields": ["id", "name", "status"],
+      "file": "biomes.json",
       "notion": {
-        "source": "collection://d4b40007-096f-4528-8840-53de80bda0dd", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "지역 ID", "id_prefix": "biome",
-        "field_map": {"종류": "type", "진행 순서": "progression_order", "난이도": "difficulty", "텔레포트": "teleport", "핵심 특징": "summary", "주요 지형": "terrain", "주요 자원": "resources", "주요 시설": "facilities", "핵심 던전 콘셉트": "core_dungeon_concept"}
-      }
+        "field_map": {
+          "난이도": "difficulty",
+          "종류": "type",
+          "주요 시설": "facilities",
+          "주요 자원": "resources",
+          "주요 지형": "terrain",
+          "진행 순서": "progression_order",
+          "텔레포트": "teleport",
+          "핵심 던전 콘셉트": "core_dungeon_concept",
+          "핵심 특징": "summary"
+        },
+        "id_prefix": "biome",
+        "source": "collection://d4b40007-096f-4528-8840-53de80bda0dd",
+        "status_field": "설정 상태",
+        "title_field": "이름",
+        "unique_id_field": "지역 ID"
+      },
+      "required_fields": [
+        "id",
+        "name",
+        "status"
+      ]
     },
     "choices": {
-      "file": "choices.json", "required_fields": ["id", "name", "status", "choice_key", "run_flag", "display_text", "resolution", "meta_record", "target_survives", "philosophy_marks", "final_room_effect"],
+      "file": "choices.json",
       "notion": {
-        "source": "collection://943e27c2-91e1-40ec-a5e9-30ef62737a40", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "선택 ID", "id_prefix": "choice", "stable_id_field": "선택 키",
-        "field_map": {"선택 키": "choice_key", "Run Flag": "run_flag", "표시 문구": "display_text", "해결 방식": "resolution", "Meta 기록": "meta_record", "대상 생존": "target_survives", "철학 흔적": "philosophy_marks", "최종 다실 영향": "final_room_effect"}
-      }
-    },
-    "dungeons": {
-      "file": "dungeons.json", "required_fields": ["id", "name", "status"],
-      "relations": {"biome_ids": "biomes", "choice_ids": "choices", "reward_item_ids": "items"},
-      "notion": {
-        "source": "collection://cd97553c-f51f-44fe-9604-c257cc9d9342", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "던전 ID", "id_prefix": "dungeon",
-        "field_map": {"바이옴": "biome", "보스": "boss", "보스 HP": "boss_hp", "기본 공격력": "base_attack", "던전 형태": "layout", "보상": "reward", "핵심 기믹": "core_gimmick", "페이즈 수": "phase_count", "패턴 수": "pattern_count", "평화 해결 가능": "peaceful_resolution", "해결 방식": "resolution_types"},
-        "relation_map": {"지역 관계": {"field": "biome_ids", "target": "biomes", "many": true}, "보상 다구": {"field": "reward_item_ids", "target": "items", "many": true}, "선택 결과": {"field": "choice_ids", "target": "choices", "many": true}}
-      }
+        "field_map": {
+          "Meta 기록": "meta_record",
+          "Run Flag": "run_flag",
+          "대상 생존": "target_survives",
+          "선택 키": "choice_key",
+          "철학 흔적": "philosophy_marks",
+          "최종 다실 영향": "final_room_effect",
+          "표시 문구": "display_text",
+          "해결 방식": "resolution"
+        },
+        "id_prefix": "choice",
+        "source": "collection://943e27c2-91e1-40ec-a5e9-30ef62737a40",
+        "stable_id_field": "선택 키",
+        "status_field": "설정 상태",
+        "title_field": "이름",
+        "unique_id_field": "선택 ID"
+      },
+      "required_fields": [
+        "id",
+        "name",
+        "status",
+        "choice_key",
+        "run_flag",
+        "display_text",
+        "resolution",
+        "meta_record",
+        "target_survives",
+        "philosophy_marks",
+        "final_room_effect"
+      ]
     },
     "drops": {
-      "file": "drops.json", "required_fields": ["id", "name", "status", "monster_id", "condition", "min_quantity", "max_quantity", "chance"],
-      "relations": {"monster_id": "monsters", "item_id": "items", "tea_id": "teas"},
+      "file": "drops.json",
       "notion": {
-        "source": "collection://362e7813-5332-420b-aca0-fb2824dbcce0", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "드롭 ID", "id_prefix": "drop",
-        "field_map": {"조건": "condition", "최소 수량": "min_quantity", "최대 수량": "max_quantity", "확률": "chance"},
+        "field_map": {
+          "조건": "condition",
+          "최대 수량": "max_quantity",
+          "최소 수량": "min_quantity",
+          "확률": "chance"
+        },
+        "id_prefix": "drop",
         "relation_map": {
-          "몬스터": {"field": "monster_id", "target": "monsters", "many": false},
-          "아이템": {"field": "item_id", "target": "items", "many": false},
-          "차": {"field": "tea_id", "target": "teas", "many": false}
-        }
-      }
+          "몬스터": {
+            "field": "monster_id",
+            "many": false,
+            "target": "monsters"
+          },
+          "아이템": {
+            "field": "item_id",
+            "many": false,
+            "target": "items"
+          },
+          "차": {
+            "field": "tea_id",
+            "many": false,
+            "target": "teas"
+          }
+        },
+        "source": "collection://362e7813-5332-420b-aca0-fb2824dbcce0",
+        "status_field": "설정 상태",
+        "title_field": "이름",
+        "unique_id_field": "드롭 ID"
+      },
+      "relations": {
+        "item_id": "items",
+        "monster_id": "monsters",
+        "tea_id": "teas"
+      },
+      "required_fields": [
+        "id",
+        "name",
+        "status",
+        "monster_id",
+        "condition",
+        "min_quantity",
+        "max_quantity",
+        "chance"
+      ]
+    },
+    "dungeons": {
+      "file": "dungeons.json",
+      "notion": {
+        "field_map": {
+          "기본 공격력": "base_attack",
+          "던전 형태": "layout",
+          "바이옴": "biome",
+          "보상": "reward",
+          "보스": "boss",
+          "보스 HP": "boss_hp",
+          "패턴 수": "pattern_count",
+          "페이즈 수": "phase_count",
+          "평화 해결 가능": "peaceful_resolution",
+          "해결 방식": "resolution_types",
+          "핵심 기믹": "core_gimmick"
+        },
+        "id_prefix": "dungeon",
+        "relation_map": {
+          "보상 다구": {
+            "field": "reward_item_ids",
+            "many": true,
+            "target": "items"
+          },
+          "선택 결과": {
+            "field": "choice_ids",
+            "many": true,
+            "target": "choices"
+          },
+          "지역 관계": {
+            "field": "biome_ids",
+            "many": true,
+            "target": "biomes"
+          }
+        },
+        "source": "collection://cd97553c-f51f-44fe-9604-c257cc9d9342",
+        "status_field": "설정 상태",
+        "title_field": "이름",
+        "unique_id_field": "던전 ID"
+      },
+      "relations": {
+        "biome_ids": "biomes",
+        "choice_ids": "choices",
+        "reward_item_ids": "items"
+      },
+      "required_fields": [
+        "id",
+        "name",
+        "status"
+      ]
     },
     "events": {
-      "file": "events.json", "required_fields": ["id", "name", "status", "replay_policy", "start_node_id", "nodes"],
+      "file": "events.json",
       "notion": {
-        "source": "fixture://dev_25_story_events", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "이벤트 ID", "id_prefix": "event",
-        "field_map": {"재실행 정책": "replay_policy", "시작 노드": "start_node_id", "노드": "nodes", "설명": "description"}
-      }
+        "field_map": {
+          "노드": "nodes",
+          "설명": "description",
+          "시작 노드": "start_node_id",
+          "재실행 정책": "replay_policy"
+        },
+        "id_prefix": "event",
+        "source": "fixture://dev_25_story_events",
+        "status_field": "설정 상태",
+        "title_field": "이름",
+        "unique_id_field": "이벤트 ID"
+      },
+      "required_fields": [
+        "id",
+        "name",
+        "status",
+        "replay_policy",
+        "start_node_id",
+        "nodes"
+      ]
     },
     "items": {
-      "file": "items.json", "required_fields": ["id", "name", "status"], "relations": {"biome_ids": "biomes"},
+      "file": "items.json",
       "notion": {
-        "source": "collection://cc4817d1-bb64-45b0-9193-b3c742327064", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "아이템 ID", "id_prefix": "item",
-        "field_map": {"종류": "type", "등급": "grade", "장비 슬롯": "equipment_slot", "제작 가능": "craftable", "최대 스택": "max_stack", "기본 피해": "base_damage", "공격속도": "attack_speed", "사거리": "range", "방어값": "defense", "기운 회복량": "ki_recovery", "효과": "effect", "효과 유형": "effect_type", "효과값": "effect_value", "획득처": "acquisition", "핵심 다구": "core_tea_ware", "핵심 다구 순번": "core_tea_ware_order", "정붙음 단계 임계값": "attachment_stage_thresholds", "정붙음 설명 키": "attachment_description_keys"},
-        "relation_map": {"획득 지역 관계": {"field": "biome_ids", "target": "biomes", "many": true}}
-      }
+        "field_map": {
+          "공격속도": "attack_speed",
+          "기본 피해": "base_damage",
+          "기운 회복량": "ki_recovery",
+          "등급": "grade",
+          "방어값": "defense",
+          "사거리": "range",
+          "장비 슬롯": "equipment_slot",
+          "정붙음 단계 임계값": "attachment_stage_thresholds",
+          "정붙음 설명 키": "attachment_description_keys",
+          "제작 가능": "craftable",
+          "종류": "type",
+          "최대 스택": "max_stack",
+          "핵심 다구": "core_tea_ware",
+          "핵심 다구 순번": "core_tea_ware_order",
+          "획득처": "acquisition",
+          "효과": "effect",
+          "효과 유형": "effect_type",
+          "효과값": "effect_value"
+        },
+        "id_prefix": "item",
+        "relation_map": {
+          "획득 지역 관계": {
+            "field": "biome_ids",
+            "many": true,
+            "target": "biomes"
+          }
+        },
+        "source": "collection://cc4817d1-bb64-45b0-9193-b3c742327064",
+        "status_field": "설정 상태",
+        "title_field": "이름",
+        "unique_id_field": "아이템 ID"
+      },
+      "relations": {
+        "biome_ids": "biomes"
+      },
+      "required_fields": [
+        "id",
+        "name",
+        "status"
+      ]
     },
     "meta_unlocks": {
-      "file": "meta_unlocks.json", "required_fields": ["id", "name", "status"], "relations": {"ability_ids": "abilities", "item_ids": "items", "tea_ids": "teas"},
+      "file": "meta_unlocks.json",
       "notion": {
-        "source": "collection://7927bdc1-70eb-4fe7-82c5-971c74caa5d3", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "메타 ID", "id_prefix": "meta",
-        "field_map": {"해금 조건 유형": "condition_type", "조건": "condition", "보상 유형": "reward_type", "보상": "reward", "누적 여부": "cumulative", "임계값": "threshold"},
-        "relation_map": {"관련 아이템": {"field": "item_ids", "target": "items", "many": true}, "관련 차": {"field": "tea_ids", "target": "teas", "many": true}, "관련 요술": {"field": "ability_ids", "target": "abilities", "many": true}}
-      }
+        "field_map": {
+          "누적 여부": "cumulative",
+          "보상": "reward",
+          "보상 대상": "reward_target",
+          "보상 수량": "reward_quantity",
+          "보상 유형": "reward_type",
+          "임계값": "threshold",
+          "조건": "condition",
+          "조건 대상": "condition_target",
+          "조건 연산자": "condition_operator",
+          "표준 보상 유형": "reward_kind",
+          "표준 조건 유형": "condition_event",
+          "해금 조건 유형": "condition_type"
+        },
+        "id_prefix": "meta",
+        "relation_map": {
+          "관련 아이템": {
+            "field": "item_ids",
+            "many": true,
+            "target": "items"
+          },
+          "관련 요술": {
+            "field": "ability_ids",
+            "many": true,
+            "target": "abilities"
+          },
+          "관련 차": {
+            "field": "tea_ids",
+            "many": true,
+            "target": "teas"
+          }
+        },
+        "source": "collection://7927bdc1-70eb-4fe7-82c5-971c74caa5d3",
+        "status_field": "설정 상태",
+        "title_field": "이름",
+        "unique_id_field": "메타 ID"
+      },
+      "relations": {
+        "ability_ids": "abilities",
+        "item_ids": "items",
+        "tea_ids": "teas"
+      },
+      "required_fields": [
+        "id",
+        "name",
+        "status",
+        "condition_type",
+        "reward_type",
+        "condition_event",
+        "condition_target",
+        "condition_operator",
+        "reward_kind",
+        "reward_target"
+      ]
     },
     "monsters": {
-      "file": "monsters.json", "required_fields": ["id", "name", "status"], "relations": {"biome_ids": "biomes"},
+      "file": "monsters.json",
       "notion": {
-        "source": "collection://8058308e-e875-45aa-929c-49fd8575601a", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "몬스터 ID", "id_prefix": "monster",
-        "field_map": {"종류": "kind", "바이옴": "biome", "낮·밤": "day_night", "위험도": "danger", "HP": "hp", "경직 저항": "stagger_resistance", "공격력": "attack", "이동속도": "movement_speed", "공격 주기(초)": "attack_period_seconds", "행동 타입": "behavior_type", "행동 패턴": "behavior_note"},
-        "relation_map": {"지역 관계": {"field": "biome_ids", "target": "biomes", "many": true}}
-      }
+        "field_map": {
+          "HP": "hp",
+          "경직 저항": "stagger_resistance",
+          "공격 주기(초)": "attack_period_seconds",
+          "공격력": "attack",
+          "낮·밤": "day_night",
+          "바이옴": "biome",
+          "위험도": "danger",
+          "이동속도": "movement_speed",
+          "종류": "kind",
+          "행동 타입": "behavior_type",
+          "행동 패턴": "behavior_note"
+        },
+        "id_prefix": "monster",
+        "relation_map": {
+          "지역 관계": {
+            "field": "biome_ids",
+            "many": true,
+            "target": "biomes"
+          }
+        },
+        "source": "collection://8058308e-e875-45aa-929c-49fd8575601a",
+        "status_field": "설정 상태",
+        "title_field": "이름",
+        "unique_id_field": "몬스터 ID"
+      },
+      "relations": {
+        "biome_ids": "biomes"
+      },
+      "required_fields": [
+        "id",
+        "name",
+        "status"
+      ]
     },
     "recipes": {
-      "file": "recipes.json", "required_fields": ["id", "name", "status"], "relations": {"facility_item_ids": "items", "result_item_id": "items", "unlock_biome_id": "biomes"},
+      "file": "recipes.json",
       "notion": {
-        "source": "collection://a755c8a9-1e5f-4f04-9ede-4ee63caa0663", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "제작법 ID", "id_prefix": "recipe",
-        "field_map": {"분류": "category", "제작 시설": "facility", "필요 재료": "materials_note", "해금 바이옴": "unlock_biome", "제작 시간(초)": "craft_seconds", "해금 조건": "unlock_condition"},
-        "relation_map": {"결과 아이템": {"field": "result_item_id", "target": "items", "many": false}, "해금 지역 관계": {"field": "unlock_biome_id", "target": "biomes", "many": false}, "제작 시설 아이템": {"field": "facility_item_ids", "target": "items", "many": true}}
-      }
-    },
-    "teas": {
-      "file": "teas.json", "required_fields": ["id", "name", "status"], "relations": {"biome_ids": "biomes"},
-      "notion": {
-        "source": "collection://58c6edaf-0851-48da-a412-541be09d7dcb", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "차 ID", "id_prefix": "tea",
-        "field_map": {"차류": "tea_type", "산지": "origin", "기운 회복": "ki_recovery", "기억 보유": "memory", "기억 강도": "memory_strength", "특수 효과": "special_effect", "마시는 시간(초)": "drink_seconds", "1회 소비량": "serving_size", "휴대 횟수": "carry_uses", "회복 방식": "recovery_mode", "조건 키": "condition_key", "기운 유지 보정": "sustain_modifier", "우리기 장소 필요": "requires_brewing_location"},
-        "relation_map": {"획득 지역 관계": {"field": "biome_ids", "target": "biomes", "many": true}}
-      }
+        "field_map": {
+          "분류": "category",
+          "제작 시간(초)": "craft_seconds",
+          "제작 시설": "facility",
+          "필요 재료": "materials_note",
+          "해금 바이옴": "unlock_biome",
+          "해금 조건": "unlock_condition"
+        },
+        "id_prefix": "recipe",
+        "relation_map": {
+          "결과 아이템": {
+            "field": "result_item_id",
+            "many": false,
+            "target": "items"
+          },
+          "제작 시설 아이템": {
+            "field": "facility_item_ids",
+            "many": true,
+            "target": "items"
+          },
+          "해금 지역 관계": {
+            "field": "unlock_biome_id",
+            "many": false,
+            "target": "biomes"
+          }
+        },
+        "source": "collection://a755c8a9-1e5f-4f04-9ede-4ee63caa0663",
+        "status_field": "설정 상태",
+        "title_field": "이름",
+        "unique_id_field": "제작법 ID"
+      },
+      "relations": {
+        "facility_item_ids": "items",
+        "result_item_id": "items",
+        "unlock_biome_id": "biomes"
+      },
+      "required_fields": [
+        "id",
+        "name",
+        "status"
+      ]
     },
     "shops": {
-      "file": "shops.json", "required_fields": ["id", "name", "status", "seller_id", "buy_price", "can_sell", "sell_price", "stock_quantity", "min_progress_stage", "unlock_condition"], "relations": {"item_id": "items", "tea_id": "teas"},
+      "file": "shops.json",
       "notion": {
-        "source": "collection://3f6354ff-02fb-4b92-9b81-9f821ae6408b", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "재고 ID", "id_prefix": "shop",
-        "field_map": {"가격": "buy_price", "판매 가능": "can_sell", "판매가": "sell_price", "재고 수량": "stock_quantity", "최소 진행 단계": "min_progress_stage", "해금 조건": "unlock_condition"},
-        "relation_map": {"아이템": {"field": "item_id", "target": "items", "many": false}, "차": {"field": "tea_id", "target": "teas", "many": false}, "판매자": {"field": "seller_id", "target": "characters", "many": false}}
-      }
+        "field_map": {
+          "가격": "buy_price",
+          "재고 수량": "stock_quantity",
+          "최소 진행 단계": "min_progress_stage",
+          "판매 가능": "can_sell",
+          "판매가": "sell_price",
+          "해금 조건": "unlock_condition"
+        },
+        "id_prefix": "shop",
+        "relation_map": {
+          "아이템": {
+            "field": "item_id",
+            "many": false,
+            "target": "items"
+          },
+          "차": {
+            "field": "tea_id",
+            "many": false,
+            "target": "teas"
+          },
+          "판매자": {
+            "field": "seller_id",
+            "many": false,
+            "target": "characters"
+          }
+        },
+        "source": "collection://3f6354ff-02fb-4b92-9b81-9f821ae6408b",
+        "status_field": "설정 상태",
+        "title_field": "이름",
+        "unique_id_field": "재고 ID"
+      },
+      "relations": {
+        "item_id": "items",
+        "tea_id": "teas"
+      },
+      "required_fields": [
+        "id",
+        "name",
+        "status",
+        "seller_id",
+        "buy_price",
+        "can_sell",
+        "sell_price",
+        "stock_quantity",
+        "min_progress_stage",
+        "unlock_condition"
+      ]
+    },
+    "teas": {
+      "file": "teas.json",
+      "notion": {
+        "field_map": {
+          "1회 소비량": "serving_size",
+          "기억 강도": "memory_strength",
+          "기억 보유": "memory",
+          "기운 유지 보정": "sustain_modifier",
+          "기운 회복": "ki_recovery",
+          "마시는 시간(초)": "drink_seconds",
+          "산지": "origin",
+          "우리기 장소 필요": "requires_brewing_location",
+          "조건 키": "condition_key",
+          "차류": "tea_type",
+          "특수 효과": "special_effect",
+          "회복 방식": "recovery_mode",
+          "휴대 횟수": "carry_uses"
+        },
+        "id_prefix": "tea",
+        "relation_map": {
+          "획득 지역 관계": {
+            "field": "biome_ids",
+            "many": true,
+            "target": "biomes"
+          }
+        },
+        "source": "collection://58c6edaf-0851-48da-a412-541be09d7dcb",
+        "status_field": "설정 상태",
+        "title_field": "이름",
+        "unique_id_field": "차 ID"
+      },
+      "relations": {
+        "biome_ids": "biomes"
+      },
+      "required_fields": [
+        "id",
+        "name",
+        "status"
+      ]
     }
-  }
+  },
+  "profiles": {
+    "confirmed": {
+      "include_test": false
+    },
+    "confirmed-test": {
+      "include_test": true
+    }
+  },
+  "required_file_keys": [
+    "schema_version",
+    "data_version",
+    "profile",
+    "source",
+    "content_hash",
+    "items"
+  ],
+  "schema_version": 1,
+  "stable_id_pattern": "^[a-z][a-z0-9_]*$"
 }
