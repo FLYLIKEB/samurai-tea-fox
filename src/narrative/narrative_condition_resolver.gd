@@ -28,10 +28,6 @@ func resolve(condition: Dictionary, run_query: Dictionary, meta_query := {}) -> 
 	if condition_type.is_empty() or condition_type == "always":
 		return {"ok": true, "passed": true}
 	if META_CONDITION_TYPES.has(condition_type):
-		var shape := _validate_meta_condition_shape(condition_type, condition)
-		if not shape.ok:
-			return shape
-	if META_CONDITION_TYPES.has(condition_type):
 		var validation := _validate_meta_condition(condition_type, condition)
 		if not validation.ok:
 			return validation
@@ -74,16 +70,6 @@ func _has_string(values, id: String) -> bool:
 	if id.is_empty() or typeof(values) != TYPE_ARRAY:
 		return false
 	return values.has(id)
-
-func _validate_meta_condition_shape(condition_type: String, condition: Dictionary) -> Dictionary:
-	if condition_type == META_RUN_COUNT_AT_LEAST:
-		if not condition.has("value") or not _is_non_negative_integer(condition.value):
-			return _failure("invalid_meta_condition_value", "Meta run-count condition requires a non-negative integer value.")
-		return {"ok": true}
-	if [META_FLAG, META_NOT_FLAG, META_PAST_CHOICE, META_REACHED_PLACE, META_DEATH_RECORD].has(condition_type):
-		if not condition.has("id") or typeof(condition.id) != TYPE_STRING or not _is_stable_id(String(condition.id)):
-			return _failure("invalid_meta_condition_id", "Meta condition '%s' requires a stable id." % condition_type)
-	return {"ok": true}
 
 func _inventory_has_item(inventory, item_id: String) -> bool:
 	if item_id.is_empty():

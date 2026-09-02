@@ -229,7 +229,8 @@ func _assert_previous_run_query_inputs_are_accumulated(asserts) -> void:
 	asserts.equal(int(second.run_count), 2, "query input accumulation preserves run count behavior")
 
 func _assert_malformed_previous_run_ids_are_not_persisted(asserts) -> void:
-	var result := RunEndProcessor.new().apply_run_end(_empty_meta(), {
+	var initial_meta := _empty_meta()
+	var result := RunEndProcessor.new().apply_run_end(initial_meta, {
 		"past_choice_ids": ["valid_choice", "", "Display Name", 42],
 		"choice_history": ["another_choice", null],
 		"reached_place_ids": ["valid_place", "mountain-region"],
@@ -238,9 +239,9 @@ func _assert_malformed_previous_run_ids_are_not_persisted(asserts) -> void:
 		"death_record_ids": ["valid_death", "죽음"],
 		"death_record_id": "Invalid Death"
 	})
-	asserts.equal(result.past_choice_ids, ["valid_choice", "another_choice"], "run end persists only stable past-choice IDs")
-	asserts.equal(result.reached_place_ids, ["valid_place", "another_place"], "run end persists only stable reached-place IDs")
-	asserts.equal(result.death_record_ids, ["valid_death"], "run end persists only stable death-record IDs")
+	asserts.false_value(result.ok, "run end rejects malformed previous-run stable IDs")
+	asserts.equal(result.reason, "invalid_run_summary_stable_id", "malformed run-summary ID returns a stable reason")
+	asserts.equal(initial_meta, _empty_meta(), "rejected run summary does not mutate or persist into meta state")
 
 func _empty_meta() -> Dictionary:
 	return {

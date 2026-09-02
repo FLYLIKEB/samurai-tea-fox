@@ -204,27 +204,8 @@ static func _snapshot_result_for(state, kind: String) -> Dictionary:
 			return {"ok": true, "snapshot": snapshot.duplicate(true)}
 	return _failure("Cannot encode malformed %s state." % kind)
 
-static func _validate_meta_stable_id_arrays(payload: Dictionary) -> Dictionary:
-	for field in ["past_choice_ids", "reached_place_ids", "death_record_ids"]:
-		if not payload.has(field):
-			continue
-		var values = payload[field]
-		if typeof(values) != TYPE_ARRAY:
-			return _failure("Malformed meta field '%s'." % field)
-		for value in values:
-			if typeof(value) != TYPE_STRING or not _is_stable_id(String(value)):
-				return _failure("Malformed meta stable id in field '%s'." % field)
-	return {"ok": true}
-
 static func _failure(message: String) -> Dictionary:
 	return {"ok": false, "error": message}
-
-static func _is_stable_id(value: String) -> bool:
-	if value.is_empty():
-		return false
-	var id_pattern := RegEx.new()
-	id_pattern.compile("^[a-z][a-z0-9_]*$")
-	return id_pattern.search(value) != null
 
 static func _is_integer_value(value) -> bool:
 	if typeof(value) == TYPE_INT:
