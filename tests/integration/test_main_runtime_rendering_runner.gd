@@ -1,6 +1,7 @@
 extends SceneTree
 
 const MetaState = preload("res://src/save/meta_state.gd")
+const RunState = preload("res://src/save/run_state.gd")
 const SaveStore = preload("res://src/save/save_store.gd")
 
 const LIFECYCLE_DIRECTORY := "user://dev24_main_lifecycle_integration"
@@ -52,6 +53,7 @@ func run() -> void:
 		failures.append("player sprite remains visible in main scene")
 
 	_assert_runtime_death_replaces_run(main, player)
+	_assert_stale_full_death_retry_preserves_newer_run(main)
 
 	var hud := main.get_node_or_null("GameHud")
 	if hud == null:
@@ -141,6 +143,54 @@ func _assert_runtime_death_replaces_run(main, player) -> void:
 	var marker = JSON.parse_string(FileAccess.get_file_as_string(RUN_PATH + ".invalidated.json"))
 	if typeof(marker) != TYPE_DICTIONARY or int(marker.get("invalidated_lifecycle_epoch", -1)) != 0:
 		failures.append("real main death path invalidates the old epoch before fresh persistence")
+
+func _assert_stale_full_death_retry_preserves_newer_run(main) -> void:
+	_cleanup_lifecycle_files()
+	var store := SaveStore.new(RUN_PATH, META_PATH)
+	main.save_store = store
+	var stale_run := RunState.new()
+	stale_run.data_version = main.catalog.data_version
+	stale_run.lifecycle_epoch = 0
+	stale_run.seed = 801
+	stale_run.inventory = main.inventory.to_snapshot()
+	if not store.save_run(stale_run).ok or not store.invalidate_run(stale_run).ok:
+		failures.append("stale full-death fixture invalidates epoch zero")
+		return
+
+	if not main.inventory.add_item("wood", 3).ok:
+		failures.append("stale full-death fixture creates non-default fresh inventory")
+		return
+	var preserved_run := RunState.new()
+	preserved_run.data_version = main.catalog.data_version
+	preserved_run.lifecycle_epoch = 1
+	preserved_run.seed = 8675309
+	preserved_run.currency = 47
+	preserved_run.inventory = main.inventory.to_snapshot()
+	if not store.save_run(preserved_run).ok:
+		failures.append("stale full-death fixture persists newer non-default run")
+		return
+	var preserved_bytes := FileAccess.get_file_as_string(RUN_PATH)
+	var restored: Dictionary = main.restore_run_state(stale_run)
+	if not restored.ok:
+		failures.append("stale full-death fixture restores stale runtime state")
+		return
+	main.run_lifecycle_service.death_pending = true
+
+	var retry: Dictionary = main._replace_confirmed_dead_run()
+	if not retry.ok or retry.get("state", "") != "preserved_run_activated":
+		failures.append("main treats stale full-death retry as preserved-run activation")
+	if not bool(retry.get("preserved_newer_run", false)):
+		failures.append("main propagates preserved newer run result")
+	if FileAccess.get_file_as_string(RUN_PATH) != preserved_bytes:
+		failures.append("stale full-death retry keeps exact persisted bytes")
+	var restarted := SaveStore.new(RUN_PATH, META_PATH).load_run()
+	if not restarted.ok:
+		failures.append("process restart loads preserved non-default run after stale full-death retry")
+		return
+	if restarted.state.lifecycle_epoch != 1 or restarted.state.seed != 8675309 or restarted.state.currency != 47:
+		failures.append("stale full-death retry preserves newer run identity and scalar payload")
+	if main.run_state.lifecycle_epoch != 1 or main.run_state.seed != 8675309 or main.inventory.get_total_quantity("wood") != 3:
+		failures.append("main activates exact preserved epoch, seed, and inventory")
 
 func _cleanup_lifecycle_files() -> void:
 	for path in [RUN_PATH, RUN_PATH + ".tmp", RUN_PATH + ".invalidated.json", RUN_PATH + ".invalidated.json.tmp", META_PATH, META_PATH + ".tmp"]:

@@ -284,6 +284,23 @@ func _replace_confirmed_dead_run() -> Dictionary:
 	var confirmed: Dictionary = run_lifecycle_service.confirm_death(save_store, run_state)
 	if not confirmed.ok:
 		return confirmed
+	if bool(confirmed.get("preserved_newer_run", false)):
+		var preserved_run = confirmed.get("current_run_state")
+		if not preserved_run is RunState:
+			var loaded: Dictionary = save_store.load_run()
+			if not loaded.ok:
+				return loaded
+			preserved_run = loaded.run_state
+		var preserved_activation := _activate_run_state(preserved_run)
+		if not preserved_activation.ok:
+			return preserved_activation
+		return {
+			"ok": true,
+			"state": "preserved_run_activated",
+			"preserved_newer_run": true,
+			"invalidated_lifecycle_epoch": int(confirmed.get("invalidated_lifecycle_epoch", 0)),
+			"current_lifecycle_epoch": preserved_run.lifecycle_epoch
+		}
 	var fresh_run: RunState = run_lifecycle_service.create_fresh_run_after_confirmed_death(
 		int(confirmed.invalidated_lifecycle_epoch),
 		FRESH_RUN_SEED
@@ -291,7 +308,18 @@ func _replace_confirmed_dead_run() -> Dictionary:
 	var save_result: Dictionary = save_store.save_run(fresh_run)
 	if not save_result.ok:
 		return save_result
-	run_state = fresh_run
+	var activation_result := _activate_run_state(fresh_run)
+	if not activation_result.ok:
+		return activation_result
+	return {
+		"ok": true,
+		"state": "fresh_run",
+		"invalidated_lifecycle_epoch": int(confirmed.invalidated_lifecycle_epoch),
+		"lifecycle_epoch": fresh_run.lifecycle_epoch
+	}
+
+func _activate_run_state(state: RunState) -> Dictionary:
+	run_state = state
 	var services_result := _configure_run_services(catalog)
 	if not services_result.ok:
 		return services_result
@@ -301,12 +329,7 @@ func _replace_confirmed_dead_run() -> Dictionary:
 	var world_result := _configure_world_for_current_run()
 	if not world_result.ok:
 		return world_result
-	return {
-		"ok": true,
-		"state": "fresh_run",
-		"invalidated_lifecycle_epoch": int(confirmed.invalidated_lifecycle_epoch),
-		"lifecycle_epoch": fresh_run.lifecycle_epoch
-	}
+	return {"ok": true}
 
 func _vector_from_dictionary(data: Dictionary) -> Vector2i:
 	return Vector2i(int(data.get("x", 0)), int(data.get("y", 0)))

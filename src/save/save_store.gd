@@ -103,6 +103,8 @@ func invalidate_run(run_state = null) -> Dictionary:
 				"state": "stale_invalidation_ignored",
 				"invalidated_lifecycle_epoch": invalidated_epoch,
 				"current_lifecycle_epoch": current_epoch,
+				"current_run_snapshot": current_run.state,
+				"current_run_state": current_run.run_state,
 				"run_removed": false,
 				"preserved_newer_run": true
 			}

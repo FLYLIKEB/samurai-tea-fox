@@ -82,6 +82,20 @@ func confirm_death(save_store = null, current_run_state = null) -> Dictionary:
 		invalidation = save_store.invalidate_run(current_run_state)
 		if not invalidation.ok:
 			return invalidation
+		if bool(invalidation.get("preserved_newer_run", false)):
+			death_pending = false
+			death_confirmed = false
+			return {
+				"ok": true,
+				"state": "newer_run_preserved",
+				"death_pending": false,
+				"death_confirmed": false,
+				"preserved_newer_run": true,
+				"invalidated_lifecycle_epoch": int(invalidation.get("invalidated_lifecycle_epoch", 0)),
+				"current_lifecycle_epoch": int(invalidation.get("current_lifecycle_epoch", 0)),
+				"current_run_snapshot": invalidation.get("current_run_snapshot", {}),
+				"current_run_state": invalidation.get("current_run_state")
+			}
 	death_pending = false
 	death_confirmed = true
 	return {

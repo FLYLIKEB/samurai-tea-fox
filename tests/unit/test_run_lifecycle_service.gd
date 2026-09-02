@@ -173,6 +173,19 @@ func _assert_stale_invalidation_retry_preserves_newer_fresh_run(asserts) -> void
 	asserts.false_value(bool(stale_retry.get("run_removed", true)), "stale retry reports that no run file was removed")
 	asserts.equal(int(stale_retry.get("current_lifecycle_epoch", -1)), 1, "stale retry reports the preserved fresh epoch")
 
+	var runtime := _fixture_runtime()
+	runtime.lifecycle.death_pending = true
+	var propagated: Dictionary = runtime.lifecycle.confirm_death(SaveStore.new(RUN_PATH, META_PATH), old_run)
+	asserts.true_value(propagated.ok, "lifecycle accepts preserved newer run as idempotent success")
+	asserts.equal(propagated.get("state", ""), "newer_run_preserved", "lifecycle propagates preserved-run state")
+	asserts.true_value(bool(propagated.get("preserved_newer_run", false)), "lifecycle propagates preserved-run identity")
+	asserts.equal(int(propagated.get("current_lifecycle_epoch", -1)), 1, "lifecycle propagates current persisted epoch")
+	var propagated_run = propagated.get("current_run_state")
+	asserts.true_value(propagated_run is RunState, "lifecycle propagates hydrated current RunState")
+	if propagated_run is RunState:
+		asserts.equal(propagated_run.seed, 55, "lifecycle propagates exact persisted run payload")
+	asserts.false_value(runtime.lifecycle.death_confirmed, "stale death retry does not confirm another death")
+
 	var restarted_loader := SaveStore.new(RUN_PATH, META_PATH)
 	var loaded_fresh: Dictionary = restarted_loader.load_run()
 	asserts.true_value(loaded_fresh.ok, "process restart still loads the newer fresh run after stale retry")
