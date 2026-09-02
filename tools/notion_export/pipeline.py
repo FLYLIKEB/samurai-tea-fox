@@ -166,11 +166,29 @@ class ExportPipeline:
         if dataset_name == "choices":
             self._validate_choice_contract(row)
             return
+        if dataset_name == "shops":
+            self._validate_shop_contract(row)
+            return
         if dataset_name != "items":
             return
         if row.get("type") != "다구" or row.get("equipment_slot") != "다구":
             return
         self._validate_attachment_stage_data(row)
+
+    def _validate_shop_contract(self, row: dict[str, Any]) -> None:
+        shop_id = row.get("id", "")
+        if bool(row.get("item_id")) == bool(row.get("tea_id")):
+            raise ExportValidationError(f"shops item {shop_id}: exactly one of item_id or tea_id is required")
+        if not isinstance(row.get("can_sell"), bool):
+            raise ExportValidationError(f"shops item {shop_id}: can_sell must be a boolean")
+        for field in ("buy_price", "sell_price", "stock_quantity", "min_progress_stage"):
+            value = row.get(field)
+            if not isinstance(value, int) or isinstance(value, bool):
+                raise ExportValidationError(f"shops item {shop_id}: {field} must be an integer")
+        if row["buy_price"] <= 0 or row["sell_price"] <= 0:
+            raise ExportValidationError(f"shops item {shop_id}: prices must be positive")
+        if row["stock_quantity"] < 0 or row["min_progress_stage"] < 0:
+            raise ExportValidationError(f"shops item {shop_id}: stock and progress must be non-negative")
 
     def _validate_drop_contract(self, row: dict[str, Any]) -> None:
         drop_id = row.get("id", "")

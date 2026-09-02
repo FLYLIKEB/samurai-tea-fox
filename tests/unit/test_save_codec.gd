@@ -71,6 +71,7 @@ func run(asserts) -> void:
 		"pickups": [{"pickup_id": "pickup_000001", "item_id": "wood", "quantity": 1, "position": {"x": 1, "y": 2}, "source": {"source_kind": "gatherable"}}],
 		"processed_drop_request_ids": []
 	}
+	state.trade_stock = {"shop_1": 2}
 	var progression_save := SaveCodec.encode_run(state.to_dictionary())
 	asserts.equal(SaveCodec.decode_run(progression_save).state.teleport_states.common_region, "repairable", "run save preserves teleport progression")
 	var decoded := SaveCodec.decode_run(progression_save)
@@ -90,6 +91,7 @@ func run(asserts) -> void:
 	asserts.equal(decoded.run_state.consumables.active_action.elapsed_seconds, 0.5, "hydrated run state preserves active consumable progress")
 	asserts.true_value(decoded.run_state.acquisitions.gatherables[0].depleted, "hydrated run state preserves gatherable depletion")
 	asserts.equal(decoded.run_state.acquisitions.pickups[0].item_id, "wood", "hydrated run state preserves world pickups")
+	asserts.equal(decoded.run_state.trade_stock.shop_1, 2, "hydrated run state preserves trade stock")
 	progression_save.run.equipment.slots.tea_ware.metadata.tea_ware_use_count = 99
 	progression_save.run.narrative_flags.append("mutated_after_decode")
 	progression_save.run.consumables.active_action.elapsed_seconds = 0.75

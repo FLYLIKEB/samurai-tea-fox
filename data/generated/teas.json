@@ -1,5 +1,5 @@
 {
-  "content_hash": "83464a4bd5ede2ca487ca12137a5adc1dbb8855a8835e223b5b1742185522fee",
+  "content_hash": "62bf6681053ae13541808ff3eb1d5e97decb0bcfcf0fb4e3e10480a88857b721",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -54,6 +54,69 @@
       "name": "도공의 산안개 청차",
       "origin": "홍국 산악 고지",
       "status": "초안",
+      "tea_type": "청차"
+    },
+    {
+      "id": "tea_10",
+      "ki_recovery": 24,
+      "name": "백설 백차",
+      "status": "확정",
+      "tea_type": "백차"
+    },
+    {
+      "id": "tea_11",
+      "ki_recovery": 30,
+      "name": "황토 숙성 황차",
+      "status": "확정",
+      "tea_type": "황차"
+    },
+    {
+      "id": "tea_12",
+      "ki_recovery": 35,
+      "name": "석양 홍차",
+      "status": "확정",
+      "tea_type": "홍차"
+    },
+    {
+      "id": "tea_13",
+      "ki_recovery": 38,
+      "name": "고목 흑차",
+      "status": "확정",
+      "tea_type": "흑차"
+    },
+    {
+      "id": "tea_15",
+      "ki_recovery": 26,
+      "name": "강변 초청차",
+      "status": "확정",
+      "tea_type": "녹차"
+    },
+    {
+      "id": "tea_16",
+      "ki_recovery": 34,
+      "name": "우림 난향 청차",
+      "status": "확정",
+      "tea_type": "청차"
+    },
+    {
+      "id": "tea_17",
+      "ki_recovery": 36,
+      "name": "별밤 숙차",
+      "status": "확정",
+      "tea_type": "흑차"
+    },
+    {
+      "id": "tea_8",
+      "ki_recovery": 28,
+      "name": "들녘 덖음차",
+      "status": "확정",
+      "tea_type": "녹차"
+    },
+    {
+      "id": "tea_9",
+      "ki_recovery": 32,
+      "name": "산안개 청차",
+      "status": "확정",
       "tea_type": "청차"
     },
     {

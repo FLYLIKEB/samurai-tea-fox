@@ -15,6 +15,7 @@ const RUN_FIELD_TYPES := {
 	"inventory": TYPE_DICTIONARY,
 	"equipment": TYPE_DICTIONARY,
 	"currency": TYPE_INT,
+	"trade_stock": TYPE_DICTIONARY,
 	"tails": TYPE_INT,
 	"abilities": TYPE_ARRAY,
 	"completed_dungeon_ids": TYPE_ARRAY,

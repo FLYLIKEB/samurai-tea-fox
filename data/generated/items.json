@@ -1,5 +1,5 @@
 {
-  "content_hash": "925c274c419e05b4ac68012e122b6629038f195784e1012f6493475a678ecb83",
+  "content_hash": "544ff96992fc6aaa7bb4cfd22816c9c8d343742457774064f0c4b8069ddaf09f",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -74,6 +74,12 @@
       "type": "다구"
     },
     {
+      "id": "item_28",
+      "name": "철 조각",
+      "status": "확정",
+      "type": "재료"
+    },
+    {
       "id": "item_32",
       "name": "천 조각",
       "status": "확정"
@@ -82,6 +88,12 @@
       "id": "item_33",
       "name": "동전",
       "status": "확정"
+    },
+    {
+      "id": "item_5",
+      "name": "침향",
+      "status": "확정",
+      "type": "향"
     },
     {
       "core_tea_ware": false,

@@ -122,11 +122,32 @@ func _validate_item_contract(dataset_name: String, item: Dictionary) -> Dictiona
 		return _validate_drop_contract(item)
 	if dataset_name == "choices":
 		return _validate_choice_contract(item)
+	if dataset_name == "shops":
+		return _validate_shop_contract(item)
 	if dataset_name != "items":
 		return {"ok": true}
 	if String(item.get("type", "")) != "다구" or String(item.get("equipment_slot", "")) != "다구":
 		return {"ok": true}
 	return _validate_attachment_stage_data(item)
+
+func _validate_shop_contract(item: Dictionary) -> Dictionary:
+	if not item.has("item_id") and not item.has("tea_id"):
+		return {"ok": false, "error": "shops item '%s' requires exactly one of item_id or tea_id." % item.id}
+	var has_item := not String(item.get("item_id", "")).is_empty()
+	var has_tea := not String(item.get("tea_id", "")).is_empty()
+	if has_item == has_tea:
+		return {"ok": false, "error": "shops item '%s' requires exactly one of item_id or tea_id." % item.id}
+	if typeof(item.get("can_sell")) != TYPE_BOOL:
+		return {"ok": false, "error": "shops item '%s' can_sell must be a boolean." % item.id}
+	for field in ["buy_price", "sell_price", "stock_quantity", "min_progress_stage"]:
+		var value = item.get(field)
+		if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)) or float(value) != floor(float(value)):
+			return {"ok": false, "error": "shops item '%s' field '%s' must be an integer." % [item.id, field]}
+	if int(item.buy_price) <= 0 or int(item.sell_price) <= 0:
+		return {"ok": false, "error": "shops item '%s' prices must be positive." % item.id}
+	if int(item.stock_quantity) < 0 or int(item.min_progress_stage) < 0:
+		return {"ok": false, "error": "shops item '%s' stock and progress must be non-negative." % item.id}
+	return {"ok": true}
 
 func _validate_drop_contract(item: Dictionary) -> Dictionary:
 	var has_item := not String(item.get("item_id", "")).is_empty()

@@ -14,6 +14,9 @@ func run(asserts) -> void:
 	asserts.equal(catalog.find_by_id("choices", "daimyo_relinquish_tea").get("choice_key", ""), "DAIMYO_RELINQUISH_TEA", "choice result definitions are present")
 	asserts.equal(catalog.sources.get("drops", ""), "collection://362e7813-5332-420b-aca0-fb2824dbcce0", "authoritative drop table source is registered")
 	asserts.equal(catalog.find_by_id("drops", "drop_1").get("item_id", ""), "item_33", "drop relation resolves to generated item stable ID")
+	asserts.equal(catalog.sources.get("shops", ""), "collection://3f6354ff-02fb-4b92-9b81-9f821ae6408b", "authoritative shop table source is registered")
+	asserts.equal(catalog.get_definitions("shops").size(), 14, "all authoritative shop rows load")
+	asserts.equal(catalog.find_by_id("shops", "shop_14").get("sell_price", 0), 25, "shop sell price is explicit generated data")
 
 	var validator := DataSchemaValidator.new()
 	var duplicate_result := validator.validate_export_file({
