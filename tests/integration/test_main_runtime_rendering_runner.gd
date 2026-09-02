@@ -67,14 +67,17 @@ func run() -> void:
 		var status_panel := hud.get_node_or_null("Root/StatusPanel")
 		var map_panel := hud.get_node_or_null("Root/MapPanel")
 		var quickslot_panel := hud.get_node_or_null("Root/QuickSlotPanel")
-		if status_panel == null or map_panel == null or quickslot_panel == null:
-			failures.append("runtime HUD shows status, map, and quickslot panels")
+		var movement_panel := hud.get_node_or_null("Root/MovementPadPanel")
+		if status_panel == null or map_panel == null or quickslot_panel == null or movement_panel == null:
+			failures.append("runtime HUD shows status, map, quickslot, and movement panels")
 		elif _texture_rect_count(status_panel) < 4 or _label_count(status_panel) < 4:
 			failures.append("runtime HUD status panel renders icon-backed resource rows")
 		elif _texture_rect_count(quickslot_panel) < 4 or _label_count(quickslot_panel) < 4:
 			failures.append("runtime HUD quickslots render icon-backed rows")
-		if not _all_controls_ignore_mouse(hud):
-			failures.append("runtime HUD does not block world click and touch input")
+		elif _button_count(movement_panel) < 4:
+			failures.append("runtime HUD movement panel exposes four directional buttons")
+		if not _passive_controls_ignore_mouse(hud):
+			failures.append("runtime HUD passive controls do not block world click and touch input")
 
 	main.queue_free()
 	_cleanup_lifecycle_files()
@@ -102,11 +105,17 @@ func _label_count(node: Node) -> int:
 		count += _label_count(child)
 	return count
 
-func _all_controls_ignore_mouse(node: Node) -> bool:
-	if node is Control and (node as Control).mouse_filter != Control.MOUSE_FILTER_IGNORE:
+func _button_count(node: Node) -> int:
+	var count := 1 if node is Button else 0
+	for child in node.get_children():
+		count += _button_count(child)
+	return count
+
+func _passive_controls_ignore_mouse(node: Node) -> bool:
+	if node is Control and not node is Button and (node as Control).mouse_filter != Control.MOUSE_FILTER_IGNORE:
 		return false
 	for child in node.get_children():
-		if not _all_controls_ignore_mouse(child):
+		if not _passive_controls_ignore_mouse(child):
 			return false
 	return true
 

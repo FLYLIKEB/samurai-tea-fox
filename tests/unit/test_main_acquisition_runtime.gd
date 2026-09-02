@@ -17,6 +17,9 @@ class FailureProbe:
 	func record(error: Dictionary) -> void:
 		reasons.append(String(error.get("reason", "")))
 
+class MovementPlayer:
+	extends Node2D
+
 func run(asserts) -> void:
 	var catalog := DataCatalog.new()
 	asserts.true_value(catalog.load_from_directory("res://data/generated").ok, "runtime acquisition fixture loads generated definitions")
@@ -56,8 +59,21 @@ func run(asserts) -> void:
 	var empty_click_runtime := _configured_runtime(catalog, RunState.new(), Vector2i.ZERO)
 	asserts.true_value(empty_click_runtime.result.ok, "empty pointer fixture configures")
 	var inventory_before_empty_click: Dictionary = empty_click_runtime.main.inventory.to_snapshot()
-	asserts.false_value(empty_click_runtime.main.submit_pointer_interaction(empty_click_runtime.main.world_position_for_cell_center(Vector2i(2, 0))), "empty pointer click is ignored")
-	asserts.equal(empty_click_runtime.main.inventory.to_snapshot(), inventory_before_empty_click, "empty pointer click does not mutate inventory")
+	asserts.false_value(empty_click_runtime.main.submit_pointer_interaction(empty_click_runtime.main.world_position_for_cell_center(Vector2i(2, 0))), "empty pointer interaction ignores empty cells")
+	asserts.equal(empty_click_runtime.main.inventory.to_snapshot(), inventory_before_empty_click, "empty pointer interaction does not mutate inventory")
+
+	var movement_runtime := _configured_movement_runtime()
+	asserts.true_value(movement_runtime.main.submit_pointer_movement(movement_runtime.main.world_position_for_cell_center(Vector2i(2, 0))), "empty walkable pointer click sets a movement target")
+	var pointer_move = movement_runtime.main.movement_command_for_current_inputs(GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO))
+	asserts.equal(pointer_move.direction, Vector2i.RIGHT, "pointer movement walks toward the clicked tile")
+	asserts.true_value(movement_runtime.main.submit_mobile_movement_direction(Vector2i.DOWN), "mobile d-pad direction submits through the shared movement selector")
+	var button_move = movement_runtime.main.movement_command_for_current_inputs(GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO))
+	asserts.equal(button_move.direction, Vector2i.DOWN, "mobile d-pad movement overrides a prior pointer target")
+	var keyboard_move := GameCommand.new(GameCommand.Type.MOVE, Vector2i.LEFT)
+	var selected_keyboard = movement_runtime.main.movement_command_for_current_inputs(keyboard_move)
+	asserts.equal(selected_keyboard.direction, Vector2i.LEFT, "keyboard movement has priority over pointer and d-pad movement")
+	movement_runtime.main.world_data.set_terrain(Vector2i(3, 3), "water", false)
+	asserts.false_value(movement_runtime.main.submit_pointer_movement(movement_runtime.main.world_position_for_cell_center(Vector2i(3, 3))), "pointer movement rejects blocked terrain")
 
 	var tea_runtime := _configured_runtime(catalog, RunState.new())
 	asserts.true_value(tea_runtime.result.ok, "tea command fixture configures")
@@ -103,6 +119,8 @@ func run(asserts) -> void:
 	near_pointer_runtime.main.free()
 	empty_click_runtime.main.free()
 	tea_runtime.main.free()
+	movement_runtime.player.free()
+	movement_runtime.main.free()
 	restored.main.free()
 	drop_restored.main.free()
 
@@ -121,3 +139,11 @@ func _configured_runtime(catalog, state: RunState, resource_position := Vector2i
 		"resource_nodes": [{"id": "resource_0", "resource_id": "wood", "position": {"x": resource_position.x, "y": resource_position.y}}]
 	}
 	return {"main": runtime, "result": runtime._configure_acquisition_for_generated_world()}
+
+func _configured_movement_runtime() -> Dictionary:
+	var runtime := Main.new()
+	runtime.world_data = WorldData.new(4, 4, "grass", true)
+	var movement_player := MovementPlayer.new()
+	runtime.player = movement_player
+	movement_player.global_position = runtime.world_position_for_cell_center(Vector2i.ZERO)
+	return {"main": runtime, "player": movement_player}
