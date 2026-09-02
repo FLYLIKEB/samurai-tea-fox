@@ -43,9 +43,6 @@ func load_from_directory(directory: String) -> Dictionary:
 	for key in FILES.keys():
 		var path := "%s/%s" % [directory, FILES[key]]
 		if not FileAccess.file_exists(path):
-			if key == "characters":
-				definitions[key] = []
-				continue
 			return {"ok": false, "error": "Missing generated data file: %s" % path}
 
 		var parsed = JSON.parse_string(FileAccess.get_file_as_string(path))
