@@ -75,6 +75,11 @@ static func validate_dictionary(data: Dictionary) -> Dictionary:
 		if not _is_positive_integer(entry.get("stage", 0)):
 			return _fail("invalid_tail_history", "Tail transition history entry has an invalid stage.")
 		var entry_stage := int(entry.stage)
+		if not entry.has("path_flags") or typeof(entry.path_flags) != TYPE_ARRAY:
+			return _fail("invalid_tail_history_path_flags", "Tail transition history path flags must be an array.")
+		for history_flag in entry.path_flags:
+			if typeof(history_flag) != TYPE_STRING or not VALID_PATH_FLAGS.has(String(history_flag)):
+				return _fail("invalid_tail_history_path_flag", "Tail transition history path flag '%s' is not supported." % str(history_flag))
 		var source_kind := String(entry.get("source_kind", ""))
 		if not VALID_SOURCE_KINDS.has(source_kind):
 			return _fail("invalid_tail_source_kind", "Tail source kind '%s' is not supported." % source_kind)

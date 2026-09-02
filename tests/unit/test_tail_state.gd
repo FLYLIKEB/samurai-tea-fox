@@ -102,6 +102,28 @@ func _assert_transition_history_validation(asserts) -> void:
 	asserts.false_value(exceed_result.ok, "tail history rejects a recorded stage above current stage")
 	asserts.equal(exceed_result.reason, "tail_history_stage_exceeds_current", "current-stage exceed has a stable reason")
 
+	var invalid_flag := _snapshot_with_history(1, [
+		_history_entry("run_start", "run_start", 1)
+	])
+	invalid_flag.transition_history[0].path_flags = ["morality_score"]
+	var invalid_flag_result := TailState.validate_dictionary(invalid_flag)
+	asserts.false_value(invalid_flag_result.ok, "tail history rejects unsupported path flags")
+	asserts.equal(invalid_flag_result.reason, "invalid_tail_history_path_flag", "invalid history path flag has a stable reason")
+
+	var non_string_flag := _snapshot_with_history(1, [
+		_history_entry("run_start", "run_start", 1)
+	])
+	non_string_flag.transition_history[0].path_flags = [1]
+	asserts.false_value(TailState.validate_dictionary(non_string_flag).ok, "tail history rejects non-string path flags")
+
+	var non_array_flags := _snapshot_with_history(1, [
+		_history_entry("run_start", "run_start", 1)
+	])
+	non_array_flags.transition_history[0].path_flags = "humanity"
+	var non_array_result := TailState.validate_dictionary(non_array_flags)
+	asserts.false_value(non_array_result.ok, "tail history rejects non-array path flags")
+	asserts.equal(non_array_result.reason, "invalid_tail_history_path_flags", "non-array history path flags have a stable reason")
+
 func _assert_ability_candidates_are_tail_gated(asserts) -> void:
 	var tail := TailState.new({"stage": 3, "tail_count": 3})
 	var definitions := {

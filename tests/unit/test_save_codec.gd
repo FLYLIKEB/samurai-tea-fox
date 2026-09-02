@@ -38,6 +38,12 @@ func run(asserts) -> void:
 	asserts.false_value(SaveCodec.decode_run({"schema_version": SaveCodec.CURRENT_SCHEMA_VERSION, "kind": "run", "run": []}).ok, "run save rejects non-dictionary payload")
 	asserts.false_value(SaveCodec.decode_meta({"schema_version": SaveCodec.CURRENT_SCHEMA_VERSION, "kind": "meta", "meta": []}).ok, "meta save rejects non-dictionary payload")
 	asserts.false_value(SaveCodec.decode_run({"schema_version": SaveCodec.CURRENT_SCHEMA_VERSION, "kind": "run", "run": {"seed": 1, "tail_state": {"stage": 3, "tail_count": 2, "path_flags": [], "transition_history": []}}}).ok, "run save rejects malformed tail state")
+	var invalid_history_flag := TailState.default_dictionary()
+	invalid_history_flag.transition_history[0].path_flags = ["morality_score"]
+	asserts.false_value(SaveCodec.decode_run({"schema_version": 1, "kind": "run", "run": {"seed": 1, "tail_state": invalid_history_flag}}).ok, "run save rejects invalid tail history path flags")
+	var non_array_history_flags := TailState.default_dictionary()
+	non_array_history_flags.transition_history[0].path_flags = "humanity"
+	asserts.false_value(SaveCodec.decode_run({"schema_version": 1, "kind": "run", "run": {"seed": 1, "tail_state": non_array_history_flags}}).ok, "run save rejects non-array tail history path flags")
 	var legacy_run := SaveCodec.decode_run({"schema_version": 1, "kind": "run", "run": {"seed": 77, "tails": 4}})
 	asserts.true_value(legacy_run.ok, "legacy v1 run without tail state decodes")
 	asserts.equal(legacy_run.state.tails, 4, "legacy v1 run preserves tail count")
