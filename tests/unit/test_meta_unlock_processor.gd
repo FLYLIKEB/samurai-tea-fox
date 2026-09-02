@@ -13,6 +13,8 @@ func run(asserts) -> void:
 	_assert_unknown_condition_type_fails(asserts)
 	_assert_unknown_condition_operator_fails(asserts)
 	_assert_unknown_reward_type_fails(asserts)
+	_assert_data_driven_path_ignores_undeclared_earned_meta_flags(asserts)
+	_assert_unrelated_events_do_not_create_cumulative_counters(asserts)
 	_assert_meta_save_round_trip_preserves_unlock_state(asserts)
 
 func _assert_generated_unlocks_evaluate_from_data(asserts) -> void:
@@ -116,6 +118,28 @@ func _assert_unknown_reward_type_fails(asserts) -> void:
 	asserts.false_value(result.ok, "unknown meta unlock reward type is rejected")
 	asserts.equal(result.reason, "unknown_reward_type", "unknown reward failure returns stable reason")
 	asserts.equal(result.definition_id, "broken_reward", "unknown reward failure names definition id")
+
+func _assert_data_driven_path_ignores_undeclared_earned_meta_flags(asserts) -> void:
+	var definitions := [_definition("declared_biome_entry", "event_seen", "biome_reached:common_region", "discovered_record", "declared_biome_entry")]
+	var result: Dictionary = RunEndProcessor.new().apply_run_end_with_unlocks(_empty_meta(), {
+		"reached_biome_ids": ["common_region"],
+		"earned_meta_flags": ["legacy_bypass_flag"]
+	}, definitions)
+	asserts.true_value(result.ok, "data-driven run end with legacy earned flags succeeds")
+	asserts.true_value(result.meta_state.unlocked_meta_flags.has("declared_biome_entry"), "declared unlock definition id persists")
+	asserts.false_value(result.meta_state.unlocked_meta_flags.has("legacy_bypass_flag"), "undeclared earned meta flag is ignored by data-driven path")
+
+func _assert_unrelated_events_do_not_create_cumulative_counters(asserts) -> void:
+	var definitions := [_definition("third_memory_tea", "cumulative_event_count_at_least", "discovered_record:memory_tea", "discovered_record", "third_memory_tea", 3)]
+	var result: Dictionary = RunEndProcessor.new().apply_run_end_with_unlocks(_empty_meta(), {
+		"events": [
+			{"type": "fixture", "target": "unrelated"},
+			{"type": "discovered_record", "target": "memory_tea"}
+		]
+	}, definitions)
+	asserts.true_value(result.ok, "data-driven run end with unrelated events succeeds")
+	asserts.equal(int(result.meta_state.meta_unlock_counters.get("discovered_record:memory_tea", 0)), 1, "declared cumulative event target counter increments")
+	asserts.false_value(result.meta_state.meta_unlock_counters.has("fixture:unrelated"), "unrelated event target is not persisted as a meta unlock counter")
 
 func _assert_meta_save_round_trip_preserves_unlock_state(asserts) -> void:
 	var meta := _empty_meta()

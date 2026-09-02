@@ -29,15 +29,14 @@ func apply_run_end(meta_state: Dictionary, run_summary: Dictionary) -> Dictionar
 func apply_run_end_with_unlocks(meta_state: Dictionary, run_summary: Dictionary, unlock_definitions: Array) -> Dictionary:
 	var next_meta := _prepare_next_meta(meta_state, run_summary)
 	var events := _events_from_run_summary(run_summary)
-	_apply_event_counters(next_meta, events)
+	var allowed_counter_targets := _cumulative_counter_targets(unlock_definitions)
+	if not allowed_counter_targets.ok:
+		return allowed_counter_targets
+	_apply_event_counters(next_meta, events, allowed_counter_targets.targets)
 
 	var newly_unlocked: Array = []
 	for definition in unlock_definitions:
-		if typeof(definition) != TYPE_DICTIONARY:
-			return _failure("invalid_definition", "Meta unlock definition must be a dictionary.")
 		var definition_id := String(definition.get("id", ""))
-		if definition_id.is_empty():
-			return _failure("missing_definition_id", "Meta unlock definition is missing id.")
 		if next_meta.unlocked_meta_flags.has(definition_id):
 			continue
 		var condition := _definition_condition(definition)
@@ -59,8 +58,6 @@ func apply_run_end_with_unlocks(meta_state: Dictionary, run_summary: Dictionary,
 			"reward_quantity": reward.quantity
 		})
 
-	for flag in run_summary.get("earned_meta_flags", []):
-		_append_unique(next_meta.unlocked_meta_flags, String(flag))
 	return {"ok": true, "meta_state": next_meta, "unlocked": newly_unlocked}
 
 func is_unlocked(meta_state: Dictionary, unlock_id: String) -> bool:
@@ -182,13 +179,28 @@ func _events_from_run_summary(run_summary: Dictionary) -> Array:
 		events.append({"type": "choice", "target": String(choice_id), "value": 1})
 	return events
 
-func _apply_event_counters(meta_state: Dictionary, events: Array) -> void:
+func _cumulative_counter_targets(unlock_definitions: Array) -> Dictionary:
+	var targets: Dictionary = {}
+	for definition in unlock_definitions:
+		if typeof(definition) != TYPE_DICTIONARY:
+			return _failure("invalid_definition", "Meta unlock definition must be a dictionary.")
+		var definition_id := String(definition.get("id", ""))
+		if definition_id.is_empty():
+			return _failure("missing_definition_id", "Meta unlock definition is missing id.")
+		var condition := _definition_condition(definition)
+		if String(condition.type) == CONDITION_CUMULATIVE_EVENT_COUNT_AT_LEAST:
+			var target := _counter_key(String(condition.target))
+			if not target.is_empty():
+				targets[target] = true
+	return {"ok": true, "targets": targets}
+
+func _apply_event_counters(meta_state: Dictionary, events: Array, allowed_counter_targets: Dictionary) -> void:
 	var counted_this_run: Dictionary = {}
 	for event in events:
 		if typeof(event) != TYPE_DICTIONARY:
 			continue
 		var key := _counter_key(_event_key(event))
-		if key.is_empty() or counted_this_run.has(key):
+		if key.is_empty() or counted_this_run.has(key) or not allowed_counter_targets.has(key):
 			continue
 		counted_this_run[key] = true
 		meta_state.meta_unlock_counters[key] = int(meta_state.meta_unlock_counters.get(key, 0)) + 1
