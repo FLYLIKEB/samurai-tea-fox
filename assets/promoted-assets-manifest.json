@@ -6,7 +6,7 @@
     "remaining_source_files": 0,
     "remaining_source_image_files": 0
   },
-  "total_runtime_pngs": 415,
+  "total_runtime_pngs": 416,
   "runtime_roots": [
     "assets/backgrounds",
     "assets/sprites",
@@ -14,6 +14,13 @@
     "assets/ui"
   ],
   "assets": [
+    {
+      "path": "assets/sprites/characters/monsters/foxfire/foxfire_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
     {
       "path": "assets/backgrounds/interiors/mossy-ruins/mossy_dungeon_room.png",
       "width": 1448,

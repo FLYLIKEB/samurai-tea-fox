@@ -31,6 +31,21 @@
   },
   "assets": [
     {
+      "id": "monster_foxfire_front_idle",
+      "name": "여우불 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/monsters/foxfire/foxfire_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {"columns": 1, "rows": 1, "frame_width": 32, "frame_height": 32},
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false
+    },
+    {
       "id": "fox_samurai_front_idle",
       "name": "여우 사무라이 정면 대기",
       "status": "완료",
