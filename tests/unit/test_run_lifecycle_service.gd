@@ -8,6 +8,7 @@ const MetaState = preload("res://src/save/meta_state.gd")
 const PlayerResources = preload("res://src/player/player_resources.gd")
 const RunLifecycleService = preload("res://src/save/run_lifecycle_service.gd")
 const RunState = preload("res://src/save/run_state.gd")
+const SaveCodec = preload("res://src/save/save_codec.gd")
 const SaveStore = preload("res://src/save/save_store.gd")
 
 const TEST_DIRECTORY := "user://dev24_run_lifecycle_tests"

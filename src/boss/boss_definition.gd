@@ -12,6 +12,7 @@ var phases: Array
 var resolution_types: Array
 var reward_item_ids: Array
 var progression_unlock_ids: Array
+var tea_resolution: Dictionary
 var data_snapshot: Dictionary
 
 func _init(values: Dictionary) -> void:
@@ -24,6 +25,7 @@ func _init(values: Dictionary) -> void:
 	resolution_types = values.resolution_types.duplicate(true)
 	reward_item_ids = _array_value(values.get("reward_item_ids", []))
 	progression_unlock_ids = _array_value(values.get("progression_unlock_ids", []))
+	tea_resolution = _dictionary_value(values.get("tea_resolution", {}))
 	data_snapshot = values.duplicate(true)
 
 static func from_catalog(catalog, boss_id: String) -> Dictionary:
@@ -88,6 +90,19 @@ static func validate_row(row: Dictionary) -> Dictionary:
 				return _failure("Boss pattern interval must be positive: %s.%s" % [row.id, pattern_id])
 			if typeof(pattern.get("summon_monster_ids", [])) != TYPE_ARRAY:
 				return _failure("Boss summon_monster_ids must be an array: %s.%s" % [row.id, pattern_id])
+	var tea_resolution_value = row.get("tea_resolution", {})
+	if tea_resolution_value != null and typeof(tea_resolution_value) != TYPE_DICTIONARY:
+		return _failure("Boss tea_resolution must be an object: %s" % row.id)
+	if typeof(tea_resolution_value) == TYPE_DICTIONARY and not tea_resolution_value.is_empty():
+		var required_tea_ids = tea_resolution_value.get("required_tea_ids", [])
+		if typeof(required_tea_ids) != TYPE_ARRAY:
+			return _failure("Boss tea_resolution.required_tea_ids must be an array: %s" % row.id)
+		var peaceful_conditions = tea_resolution_value.get("peaceful_conditions", [])
+		if typeof(peaceful_conditions) != TYPE_ARRAY:
+			return _failure("Boss tea_resolution.peaceful_conditions must be an array: %s" % row.id)
+		for condition in peaceful_conditions:
+			if typeof(condition) != TYPE_DICTIONARY:
+				return _failure("Boss tea_resolution.peaceful_conditions must contain objects: %s" % row.id)
 	return {"ok": true}
 
 func phase_index_for_health(current_hp: int) -> int:
@@ -112,6 +127,9 @@ static func _finite_number(value) -> bool:
 
 static func _array_value(value) -> Array:
 	return value.duplicate(true) if typeof(value) == TYPE_ARRAY else []
+
+static func _dictionary_value(value) -> Dictionary:
+	return value.duplicate(true) if typeof(value) == TYPE_DICTIONARY else {}
 
 static func _failure(message: String) -> Dictionary:
 	return {"ok": false, "error": message}
