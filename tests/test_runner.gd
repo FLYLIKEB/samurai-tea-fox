@@ -24,6 +24,7 @@ const TESTS := [
 	preload("res://tests/unit/test_crafting_service.gd"),
 	preload("res://tests/unit/test_trade_service.gd"),
 	preload("res://tests/unit/test_narrative_runtime.gd"),
+	preload("res://tests/unit/test_memory_tea_cutscene_runtime.gd"),
 	preload("res://tests/unit/test_choice_runtime.gd"),
 	preload("res://tests/unit/test_meta_unlock_processor.gd"),
 	preload("res://tests/unit/test_run_lifecycle_service.gd"),
