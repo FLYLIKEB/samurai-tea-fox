@@ -45,11 +45,7 @@ func apply_run_end_with_unlocks(meta_state: Dictionary, run_summary: Dictionary,
 		var definition_id := String(definition.get("id", ""))
 		if next_meta.unlocked_meta_flags.has(definition_id):
 			continue
-		var condition_result_payload := _definition_condition(definition)
-		if not condition_result_payload.ok:
-			condition_result_payload["definition_id"] = definition_id
-			return condition_result_payload
-		var condition: Dictionary = condition_result_payload.condition
+		var condition := _definition_condition(definition)
 		var condition_result := _condition_passes(condition, next_meta, events)
 		if not condition_result.ok:
 			condition_result["definition_id"] = definition_id
@@ -125,15 +121,12 @@ func _prepare_next_meta(meta_state: Dictionary, run_summary: Dictionary) -> Dict
 	return next_meta
 
 func _definition_condition(definition: Dictionary) -> Dictionary:
-	var threshold = definition.get("threshold", null)
-	if threshold == null or not _is_non_negative_integer(threshold):
-		return _failure("invalid_condition_threshold", "Meta unlock condition threshold must be a non-negative integer.")
-	return {"ok": true, "condition": {
+	return {
 		"type": String(definition.get("condition_event", definition.get("condition_kind", definition.get("condition_type", "")))),
 		"target": String(definition.get("condition_target", "")),
 		"operator": String(definition.get("condition_operator", "equals")),
-		"threshold": int(threshold)
-	}}
+		"threshold": int(definition.get("threshold", 1))
+	}
 
 func _definition_reward(definition: Dictionary) -> Dictionary:
 	return {
@@ -219,11 +212,7 @@ func _cumulative_counter_targets(unlock_definitions: Array) -> Dictionary:
 		var definition_id := String(definition.get("id", ""))
 		if definition_id.is_empty():
 			return _failure("missing_definition_id", "Meta unlock definition is missing id.")
-		var condition_result_payload := _definition_condition(definition)
-		if not condition_result_payload.ok:
-			condition_result_payload["definition_id"] = definition_id
-			return condition_result_payload
-		var condition: Dictionary = condition_result_payload.condition
+		var condition := _definition_condition(definition)
 		if String(condition.type) == CONDITION_CUMULATIVE_EVENT_COUNT_AT_LEAST:
 			var target := _counter_key(String(condition.target))
 			if not target.is_empty():
@@ -304,13 +293,6 @@ func _is_stable_id(value: String) -> bool:
 	var id_pattern := RegEx.new()
 	id_pattern.compile("^[a-z][a-z0-9_]*$")
 	return id_pattern.search(value) != null
-
-func _is_non_negative_integer(value) -> bool:
-	if typeof(value) == TYPE_INT:
-		return int(value) >= 0
-	if typeof(value) == TYPE_FLOAT:
-		return is_equal_approx(float(value), floor(float(value))) and int(value) >= 0
-	return false
 
 func _append_unique(values: Array, id: String) -> void:
 	if id.is_empty():
