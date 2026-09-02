@@ -68,6 +68,9 @@ func add_item(item_id: String, quantity := 1, metadata := {}) -> Dictionary:
 		return _fail_and_emit(validation)
 
 	var definition: Dictionary = item_definitions[item_id]
+	var max_owned := int(definition.get("max_owned", 0))
+	if max_owned > 0 and get_total_quantity(item_id) + quantity > max_owned:
+		return _fail_and_emit({"ok": false, "reason": "max_owned_exceeded", "error": "Item ownership limit exceeded: %s" % item_id})
 	var candidate := _duplicate_slots(slots)
 	var remaining := quantity
 	if _requires_instance(definition):
@@ -313,6 +316,9 @@ static func _definition_from_item(row: Dictionary) -> Dictionary:
 	var max_stack_result := _optional_positive_integer(row, "max_stack", 1)
 	if not max_stack_result.ok:
 		return max_stack_result
+	var max_owned_result := _optional_non_negative_integer(row, "max_owned", 0)
+	if not max_owned_result.ok:
+		return max_owned_result
 	var kind := String(row.get("type", ""))
 	var definition := {
 		"id": String(row.id),
@@ -320,6 +326,8 @@ static func _definition_from_item(row: Dictionary) -> Dictionary:
 		"kind": kind,
 		"source": ITEM_SOURCE,
 		"max_stack": max_stack_result.value,
+		"max_owned": max_owned_result.value,
+		"effect_type": _normalized_item_effect_type(row),
 		"requires_instance": bool(INDIVIDUAL_ITEM_TYPES.get(kind, false))
 	}
 	return {"ok": true, "definition": definition}
@@ -328,12 +336,17 @@ static func _definition_from_tea(row: Dictionary) -> Dictionary:
 	var max_stack_result := _optional_positive_integer(row, "max_stack", 1)
 	if not max_stack_result.ok:
 		return max_stack_result
+	var max_owned_result := _optional_non_negative_integer(row, "max_owned", 0)
+	if not max_owned_result.ok:
+		return max_owned_result
 	var definition := {
 		"id": String(row.id),
 		"name": String(row.get("name", row.id)),
 		"kind": TEA_LEAF_KIND,
 		"source": TEA_SOURCE,
 		"max_stack": max_stack_result.value,
+		"max_owned": max_owned_result.value,
+		"effect_type": _normalized_item_effect_type(row),
 		"requires_instance": false
 	}
 	return {"ok": true, "definition": definition}
@@ -359,6 +372,16 @@ static func _optional_positive_integer(row: Dictionary, field: String, fallback:
 		return {"ok": false, "reason": "invalid_definition", "error": "Inventory definition field must be numeric: %s.%s" % [row.get("id", ""), field]}
 	if float(value) != floor(float(value)) or int(value) <= 0:
 		return {"ok": false, "reason": "invalid_definition", "error": "Inventory definition field must be a positive integer: %s.%s" % [row.get("id", ""), field]}
+	return {"ok": true, "value": int(value)}
+
+static func _optional_non_negative_integer(row: Dictionary, field: String, fallback: int) -> Dictionary:
+	if not row.has(field) or row[field] == null:
+		return {"ok": true, "value": fallback}
+	var value = row[field]
+	if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)):
+		return {"ok": false, "reason": "invalid_definition", "error": "Inventory definition field must be numeric: %s.%s" % [row.get("id", ""), field]}
+	if float(value) != floor(float(value)) or int(value) < 0:
+		return {"ok": false, "reason": "invalid_definition", "error": "Inventory definition field must be a non-negative integer: %s.%s" % [row.get("id", ""), field]}
 	return {"ok": true, "value": int(value)}
 
 static func _catalog_definitions(catalog, dataset: String) -> Array:
@@ -432,6 +455,14 @@ static func _fail(reason: String, message: String) -> Dictionary:
 
 static func _requires_instance(definition: Dictionary) -> bool:
 	return bool(definition.get("requires_instance", false))
+
+static func _normalized_item_effect_type(row: Dictionary) -> String:
+	var raw := String(row.get("effect_type", row.get("effect", ""))).strip_edges()
+	match raw:
+		"부활", "resurrection":
+			return "resurrection"
+		_:
+			return raw
 
 static func _new_slot(item_id: String, quantity: int, instance_id := "", metadata := {}) -> Dictionary:
 	return {

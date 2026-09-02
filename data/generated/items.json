@@ -1,5 +1,5 @@
 {
-  "content_hash": "544ff96992fc6aaa7bb4cfd22816c9c8d343742457774064f0c4b8069ddaf09f",
+  "content_hash": "92475660c77f3f3a69749e1239099be49aeaeb21e312f9caee257d6ca119e901",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -72,6 +72,17 @@
       "name": "소박한 흙사발",
       "status": "초안",
       "type": "다구"
+    },
+    {
+      "craftable": false,
+      "effect_type": "부활",
+      "grade": "희귀",
+      "id": "item_29",
+      "max_owned": 1,
+      "max_stack": 1,
+      "name": "부활 차씨",
+      "status": "확정",
+      "type": "소모품"
     },
     {
       "id": "item_28",

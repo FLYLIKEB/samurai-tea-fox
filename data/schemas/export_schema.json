@@ -79,7 +79,7 @@
       "file": "items.json", "required_fields": ["id", "name", "status"], "relations": {"biome_ids": "biomes"},
       "notion": {
         "source": "collection://cc4817d1-bb64-45b0-9193-b3c742327064", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "아이템 ID", "id_prefix": "item",
-        "field_map": {"종류": "type", "등급": "grade", "장비 슬롯": "equipment_slot", "제작 가능": "craftable", "최대 스택": "max_stack", "기본 피해": "base_damage", "공격속도": "attack_speed", "사거리": "range", "방어값": "defense", "기운 회복량": "ki_recovery", "효과": "effect", "효과 유형": "effect_type", "효과값": "effect_value", "획득처": "acquisition", "핵심 다구": "core_tea_ware", "핵심 다구 순번": "core_tea_ware_order", "정붙음 단계 임계값": "attachment_stage_thresholds", "정붙음 설명 키": "attachment_description_keys"},
+        "field_map": {"종류": "type", "등급": "grade", "장비 슬롯": "equipment_slot", "제작 가능": "craftable", "최대 스택": "max_stack", "최대 보유": "max_owned", "기본 피해": "base_damage", "공격속도": "attack_speed", "사거리": "range", "방어값": "defense", "기운 회복량": "ki_recovery", "효과": "effect", "효과 유형": "effect_type", "효과값": "effect_value", "획득처": "acquisition", "핵심 다구": "core_tea_ware", "핵심 다구 순번": "core_tea_ware_order", "정붙음 단계 임계값": "attachment_stage_thresholds", "정붙음 설명 키": "attachment_description_keys"},
         "relation_map": {"획득 지역 관계": {"field": "biome_ids", "target": "biomes", "many": true}}
       }
     },

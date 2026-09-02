@@ -13,6 +13,7 @@ const AcquisitionService = preload("res://src/world/interactions/acquisition_ser
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 const WorldSceneRenderer = preload("res://src/world/rendering/world_scene_renderer.gd")
+const RunLifecycleService = preload("res://src/save/run_lifecycle_service.gd")
 
 @onready var player = $Player
 @onready var combat_dummy = $CombatDummy
@@ -24,6 +25,7 @@ var inventory
 var equipment
 var tea_service
 var acquisition_service
+var run_lifecycle_service
 var run_state: RunState
 var world_data
 var generated_world: Dictionary = {}
@@ -45,6 +47,12 @@ func _ready() -> void:
 	if not player_combat_result.ok:
 		push_error(player_combat_result.error)
 		return
+	var lifecycle_result: Dictionary = RunLifecycleService.from_catalog(catalog)
+	if not lifecycle_result.ok:
+		push_error(lifecycle_result.error)
+		return
+	run_lifecycle_service = lifecycle_result.run_lifecycle_service
+	player.resources.hp_depleted.connect(_on_player_hp_depleted)
 	var dummy_combat_result: Dictionary = combat_dummy.configure_combat(catalog, player, player.combat_config)
 	if not dummy_combat_result.ok:
 		push_error(dummy_combat_result.error)
@@ -239,6 +247,18 @@ func _on_combat_drop_requested(event: Dictionary) -> void:
 			"y": int(round(combat_dummy.global_position.y / 32.0))
 		}
 	var result: Dictionary = acquisition_service.process_drop_request(normalized)
+	if not result.ok:
+		push_error(result.error)
+
+func _on_player_hp_depleted() -> void:
+	if run_lifecycle_service == null:
+		return
+	var result: Dictionary = run_lifecycle_service.resolve_lethal_hp(
+		player.resources,
+		inventory,
+		player.combat_state,
+		player.get_combat_id()
+	)
 	if not result.ok:
 		push_error(result.error)
 
