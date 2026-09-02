@@ -1,0 +1,65 @@
+{
+  "content_hash": "16fe680f390dfae757fc822c0fe88a3f228cf93b361f23872a51ca77a5c8b505",
+  "data_version": "notion-2026-09-01",
+  "items": [
+    {
+      "base_attack": 20,
+      "biome": "황무지",
+      "biome_ids": [
+        "wasteland"
+      ],
+      "boss": "다이묘",
+      "boss_hp": 850,
+      "choice_ids": [
+        "daimyo_relinquish_tea",
+        "daimyo_defeat"
+      ],
+      "core_gimmick": "명물 다기와 충성 의식이 전투 패턴과 연결된다. 전장 잔해 사이에서 권력의 상징물을 파괴하거나 보존할 수 있다.",
+      "id": "dungeon_1",
+      "layout": "전쟁으로 무너진 성과 군영 안의 다회 공간",
+      "name": "폐성의 다회당",
+      "notion_id": "3cd37369-9e66-812b-aed7-ffe788a09ee4",
+      "pattern_count": 6,
+      "peaceful_resolution": true,
+      "phase_count": 3,
+      "resolution_types": [
+        "전투",
+        "다도"
+      ],
+      "reward": "전란의 차입, 텔레포트 수리, 현재 런 휴대 탐험 도구 제작 확장",
+      "reward_item_ids": [
+        "war_tea_caddy"
+      ],
+      "status": "확정"
+    },
+    {
+      "base_attack": 12,
+      "biome": "일반",
+      "biome_ids": [
+        "common_region"
+      ],
+      "boss": "후루타 오리베",
+      "boss_hp": 450,
+      "core_gimmick": "비대칭 구조와 일부러 어긋난 동선. 전투 전 차를 마실 수 있고 선택에 따라 대화가 달라진다.",
+      "id": "dungeon_4",
+      "layout": "온대 마을 외곽의 목조 다실·저택형 던전",
+      "name": "오리베의 다실",
+      "notion_id": "3cd37369-9e66-8194-b129-cf4b25ae7e54",
+      "pattern_count": 4,
+      "peaceful_resolution": true,
+      "phase_count": 2,
+      "resolution_types": [
+        "전투",
+        "다도"
+      ],
+      "reward": "오리베의 찻사발, 텔레포트 수리, 현재 런 기초 제작 확장",
+      "reward_item_ids": [
+        "oribe_green_glazed_bowl"
+      ],
+      "status": "확정"
+    }
+  ],
+  "profile": "confirmed-test",
+  "schema_version": 1,
+  "source": "collection://cd97553c-f51f-44fe-9604-c257cc9d9342"
+}

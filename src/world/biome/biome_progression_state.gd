@@ -77,6 +77,23 @@ func apply_command(command) -> Dictionary:
 			return _fail("unsupported_command", "Command is not handled by biome progression.")
 
 func complete_dungeon(biome_id: String) -> Dictionary:
+	return complete_dungeon_transaction(biome_id)
+
+func complete_dungeon_transaction(biome_id: String, commit_hook := Callable()) -> Dictionary:
+	var validation := _validate_dungeon_completion(biome_id)
+	if not validation.ok:
+		return validation
+	if commit_hook.is_valid():
+		var hook_result = commit_hook.call()
+		if typeof(hook_result) != TYPE_DICTIONARY:
+			return _fail("invalid_commit_hook_result", "Dungeon completion commit hook must return a result dictionary.")
+		if not bool(hook_result.get("ok", false)):
+			return hook_result
+	_run_state.completed_dungeon_ids.append(biome_id)
+	_run_state.teleport_states[biome_id] = TELEPORT_REPAIRABLE
+	return _success_projection()
+
+func _validate_dungeon_completion(biome_id: String) -> Dictionary:
 	var order_result := _validate_current_biome(biome_id)
 	if not order_result.ok:
 		return order_result
@@ -84,9 +101,7 @@ func complete_dungeon(biome_id: String) -> Dictionary:
 		return _fail("duplicate_dungeon_completion", "Dungeon completion was already recorded.")
 	if teleport_state_for(biome_id) != TELEPORT_BROKEN:
 		return _fail("invalid_teleport_state", "Dungeon completion requires a broken teleport.")
-	_run_state.completed_dungeon_ids.append(biome_id)
-	_run_state.teleport_states[biome_id] = TELEPORT_REPAIRABLE
-	return _success_projection()
+	return {"ok": true}
 
 func repair_teleport(biome_id: String) -> Dictionary:
 	var order_result := _validate_current_biome(biome_id)

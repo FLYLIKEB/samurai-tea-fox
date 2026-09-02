@@ -39,6 +39,15 @@
         "field_map": {"종류": "type", "진행 순서": "progression_order", "난이도": "difficulty", "텔레포트": "teleport", "핵심 특징": "summary", "주요 지형": "terrain", "주요 자원": "resources", "주요 시설": "facilities", "핵심 던전 콘셉트": "core_dungeon_concept"}
       }
     },
+    "bosses": {
+      "file": "bosses.json", "required_fields": ["id", "name", "status", "dungeon_id", "biome_id", "max_hp", "phases", "resolution_types", "reward_item_ids", "progression_unlock_ids", "summon_monster_ids"],
+      "relations": {"biome_id": "biomes", "dungeon_id": "dungeons", "reward_item_ids": "items", "summon_monster_ids": "monsters"},
+      "notion": {
+        "source": "fixture://dev_28_boss_runtime", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "보스 ID", "id_prefix": "boss",
+        "field_map": {"던전 ID": "dungeon_id", "지역 ID": "biome_id", "최대 HP": "max_hp", "페이즈": "phases", "해결 방식": "resolution_types", "진행 해금": "progression_unlock_ids"},
+        "relation_map": {"보상 다구": {"field": "reward_item_ids", "target": "items", "many": true}, "소환 몬스터": {"field": "summon_monster_ids", "target": "monsters", "many": true}}
+      }
+    },
     "choices": {
       "file": "choices.json", "required_fields": ["id", "name", "status", "choice_key", "run_flag", "display_text", "resolution", "meta_record", "target_survives", "philosophy_marks", "final_room_effect"],
       "notion": {
