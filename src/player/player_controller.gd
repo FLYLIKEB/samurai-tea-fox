@@ -8,9 +8,17 @@ const CombatConfig = preload("res://src/combat/combat_config.gd")
 const CombatState = preload("res://src/combat/combat_state.gd")
 const AbilityRuntime = preload("res://src/ability/ability_runtime.gd")
 const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
+const DirectionalWalkAnimator = preload("res://src/presentation/directional_walk_animator.gd")
 
 const TILE_SIZE_PIXELS := 32.0
 const PLAYER_COMBAT_ID := "player"
+const PLAYER_CHARACTER_ID := "CHR-8"
+const IDLE_ASSET_IDS := {
+	"south": "fox_samurai_front_idle",
+	"west": "fox_samurai_left_idle",
+	"east": "fox_samurai_right_idle",
+	"north": "fox_samurai_back_idle"
+}
 
 signal attack_started(swing: Dictionary)
 signal ability_cast(result: Dictionary)
@@ -32,7 +40,9 @@ var ability_tail_query
 var ability_time_state
 var ability_target_query
 var asset_catalog := AssetCatalog.new()
+var walk_animator := DirectionalWalkAnimator.new()
 var _current_sprite_asset_id := ""
+var _walk_animator_ready := false
 var _movement_command = GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO)
 var _pending_swing: Dictionary = {}
 var _attack_query_pending := false
@@ -44,18 +54,33 @@ func _ready() -> void:
 	var asset_result := asset_catalog.load_manifest()
 	if not asset_result.ok:
 		push_error(asset_result.error)
-	_update_sprite_frame()
+	else:
+		var animation_result := walk_animator.configure_for_character(
+			sprite,
+			asset_catalog,
+			PLAYER_CHARACTER_ID,
+			IDLE_ASSET_IDS
+		)
+		if animation_result.ok:
+			_walk_animator_ready = true
+			_current_sprite_asset_id = walk_animator.current_asset_id()
+		else:
+			push_error(animation_result.error)
+	if not _walk_animator_ready:
+		_update_sprite_frame()
 
 func _physics_process(delta: float) -> void:
 	if combat_state != null:
 		combat_state.tick(delta)
 	if ability_runtime != null:
 		ability_runtime.tick(delta)
-	if _dodge_time_remaining > 0.0:
+	var is_dodging := _dodge_time_remaining > 0.0
+	if is_dodging:
 		_dodge_time_remaining = maxf(0.0, _dodge_time_remaining - delta)
 		velocity = _dodge_direction * _dodge_speed_pixels_per_second
 	else:
 		apply_movement_command(_movement_command)
+	_update_sprite_animation(delta, not is_dodging)
 	move_and_slide()
 	if _attack_query_pending:
 		_attack_query_pending = false
@@ -98,7 +123,7 @@ func apply_movement_command(command) -> bool:
 		return false
 
 	velocity = movement_state.resolve(command.direction) * movement_speed_pixels_per_second
-	_update_sprite_frame()
+	_update_sprite_animation(0.0)
 	return true
 
 func _is_movement_command(command) -> bool:
@@ -240,8 +265,33 @@ func _update_sprite_frame() -> void:
 			return
 		var texture := asset_catalog.load_texture(sprite_asset_id)
 		if texture != null:
+			sprite.hframes = 1
+			sprite.vframes = 1
+			sprite.frame = 0
 			sprite.texture = texture
 			_current_sprite_asset_id = sprite_asset_id
+
+func _update_sprite_animation(delta: float, allow_walk := true) -> void:
+	if not _walk_animator_ready:
+		_update_sprite_frame()
+		return
+	walk_animator.update(
+		delta,
+		_animation_direction_for_facing(),
+		allow_walk and not velocity.is_zero_approx()
+	)
+	_current_sprite_asset_id = walk_animator.current_asset_id()
+
+func _animation_direction_for_facing() -> String:
+	match movement_state.facing:
+		PlayerMovementState.Facing.UP:
+			return "north"
+		PlayerMovementState.Facing.LEFT:
+			return "west"
+		PlayerMovementState.Facing.RIGHT:
+			return "east"
+		_:
+			return "south"
 
 func _sprite_asset_id_for_facing() -> String:
 	match movement_state.facing:

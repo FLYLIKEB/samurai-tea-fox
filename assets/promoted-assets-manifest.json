@@ -6,7 +6,7 @@
     "remaining_source_files": 0,
     "remaining_source_image_files": 0
   },
-  "total_runtime_pngs": 416,
+  "total_runtime_pngs": 425,
   "runtime_roots": [
     "assets/backgrounds",
     "assets/sprites",
@@ -2923,6 +2923,69 @@
       "path": "assets/ui/decorators/minimap_contents.png",
       "width": 213,
       "height": 194,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/family/chr-1-kitsune-father/kitsune_father_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-2-wasteland-daimyo/wasteland_daimyo_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/rivals/chr-3-furuta-oribe/furuta_oribe_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-4-snow-monk/snow_monk_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-5-sen-rikyu/sen_rikyu_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-6-yokai-tea-master/yokai_tea_master_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/bosses/chr-7-mountain-potter/mountain_potter_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "mode": "RGBA",
+      "alpha_empty": false
+    },
+    {
+      "path": "assets/sprites/characters/npcs/chr-9-wandering-tea-merchant/wandering_tea_merchant_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
       "mode": "RGBA",
       "alpha_empty": false
     }
