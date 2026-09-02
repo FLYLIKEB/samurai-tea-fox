@@ -118,14 +118,15 @@ class NotionExportPipelineTests(unittest.TestCase):
                 {"_notion_id": "father", "캐릭터 ID": {"prefix": "CHR", "number": 1}, "이름": "아버지", "설정 상태": "확정", "메타 기억 허용": True},
                 {"_notion_id": "ordinary", "캐릭터 ID": {"prefix": "CHR", "number": 2}, "이름": "보통 인물", "설정 상태": "확정", "메타 기억 허용": False},
                 {"_notion_id": "rikyu", "캐릭터 ID": {"prefix": "CHR", "number": 5}, "이름": "센리큐", "설정 상태": "확정", "메타 기억 허용": True},
+                {"_notion_id": "merchant", "캐릭터 ID": {"prefix": "CHR", "number": 9}, "이름": "떠돌이 차 상인", "설정 상태": "확정", "메타 기억 허용": False},
             ]
         }
-        capture = CaptureBuilder(schema).build_from_rows(rows, "character-memory-fixture-v1")
+        capture = CaptureBuilder(schema, {"merchant": "wandering_tea_merchant"}).build_from_rows(rows, "character-memory-fixture-v1")
         characters = ExportPipeline(schema).build_snapshots(capture)["characters"]["items"]
 
-        self.assertEqual([item["id"] for item in characters], ["chr_1", "chr_2", "chr_5"])
-        self.assertEqual([item["character_id"] for item in characters], ["CHR-1", "CHR-2", "CHR-5"])
-        self.assertEqual([item["meta_memory"] for item in characters], [True, False, True])
+        self.assertEqual([item["id"] for item in characters], ["chr_1", "chr_2", "chr_5", "wandering_tea_merchant"])
+        self.assertEqual([item["character_id"] for item in characters], ["CHR-1", "CHR-2", "CHR-5", "CHR-9"])
+        self.assertEqual([item["meta_memory"] for item in characters], [True, False, True, False])
 
     def test_character_export_rejects_missing_or_non_boolean_meta_memory(self):
         schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
