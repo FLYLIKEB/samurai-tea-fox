@@ -383,7 +383,7 @@ func _fixture_events() -> Array:
 			"nodes": [
 				{
 					"id": "start",
-					"speaker_id": "shrine_keeper",
+					"speaker_id": "CHR-5",
 					"text": "신사 지기가 오늘 길에 남은 향을 묻는다.",
 					"options": [
 						{"id": "ordinary_prayer", "display_text": "무사한 길을 빈다", "conditions": [{"type": "meta_not_flag", "id": "remembered_old_shrine"}], "results": [{"type": "set_run_flag", "id": "offered_ordinary_prayer"}], "next_node_id": "", "completes_event": true},
