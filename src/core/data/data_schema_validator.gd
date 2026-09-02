@@ -146,9 +146,11 @@ func _validate_meta_unlock_contract(item: Dictionary) -> Dictionary:
 		return {"ok": false, "error": "meta_unlocks item '%s' reward_target must be non-empty." % item.id}
 	if not ["equals", "at_least"].has(String(item.get("condition_operator", ""))):
 		return {"ok": false, "error": "meta_unlocks item '%s' has unknown condition_operator '%s'." % [item.id, item.get("condition_operator", "")]}
+	if typeof(item.get("cumulative")) != TYPE_BOOL:
+		return {"ok": false, "error": "meta_unlocks item '%s' cumulative must be a boolean." % item.id}
 	var threshold = item.get("threshold", 1)
-	if typeof(threshold) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(threshold)) or float(threshold) != floor(float(threshold)) or int(threshold) < 0:
-		return {"ok": false, "error": "meta_unlocks item '%s' threshold must be a non-negative integer." % item.id}
+	if typeof(threshold) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(threshold)) or float(threshold) != floor(float(threshold)) or int(threshold) <= 0:
+		return {"ok": false, "error": "meta_unlocks item '%s' threshold must be a positive integer." % item.id}
 	var reward_quantity = item.get("reward_quantity", 1)
 	if typeof(reward_quantity) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(reward_quantity)) or float(reward_quantity) != floor(float(reward_quantity)) or int(reward_quantity) <= 0:
 		return {"ok": false, "error": "meta_unlocks item '%s' reward_quantity must be a positive integer." % item.id}

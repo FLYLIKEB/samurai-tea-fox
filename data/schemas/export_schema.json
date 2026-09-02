@@ -84,7 +84,7 @@
       }
     },
     "meta_unlocks": {
-      "file": "meta_unlocks.json", "required_fields": ["id", "name", "status", "condition_type", "reward_type", "condition_event", "condition_target", "condition_operator", "reward_kind", "reward_target", "reward_quantity"], "relations": {"ability_ids": "abilities", "item_ids": "items", "tea_ids": "teas"},
+      "file": "meta_unlocks.json", "required_fields": ["id", "name", "status", "condition_type", "reward_type", "condition_event", "condition_target", "condition_operator", "cumulative", "threshold", "reward_kind", "reward_target", "reward_quantity"], "relations": {"ability_ids": "abilities", "item_ids": "items", "tea_ids": "teas"},
       "notion": {
         "source": "collection://7927bdc1-70eb-4fe7-82c5-971c74caa5d3", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "메타 ID", "id_prefix": "meta",
         "field_map": {"해금 조건 유형": "condition_type", "조건": "condition", "표준 조건 유형": "condition_event", "조건 대상": "condition_target", "조건 연산자": "condition_operator", "보상 유형": "reward_type", "보상": "reward", "표준 보상 유형": "reward_kind", "보상 대상": "reward_target", "보상 수량": "reward_quantity", "누적 여부": "cumulative", "임계값": "threshold"},
