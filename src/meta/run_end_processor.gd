@@ -221,6 +221,7 @@ func _cumulative_counter_targets(unlock_definitions: Array) -> Dictionary:
 			return _failure("missing_definition_id", "Meta unlock definition is missing id.")
 		var condition_result_payload := _definition_condition(definition)
 		if not condition_result_payload.ok:
+			condition_result_payload["definition_id"] = definition_id
 			return condition_result_payload
 		var condition: Dictionary = condition_result_payload.condition
 		if String(condition.type) == CONDITION_CUMULATIVE_EVENT_COUNT_AT_LEAST:

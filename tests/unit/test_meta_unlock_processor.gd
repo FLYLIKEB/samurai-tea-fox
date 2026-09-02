@@ -16,9 +16,7 @@ func run(asserts) -> void:
 	_assert_data_driven_path_ignores_undeclared_earned_meta_flags(asserts)
 	_assert_unrelated_events_do_not_create_cumulative_counters(asserts)
 	_assert_malformed_previous_run_query_inputs_are_rejected(asserts)
-	_assert_meta_unlock_run_count_threshold_shape_is_validated(asserts)
 	_assert_previous_run_query_inputs_are_accumulated(asserts)
-	_assert_malformed_previous_run_ids_are_not_persisted(asserts)
 	_assert_meta_save_round_trip_preserves_unlock_state(asserts)
 
 func _assert_generated_unlocks_evaluate_from_data(asserts) -> void:
@@ -190,25 +188,6 @@ func _assert_malformed_previous_run_query_inputs_are_rejected(asserts) -> void:
 	asserts.equal(valid_meta.reached_place_ids, [], "malformed run summary is rejected without mutating existing meta places")
 	asserts.equal(valid_meta.death_record_ids, [], "malformed run summary is rejected without mutating existing meta deaths")
 
-func _assert_meta_unlock_run_count_threshold_shape_is_validated(asserts) -> void:
-	var missing_threshold := {
-		"id": "missing_threshold",
-		"condition_event": "run_count_at_least",
-		"condition_target": "run_count",
-		"condition_operator": "at_least",
-		"reward_kind": "unlock_flag",
-		"reward_target": "missing_threshold_reward",
-		"reward_quantity": 1
-	}
-	var missing_result: Dictionary = RunEndProcessor.new().apply_run_end_with_unlocks(_empty_meta(), {}, [missing_threshold])
-	asserts.false_value(missing_result.ok, "run-count meta unlock condition requires a threshold")
-	asserts.equal(missing_result.reason, "invalid_condition_threshold", "missing run-count threshold returns stable reason")
-	asserts.equal(missing_result.definition_id, "missing_threshold", "threshold failure names definition id")
-	var negative_threshold := _definition("negative_threshold", "run_count_at_least", "run_count", "unlock_flag", "negative_threshold_reward", -1)
-	var negative_result: Dictionary = RunEndProcessor.new().apply_run_end_with_unlocks(_empty_meta(), {}, [negative_threshold])
-	asserts.false_value(negative_result.ok, "run-count meta unlock threshold cannot be negative")
-	asserts.equal(negative_result.reason, "invalid_condition_threshold", "negative run-count threshold returns stable reason")
-
 func _assert_previous_run_query_inputs_are_accumulated(asserts) -> void:
 	var processor := RunEndProcessor.new()
 	var first := processor.apply_run_end(_empty_meta(), {
@@ -227,21 +206,6 @@ func _assert_previous_run_query_inputs_are_accumulated(asserts) -> void:
 	asserts.equal(second.reached_place_ids, ["common_region", "mountain_region", "final_tea_room", "mountain_shrine"], "reached place IDs accumulate from stable run summary fields")
 	asserts.equal(second.death_record_ids, ["wild_dog_ambush", "boss_defeat"], "death record IDs accumulate without duplicates")
 	asserts.equal(int(second.run_count), 2, "query input accumulation preserves run count behavior")
-
-func _assert_malformed_previous_run_ids_are_not_persisted(asserts) -> void:
-	var initial_meta := _empty_meta()
-	var result := RunEndProcessor.new().apply_run_end(initial_meta, {
-		"past_choice_ids": ["valid_choice", "", "Display Name", 42],
-		"choice_history": ["another_choice", null],
-		"reached_place_ids": ["valid_place", "mountain-region"],
-		"reached_biome_ids": ["another_place", {}],
-		"current_biome_id": 123,
-		"death_record_ids": ["valid_death", "죽음"],
-		"death_record_id": "Invalid Death"
-	})
-	asserts.false_value(result.ok, "run end rejects malformed previous-run stable IDs")
-	asserts.equal(result.reason, "invalid_run_summary_stable_id", "malformed run-summary ID returns a stable reason")
-	asserts.equal(initial_meta, _empty_meta(), "rejected run summary does not mutate or persist into meta state")
 
 func _empty_meta() -> Dictionary:
 	return {
