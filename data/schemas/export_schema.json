@@ -49,6 +49,13 @@
         "relation_map": {"보상 다구": {"field": "reward_item_ids", "target": "items", "many": true}, "소환 몬스터": {"field": "summon_monster_ids", "target": "monsters", "many": true}}
       }
     },
+    "characters": {
+      "file": "characters.json", "required_fields": ["id", "character_id", "name", "status", "meta_memory"],
+      "notion": {
+        "source": "collection://86d9c16b-e60e-4434-9c84-26b4b00d16c8", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "캐릭터 ID", "unique_id_output_field": "character_id", "id_prefix": "chr",
+        "field_map": {"메타 기억 허용": "meta_memory"}
+      }
+    },
     "choices": {
       "file": "choices.json", "required_fields": ["id", "name", "status", "choice_key", "run_flag", "display_text", "resolution", "meta_record", "target_survives", "philosophy_marks", "final_room_effect"],
       "notion": {
