@@ -37,6 +37,7 @@ func run(asserts) -> void:
 	_assert_grant_item_requires_item_definitions(asserts)
 	_assert_run_meta_boundary(asserts)
 	_assert_allowed_memory_speakers_can_query_previous_runs(asserts)
+	_assert_malformed_meta_conditions_are_rejected(asserts)
 	_assert_meta_query_speaker_rejections(asserts)
 	_assert_read_model_does_not_mutate_state(asserts)
 
@@ -257,6 +258,24 @@ func _assert_allowed_memory_speakers_can_query_previous_runs(asserts) -> void:
 		var result: Dictionary = runtime.read_model_for_event("meta_query_event", run_state, meta_state)
 		asserts.true_value(result.ok, "%s can query previous-run state" % speaker_id)
 		asserts.equal(_option_ids(result.read_model), ["remember"], "%s can satisfy all four previous-run query classes" % speaker_id)
+
+func _assert_malformed_meta_conditions_are_rejected(asserts) -> void:
+	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": ""}
+	var meta_state := {"run_count": 3, "dialogue_memory_flags": ["remembered_old_shrine"]}
+	var malformed_conditions := [
+		{"type": "meta_run_count_at_least"},
+		{"type": "meta_run_count_at_least", "value": -1},
+		{"type": "meta_run_count_at_least", "value": 1.5},
+		{"type": "meta_flag", "id": ""},
+		{"type": "meta_past_choice", "id": "Display Name"},
+		{"type": "meta_reached_place", "id": 42},
+		{"type": "meta_death_record"}
+	]
+	for condition in malformed_conditions:
+		var runtime: NarrativeRuntime = _runtime_from_events(asserts, [_meta_query_event("CHR-5", [condition])])
+		var result: Dictionary = runtime.read_model_for_event("meta_query_event", run_state, meta_state)
+		asserts.false_value(result.ok, "malformed meta condition is rejected: %s" % condition)
+		asserts.equal(result.reason, "invalid_meta_condition", "malformed meta condition returns stable explicit reason")
 
 func _assert_meta_query_speaker_rejections(asserts) -> void:
 	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": ""}

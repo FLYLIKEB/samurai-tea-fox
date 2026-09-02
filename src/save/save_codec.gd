@@ -55,6 +55,12 @@ const REQUIRED_FIELDS := {
 	META_KIND: ["run_count"]
 }
 
+const META_STABLE_ID_ARRAY_FIELDS := [
+	"past_choice_ids",
+	"reached_place_ids",
+	"death_record_ids"
+]
+
 static func encode_run(run_state) -> Dictionary:
 	var snapshot := _snapshot_for(run_state, RUN_KIND)
 	return {
@@ -110,6 +116,10 @@ static func _decode_payload(save_data: Dictionary, expected_kind: String, field_
 		var tail_validation := TailState.validate_dictionary(payload.tail_state)
 		if not tail_validation.ok:
 			return _failure(tail_validation.error)
+	elif expected_kind == META_KIND:
+		var stable_id_validation := _validate_meta_stable_id_arrays(payload)
+		if not stable_id_validation.ok:
+			return stable_id_validation
 	return {"ok": true, "state": payload.duplicate(true)}
 
 static func _validate_envelope(save_data: Dictionary, expected_kind: String) -> Dictionary:
@@ -163,7 +173,20 @@ static func _validate_snapshot(state, kind: String, field_types: Dictionary) -> 
 		var tail_validation := TailState.validate_dictionary(snapshot.tail_state)
 		if not tail_validation.ok:
 			return _failure(tail_validation.error)
+	elif kind == META_KIND:
+		var stable_id_validation := _validate_meta_stable_id_arrays(snapshot)
+		if not stable_id_validation.ok:
+			return stable_id_validation
 	return {"ok": true, "snapshot": snapshot.duplicate(true)}
+
+static func _validate_meta_stable_id_arrays(snapshot: Dictionary) -> Dictionary:
+	for field in META_STABLE_ID_ARRAY_FIELDS:
+		if not snapshot.has(field):
+			continue
+		for value in snapshot[field]:
+			if typeof(value) != TYPE_STRING or not _is_stable_id(value):
+				return _failure("Malformed meta field '%s': expected non-empty stable string IDs." % field)
+	return {"ok": true}
 
 static func _snapshot_for(state, kind: String) -> Dictionary:
 	var result := _snapshot_result_for(state, kind)
@@ -188,3 +211,8 @@ static func _is_integer_value(value) -> bool:
 	if typeof(value) == TYPE_INT:
 		return true
 	return typeof(value) == TYPE_FLOAT and is_equal_approx(value, floor(value))
+
+static func _is_stable_id(value: String) -> bool:
+	var pattern := RegEx.new()
+	pattern.compile("^[a-z][a-z0-9_]*$")
+	return pattern.search(value) != null

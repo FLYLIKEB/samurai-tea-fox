@@ -16,6 +16,7 @@ func run(asserts) -> void:
 	_assert_data_driven_path_ignores_undeclared_earned_meta_flags(asserts)
 	_assert_unrelated_events_do_not_create_cumulative_counters(asserts)
 	_assert_previous_run_query_inputs_are_accumulated(asserts)
+	_assert_malformed_previous_run_ids_are_not_persisted(asserts)
 	_assert_meta_save_round_trip_preserves_unlock_state(asserts)
 
 func _assert_generated_unlocks_evaluate_from_data(asserts) -> void:
@@ -186,6 +187,20 @@ func _assert_previous_run_query_inputs_are_accumulated(asserts) -> void:
 	asserts.equal(second.reached_place_ids, ["common_region", "mountain_region", "final_tea_room", "mountain_shrine"], "reached place IDs accumulate from stable run summary fields")
 	asserts.equal(second.death_record_ids, ["wild_dog_ambush", "boss_defeat"], "death record IDs accumulate without duplicates")
 	asserts.equal(int(second.run_count), 2, "query input accumulation preserves run count behavior")
+
+func _assert_malformed_previous_run_ids_are_not_persisted(asserts) -> void:
+	var result := RunEndProcessor.new().apply_run_end(_empty_meta(), {
+		"past_choice_ids": ["valid_choice", "", "Display Name", 42],
+		"choice_history": ["another_choice", null],
+		"reached_place_ids": ["valid_place", "mountain-region"],
+		"reached_biome_ids": ["another_place", {}],
+		"current_biome_id": 123,
+		"death_record_ids": ["valid_death", "죽음"],
+		"death_record_id": "Invalid Death"
+	})
+	asserts.equal(result.past_choice_ids, ["valid_choice", "another_choice"], "run end persists only stable past-choice IDs")
+	asserts.equal(result.reached_place_ids, ["valid_place", "another_place"], "run end persists only stable reached-place IDs")
+	asserts.equal(result.death_record_ids, ["valid_death"], "run end persists only stable death-record IDs")
 
 func _empty_meta() -> Dictionary:
 	return {

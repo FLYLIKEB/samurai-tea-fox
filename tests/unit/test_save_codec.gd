@@ -60,6 +60,12 @@ func run(asserts) -> void:
 	malformed_meta.run_count = 1
 	malformed_meta.death_record_ids = "wild_dog_ambush"
 	asserts.false_value(SaveCodec.decode_meta({"schema_version": 1, "kind": "meta", "meta": malformed_meta}).ok, "meta save rejects malformed query input types")
+	for field in ["past_choice_ids", "reached_place_ids", "death_record_ids"]:
+		var malformed_ids := MetaState.new().to_dictionary()
+		malformed_ids.run_count = 1
+		malformed_ids[field] = ["valid_id", "Display Name", 42, ""]
+		asserts.false_value(SaveCodec.decode_meta({"schema_version": 1, "kind": "meta", "meta": malformed_ids}).ok, "meta save rejects malformed stable IDs in '%s'" % field)
+		asserts.false_value(SaveCodec.validate_meta_snapshot(malformed_ids).ok, "meta snapshot validation rejects malformed stable IDs in '%s'" % field)
 	asserts.false_value(SaveCodec.decode_run({"schema_version": SaveCodec.CURRENT_SCHEMA_VERSION, "kind": "run", "run": {"seed": 1, "tail_state": {"stage": 3, "tail_count": 2, "path_flags": [], "transition_history": []}}}).ok, "run save rejects malformed tail state")
 	var invalid_history_flag := TailState.default_dictionary()
 	invalid_history_flag.transition_history[0].path_flags = ["morality_score"]
