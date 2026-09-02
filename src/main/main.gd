@@ -10,6 +10,7 @@ const EquipmentModel = preload("res://src/inventory/equipment_model.gd")
 const InventoryModel = preload("res://src/inventory/inventory_model.gd")
 const MovementCommandSelector = preload("res://src/core/commands/movement_command_selector.gd")
 const MemoryTeaCutsceneRuntime = preload("res://src/narrative/memory_tea_cutscene_runtime.gd")
+const EndingRouteRuntime = preload("res://src/meta/ending_route_runtime.gd")
 const PlayerMovementState = preload("res://src/player/player_movement_state.gd")
 const TeaService = preload("res://src/tea/tea_service.gd")
 const BiomeProgressionState = preload("res://src/world/biome/biome_progression_state.gd")
@@ -48,6 +49,7 @@ var sen_rikyu_phase_one_runtime
 var sen_rikyu_phase_two_runtime
 var sen_rikyu_phase_three_runtime
 var memory_tea_cutscene_runtime
+var ending_route_runtime
 var acquisition_service
 var dungeon_runtime
 var run_lifecycle_service
@@ -379,6 +381,10 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 		if not phase_three_result.ok:
 			return phase_three_result
 		sen_rikyu_phase_three_runtime = phase_three_result.runtime
+	ending_route_runtime = null
+	var ending_result: Dictionary = EndingRouteRuntime.from_catalog(loaded_catalog)
+	if ending_result.ok:
+		ending_route_runtime = ending_result.runtime
 	tea_service.drink_completed.connect(_on_tea_drink_completed)
 	memory_tea_cutscene_runtime = MemoryTeaCutsceneRuntime.new()
 	var memory_runtime_result: Dictionary = memory_tea_cutscene_runtime.configure(loaded_catalog.data_version)
@@ -436,6 +442,29 @@ func complete_sen_rikyu_phase_three(ability_id: String) -> Dictionary:
 	if run_state == null:
 		run_state = RunState.new()
 	return sen_rikyu_phase_three_runtime.complete_with_ability(ability_id, run_state)
+
+func ending_read_model() -> Dictionary:
+	if ending_route_runtime == null:
+		return {"ok": false, "reason": "missing_ending_route_runtime", "error": "Ending route runtime is not configured."}
+	if run_state == null:
+		run_state = RunState.new()
+	return ending_route_runtime.evaluate(run_state)
+
+func record_ending_to_meta(meta_state, read_model := {}) -> Dictionary:
+	if ending_route_runtime == null:
+		return {"ok": false, "reason": "missing_ending_route_runtime", "error": "Ending route runtime is not configured."}
+	var model := read_model
+	if model.is_empty():
+		var evaluated := ending_read_model()
+		if not evaluated.ok:
+			return evaluated
+		model = evaluated.read_model
+	return ending_route_runtime.record_to_meta(model, meta_state)
+
+func request_new_run_after_credits(read_model: Dictionary) -> Dictionary:
+	if ending_route_runtime == null:
+		return {"ok": false, "reason": "missing_ending_route_runtime", "error": "Ending route runtime is not configured."}
+	return ending_route_runtime.request_new_run_after_credits(read_model)
 
 func _sen_rikyu_phase_two_accepts_command(command) -> bool:
 	return sen_rikyu_phase_two_runtime != null \
