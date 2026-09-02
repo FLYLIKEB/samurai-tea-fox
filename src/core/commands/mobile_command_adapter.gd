@@ -3,7 +3,7 @@ class_name MobileCommandAdapter
 
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 
-func command_for_button(button_id: String, direction := Vector2i.ZERO, slot := 0):
+func command_for_button(button_id: String, direction := Vector2i.ZERO, slot := 0, payload := {}):
 	match button_id:
 		"move":
 			return GameCommand.new(GameCommand.Type.MOVE, direction)
@@ -21,6 +21,20 @@ func command_for_button(button_id: String, direction := Vector2i.ZERO, slot := 0
 			return GameCommand.new(GameCommand.Type.INTERACT)
 		"open_inventory":
 			return GameCommand.new(GameCommand.Type.OPEN_INVENTORY)
+		"inventory_filter":
+			return GameCommand.new(GameCommand.Type.INVENTORY_SET_FILTER, Vector2i.ZERO, -1, payload)
+		"inventory_sort":
+			return GameCommand.new(GameCommand.Type.INVENTORY_SORT)
+		"inventory_select":
+			return GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, slot, {"slot_index": slot})
+		"inventory_next":
+			return GameCommand.new(GameCommand.Type.INVENTORY_NAVIGATE, Vector2i.RIGHT)
+		"inventory_previous":
+			return GameCommand.new(GameCommand.Type.INVENTORY_NAVIGATE, Vector2i.LEFT)
+		"equip_inventory_slot":
+			return GameCommand.new(GameCommand.Type.EQUIP_INVENTORY_SLOT, Vector2i.ZERO, slot, {"slot_index": slot})
+		"use_inventory_slot":
+			return GameCommand.new(GameCommand.Type.USE_INVENTORY_SLOT, Vector2i.ZERO, slot, {"slot_index": slot})
 		"open_crafting":
 			return GameCommand.new(GameCommand.Type.OPEN_CRAFTING)
 		"open_facilities":

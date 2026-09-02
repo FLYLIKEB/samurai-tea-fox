@@ -18,7 +18,7 @@ func movement_command_from_strengths(left: float, right: float, up: float, down:
 	)
 	return GameCommand.new(GameCommand.Type.MOVE, direction)
 
-func command_for_action(action: String, direction := Vector2i.ZERO, slot := 0):
+func command_for_action(action: String, direction := Vector2i.ZERO, slot := 0, payload := {}):
 	match action:
 		"attack":
 			return GameCommand.new(GameCommand.Type.ATTACK, direction)
@@ -34,6 +34,30 @@ func command_for_action(action: String, direction := Vector2i.ZERO, slot := 0):
 			return GameCommand.new(GameCommand.Type.INTERACT)
 		"open_inventory":
 			return GameCommand.new(GameCommand.Type.OPEN_INVENTORY)
+		"inventory_filter":
+			return GameCommand.new(GameCommand.Type.INVENTORY_SET_FILTER, Vector2i.ZERO, -1, payload)
+		"inventory_sort":
+			return GameCommand.new(GameCommand.Type.INVENTORY_SORT)
+		"inventory_select":
+			return GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, slot, {"slot_index": slot})
+		"inventory_next":
+			return GameCommand.new(GameCommand.Type.INVENTORY_NAVIGATE, Vector2i.RIGHT)
+		"inventory_previous":
+			return GameCommand.new(GameCommand.Type.INVENTORY_NAVIGATE, Vector2i.LEFT)
+		"inventory_use_selected":
+			return GameCommand.new(GameCommand.Type.USE_INVENTORY_SLOT, Vector2i.ZERO, slot, {"slot_index": slot})
+		"inventory_equip_selected":
+			return GameCommand.new(GameCommand.Type.EQUIP_INVENTORY_SLOT, Vector2i.ZERO, slot, {"slot_index": slot})
+		"inventory_filter_all":
+			return GameCommand.new(GameCommand.Type.INVENTORY_SET_FILTER, Vector2i.ZERO, -1, {"kind": "all"})
+		"inventory_filter_consumable":
+			return GameCommand.new(GameCommand.Type.INVENTORY_SET_FILTER, Vector2i.ZERO, -1, {"kind": "소모품"})
+		"inventory_filter_equipment":
+			return GameCommand.new(GameCommand.Type.INVENTORY_SET_FILTER, Vector2i.ZERO, -1, {"kind": "무기"})
+		"equip_inventory_slot":
+			return GameCommand.new(GameCommand.Type.EQUIP_INVENTORY_SLOT, Vector2i.ZERO, slot, {"slot_index": slot})
+		"use_inventory_slot":
+			return GameCommand.new(GameCommand.Type.USE_INVENTORY_SLOT, Vector2i.ZERO, slot, {"slot_index": slot})
 		"open_crafting":
 			return GameCommand.new(GameCommand.Type.OPEN_CRAFTING)
 		"open_facilities":
