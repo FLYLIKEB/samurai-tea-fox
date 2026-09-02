@@ -6,6 +6,7 @@ const DataSchemaValidator = preload("res://src/core/data/data_schema_validator.g
 const FILES := {
 	"balance": "balance.json",
 	"biomes": "biomes.json",
+	"dungeons": "dungeons.json",
 	"teas": "teas.json",
 	"items": "items.json",
 	"recipes": "recipes.json",
@@ -15,7 +16,8 @@ const FILES := {
 	"meta_unlocks": "meta_unlocks.json",
 	"events": "events.json",
 	"choices": "choices.json",
-	"shops": "shops.json"
+	"shops": "shops.json",
+	"bosses": "bosses.json"
 }
 
 var data_version := ""

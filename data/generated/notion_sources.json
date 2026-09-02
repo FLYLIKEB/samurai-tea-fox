@@ -4,6 +4,7 @@
   "sources": {
     "balance": "collection://dd8249a2-14e5-4a96-b26d-77ce33fdc43c",
     "biomes": "collection://d4b40007-096f-4528-8840-53de80bda0dd",
+    "dungeons": "collection://cd97553c-f51f-44fe-9604-c257cc9d9342",
     "teas": "collection://58c6edaf-0851-48da-a412-541be09d7dcb",
     "items": "collection://cc4817d1-bb64-45b0-9193-b3c742327064",
     "recipes": "collection://a755c8a9-1e5f-4f04-9ede-4ee63caa0663",
