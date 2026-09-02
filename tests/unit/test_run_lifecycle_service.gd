@@ -45,6 +45,8 @@ func run(asserts) -> void:
 	_cleanup()
 	_assert_invalidation_high_water_survives_lower_epoch_and_restart(asserts)
 	_cleanup()
+	_assert_stale_invalidation_retry_preserves_newer_fresh_run(asserts)
+	_cleanup()
 	_assert_invalidation_failures_do_not_expose_fresh_run_and_retry(asserts)
 	_cleanup()
 
@@ -153,6 +155,30 @@ func _assert_invalidation_high_water_survives_lower_epoch_and_restart(asserts) -
 	var rollback := SaveStore.new(RUN_PATH, META_PATH).load_run()
 	asserts.false_value(rollback.ok, "restart still rejects epoch below preserved high-water")
 	asserts.equal(rollback.reason, "stale_run_save", "preserved high-water rejects restored stale bytes")
+
+func _assert_stale_invalidation_retry_preserves_newer_fresh_run(asserts) -> void:
+	var old_run := _run_state(54, 0)
+	var initial_store := SaveStore.new(RUN_PATH, META_PATH)
+	asserts.true_value(initial_store.save_run(old_run).ok, "old epoch is persisted before confirmed invalidation")
+	var invalidated: Dictionary = initial_store.invalidate_run(old_run)
+	asserts.true_value(invalidated.ok, "old epoch invalidation succeeds")
+	var fresh_run := _run_state(55, 1)
+	asserts.true_value(initial_store.save_run(fresh_run).ok, "newer fresh epoch becomes resumable")
+
+	var restarted_retry_store := SaveStore.new(RUN_PATH, META_PATH)
+	var stale_retry: Dictionary = restarted_retry_store.invalidate_run(old_run)
+	asserts.true_value(stale_retry.ok, "stale invalidation retry is an idempotent success")
+	asserts.equal(stale_retry.get("state", ""), "stale_invalidation_ignored", "stale retry reports that the newer run was preserved")
+	asserts.true_value(bool(stale_retry.get("preserved_newer_run", false)), "stale retry explicitly preserves the newer on-disk run")
+	asserts.false_value(bool(stale_retry.get("run_removed", true)), "stale retry reports that no run file was removed")
+	asserts.equal(int(stale_retry.get("current_lifecycle_epoch", -1)), 1, "stale retry reports the preserved fresh epoch")
+
+	var restarted_loader := SaveStore.new(RUN_PATH, META_PATH)
+	var loaded_fresh: Dictionary = restarted_loader.load_run()
+	asserts.true_value(loaded_fresh.ok, "process restart still loads the newer fresh run after stale retry")
+	if loaded_fresh.ok:
+		asserts.equal(loaded_fresh.state.lifecycle_epoch, 1, "stale retry does not delete fresh lifecycle epoch")
+		asserts.equal(loaded_fresh.state.seed, 55, "stale retry preserves the exact fresh run payload")
 
 func _assert_invalidation_failures_do_not_expose_fresh_run_and_retry(asserts) -> void:
 	var old_run := _run_state(61, 0)

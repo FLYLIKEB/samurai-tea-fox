@@ -88,11 +88,35 @@ func invalidate_run(run_state = null) -> Dictionary:
 		var write_result := _write_envelope(_invalidation_path(), marker)
 		if not write_result.ok:
 			return write_result
+	var run_removed := false
 	if FileAccess.file_exists(run_path):
+		var current_run_result := _read_envelope(run_path)
+		if not current_run_result.ok:
+			return current_run_result
+		var current_run := SaveCodec.decode_run(current_run_result.envelope)
+		if not current_run.ok:
+			return current_run
+		var current_epoch := int(current_run.state.get("lifecycle_epoch", 0))
+		if current_epoch > invalidated_epoch:
+			return {
+				"ok": true,
+				"state": "stale_invalidation_ignored",
+				"invalidated_lifecycle_epoch": invalidated_epoch,
+				"current_lifecycle_epoch": current_epoch,
+				"run_removed": false,
+				"preserved_newer_run": true
+			}
 		var remove_error := _remove(run_path)
 		if remove_error != OK:
 			return _failure("Could not remove invalidated run save '%s': %s." % [run_path, error_string(remove_error)], "remove_failed")
-	return {"ok": true, "invalidated_lifecycle_epoch": invalidated_epoch}
+		run_removed = true
+	return {
+		"ok": true,
+		"state": "run_invalidated",
+		"invalidated_lifecycle_epoch": invalidated_epoch,
+		"run_removed": run_removed,
+		"preserved_newer_run": false
+	}
 
 func _write_envelope(path: String, envelope: Dictionary) -> Dictionary:
 	var directory_result := _ensure_parent_directory(path)
