@@ -99,8 +99,7 @@ func _configure_world_for_current_run() -> Dictionary:
 	if not drop_connection.ok:
 		return drop_connection
 	_render_generated_world(generated_world)
-	game_hud.configure(player, generated_world, world_render_result)
-	_connect_hud_commands()
+	_configure_game_hud()
 	return {"ok": true}
 
 func _physics_process(_delta: float) -> void:
@@ -112,10 +111,14 @@ func _physics_process(_delta: float) -> void:
 		submit_desktop_action_command("dodge", desktop_command.direction)
 	if Input.is_action_just_pressed("drink_tea"):
 		submit_desktop_action_command("drink_tea")
+	if Input.is_action_just_pressed("use_consumable"):
+		submit_desktop_action_command("use_consumable")
 	if Input.is_action_just_pressed("cast_ability"):
 		submit_desktop_action_command("cast_ability", desktop_command.direction)
 	if Input.is_action_just_pressed("interact"):
 		submit_desktop_action_command("interact", desktop_command.direction)
+	if Input.is_action_just_pressed("open_inventory"):
+		submit_desktop_action_command("open_inventory")
 
 func _unhandled_input(event) -> void:
 	var handled := false
@@ -142,6 +145,8 @@ func submit_mobile_movement_direction(direction: Vector2i) -> bool:
 	return submit_mobile_movement_command(GameCommand.new(GameCommand.Type.MOVE, direction))
 
 func submit_mobile_action_command(command) -> bool:
+	if command is GameCommand and command.type == GameCommand.Type.MOVE:
+		return submit_mobile_movement_command(command)
 	return submit_action_command(command)
 
 func submit_desktop_action_command(action: String, direction := Vector2i.ZERO, slot := 0) -> bool:
@@ -195,6 +200,8 @@ func submit_action_command(command) -> bool:
 			return acquisition_service != null and bool(acquisition_service.handle_command(command).ok)
 		GameCommand.Type.DRINK_TEA:
 			return _handle_tea_command(command)
+		GameCommand.Type.OPEN_INVENTORY:
+			return false
 		_:
 			return player != null and player.submit_command(command)
 
@@ -229,6 +236,7 @@ func restore_run_state(state) -> Dictionary:
 		run_state.inventory = inventory.to_snapshot()
 	if acquisition_service != null:
 		run_state.acquisitions = acquisition_service.to_snapshot()
+	_configure_game_hud()
 	return {"ok": true}
 
 func _connect_hud_commands() -> void:
@@ -569,6 +577,22 @@ func _render_generated_world(world: Dictionary) -> void:
 	)
 	if not world_render_result.ok:
 		push_error(world_render_result.error)
+
+func _on_hud_mobile_command_issued(command) -> void:
+	submit_mobile_action_command(command)
+
+func _configure_game_hud() -> void:
+	if game_hud == null:
+		return
+	_connect_hud_commands()
+	var hud_callback := Callable(self, "_on_hud_mobile_command_issued")
+	if game_hud.has_signal("mobile_command_issued") and not game_hud.is_connected("mobile_command_issued", hud_callback):
+		game_hud.connect("mobile_command_issued", hud_callback)
+	game_hud.configure(player, generated_world, world_render_result, {
+		"catalog": catalog,
+		"inventory": inventory,
+		"tea_service": tea_service
+	})
 
 func _centered_world_origin(renderer_input: Dictionary) -> Vector2:
 	var bounds: Dictionary = renderer_input.get("bounds", {})

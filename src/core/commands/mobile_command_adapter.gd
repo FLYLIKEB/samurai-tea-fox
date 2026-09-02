@@ -13,9 +13,13 @@ func command_for_button(button_id: String, direction := Vector2i.ZERO, slot := 0
 			return GameCommand.new(GameCommand.Type.DODGE, direction)
 		"drink_tea":
 			return GameCommand.new(GameCommand.Type.DRINK_TEA, Vector2i.ZERO, slot)
+		"use_consumable":
+			return GameCommand.new(GameCommand.Type.USE_CONSUMABLE, Vector2i.ZERO, slot)
 		"cast_ability":
 			return GameCommand.new(GameCommand.Type.CAST_ABILITY, direction, slot)
 		"interact":
 			return GameCommand.new(GameCommand.Type.INTERACT)
+		"open_inventory":
+			return GameCommand.new(GameCommand.Type.OPEN_INVENTORY)
 		_:
 			return null

@@ -24,7 +24,14 @@ func run(asserts) -> void:
 	asserts.equal(tea.type, GameCommand.Type.DRINK_TEA, "mobile tea maps to shared command")
 	asserts.equal(tea.slot, 1, "mobile tea preserves slot")
 
-	for action in ["attack", "dodge", "drink_tea", "cast_ability", "interact"]:
+	var consumable = mobile.command_for_button("use_consumable", Vector2i.ZERO, 3)
+	asserts.equal(consumable.type, GameCommand.Type.USE_CONSUMABLE, "mobile consumable maps to shared command")
+	asserts.equal(consumable.slot, 3, "mobile consumable preserves slot")
+
+	var inventory = mobile.command_for_button("open_inventory")
+	asserts.equal(inventory.type, GameCommand.Type.OPEN_INVENTORY, "mobile inventory maps to shared command")
+
+	for action in ["attack", "dodge", "drink_tea", "use_consumable", "cast_ability", "interact", "open_inventory"]:
 		var desktop_command = desktop.command_for_action(action, Vector2i.LEFT, 2)
 		var mobile_command = mobile.command_for_button(action, Vector2i.LEFT, 2)
 		asserts.equal(desktop_command.type, mobile_command.type, "%s type matches across platforms" % action)
