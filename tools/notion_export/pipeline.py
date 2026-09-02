@@ -189,6 +189,8 @@ class ExportPipeline:
             raise ExportValidationError(f"meta_unlocks item {unlock_id}: condition_target must be non-empty")
         if not isinstance(row.get("reward_target"), str) or not row["reward_target"]:
             raise ExportValidationError(f"meta_unlocks item {unlock_id}: reward_target must be non-empty")
+        if row.get("condition_operator") not in {"equals", "at_least"}:
+            raise ExportValidationError(f"meta_unlocks item {unlock_id}: invalid condition_operator {row.get('condition_operator')}")
         threshold = row.get("threshold", 1)
         if not isinstance(threshold, int) or isinstance(threshold, bool) or threshold < 0:
             raise ExportValidationError(f"meta_unlocks item {unlock_id}: threshold must be a non-negative integer")

@@ -123,17 +123,19 @@ func _condition_passes(condition: Dictionary, meta_state: Dictionary, events: Ar
 	var condition_type := String(condition.type)
 	if not CONDITION_TYPES.has(condition_type):
 		return _failure("unknown_condition_type", "Unknown meta unlock condition type '%s'." % condition_type)
+	if not ["equals", "at_least"].has(String(condition.operator)):
+		return _failure("unknown_condition_operator", "Unknown meta unlock condition operator '%s'." % condition.operator)
 	match condition_type:
 		CONDITION_EVENT_SEEN:
-			return {"ok": true, "passed": _has_event(events, condition.target)}
+			return {"ok": true, "passed": _compare(1 if _has_event(events, condition.target) else 0, condition)}
 		CONDITION_CUMULATIVE_EVENT_COUNT_AT_LEAST:
-			return {"ok": true, "passed": int(meta_state.meta_unlock_counters.get(_counter_key(condition.target), 0)) >= int(condition.threshold)}
+			return {"ok": true, "passed": _compare(int(meta_state.meta_unlock_counters.get(_counter_key(condition.target), 0)), condition)}
 		CONDITION_RUN_COUNT_AT_LEAST:
-			return {"ok": true, "passed": int(meta_state.get("run_count", 0)) >= int(condition.threshold)}
+			return {"ok": true, "passed": _compare(int(meta_state.get("run_count", 0)), condition)}
 		CONDITION_BEST_BIOME_ORDER_AT_LEAST:
-			return {"ok": true, "passed": int(meta_state.get("best_reached_biome_order", 0)) >= int(condition.threshold)}
+			return {"ok": true, "passed": _compare(int(meta_state.get("best_reached_biome_order", 0)), condition)}
 		CONDITION_VALUE_AT_LEAST:
-			return {"ok": true, "passed": _max_event_value(events, condition.target) >= int(condition.threshold)}
+			return {"ok": true, "passed": _compare(_max_event_value(events, condition.target), condition)}
 	return {"ok": true, "passed": false}
 
 func _apply_reward(meta_state: Dictionary, definition_id: String, reward: Dictionary) -> Dictionary:
@@ -155,7 +157,7 @@ func _apply_reward(meta_state: Dictionary, definition_id: String, reward: Dictio
 
 func _events_from_run_summary(run_summary: Dictionary) -> Array:
 	var events: Array = []
-	for key in ["events", "run_result_events", "discovery_events", "choice_events"]:
+	for key in ["events", "run_result_events", "discovery_events", "choice_events", "meta_events"]:
 		var entries = run_summary.get(key, [])
 		if typeof(entries) != TYPE_ARRAY:
 			continue
@@ -207,12 +209,22 @@ func _max_event_value(events: Array, expected_key: String) -> int:
 
 func _event_key(event: Dictionary) -> String:
 	var event_type := String(event.get("type", ""))
-	var target := String(event.get("target", event.get("id", "")))
+	var target := String(event.get("target", event.get("target_id", event.get("record_id", event.get("id", "")))))
+	if event_type == "choice_meta_record_requested":
+		event_type = "choice"
+		target = String(event.get("choice_id", target))
+	elif event_type == "discovery":
+		event_type = "discovered_record"
 	if event_type.is_empty():
 		return target
 	if target.is_empty():
 		return event_type
 	return "%s:%s" % [event_type, target]
+
+func _compare(actual: int, condition: Dictionary) -> bool:
+	if String(condition.operator) == "equals":
+		return actual == int(condition.threshold)
+	return actual >= int(condition.threshold)
 
 func _counter_key(event_key: String) -> String:
 	return event_key

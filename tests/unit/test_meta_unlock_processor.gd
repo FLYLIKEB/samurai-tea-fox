@@ -8,7 +8,10 @@ func run(asserts) -> void:
 	_assert_generated_unlocks_evaluate_from_data(asserts)
 	_assert_duplicate_unlocks_are_prevented(asserts)
 	_assert_cumulative_conditions_use_meta_counters(asserts)
+	_assert_standard_discovery_and_choice_events_are_consumed(asserts)
+	_assert_highest_record_and_repeat_count_conditions(asserts)
 	_assert_unknown_condition_type_fails(asserts)
+	_assert_unknown_condition_operator_fails(asserts)
 	_assert_unknown_reward_type_fails(asserts)
 	_assert_meta_save_round_trip_preserves_unlock_state(asserts)
 
@@ -59,6 +62,31 @@ func _assert_cumulative_conditions_use_meta_counters(asserts) -> void:
 	asserts.equal(third.unlocked.size(), 1, "third cumulative event unlocks at threshold")
 	asserts.equal(int(third.meta_state.meta_unlock_counters["discovered_record:memory_tea"]), 3, "meta counter persists cumulative progress")
 
+func _assert_standard_discovery_and_choice_events_are_consumed(asserts) -> void:
+	var definitions := [
+		_definition("memory_discovery", "event_seen", "discovered_record:memory_tea", "discovered_record", "memory_discovery"),
+		_definition("daimyo_choice", "event_seen", "choice:daimyo_defeat", "unlock_flag", "daimyo_choice_reward")
+	]
+	var result: Dictionary = RunEndProcessor.new().apply_run_end_with_unlocks(_empty_meta(), {
+		"discovery_events": [{"type": "discovery", "record_id": "memory_tea"}],
+		"choice_events": [{"type": "choice_meta_record_requested", "choice_id": "daimyo_defeat"}]
+	}, definitions)
+	asserts.true_value(result.ok, "standard discovery and choice events evaluate")
+	asserts.true_value(result.meta_state.discovered_records.has("memory_discovery"), "discovery event grants its data-driven record")
+	asserts.true_value(result.meta_state.unlocked_meta_flags.has("daimyo_choice_reward"), "choice event grants its data-driven unlock flag")
+
+func _assert_highest_record_and_repeat_count_conditions(asserts) -> void:
+	var definitions := [
+		_definition("second_run", "run_count_at_least", "run_count", "dialogue_memory_flag", "second_run_dialogue", 2),
+		_definition("third_biome", "best_biome_order_at_least", "best_reached_biome_order", "discovered_record", "third_biome_record", 3)
+	]
+	var first: Dictionary = RunEndProcessor.new().apply_run_end_with_unlocks(_empty_meta(), {"best_reached_biome_order": 3}, definitions)
+	asserts.equal(first.meta_state.best_reached_biome_order, 3, "first run stores highest reached biome order")
+	asserts.false_value(first.meta_state.dialogue_memory_flags.has("second_run_dialogue"), "repeat reward stays locked before run threshold")
+	var second: Dictionary = RunEndProcessor.new().apply_run_end_with_unlocks(first.meta_state, {"best_reached_biome_order": 1}, definitions)
+	asserts.equal(second.meta_state.best_reached_biome_order, 3, "lower later progress cannot reduce highest reached record")
+	asserts.true_value(second.meta_state.dialogue_memory_flags.has("second_run_dialogue"), "repeat reward unlocks at run count threshold")
+
 func _assert_unknown_condition_type_fails(asserts) -> void:
 	var result: Dictionary = RunEndProcessor.new().apply_run_end_with_unlocks(_empty_meta(), {}, [
 		_definition("broken_condition", "unknown_condition", "anything", "unlock_flag", "broken_reward")
@@ -66,6 +94,13 @@ func _assert_unknown_condition_type_fails(asserts) -> void:
 	asserts.false_value(result.ok, "unknown meta unlock condition type is rejected")
 	asserts.equal(result.reason, "unknown_condition_type", "unknown condition failure returns stable reason")
 	asserts.equal(result.definition_id, "broken_condition", "unknown condition failure names definition id")
+
+func _assert_unknown_condition_operator_fails(asserts) -> void:
+	var definition := _definition("broken_operator", "event_seen", "fixture:seen", "unlock_flag", "broken_reward")
+	definition.condition_operator = "approximately"
+	var result: Dictionary = RunEndProcessor.new().apply_run_end_with_unlocks(_empty_meta(), {"events": [{"type": "fixture", "target": "seen"}]}, [definition])
+	asserts.false_value(result.ok, "unknown meta unlock condition operator is rejected")
+	asserts.equal(result.reason, "unknown_condition_operator", "unknown operator failure returns stable reason")
 
 func _assert_unknown_reward_type_fails(asserts) -> void:
 	var result: Dictionary = RunEndProcessor.new().apply_run_end_with_unlocks(_empty_meta(), {"events": [{"type": "fixture", "target": "seen"}]}, [{

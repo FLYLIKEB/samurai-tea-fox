@@ -144,6 +144,8 @@ func _validate_meta_unlock_contract(item: Dictionary) -> Dictionary:
 		return {"ok": false, "error": "meta_unlocks item '%s' condition_target must be non-empty." % item.id}
 	if String(item.get("reward_target", "")).is_empty():
 		return {"ok": false, "error": "meta_unlocks item '%s' reward_target must be non-empty." % item.id}
+	if not ["equals", "at_least"].has(String(item.get("condition_operator", ""))):
+		return {"ok": false, "error": "meta_unlocks item '%s' has unknown condition_operator '%s'." % [item.id, item.get("condition_operator", "")]}
 	var threshold = item.get("threshold", 1)
 	if typeof(threshold) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(threshold)) or float(threshold) != floor(float(threshold)) or int(threshold) < 0:
 		return {"ok": false, "error": "meta_unlocks item '%s' threshold must be a non-negative integer." % item.id}
