@@ -1,6 +1,7 @@
 extends CharacterBody2D
 class_name CombatDummy
 
+const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
 const MonsterSpawnFactory = preload("res://src/enemy/monster_spawn_factory.gd")
 const TILE_SIZE_PIXELS := 32.0
 
@@ -11,6 +12,7 @@ signal defeat_event(event: Dictionary)
 signal drop_requested(event: Dictionary)
 
 @export var monster_id := "road_bandit"
+@export var sprite_asset_id := "wasteland_daimyo_front_idle"
 @export var automatic_attacks := true
 @export_range(1.0, 128.0, 1.0) var attack_range_pixels := 40.0
 
@@ -22,7 +24,13 @@ var _attack_cooldown_remaining := 0.0
 var _attack_sequence := 0
 var _pending_knockback := Vector2.ZERO
 
+@onready var sprite: Sprite2D = $Sprite2D
+@onready var body: Polygon2D = $Body
+@onready var headband: Polygon2D = $Headband
 @onready var health_fill: Polygon2D = $HealthFill
+
+func _ready() -> void:
+	_apply_sprite()
 
 func configure_combat(catalog, attack_target = null, config = null) -> Dictionary:
 	var result: Dictionary = MonsterSpawnFactory.new(catalog).spawn(monster_id, {"combat_id": "%s_%d" % [monster_id, get_instance_id()]})
@@ -39,6 +47,9 @@ func configure_combat(catalog, attack_target = null, config = null) -> Dictionar
 	target = attack_target
 	_update_health_bar()
 	return {"ok": true}
+
+func has_runtime_sprite() -> bool:
+	return sprite != null and sprite.texture != null
 
 func _physics_process(delta: float) -> void:
 	if _pending_knockback != Vector2.ZERO:
@@ -92,6 +103,28 @@ func _update_health_bar() -> void:
 	var ratio := float(combatant.hp) / float(combatant.hp_max)
 	health_fill.scale.x = ratio
 	health_fill.position.x = -7.0 + 7.0 * ratio
+
+func _apply_sprite() -> void:
+	if sprite == null or sprite_asset_id.is_empty():
+		return
+	var asset_catalog := AssetCatalog.new()
+	var manifest_result := asset_catalog.load_manifest()
+	if not manifest_result.ok:
+		push_warning("Combat dummy sprite manifest failed: %s" % manifest_result.get("error", "unknown error"))
+		return
+	var texture := asset_catalog.load_texture(sprite_asset_id)
+	if texture == null:
+		push_warning("Combat dummy sprite missing: %s" % sprite_asset_id)
+		return
+	sprite.texture = texture
+	sprite.z_index = 1
+	_hide_placeholder_shapes()
+
+func _hide_placeholder_shapes() -> void:
+	if body != null:
+		body.visible = false
+	if headband != null:
+		headband.visible = false
 
 func _on_monster_defeated(event: Dictionary) -> void:
 	defeated.emit()

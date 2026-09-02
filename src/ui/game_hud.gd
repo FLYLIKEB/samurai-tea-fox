@@ -34,13 +34,14 @@ func _build() -> void:
 	var root := Control.new()
 	root.name = "Root"
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ignore_mouse(root)
 	add_child(root)
 
 	var top_left := _panel(Vector2(16, 16), Vector2(250, 132))
 	top_left.name = "StatusPanel"
 	root.add_child(top_left)
 	var status_rows := VBoxContainer.new()
+	_ignore_mouse(status_rows)
 	status_rows.add_theme_constant_override("separation", 6)
 	top_left.add_child(status_rows)
 	_labels.hp = _add_icon_row(status_rows, ICON_HP, "HP")
@@ -52,6 +53,7 @@ func _build() -> void:
 	top_right.name = "MapPanel"
 	root.add_child(top_right)
 	var map_rows := VBoxContainer.new()
+	_ignore_mouse(map_rows)
 	map_rows.add_theme_constant_override("separation", 8)
 	top_right.add_child(map_rows)
 	_labels.map_title = _add_icon_row(map_rows, ICON_MAP, "초록 평원")
@@ -62,12 +64,16 @@ func _build() -> void:
 	bottom.name = "QuickSlotPanel"
 	root.add_child(bottom)
 	var quick_rows := HBoxContainer.new()
+	_ignore_mouse(quick_rows)
 	quick_rows.add_theme_constant_override("separation", 10)
 	bottom.add_child(quick_rows)
 	_add_icon_row(quick_rows, ICON_KOKORO, "찻잎")
 	_add_icon_row(quick_rows, ICON_KI, "차")
 	_add_icon_row(quick_rows, "res://assets/ui/icons/scroll_32.png", "기록")
 	_add_icon_row(quick_rows, "res://assets/ui/icons/key_32.png", "상호작용")
+
+func _ignore_mouse(control: Control) -> void:
+	control.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func _update() -> void:
 	if not _built:
@@ -107,7 +113,7 @@ func _panel(offset: Vector2, size: Vector2, from_right := false, from_bottom := 
 	panel.offset_top = offset.y
 	panel.offset_right = offset.x + size.x
 	panel.offset_bottom = offset.y + size.y
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ignore_mouse(panel)
 	var style := StyleBoxFlat.new()
 	style.bg_color = Color(0.055, 0.049, 0.038, 0.86)
 	style.border_color = Color(0.73, 0.55, 0.31, 0.95)
@@ -124,9 +130,11 @@ func _panel(offset: Vector2, size: Vector2, from_right := false, from_bottom := 
 
 func _add_icon_row(parent: Container, icon_path: String, text: String) -> Label:
 	var row := HBoxContainer.new()
+	_ignore_mouse(row)
 	row.add_theme_constant_override("separation", 8)
 	parent.add_child(row)
 	var icon := TextureRect.new()
+	_ignore_mouse(icon)
 	icon.custom_minimum_size = Vector2(28, 28)
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	icon.texture = _load_texture(icon_path)
@@ -137,6 +145,7 @@ func _add_icon_row(parent: Container, icon_path: String, text: String) -> Label:
 
 func _label(text: String) -> Label:
 	var label := Label.new()
+	_ignore_mouse(label)
 	label.text = text
 	label.add_theme_font_size_override("font_size", 18)
 	label.add_theme_color_override("font_color", Color(0.93, 0.83, 0.63, 1.0))

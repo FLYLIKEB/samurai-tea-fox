@@ -13,5 +13,12 @@ func run(asserts) -> void:
 		"stable asset ID resolves to the promoted runtime path"
 	)
 	asserts.true_value(catalog.load_texture("fox_samurai_front_idle") != null, "registered PNG loads as Texture2D")
+	asserts.true_value(catalog.has("wasteland_daimyo_front_idle"), "enemy sprite stable asset ID is registered")
+	asserts.equal(
+		catalog.path_for("wasteland_daimyo_front_idle"),
+		"res://assets/sprites/characters/bosses/chr-2-wasteland-daimyo/wasteland_daimyo_front_32x32.png",
+		"enemy sprite stable asset ID resolves to the promoted runtime path"
+	)
+	asserts.true_value(catalog.load_texture("wasteland_daimyo_front_idle") != null, "registered enemy PNG loads as Texture2D")
 	asserts.equal(catalog.path_for("missing_asset"), "", "unknown stable asset ID has no path")
 	asserts.true_value(catalog.load_texture("missing_asset") == null, "unknown stable asset ID has no texture")
