@@ -1,4 +1,5 @@
 import configparser
+import json
 from pathlib import Path
 import unittest
 
@@ -62,6 +63,23 @@ class ProjectContractTests(unittest.TestCase):
             source = adapter.read_text(encoding="utf-8")
             self.assertIn('res://src/core/commands/game_command.gd', source)
         self.assertTrue(command.is_file())
+
+    def test_boss_export_contract_is_registered(self):
+        schema = json.loads(
+            (ROOT / "data/schemas/export_schema.json").read_text(encoding="utf-8")
+        )
+        bosses = schema["datasets"]["bosses"]
+
+        self.assertEqual(bosses["file"], "bosses.json")
+        self.assertEqual(
+            bosses["relations"],
+            {
+                "biome_id": "biomes",
+                "reward_item_ids": "items",
+                "summon_monster_ids": "monsters",
+            },
+        )
+        self.assertTrue((ROOT / "data/generated/bosses.json").is_file())
 
 
 if __name__ == "__main__":
