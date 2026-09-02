@@ -1,60 +1,102 @@
 {
-  "content_hash": "e2fa80d6d3c7d397c304881de44737a88c6653615e2b6505da2467fcd5bf93aa",
+  "content_hash": "84ea522f41dc77f9953e8bf42a91d9b8720d9c2d67669c4369682bb9d31c4e89",
   "data_version": "notion-2026-09-01",
   "items": [
     {
       "condition": "일반 바이옴에 처음 진입",
+      "condition_event": "event_seen",
+      "condition_operator": "equals",
+      "condition_target": "biome_reached:common_region",
       "condition_type": "바이옴 진입",
       "cumulative": false,
       "id": "common_biome_first_entry",
       "name": "일반 바이옴 최초 진입 기록",
+      "reward_kind": "discovered_record",
+      "reward_quantity": 1,
+      "reward_target": "common_biome_first_entry",
       "reward_type": "정보·기록",
-      "status": "확정"
+      "status": "확정",
+      "threshold": 1
     },
     {
       "condition": "한 런에서 모든 핵심 보스 다구를 모아 최종 다실에 최초 도달",
+      "condition_event": "event_seen",
+      "condition_operator": "equals",
+      "condition_target": "final_tea_room_reached:final_tea_room",
       "condition_type": "최종 다실",
       "cumulative": false,
       "id": "final_tea_room_first_record",
       "name": "최종 다실 최초 도달 기록",
+      "reward_kind": "discovered_record",
+      "reward_quantity": 1,
+      "reward_target": "final_tea_room_first_record",
       "reward_type": "정보·기록",
-      "status": "확정"
+      "status": "확정",
+      "threshold": 1
     },
     {
       "condition": "새 런 시작 후 아버지와 다시 대화",
+      "condition_event": "run_count_at_least",
+      "condition_operator": "at_least",
+      "condition_target": "run_count",
       "condition_type": "반복 횟수",
       "cumulative": true,
       "id": "gumiho_father_loop_dialogue_1",
       "name": "구미호 아버지 반복 대사 I",
+      "reward_kind": "dialogue_memory_flag",
+      "reward_quantity": 1,
+      "reward_target": "gumiho_father_loop_dialogue_1",
       "reward_type": "특수 대사",
-      "status": "확정"
+      "status": "확정",
+      "threshold": 1
     },
     {
       "condition": "기억이 담긴 차를 최초로 마셔 픽셀 컷신 확인",
+      "condition_event": "event_seen",
+      "condition_operator": "equals",
+      "condition_target": "discovered_record:memory_tea",
       "condition_type": "기억 발견",
       "cumulative": true,
       "id": "memory_tea_first_record",
       "name": "기억차 최초 발견 기록",
+      "reward_kind": "discovered_record",
+      "reward_quantity": 1,
+      "reward_target": "memory_tea_first_record",
       "reward_type": "도감",
-      "status": "확정"
+      "status": "확정",
+      "threshold": 1
     },
     {
       "condition": "런 종료 후 센리큐를 다시 만남",
+      "condition_event": "run_count_at_least",
+      "condition_operator": "at_least",
+      "condition_target": "run_count",
       "condition_type": "반복 횟수",
       "cumulative": true,
       "id": "sen_rikyu_reunion_dialogue_1",
       "name": "센리큐 재회 대사 I",
+      "reward_kind": "dialogue_memory_flag",
+      "reward_quantity": 1,
+      "reward_target": "sen_rikyu_reunion_dialogue_1",
       "reward_type": "특수 대사",
-      "status": "확정"
+      "status": "확정",
+      "threshold": 1
     },
     {
       "condition": "한 런에서 꼬리 3단계에 최초 도달",
+      "condition_event": "value_at_least",
+      "condition_operator": "at_least",
+      "condition_target": "tail_stage_reached:tail_stage",
       "condition_type": "꼬리 단계",
       "cumulative": false,
       "id": "tail_stage_3_record",
       "name": "꼬리 3단계 경험 기록",
+      "reward_kind": "unlock_flag",
+      "reward_quantity": 1,
+      "reward_target": "tail_stage_3_start_choice",
       "reward_type": "시작 선택지",
-      "status": "확정"
+      "status": "확정",
+      "threshold": 3
     }
   ],
   "profile": "confirmed-test",

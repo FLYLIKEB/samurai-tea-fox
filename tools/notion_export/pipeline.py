@@ -169,11 +169,36 @@ class ExportPipeline:
         if dataset_name == "shops":
             self._validate_shop_contract(row)
             return
+        if dataset_name == "meta_unlocks":
+            self._validate_meta_unlock_contract(row)
+            return
         if dataset_name != "items":
             return
         if row.get("type") != "다구" or row.get("equipment_slot") != "다구":
             return
         self._validate_attachment_stage_data(row)
+
+
+    def _validate_meta_unlock_contract(self, row: dict[str, Any]) -> None:
+        unlock_id = row.get("id", "")
+        if row.get("condition_event") not in {"event_seen", "cumulative_event_count_at_least", "run_count_at_least", "best_biome_order_at_least", "value_at_least"}:
+            raise ExportValidationError(f"meta_unlocks item {unlock_id}: invalid condition_event {row.get('condition_event')}")
+        if row.get("reward_kind") not in {"unlock_flag", "dialogue_memory_flag", "discovered_record"}:
+            raise ExportValidationError(f"meta_unlocks item {unlock_id}: invalid reward_kind {row.get('reward_kind')}")
+        if not isinstance(row.get("condition_target"), str) or not row["condition_target"]:
+            raise ExportValidationError(f"meta_unlocks item {unlock_id}: condition_target must be non-empty")
+        if not isinstance(row.get("reward_target"), str) or not row["reward_target"]:
+            raise ExportValidationError(f"meta_unlocks item {unlock_id}: reward_target must be non-empty")
+        if row.get("condition_operator") not in {"equals", "at_least"}:
+            raise ExportValidationError(f"meta_unlocks item {unlock_id}: invalid condition_operator {row.get('condition_operator')}")
+        if not isinstance(row.get("cumulative"), bool):
+            raise ExportValidationError(f"meta_unlocks item {unlock_id}: cumulative must be a boolean")
+        threshold = row.get("threshold", 1)
+        if not isinstance(threshold, int) or isinstance(threshold, bool) or threshold <= 0:
+            raise ExportValidationError(f"meta_unlocks item {unlock_id}: threshold must be a positive integer")
+        reward_quantity = row.get("reward_quantity", 1)
+        if not isinstance(reward_quantity, int) or isinstance(reward_quantity, bool) or reward_quantity <= 0:
+            raise ExportValidationError(f"meta_unlocks item {unlock_id}: reward_quantity must be a positive integer")
 
     def _validate_shop_contract(self, row: dict[str, Any]) -> None:
         shop_id = row.get("id", "")

@@ -40,7 +40,8 @@ const META_FIELD_TYPES := {
 	"best_reached_biome_order": TYPE_INT,
 	"discovered_records": TYPE_ARRAY,
 	"unlocked_meta_flags": TYPE_ARRAY,
-	"dialogue_memory_flags": TYPE_ARRAY
+	"dialogue_memory_flags": TYPE_ARRAY,
+	"meta_unlock_counters": TYPE_DICTIONARY
 }
 
 const REQUIRED_FIELDS := {
