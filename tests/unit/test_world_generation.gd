@@ -40,6 +40,7 @@ func run(asserts) -> void:
 	_assert_resource_accessibility(asserts, a)
 	_assert_mountain_generation(asserts, catalog, generator)
 	_assert_wasteland_generation(asserts, catalog, generator)
+	_assert_snowfield_generation(asserts, catalog, generator)
 
 	var progression_result: Dictionary = BiomeProgressionState.from_catalog(catalog, RunState.new())
 	asserts.true_value(progression_result.ok, "progression state configures for renderer projection")
@@ -193,6 +194,56 @@ func _assert_wasteland_generation(asserts, catalog, generator: WorldGenerator) -
 	var missing_facility := generator.generate(34033, catalog.data_version, missing_facility_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
 	asserts.false_value(missing_facility.ok, "wasteland rules require every canonical facility term")
 	asserts.equal(missing_facility.failure_reason, "missing_biome_facility_terms", "missing wasteland facility term fails explicitly")
+
+func _assert_snowfield_generation(asserts, catalog, generator: WorldGenerator) -> void:
+	var snowfield: Dictionary = catalog.find_by_id("biomes", "snowfield")
+	asserts.false_value(snowfield.is_empty(), "snowfield biome definition exists")
+	var generated := generator.generate(35033, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var repeated := generator.generate(35033, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var alternate := generator.generate(35034, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var next_version := generator.generate(35033, "notion-2026-09-02", snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	asserts.true_value(generated.ok, "snowfield world generation succeeds")
+	asserts.equal(_canonical_world(generated), _canonical_world(repeated), "snowfield generation is deterministic for the same seed")
+	asserts.true_value(_canonical_world(generated) != _canonical_world(alternate), "snowfield generation varies by seed")
+	asserts.true_value(_canonical_world(generated) != _canonical_world(next_version), "snowfield generation varies by data version")
+	asserts.equal(generated.biome_generation_rule_id, "snowfield", "snowfield records its generation ruleset")
+	asserts.equal(generated.biome_progression_order, 4, "snowfield generation preserves data-driven progression order")
+	asserts.true_value(generated.connectivity.valid, "snowfield landmarks are connectivity-valid")
+	asserts.true_value(generated.facility_accessibility.valid, "snowfield facilities have reachable access points")
+	asserts.true_value(generated.resource_accessibility.valid, "snowfield resources have reachable access points")
+	asserts.equal(generated.facility_nodes.size(), 4, "snowfield places every canonical safe point/facility term")
+	asserts.true_value(generated.resource_nodes.size() >= generated.min_resource_nodes, "snowfield places minimum resources")
+	_assert_teleport_landmark_metadata(asserts, generated.world_data, "snowfield")
+	_assert_resource_accessibility(asserts, generated)
+	_assert_facility_accessibility_for_terms(asserts, generated, ["산장", "온천", "설원 사당", "얼어붙은 광산"])
+	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
+	_assert_snowfield_terrain_profile(asserts, generated.world_data)
+	_assert_snowfield_renderer_sources(asserts, generated.renderer_input)
+	_assert_landmark_terms(asserts, generated.landmarks, ["눈밭", "얼어붙은 강", "침엽수", "빙벽", "눈 덮인 산길"])
+	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, snowfield, catalog.get_definitions("items"))
+	_assert_snowfield_chunk_features(asserts, generated.chunks)
+	_assert_no_temperature_state(asserts, generated)
+
+	for seed in range(35000, 35025):
+		var sampled := generator.generate(seed, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+		asserts.true_value(sampled.ok, "snowfield seed %d generates successfully" % seed)
+		asserts.equal(_canonical_world(sampled), _canonical_world(generator.generate(seed, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"))), "snowfield seed %d remains deterministic" % seed)
+		asserts.true_value(sampled.connectivity.valid, "snowfield seed %d keeps landmarks connected" % seed)
+		asserts.true_value(sampled.facility_accessibility.valid, "snowfield seed %d keeps facilities accessible" % seed)
+		asserts.true_value(sampled.resource_accessibility.valid, "snowfield seed %d keeps resources accessible" % seed)
+		_assert_snowfield_chunk_features(asserts, sampled.chunks)
+
+	var missing_term_biome: Dictionary = snowfield.duplicate(true)
+	missing_term_biome.terrain = "눈밭, 얼어붙은 강, 침엽수, 빙벽"
+	var missing_term := generator.generate(35033, catalog.data_version, missing_term_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	asserts.false_value(missing_term.ok, "snowfield rules require every canonical terrain term")
+	asserts.equal(missing_term.failure_reason, "missing_biome_generation_terms", "missing snowfield terrain term fails explicitly")
+
+	var missing_facility_biome: Dictionary = snowfield.duplicate(true)
+	missing_facility_biome.facilities = "산장, 온천, 설원 사당"
+	var missing_facility := generator.generate(35033, catalog.data_version, missing_facility_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	asserts.false_value(missing_facility.ok, "snowfield rules require every canonical facility term")
+	asserts.equal(missing_facility.failure_reason, "missing_biome_facility_terms", "missing snowfield facility term fails explicitly")
 
 func _assert_resource_accessibility(asserts, world: Dictionary) -> void:
 	var validator := ConnectivityValidator.new()
@@ -390,6 +441,54 @@ func _assert_wasteland_renderer_sources(asserts, renderer_input: Dictionary) -> 
 	for source_id in expected_sources.keys():
 		asserts.true_value(seen.has(source_id), "wasteland renderer uses promoted source: %s" % source_id)
 
+func _assert_snowfield_terrain_profile(asserts, world_data: Dictionary) -> void:
+	var required_walkable := {
+		"snowfield_snow": true,
+		"snowfield_snow_path": true,
+		"snowfield_ice_edge": true,
+		"snowfield_safe_clearing": true
+	}
+	var required_blocked := {
+		"snowfield_ice": true,
+		"snowfield_pine": true,
+		"snowfield_ice_wall": true
+	}
+	var terrain_counts := {}
+	var blocked_counts := {}
+	for cell in world_data.cells:
+		var terrain: Dictionary = cell.layers.terrain
+		var terrain_id := String(terrain.id)
+		terrain_counts[terrain_id] = int(terrain_counts.get(terrain_id, 0)) + 1
+		if not bool(terrain.walkable):
+			blocked_counts[terrain_id] = int(blocked_counts.get(terrain_id, 0)) + 1
+	for terrain_id in required_walkable.keys():
+		asserts.true_value(int(terrain_counts.get(terrain_id, 0)) > 0, "snowfield includes walkable terrain: %s" % terrain_id)
+	for terrain_id in required_blocked.keys():
+		asserts.true_value(int(blocked_counts.get(terrain_id, 0)) > 0, "snowfield includes blocked terrain: %s" % terrain_id)
+
+func _assert_snowfield_renderer_sources(asserts, renderer_input: Dictionary) -> void:
+	var expected_sources := {
+		"assets/tiles/terrain/snow/snow_ground_01_32x32.png": true,
+		"assets/tiles/terrain/snow/snow_ground_03_32x32.png": true,
+		"assets/tiles/terrain/snow/snow_ground_04_32x32.png": true,
+		"assets/tiles/terrain/snow/snow_rock_edge_01_32x32.png": true,
+		"assets/tiles/terrain/snow/snowy_pine_tree_01_32x32.png": true,
+		"assets/tiles/terrain/snow/snow_rock_edge_02_32x32.png": true,
+		"assets/tiles/terrain/snow/snow_mound_32x32.png": true,
+		"assets/sprites/objects/structures/small_wood_house_2x2_64x64.png": true,
+		"assets/sprites/objects/shrine-props/stone_water_basin_32x32.png": true,
+		"assets/sprites/objects/structures/shrine_torii_gate_2x2_64x64.png": true,
+		"assets/sprites/objects/mining/rock_cave_entrance_1x2_64x32.png": true
+	}
+	var seen := {}
+	for layer in renderer_input.layers:
+		for cell in layer.cells:
+			var source_id := String(cell.get("source_id", ""))
+			if expected_sources.has(source_id):
+				seen[source_id] = true
+	for source_id in expected_sources.keys():
+		asserts.true_value(seen.has(source_id), "snowfield renderer uses promoted source: %s" % source_id)
+
 func _assert_landmark_terrain_terms(asserts, landmarks: Array) -> void:
 	_assert_landmark_terms(asserts, landmarks, ["산길", "절벽", "바위지대", "계곡", "폭포", "침엽수림", "동굴"])
 
@@ -421,6 +520,22 @@ func _assert_wasteland_chunk_features(asserts, chunks: Array) -> void:
 	asserts.true_value(int(feature_counts.get("long_detour", 0)) > 0 or int(feature_counts.get("dry_detour", 0)) > 0 or int(feature_counts.get("dry_river_bypass", 0)) > 0, "wasteland includes bypass/detour chunks")
 	asserts.true_value(int(feature_counts.get("dead_end", 0)) > 0, "wasteland includes dead-end chunks")
 	asserts.true_value(int(feature_counts.get("battlefield_trace", 0)) > 0, "wasteland includes battlefield trace chunks")
+
+func _assert_snowfield_chunk_features(asserts, chunks: Array) -> void:
+	var feature_counts := {}
+	for chunk in chunks:
+		var feature := String(chunk.get("feature", ""))
+		feature_counts[feature] = int(feature_counts.get(feature, 0)) + 1
+	asserts.true_value(int(feature_counts.get("snow_path_crossing", 0)) > 0 or int(feature_counts.get("snowy_mountain_path", 0)) > 0, "snowfield includes snow path chunks")
+	asserts.true_value(int(feature_counts.get("frozen_river_edge", 0)) > 0, "snowfield includes frozen river edge chunks")
+	asserts.true_value(int(feature_counts.get("ice_wall_pass", 0)) > 0, "snowfield includes ice wall boundary chunks")
+	asserts.true_value(int(feature_counts.get("safe_clearing", 0)) > 0, "snowfield includes safe-point clearings")
+
+func _assert_no_temperature_state(asserts, world: Dictionary) -> void:
+	var text := JSON.stringify(world).to_lower()
+	asserts.false_value(text.contains("temperature"), "snowfield generation does not add temperature state")
+	asserts.false_value(text.contains("body_temperature"), "snowfield generation does not add body temperature state")
+	asserts.false_value(text.contains("체온"), "snowfield generation does not add 체온 state")
 
 func _manhattan_distance(a: Dictionary, b: Dictionary) -> int:
 	return abs(int(a.x) - int(b.x)) + abs(int(a.y) - int(b.y))
