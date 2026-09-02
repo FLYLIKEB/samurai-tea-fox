@@ -30,6 +30,7 @@ var choice_group_selections := {}
 var target_survival := {}
 var philosophy_marks := []
 var final_room_effects := []
+var core_tea_ware_collection := {}
 var acquisitions := {}
 
 static func from_dictionary(data: Dictionary):
@@ -65,6 +66,7 @@ static func from_dictionary(data: Dictionary):
 	state.target_survival = _dictionary_value(data.get("target_survival", {}))
 	state.philosophy_marks = _array_value(data.get("philosophy_marks", []))
 	state.final_room_effects = _array_value(data.get("final_room_effects", []))
+	state.core_tea_ware_collection = _dictionary_value(data.get("core_tea_ware_collection", {}))
 	state.acquisitions = _dictionary_value(data.get("acquisitions", {}))
 	return state
 
@@ -81,6 +83,7 @@ func reset_run_growth() -> void:
 	tails = 1
 	tail_state = TailState.default_dictionary()
 	abilities.clear()
+	core_tea_ware_collection.clear()
 
 func to_dictionary() -> Dictionary:
 	return {
@@ -111,6 +114,7 @@ func to_dictionary() -> Dictionary:
 		"target_survival": target_survival.duplicate(true),
 		"philosophy_marks": philosophy_marks.duplicate(true),
 		"final_room_effects": final_room_effects.duplicate(true),
+		"core_tea_ware_collection": core_tea_ware_collection.duplicate(true),
 		"acquisitions": acquisitions.duplicate(true)
 	}
 

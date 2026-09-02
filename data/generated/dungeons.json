@@ -1,5 +1,5 @@
 {
-  "content_hash": "16fe680f390dfae757fc822c0fe88a3f228cf93b361f23872a51ca77a5c8b505",
+  "content_hash": "a54dd9ed075b2e4a26bd2d27c2862a55e7a9b32e3c85657657475a7762f18501",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -26,9 +26,10 @@
         "전투",
         "다도"
       ],
-      "reward": "전란의 차입, 텔레포트 수리, 현재 런 휴대 탐험 도구 제작 확장",
+      "reward": "전란의 차입, 오래된 향합, 텔레포트 수리, 현재 런 휴대 탐험 도구 제작 확장",
       "reward_item_ids": [
-        "war_tea_caddy"
+        "war_tea_caddy",
+        "old_incense_box"
       ],
       "status": "확정"
     },
@@ -52,9 +53,11 @@
         "전투",
         "다도"
       ],
-      "reward": "오리베의 찻사발, 텔레포트 수리, 현재 런 기초 제작 확장",
+      "reward": "오리베의 찻사발, 깨지지 않은 실패작, 재 묻은 철솥, 텔레포트 수리, 현재 런 기초 제작 확장",
       "reward_item_ids": [
-        "oribe_green_glazed_bowl"
+        "oribe_green_glazed_bowl",
+        "unbroken_failure",
+        "ash_stained_iron_kettle"
       ],
       "status": "확정"
     }

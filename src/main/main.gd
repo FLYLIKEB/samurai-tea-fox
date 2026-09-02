@@ -1,7 +1,9 @@
 extends Node2D
 
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
+const CoreTeaWareCollection = preload("res://src/dungeon/core_tea_ware_collection.gd")
 const DesktopCommandAdapter = preload("res://src/core/commands/desktop_command_adapter.gd")
+const DungeonRuntime = preload("res://src/dungeon/dungeon_runtime.gd")
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const EquipmentModel = preload("res://src/inventory/equipment_model.gd")
 const InventoryModel = preload("res://src/inventory/inventory_model.gd")
@@ -36,8 +38,10 @@ var inventory
 var equipment
 var tea_service
 var crafting_service
+var core_tea_ware_collection
 var memory_tea_cutscene_runtime
 var acquisition_service
+var dungeon_runtime
 var run_lifecycle_service
 var save_store = SaveStore.new()
 var run_state: RunState
@@ -328,6 +332,9 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	var crafting_result: Dictionary = CraftingService.from_catalog(loaded_catalog)
 	if not crafting_result.ok:
 		return crafting_result
+	var core_tea_ware_result: Dictionary = CoreTeaWareCollection.from_catalog(loaded_catalog)
+	if not core_tea_ware_result.ok:
+		return core_tea_ware_result
 	inventory = inventory_result.inventory
 	if run_state != null and not run_state.inventory.is_empty():
 		var inventory_load_result: Dictionary = inventory.load_snapshot(run_state.inventory)
@@ -336,6 +343,7 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	equipment = equipment_result.equipment
 	tea_service = tea_result.tea_service
 	crafting_service = crafting_result.crafting_service
+	core_tea_ware_collection = core_tea_ware_result.collection
 	tea_service.drink_completed.connect(_on_tea_drink_completed)
 	memory_tea_cutscene_runtime = MemoryTeaCutsceneRuntime.new()
 	var memory_runtime_result: Dictionary = memory_tea_cutscene_runtime.configure(loaded_catalog.data_version)
@@ -346,6 +354,45 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 		if not memory_load_result.ok:
 			return memory_load_result
 	return {"ok": true}
+
+func final_room_gate_query() -> Dictionary:
+	if core_tea_ware_collection == null:
+		return {"ok": false, "reason": "missing_core_tea_ware_collection", "error": "Core tea ware collection is not configured."}
+	if run_state == null:
+		run_state = RunState.new()
+	return core_tea_ware_collection.final_room_gate_query(run_state)
+
+func record_boss_core_tea_ware_rewards(resolution_event: Dictionary) -> Dictionary:
+	if core_tea_ware_collection == null:
+		return {"ok": false, "reason": "missing_core_tea_ware_collection", "error": "Core tea ware collection is not configured."}
+	if run_state == null:
+		run_state = RunState.new()
+	return core_tea_ware_collection.record_boss_resolution_rewards(resolution_event, run_state)
+
+func configure_dungeon_runtime(progression_state, completion_resolver: Callable, additional_reward_hook := Callable()) -> Dictionary:
+	if core_tea_ware_collection == null:
+		return {"ok": false, "reason": "missing_core_tea_ware_collection", "error": "Core tea ware collection is not configured."}
+	if run_state == null:
+		run_state = RunState.new()
+	dungeon_runtime = DungeonRuntime.new()
+	var reward_hook := func(clear_event: Dictionary) -> Dictionary:
+		var core_preflight: Dictionary = core_tea_ware_collection.validate_boss_resolution_rewards(clear_event, run_state)
+		if not core_preflight.ok:
+			return core_preflight
+		if additional_reward_hook.is_valid():
+			var additional_result = additional_reward_hook.call(clear_event.duplicate(true))
+			var normalized_additional: Dictionary = _normalize_reward_hook_result(additional_result)
+			if not normalized_additional.ok:
+				return normalized_additional
+		return record_boss_core_tea_ware_rewards(clear_event)
+	return dungeon_runtime.configure(run_state, progression_state, completion_resolver, reward_hook)
+
+func _normalize_reward_hook_result(result) -> Dictionary:
+	if typeof(result) == TYPE_DICTIONARY:
+		return result.duplicate(true)
+	if typeof(result) == TYPE_BOOL:
+		return {"ok": result, "reason": "additional_reward_hook_rejected", "error": "Additional dungeon reward hook rejected completion."}
+	return {"ok": true, "value": result}
 
 func _configure_acquisition_for_generated_world() -> Dictionary:
 	if not generated_world.get("ok", false) or typeof(generated_world.get("world_data")) != TYPE_DICTIONARY:

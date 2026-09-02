@@ -1,5 +1,5 @@
 {
-  "content_hash": "63a7a4fa369f0ad8f4ddad77b7a65080818ea34ddd8ba93bc763194af719ba49",
+  "content_hash": "8e6cd3af0d88a0e3020e522d1bae73431b5d99757339f24b4416075b56ae878a",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -47,7 +47,9 @@
         "peaceful"
       ],
       "reward_item_ids": [
-        "oribe_green_glazed_bowl"
+        "oribe_green_glazed_bowl",
+        "unbroken_failure",
+        "ash_stained_iron_kettle"
       ],
       "status": "테스트",
       "summon_monster_ids": [
@@ -98,7 +100,8 @@
         "combat"
       ],
       "reward_item_ids": [
-        "war_tea_caddy"
+        "war_tea_caddy",
+        "old_incense_box"
       ],
       "status": "테스트",
       "summon_monster_ids": [

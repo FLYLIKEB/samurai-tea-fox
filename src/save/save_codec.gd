@@ -37,6 +37,7 @@ const RUN_FIELD_TYPES := {
 	"target_survival": TYPE_DICTIONARY,
 	"philosophy_marks": TYPE_ARRAY,
 	"final_room_effects": TYPE_ARRAY,
+	"core_tea_ware_collection": TYPE_DICTIONARY,
 	"acquisitions": TYPE_DICTIONARY
 }
 
