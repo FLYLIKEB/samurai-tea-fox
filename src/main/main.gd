@@ -319,11 +319,14 @@ func _confirmed_generated_resource_definitions(resource_nodes: Array) -> Array:
 		if resource_id.is_empty() or seen.has(resource_id) or inventory == null or not inventory.has_definition(resource_id):
 			continue
 		var item: Dictionary = catalog.find_by_id("items", resource_id)
-		if String(item.get("status", "")) != "확정" or String(item.get("type", "")) != "재료":
+		if String(item.get("status", "")) != "확정" or not _is_generated_resource_item_type(String(item.get("type", ""))):
 			continue
 		definitions.append({"id": resource_id, "item_id": resource_id, "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT})
 		seen[resource_id] = true
 	return definitions
+
+func _is_generated_resource_item_type(item_type: String) -> bool:
+	return item_type == "재료" or item_type == "향"
 
 func _generated_drop_definitions() -> Array:
 	var grants_by_monster := {}

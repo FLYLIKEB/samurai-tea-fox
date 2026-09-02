@@ -26,6 +26,7 @@ func run(asserts) -> void:
 	_assert_main_generates_current_biome(asserts, catalog, "mountain_region")
 	_assert_main_generates_current_biome(asserts, catalog, "wasteland")
 	_assert_main_generates_current_biome(asserts, catalog, "snowfield")
+	_assert_main_generates_current_biome(asserts, catalog, "rainforest")
 	var runtime := _configured_runtime(catalog, RunState.new())
 	asserts.true_value(runtime.result.ok, "main configures acquisition against generated world data: %s" % runtime.result.get("error", ""))
 	if not runtime.result.ok:
@@ -150,6 +151,8 @@ func _assert_main_generates_current_biome(asserts, catalog: DataCatalog, biome_i
 			_assert_wasteland_runtime_sources(asserts, runtime)
 		elif biome_id == "snowfield":
 			_assert_snowfield_runtime_sources(asserts, runtime)
+		elif biome_id == "rainforest":
+			_assert_rainforest_runtime_sources(asserts, runtime)
 	runtime.free()
 	combat_source.free()
 	world_root.free()
@@ -177,6 +180,26 @@ func _assert_snowfield_runtime_sources(asserts, runtime: Main) -> void:
 		asserts.equal(String(owner_sources.get(owner_id, "")), "assets/tiles/terrain/snow/snowy_pine_tree_01_32x32.png", "main maps snowfield wood owner to its biome source")
 		has_conifer_source = true
 	asserts.true_value(has_conifer_source, "snowfield runtime generates sourced conifer wood resources")
+
+func _assert_rainforest_runtime_sources(asserts, runtime: Main) -> void:
+	var owner_sources: Dictionary = runtime._owner_sprite_sources(runtime.generated_world)
+	var has_agarwood_source := false
+	var has_incense_gatherable := false
+	for node in runtime.generated_world.get("resource_nodes", []):
+		if String(node.get("resource_id", "")) == "item_5":
+			var incense_owner_id := String(node.get("id", ""))
+			asserts.equal(String(node.get("source_id", "")), "assets/sprites/objects/natural-props/round_tree_large_32x32.png", "rainforest 침향 carries agarwood promoted source id")
+			asserts.equal(String(owner_sources.get(incense_owner_id, "")), "assets/sprites/objects/natural-props/round_tree_large_32x32.png", "main maps rainforest 침향 owner to agarwood source")
+			asserts.equal(runtime.acquisition_service.gatherable_for(incense_owner_id).definition_id, "item_5", "main registers rainforest 침향 as a gatherable")
+			has_incense_gatherable = true
+		if String(node.get("resource_id", "")) != "wood":
+			continue
+		var owner_id := String(node.get("id", ""))
+		asserts.equal(String(node.get("source_id", "")), "assets/sprites/objects/natural-props/round_tree_large_32x32.png", "rainforest wood carries agarwood promoted source id")
+		asserts.equal(String(owner_sources.get(owner_id, "")), "assets/sprites/objects/natural-props/round_tree_large_32x32.png", "main maps rainforest wood owner to its biome source")
+		has_agarwood_source = true
+	asserts.true_value(has_agarwood_source, "rainforest runtime generates sourced agarwood resources")
+	asserts.true_value(has_incense_gatherable, "rainforest runtime registers confirmed 침향 rare resources")
 
 func _configured_runtime(catalog, state: RunState, resource_position := Vector2i.ZERO) -> Dictionary:
 	var runtime := Main.new()

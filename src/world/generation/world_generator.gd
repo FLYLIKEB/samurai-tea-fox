@@ -15,6 +15,7 @@ const BIOME_COMMON := "common_region"
 const BIOME_MOUNTAIN := "mountain_region"
 const BIOME_WASTELAND := "wasteland"
 const BIOME_SNOWFIELD := "snowfield"
+const BIOME_RAINFOREST := "rainforest"
 
 const TERRAIN_GROUND := "common_ground"
 const TERRAIN_GRASS := "common_grass"
@@ -44,6 +45,13 @@ const TERRAIN_SNOWFIELD_ICE_EDGE := "snowfield_ice_edge"
 const TERRAIN_SNOWFIELD_PINE := "snowfield_pine"
 const TERRAIN_SNOWFIELD_ICE_WALL := "snowfield_ice_wall"
 const TERRAIN_SNOWFIELD_SAFE_CLEARING := "snowfield_safe_clearing"
+const TERRAIN_RAINFOREST_JUNGLE := "rainforest_jungle"
+const TERRAIN_RAINFOREST_SWAMP := "rainforest_swamp"
+const TERRAIN_RAINFOREST_RIVER := "rainforest_river"
+const TERRAIN_RAINFOREST_VINE_PATH := "rainforest_vine_path"
+const TERRAIN_RAINFOREST_TEA_FIELD := "rainforest_tea_field"
+const TERRAIN_RAINFOREST_AGARWOOD := "rainforest_agarwood_grove"
+const TERRAIN_RAINFOREST_RIVER_BANK := "rainforest_river_bank"
 
 const RENDER_GROUND := "assets/tiles/terrain/plains/grass_ground_01_32x32.png"
 const RENDER_GRASS := "assets/tiles/terrain/plains/grass_ground_01_32x32.png"
@@ -83,6 +91,16 @@ const RENDER_SNOWFIELD_LODGE := "assets/sprites/objects/structures/small_wood_ho
 const RENDER_SNOWFIELD_HOT_SPRING := "assets/sprites/objects/shrine-props/stone_water_basin_32x32.png"
 const RENDER_SNOWFIELD_SHRINE := "assets/sprites/objects/structures/shrine_torii_gate_2x2_64x64.png"
 const RENDER_SNOWFIELD_FROZEN_MINE := "assets/sprites/objects/mining/rock_cave_entrance_1x2_64x32.png"
+const RENDER_RAINFOREST_JUNGLE := "assets/sprites/objects/natural-props/dense_shrub_32x32.png"
+const RENDER_RAINFOREST_SWAMP := "assets/sprites/objects/natural-props/reed_clump_32x32.png"
+const RENDER_RAINFOREST_RIVER := "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_202_420_146x145_resize_32x32.png"
+const RENDER_RAINFOREST_VINE_PATH := "assets/sprites/objects/natural-props/bamboo_reeds_32x32.png"
+const RENDER_RAINFOREST_TEA_FIELD := "assets/sprites/objects/crafting/tea_leaf_worktable_32x32.png"
+const RENDER_RAINFOREST_AGARWOOD := "assets/sprites/objects/natural-props/round_tree_large_32x32.png"
+const RENDER_RAINFOREST_RIVER_BANK := "assets/tiles/terrain/plains/flower_grass_02_32x32.png"
+const RENDER_RAINFOREST_RIVERSIDE_VILLAGE := "assets/sprites/objects/structures/small_wood_house_2x2_64x64.png"
+const RENDER_RAINFOREST_FOREST_TEA_ROOM := "assets/sprites/objects/crafting/tea_table_2x2_64x64.png"
+const RENDER_RAINFOREST_INCENSE_SPACE := "assets/sprites/objects/shrine-props/incense_burner_32x32.png"
 
 const BALANCE_MIN_RESOURCE_NODES_ID := "biome_min_resource_nodes"
 
@@ -92,7 +110,7 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 	if not profile_result.ok:
 		return _failure(seed, data_version, biome_definition, retry_limit, profile_result.reason, profile_result)
 	var profile: Dictionary = profile_result.profile
-	var resource_result := _biome_resource_item_ids(biome_definition, item_definitions)
+	var resource_result := _biome_resource_item_ids(biome_definition, item_definitions, profile.get("resource_type_allowlist", ["재료"]))
 	if not resource_result.ok:
 		return _failure(seed, data_version, biome_definition, retry_limit, resource_result.reason, resource_result)
 	var resource_ids: Array = resource_result.ids
@@ -205,6 +223,8 @@ func _apply_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRn
 			_apply_wasteland_chunk(world_data, chunk, rng)
 		BIOME_SNOWFIELD:
 			_apply_snowfield_chunk(world_data, chunk, rng)
+		BIOME_RAINFOREST:
+			_apply_rainforest_chunk(world_data, chunk, rng)
 		_:
 			_apply_common_chunk(world_data, chunk, rng)
 
@@ -421,6 +441,74 @@ func _snowfield_feature_for_variant(variant: int) -> String:
 		_:
 			return "snowfield"
 
+func _apply_rainforest_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRng) -> void:
+	var origin := _vector_from_dictionary(chunk.origin)
+	var variant := int(chunk.variant)
+	chunk["feature"] = _rainforest_feature_for_variant(variant)
+	for y in range(origin.y, origin.y + CHUNK_HEIGHT):
+		for x in range(origin.x, origin.x + CHUNK_WIDTH):
+			var position := Vector2i(x, y)
+			var local_x := x - origin.x
+			var local_y := y - origin.y
+			match variant:
+				0:
+					if local_y == CHUNK_HEIGHT / 2 or (local_x == 5 and local_y > 1):
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_VINE_PATH, true, RENDER_RAINFOREST_VINE_PATH)
+					else:
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, false, RENDER_RAINFOREST_JUNGLE)
+				1:
+					if local_x == 3 or local_x == 4:
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER, false, RENDER_RAINFOREST_RIVER)
+					elif local_x == 2 or local_x == 5:
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER_BANK, true, RENDER_RAINFOREST_RIVER_BANK)
+					else:
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, true, RENDER_RAINFOREST_JUNGLE)
+				2:
+					if rng.next_range(0, 99) < 45:
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_SWAMP, false, RENDER_RAINFOREST_SWAMP)
+					else:
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER_BANK, true, RENDER_RAINFOREST_RIVER_BANK)
+				3:
+					if local_x >= 2 and local_x <= 5 and local_y >= 1 and local_y <= 4:
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_TEA_FIELD, true, RENDER_RAINFOREST_TEA_FIELD)
+					else:
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_VINE_PATH, true, RENDER_RAINFOREST_VINE_PATH)
+				4:
+					if local_x == 1 or local_x == 6 or local_y == 1:
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_VINE_PATH, true, RENDER_RAINFOREST_VINE_PATH)
+					elif rng.next_range(0, 99) < 50:
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_AGARWOOD, false, RENDER_RAINFOREST_AGARWOOD)
+					else:
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, true, RENDER_RAINFOREST_JUNGLE)
+				5:
+					if local_y == 2 or (local_x >= 4 and local_y == 4):
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_VINE_PATH, true, RENDER_RAINFOREST_VINE_PATH)
+					elif local_x == 2:
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER, false, RENDER_RAINFOREST_RIVER)
+					elif local_x == 3:
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER_BANK, true, RENDER_RAINFOREST_RIVER_BANK)
+					else:
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, true, RENDER_RAINFOREST_JUNGLE)
+				_:
+					world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, true, RENDER_RAINFOREST_JUNGLE)
+
+func _rainforest_feature_for_variant(variant: int) -> String:
+	match variant:
+		0:
+			return "dense_jungle_vine_path"
+		1:
+			return "wide_river_bank"
+		2:
+			return "swamp_boundary"
+		3:
+			return "tea_cultivation"
+		4:
+			return "agarwood_grove"
+		5:
+			return "river_bypass"
+		_:
+			return "rainforest"
+
 func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, core_dungeon_count: int, teleport_zone_count: int, biome_id: String, profile: Dictionary) -> Array:
 	var landmarks := []
 	landmarks.append(_add_landmark(world_data, WorldData.LANDMARK_ENTRY, 0, Vector2i(3, rng.next_range(8, MAP_HEIGHT - 9)), profile))
@@ -617,6 +705,7 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 				"required_terrain_terms": [],
 				"facility_terms": [],
 				"facility_source_by_term": {},
+				"resource_type_allowlist": ["재료"],
 				"resource_source_by_id": {},
 				"minimum_facility_nodes": 0
 			})
@@ -647,6 +736,7 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 					"폐광": RENDER_MOUNTAIN_ABANDONED_MINE,
 					"산중 찻집": RENDER_MOUNTAIN_TEA_HOUSE
 				},
+				"resource_type_allowlist": ["재료"],
 				"resource_source_by_id": {},
 				"minimum_facility_nodes": facility_terms.size()
 			})
@@ -677,6 +767,7 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 					"무너진 다실": RENDER_WASTELAND_RUINED_TEA_ROOM,
 					"전쟁터 흔적": RENDER_WASTELAND_BATTLEFIELD_TRACE
 				},
+				"resource_type_allowlist": ["재료"],
 				"resource_source_by_id": {
 					"item_28": RENDER_RESOURCE_IRON_SCRAP
 				},
@@ -709,8 +800,44 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 					"설원 사당": RENDER_SNOWFIELD_SHRINE,
 					"얼어붙은 광산": RENDER_SNOWFIELD_FROZEN_MINE
 				},
+				"resource_type_allowlist": ["재료"],
 				"resource_source_by_id": {
 					"wood": RENDER_SNOWFIELD_PINE
+				},
+				"minimum_facility_nodes": facility_terms.size()
+			})
+		BIOME_RAINFOREST:
+			var required_terms := ["밀림", "습지", "넓은 강", "덩굴 통로", "차 재배지", "향목 숲"]
+			var terrain_text := String(biome_definition.get("terrain", ""))
+			for term in required_terms:
+				if not terrain_text.contains(term):
+					return {"ok": false, "reason": "missing_biome_generation_terms", "missing_term": term}
+			var facility_terms := ["차 재배지", "강변 취락", "숲속 다실", "향 문화 공간"]
+			var facility_text := String(biome_definition.get("facilities", ""))
+			for term in facility_terms:
+				if not facility_text.contains(term):
+					return {"ok": false, "reason": "missing_biome_facility_terms", "missing_term": term}
+			return _profile_ok({
+				"id": BIOME_RAINFOREST,
+				"chunk_variant_count": 6,
+				"default_terrain_id": TERRAIN_RAINFOREST_RIVER_BANK,
+				"default_walkable": true,
+				"path_terrain_id": TERRAIN_RAINFOREST_VINE_PATH,
+				"bridge_terrain_id": TERRAIN_RAINFOREST_RIVER_BANK,
+				"path_render_id": RENDER_RAINFOREST_VINE_PATH,
+				"required_terrain_terms": required_terms,
+				"facility_terms": facility_terms,
+				"facility_source_by_term": {
+					"차 재배지": RENDER_RAINFOREST_TEA_FIELD,
+					"강변 취락": RENDER_RAINFOREST_RIVERSIDE_VILLAGE,
+					"숲속 다실": RENDER_RAINFOREST_FOREST_TEA_ROOM,
+					"향 문화 공간": RENDER_RAINFOREST_INCENSE_SPACE
+				},
+				"resource_type_allowlist": ["재료", "향"],
+				"resource_source_by_id": {
+					"item_5": RENDER_RAINFOREST_AGARWOOD,
+					"wood": RENDER_RAINFOREST_AGARWOOD,
+					"clay": RENDER_RAINFOREST_SWAMP
 				},
 				"minimum_facility_nodes": facility_terms.size()
 			})
@@ -720,14 +847,14 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 func _profile_ok(profile: Dictionary) -> Dictionary:
 	return {"ok": true, "profile": profile}
 
-func _biome_resource_item_ids(biome_definition: Dictionary, item_definitions: Array) -> Dictionary:
+func _biome_resource_item_ids(biome_definition: Dictionary, item_definitions: Array, allowed_types: Array) -> Dictionary:
 	var resource_text := String(biome_definition.get("resources", ""))
 	if resource_text.strip_edges() == "":
 		return {"ok": false, "reason": "missing_biome_resources", "ids": []}
 
 	var ids := []
 	for item in item_definitions:
-		if String(item.get("type", "")) != "재료":
+		if not allowed_types.has(String(item.get("type", ""))):
 			continue
 		var item_id := String(item.get("id", ""))
 		var item_name := String(item.get("name", ""))
