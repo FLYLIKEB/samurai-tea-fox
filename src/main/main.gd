@@ -9,6 +9,7 @@ const GameCommand = preload("res://src/core/commands/game_command.gd")
 const EquipmentModel = preload("res://src/inventory/equipment_model.gd")
 const InventoryCommandRuntime = preload("res://src/inventory/inventory_command_runtime.gd")
 const InventoryModel = preload("res://src/inventory/inventory_model.gd")
+const MapReadModelBuilder = preload("res://src/world/map/map_read_model_builder.gd")
 const MovementCommandSelector = preload("res://src/core/commands/movement_command_selector.gd")
 const MemoryTeaCutsceneRuntime = preload("res://src/narrative/memory_tea_cutscene_runtime.gd")
 const EndingRouteRuntime = preload("res://src/meta/ending_route_runtime.gd")
@@ -44,6 +45,7 @@ var catalog
 var inventory
 var equipment
 var inventory_command_runtime
+var map_read_model_builder
 var tea_service
 var crafting_service
 var consumable_service
@@ -138,10 +140,12 @@ func _configure_world_for_current_run() -> Dictionary:
 	if not drop_connection.ok:
 		return drop_connection
 	_render_generated_world(generated_world)
+	_record_current_map_discovery()
 	_configure_game_hud()
 	return {"ok": true}
 
 func _physics_process(_delta: float) -> void:
+	_record_current_map_discovery()
 	var desktop_command = _desktop_adapter.poll_movement_command()
 	player.submit_command(movement_command_for_current_inputs(desktop_command))
 	if Input.is_action_just_pressed("attack"):
@@ -178,6 +182,8 @@ func _physics_process(_delta: float) -> void:
 		submit_desktop_action_command("open_crafting")
 	if Input.is_action_just_pressed("open_facilities"):
 		submit_desktop_action_command("open_facilities")
+	if Input.is_action_just_pressed("open_map"):
+		submit_desktop_action_command("open_map")
 
 func _unhandled_input(event) -> void:
 	var handled := false
@@ -278,6 +284,11 @@ func submit_action_command(command) -> bool:
 			return accepted
 		GameCommand.Type.OPEN_FACILITIES:
 			var accepted: bool = game_hud != null and game_hud.show_facilities_menu()
+			if accepted:
+				_play_feedback_beep()
+			return accepted
+		GameCommand.Type.OPEN_MAP:
+			var accepted: bool = game_hud != null and game_hud.show_map_menu()
 			if accepted:
 				_play_feedback_beep()
 			return accepted
@@ -435,6 +446,10 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	var inventory_command_result: Dictionary = inventory_command_runtime.configure(inventory, equipment, consumable_service, loaded_catalog.data_version)
 	if not inventory_command_result.ok:
 		return inventory_command_result
+	map_read_model_builder = MapReadModelBuilder.new()
+	var map_result: Dictionary = map_read_model_builder.configure(loaded_catalog.data_version)
+	if not map_result.ok:
+		return map_result
 	tea_service.drink_completed.connect(_on_tea_drink_completed)
 	memory_tea_cutscene_runtime = MemoryTeaCutsceneRuntime.new()
 	var memory_runtime_result: Dictionary = memory_tea_cutscene_runtime.configure(loaded_catalog.data_version)
@@ -901,6 +916,15 @@ func inventory_read_model() -> Dictionary:
 	model["ok"] = true
 	return model
 
+func map_read_model(options := {}) -> Dictionary:
+	if map_read_model_builder == null:
+		return {"ok": false, "reason": "missing_map_read_model_builder", "error": "Map read model builder is not configured."}
+	if world_data == null:
+		return {"ok": false, "reason": "missing_world_data", "error": "Map read model requires current world data."}
+	if run_state == null:
+		run_state = RunState.new()
+	return map_read_model_builder.build(world_data, run_state, _player_world_cell(), options)
+
 func _selected_inventory_slot_index() -> int:
 	if inventory_command_runtime == null:
 		return -1
@@ -913,6 +937,21 @@ func _sync_inventory_runtime_state() -> void:
 		run_state.inventory = inventory.to_snapshot()
 	if equipment != null:
 		run_state.equipment = equipment.to_snapshot()
+
+func _player_world_cell() -> Vector2i:
+	if player == null:
+		return Vector2i.ZERO
+	return world_cell_from_world_position(player.global_position)
+
+func _record_current_map_discovery() -> void:
+	if map_read_model_builder == null or world_data == null:
+		return
+	if run_state == null:
+		run_state = RunState.new()
+	var current_cell := _player_world_cell()
+	if not world_data.contains(current_cell):
+		return
+	run_state.map_discovery = MapReadModelBuilder.discover_cells(run_state.map_discovery, current_cell)
 
 func _crafting_context() -> Dictionary:
 	return {
@@ -998,6 +1037,9 @@ func _configure_game_hud() -> void:
 		"catalog": catalog,
 		"inventory": inventory,
 		"inventory_command_runtime": inventory_command_runtime,
+		"map_read_model_builder": map_read_model_builder,
+		"world_data": world_data,
+		"run_state": run_state,
 		"tea_service": tea_service,
 		"crafting_service": crafting_service,
 		"crafting_context": _crafting_context()

@@ -62,5 +62,7 @@ func command_for_action(action: String, direction := Vector2i.ZERO, slot := 0, p
 			return GameCommand.new(GameCommand.Type.OPEN_CRAFTING)
 		"open_facilities":
 			return GameCommand.new(GameCommand.Type.OPEN_FACILITIES)
+		"open_map":
+			return GameCommand.new(GameCommand.Type.OPEN_MAP)
 		_:
 			return null

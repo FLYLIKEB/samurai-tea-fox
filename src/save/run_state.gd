@@ -19,6 +19,7 @@ var completed_runtime_dungeon_ids := []
 var dungeon_runtime_state := {}
 var teleport_states := {}
 var repaired_teleports := []
+var map_discovery := {}
 var crafting_unlocks := []
 var narrative_flags := []
 var narrative_event_counts := {}
@@ -55,6 +56,7 @@ static func from_dictionary(data: Dictionary):
 	state.dungeon_runtime_state = _dictionary_value(data.get("dungeon_runtime_state", {}))
 	state.teleport_states = _dictionary_value(data.get("teleport_states", {}))
 	state.repaired_teleports = _array_value(data.get("repaired_teleports", []))
+	state.map_discovery = _dictionary_value(data.get("map_discovery", {}))
 	state.crafting_unlocks = _array_value(data.get("crafting_unlocks", []))
 	state.narrative_flags = _array_value(data.get("narrative_flags", []))
 	state.narrative_event_counts = _dictionary_value(data.get("narrative_event_counts", {}))
@@ -77,6 +79,7 @@ func reset_biome_progression() -> void:
 	dungeon_runtime_state.clear()
 	teleport_states.clear()
 	repaired_teleports.clear()
+	map_discovery.clear()
 	crafting_unlocks.clear()
 
 func reset_run_growth() -> void:
@@ -103,6 +106,7 @@ func to_dictionary() -> Dictionary:
 		"dungeon_runtime_state": dungeon_runtime_state.duplicate(true),
 		"teleport_states": teleport_states.duplicate(true),
 		"repaired_teleports": repaired_teleports.duplicate(true),
+		"map_discovery": map_discovery.duplicate(true),
 		"crafting_unlocks": crafting_unlocks.duplicate(true),
 		"narrative_flags": narrative_flags.duplicate(true),
 		"narrative_event_counts": narrative_event_counts.duplicate(true),
