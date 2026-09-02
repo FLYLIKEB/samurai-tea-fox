@@ -1,5 +1,5 @@
 {
-  "content_hash": "c54b653d9782a091446fa2b0ddd488e1362d41008dbf5ce215e3544d754a2a24",
+  "content_hash": "e8dc492444cf992defe8a1ea1b39ca6bd7563f9acff12bb1ee61a44110604255",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -165,6 +165,36 @@
       "status": "테스트",
       "unit": "칸",
       "value": 24
+    },
+    {
+      "category": "부활",
+      "description": "부활 아이템이 사망 직전 같은 런을 유지하며 회복시키는 최대 HP 비율",
+      "formula_note": "revive_hp = max(1, ceil(max_hp * 0.35))",
+      "id": "balance_24",
+      "name": "부활 HP 회복 비율",
+      "status": "확정",
+      "unit": "비율",
+      "value": 0.35
+    },
+    {
+      "category": "부활",
+      "description": "부활 직후 연속 피해를 막는 무적 시간",
+      "formula_note": "부활 효과에만 적용하며 일반 피격 무적과 별도로 데이터에서 읽는다.",
+      "id": "balance_25",
+      "name": "부활 직후 무적시간",
+      "status": "확정",
+      "unit": "초",
+      "value": 2.0
+    },
+    {
+      "category": "부활",
+      "description": "한 런에서 동시에 보유 가능한 부활 아이템 수",
+      "formula_note": "인벤토리 전체 보유량 기준 1개를 초과할 수 없다.",
+      "id": "balance_26",
+      "name": "부활 아이템 최대 보유 수",
+      "status": "확정",
+      "unit": "개",
+      "value": 1
     },
     {
       "category": "기운",

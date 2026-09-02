@@ -26,6 +26,7 @@ func run(asserts) -> void:
 	_assert_instance_items_occupy_individual_slots(asserts)
 	_assert_sorting_preserves_items_and_moves_empty_slots_to_end(asserts)
 	_assert_versioned_snapshot_round_trips(asserts)
+	_assert_max_owned_rejects_manipulated_snapshot_and_insert(asserts)
 	_assert_change_and_failure_events_are_observable(asserts)
 	_assert_invalid_catalog_values_are_rejected(asserts)
 
@@ -109,6 +110,25 @@ func _assert_versioned_snapshot_round_trips(asserts) -> void:
 	asserts.true_value(load_result.ok, "snapshot reload succeeds")
 	asserts.equal(loaded.to_snapshot(), snapshot, "snapshot round-trip preserves inventory state")
 
+func _assert_max_owned_rejects_manipulated_snapshot_and_insert(asserts) -> void:
+	var inventory := _fixture_inventory(3)
+	asserts.true_value(inventory.add_item("item_29", 1).ok, "max-owned fixture accepts one resurrection item")
+	var baseline := inventory.to_snapshot()
+	var manipulated := baseline.duplicate(true)
+	manipulated.slots[1] = {"item_id": "item_29", "quantity": 1, "instance_id": "", "metadata": {}}
+	var loaded: Dictionary = inventory.load_snapshot(manipulated)
+	asserts.false_value(loaded.ok, "snapshot cannot bypass aggregate max_owned across slots")
+	asserts.equal(loaded.reason, "max_owned_exceeded", "snapshot cap failure has a stable reason")
+	asserts.equal(inventory.to_snapshot(), baseline, "rejected over-cap snapshot leaves inventory unchanged")
+
+	var inserted: Dictionary = inventory.insert_slot(
+		{"item_id": "item_29", "quantity": 1, "instance_id": "", "metadata": {}},
+		1
+	)
+	asserts.false_value(inserted.ok, "slot insertion cannot bypass aggregate max_owned")
+	asserts.equal(inserted.reason, "max_owned_exceeded", "insert cap failure has a stable reason")
+	asserts.equal(inventory.to_snapshot(), baseline, "rejected over-cap insert leaves inventory unchanged")
+
 func _assert_change_and_failure_events_are_observable(asserts) -> void:
 	var inventory := _fixture_inventory(2)
 	var changes: Array = []
@@ -146,6 +166,7 @@ func _fixture_inventory(slot_count: int) -> InventoryModel:
 		"balance": [{"id": "inventory_base_slots", "name": "인벤토리 기본 슬롯", "status": "테스트", "value": slot_count}],
 		"items": [
 			{"id": "clay", "name": "점토", "status": "확정", "type": "재료", "max_stack": 10},
+			{"id": "item_29", "name": "부활 차씨", "status": "확정", "type": "소모품", "effect_type": "부활", "max_stack": 1, "max_owned": 1},
 			{"id": "short_travel_sword", "name": "짧은 여행검", "status": "확정", "type": "무기"},
 			{"id": "ash_stained_iron_kettle", "name": "재 묻은 철솥", "status": "초안", "type": "다구"}
 		],

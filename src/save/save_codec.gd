@@ -10,6 +10,7 @@ const META_KIND := "meta"
 
 const RUN_FIELD_TYPES := {
 	"data_version": TYPE_STRING,
+	"lifecycle_epoch": TYPE_INT,
 	"seed": TYPE_INT,
 	"current_biome_id": TYPE_STRING,
 	"inventory": TYPE_DICTIONARY,

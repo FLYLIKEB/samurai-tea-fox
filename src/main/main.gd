@@ -13,6 +13,11 @@ const AcquisitionService = preload("res://src/world/interactions/acquisition_ser
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 const WorldSceneRenderer = preload("res://src/world/rendering/world_scene_renderer.gd")
+const RunLifecycleService = preload("res://src/save/run_lifecycle_service.gd")
+const SaveStore = preload("res://src/save/save_store.gd")
+
+const DEFAULT_RUN_SEED := 11037
+const FRESH_RUN_SEED := 0
 
 @onready var player = $Player
 @onready var combat_dummy = $CombatDummy
@@ -24,6 +29,8 @@ var inventory
 var equipment
 var tea_service
 var acquisition_service
+var run_lifecycle_service
+var save_store = SaveStore.new()
 var run_state: RunState
 var world_data
 var generated_world: Dictionary = {}
@@ -41,43 +48,55 @@ func _ready() -> void:
 	if not runtime_result.ok:
 		push_error(runtime_result.error)
 		return
-	var player_combat_result: Dictionary = player.configure_combat(catalog)
-	if not player_combat_result.ok:
-		push_error(player_combat_result.error)
-		return
-	var dummy_combat_result: Dictionary = combat_dummy.configure_combat(catalog, player, player.combat_config)
-	if not dummy_combat_result.ok:
-		push_error(dummy_combat_result.error)
-		return
-
-	var common_biome: Dictionary = catalog.find_by_id("biomes", "common_region")
-	if common_biome.is_empty():
-		push_error("No common biome data loaded.")
+	var combat_lifecycle_result := _configure_combat_lifecycle()
+	if not combat_lifecycle_result.ok:
+		push_error(combat_lifecycle_result.error)
 		return
 
 	if run_state == null:
 		run_state = RunState.new()
 	run_state.data_version = catalog.data_version
-	run_state.seed = 11037
+	if run_state.seed == 0:
+		run_state.seed = DEFAULT_RUN_SEED
+	var world_result := _configure_world_for_current_run()
+	if not world_result.ok:
+		push_error(world_result.error)
+
+func _configure_combat_lifecycle() -> Dictionary:
+	var player_combat_result: Dictionary = player.configure_combat(catalog)
+	if not player_combat_result.ok:
+		return player_combat_result
+	var lifecycle_result: Dictionary = RunLifecycleService.from_catalog(catalog)
+	if not lifecycle_result.ok:
+		return lifecycle_result
+	run_lifecycle_service = lifecycle_result.run_lifecycle_service
+	player.resources.hp_depleted.connect(_on_player_hp_depleted)
+	var dummy_combat_result: Dictionary = combat_dummy.configure_combat(catalog, player, player.combat_config)
+	if not dummy_combat_result.ok:
+		return dummy_combat_result
+	return {"ok": true}
+
+func _configure_world_for_current_run() -> Dictionary:
+	var common_biome: Dictionary = catalog.find_by_id("biomes", "common_region")
+	if common_biome.is_empty():
+		return {"ok": false, "reason": "missing_common_biome", "error": "No common biome data loaded."}
 	var generator := WorldGenerator.new()
 	var progression_result := BiomeProgressionState.from_catalog(catalog, run_state)
 	if not progression_result.ok:
-		push_error(progression_result.error)
-		return
+		return progression_result
 	var projection: Dictionary = progression_result.progression_state.to_projection()
-	generated_world = generator.generate(11037, catalog.data_version, common_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), {"progression_projection": projection})
+	generated_world = generator.generate(run_state.seed, catalog.data_version, common_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), {"progression_projection": projection})
 	if not generated_world.get("ok", false):
-		push_error(String(generated_world.get("failure_reason", "World generation failed.")))
-		return
+		return {"ok": false, "reason": "world_generation_failed", "error": String(generated_world.get("failure_reason", "World generation failed."))}
 	var acquisition_result := _configure_acquisition_for_generated_world()
 	if not acquisition_result.ok:
-		push_error(acquisition_result.error)
-		return
+		return acquisition_result
 	var drop_connection := _connect_acquisition_combat_source(combat_dummy)
 	if not drop_connection.ok:
-		push_error(drop_connection.error)
+		return drop_connection
 	_render_generated_world(generated_world)
 	game_hud.configure(player, generated_world, world_render_result)
+	return {"ok": true}
 
 func _physics_process(_delta: float) -> void:
 	var desktop_command = _desktop_adapter.poll_movement_command()
@@ -241,6 +260,76 @@ func _on_combat_drop_requested(event: Dictionary) -> void:
 	var result: Dictionary = acquisition_service.process_drop_request(normalized)
 	if not result.ok:
 		push_error(result.error)
+
+func _on_player_hp_depleted() -> Dictionary:
+	if run_lifecycle_service == null:
+		return {"ok": false, "reason": "missing_run_lifecycle", "error": "Run lifecycle service is not configured."}
+	var result: Dictionary = run_lifecycle_service.resolve_lethal_hp(
+		player.resources,
+		inventory,
+		player.combat_state,
+		player.get_combat_id()
+	)
+	if not result.ok:
+		push_error(result.error)
+		return result
+	if String(result.get("state", "")) != "death_pending":
+		return result
+	var replacement := _replace_confirmed_dead_run()
+	if not replacement.ok:
+		push_error(replacement.error)
+	return replacement
+
+func _replace_confirmed_dead_run() -> Dictionary:
+	var confirmed: Dictionary = run_lifecycle_service.confirm_death(save_store, run_state)
+	if not confirmed.ok:
+		return confirmed
+	if bool(confirmed.get("preserved_newer_run", false)):
+		var preserved_run = confirmed.get("current_run_state")
+		if not preserved_run is RunState:
+			var loaded: Dictionary = save_store.load_run()
+			if not loaded.ok:
+				return loaded
+			preserved_run = loaded.run_state
+		var preserved_activation := _activate_run_state(preserved_run)
+		if not preserved_activation.ok:
+			return preserved_activation
+		return {
+			"ok": true,
+			"state": "preserved_run_activated",
+			"preserved_newer_run": true,
+			"invalidated_lifecycle_epoch": int(confirmed.get("invalidated_lifecycle_epoch", 0)),
+			"current_lifecycle_epoch": preserved_run.lifecycle_epoch
+		}
+	var fresh_run: RunState = run_lifecycle_service.create_fresh_run_after_confirmed_death(
+		int(confirmed.invalidated_lifecycle_epoch),
+		FRESH_RUN_SEED
+	)
+	var save_result: Dictionary = save_store.save_run(fresh_run)
+	if not save_result.ok:
+		return save_result
+	var activation_result := _activate_run_state(fresh_run)
+	if not activation_result.ok:
+		return activation_result
+	return {
+		"ok": true,
+		"state": "fresh_run",
+		"invalidated_lifecycle_epoch": int(confirmed.invalidated_lifecycle_epoch),
+		"lifecycle_epoch": fresh_run.lifecycle_epoch
+	}
+
+func _activate_run_state(state: RunState) -> Dictionary:
+	run_state = state
+	var services_result := _configure_run_services(catalog)
+	if not services_result.ok:
+		return services_result
+	var combat_lifecycle_result := _configure_combat_lifecycle()
+	if not combat_lifecycle_result.ok:
+		return combat_lifecycle_result
+	var world_result := _configure_world_for_current_run()
+	if not world_result.ok:
+		return world_result
+	return {"ok": true}
 
 func _vector_from_dictionary(data: Dictionary) -> Vector2i:
 	return Vector2i(int(data.get("x", 0)), int(data.get("y", 0)))

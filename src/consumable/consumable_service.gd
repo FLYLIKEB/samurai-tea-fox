@@ -8,6 +8,7 @@ const BALANCE_USE_SECONDS_ID := "consumable_use_base_seconds"
 const SNAPSHOT_SCHEMA_VERSION := 1
 const CONSUMABLE_KIND := ConsumableDefinition.KIND
 const EFFECT_HEAL_HP := ConsumableDefinition.EFFECT_HEAL_HP
+const EFFECT_RESURRECTION := "resurrection"
 
 signal operation_failed(error: Dictionary)
 signal use_started(action: Dictionary)
@@ -184,6 +185,8 @@ static func _definitions_from_catalog(catalog, default_use_seconds: float) -> Di
 	for row in _catalog_definitions(catalog, ITEM_SOURCE):
 		if String(row.get("type", "")) != CONSUMABLE_KIND:
 			continue
+		if _normalized_lifecycle_effect_type(row) == EFFECT_RESURRECTION:
+			continue
 		var definition_result := ConsumableDefinition.from_dictionary(row, default_use_seconds)
 		if not definition_result.ok:
 			return definition_result
@@ -325,6 +328,14 @@ static func _catalog_definitions(catalog, dataset: String) -> Array:
 static func _catalog_data_version(catalog) -> String:
 	var value = catalog.get("data_version") if catalog.has_method("get") else ""
 	return "" if value == null else String(value)
+
+static func _normalized_lifecycle_effect_type(row: Dictionary) -> String:
+	var raw := String(row.get("effect_type", row.get("effect", ""))).strip_edges()
+	match raw:
+		"부활", EFFECT_RESURRECTION:
+			return EFFECT_RESURRECTION
+		_:
+			return raw
 
 func _fail_and_emit(error: Dictionary) -> Dictionary:
 	operation_failed.emit(error)

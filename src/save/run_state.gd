@@ -2,6 +2,7 @@ extends RefCounted
 class_name RunState
 
 var data_version := ""
+var lifecycle_epoch := 0
 var seed := 0
 var current_biome_id := ""
 var inventory := {}
@@ -29,6 +30,7 @@ var acquisitions := {}
 static func from_dictionary(data: Dictionary):
 	var state: RunState = load("res://src/save/run_state.gd").new()
 	state.data_version = String(data.get("data_version", ""))
+	state.lifecycle_epoch = int(data.get("lifecycle_epoch", 0))
 	state.seed = int(data.get("seed", 0))
 	state.current_biome_id = String(data.get("current_biome_id", ""))
 	state.inventory = _dictionary_value(data.get("inventory", {}))
@@ -66,6 +68,7 @@ func reset_biome_progression() -> void:
 func to_dictionary() -> Dictionary:
 	return {
 		"data_version": data_version,
+		"lifecycle_epoch": lifecycle_epoch,
 		"seed": seed,
 		"current_biome_id": current_biome_id,
 		"inventory": inventory.duplicate(true),
