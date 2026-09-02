@@ -27,6 +27,7 @@ func run(asserts) -> void:
 	_assert_brewing_creates_prepared_tea_from_inventory(asserts)
 	_assert_drink_action_consumes_only_on_completion(asserts)
 	_assert_progressive_and_conditional_effects_share_completion_contract(asserts)
+	_assert_default_drink_signals_remain_immediate(asserts)
 	_assert_vessel_modifiers_are_data_driven(asserts)
 	_assert_snapshot_round_trips_prepared_tea(asserts)
 	_assert_invalid_data_and_combos_are_rejected_atomically(asserts)
@@ -125,6 +126,32 @@ func _assert_progressive_and_conditional_effects_share_completion_contract(asser
 	var conditional_pass: Dictionary = service.complete_drinking(conditional_pass_start.action, resources)
 	asserts.true_value(conditional_pass.effect.condition_passed, "nested condition context is accepted")
 	asserts.equal(conditional_pass.effect.ki_recovered, 20, "passed condition recovers configured ki")
+
+func _assert_default_drink_signals_remain_immediate(asserts) -> void:
+	var service: TeaService = _fixture_service()
+	var inventory: InventoryModel = _fixture_inventory()
+	var resources := PlayerResources.new(20, 100, 10, 3)
+	resources.spend_ki(80)
+	asserts.true_value(inventory.add_item("green_tea", 1).ok, "signal fixture tea add succeeds")
+	asserts.true_value(inventory.add_item("plain_bowl", 1).ok, "signal fixture vessel add succeeds")
+	asserts.true_value(service.brew("green_tea", "plain_bowl", inventory, 0).ok, "signal fixture tea brews")
+	var counts := {"started": 0, "completed": 0, "changed": 0, "failed": 0, "ki": 0}
+	service.drink_started.connect(func(_event: Dictionary) -> void: counts.started += 1)
+	service.drink_completed.connect(func(_event: Dictionary) -> void: counts.completed += 1)
+	service.changed.connect(func(_snapshot: Dictionary) -> void: counts.changed += 1)
+	service.operation_failed.connect(func(_failure: Dictionary) -> void: counts.failed += 1)
+	resources.ki_changed.connect(func(_previous: int, _current: int, _maximum: int) -> void: counts.ki += 1)
+
+	var started: Dictionary = service.start_drinking(0)
+	asserts.true_value(started.ok, "default drinking starts")
+	asserts.equal(counts.started, 1, "default start_drinking emits immediately once")
+	asserts.equal(counts.completed, 0, "default start does not emit completion")
+	var completed: Dictionary = service.complete_drinking(started.action, resources)
+	asserts.true_value(completed.ok, "default drinking completes")
+	asserts.equal(counts.completed, 1, "default complete_drinking emits completion immediately once")
+	asserts.equal(counts.changed, 1, "default complete_drinking emits changed immediately once")
+	asserts.equal(counts.ki, 1, "default complete_drinking emits its resource change immediately once")
+	asserts.equal(counts.failed, 0, "default successful drink emits no operation failure")
 
 func _assert_vessel_modifiers_are_data_driven(asserts) -> void:
 	var service: TeaService = _fixture_service()

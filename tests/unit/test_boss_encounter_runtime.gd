@@ -32,8 +32,22 @@ class CatalogProgressionBoundary:
 		completed_biome_ids.append(value)
 		return {"ok": true}
 
+class BossTeaCatalog:
+	extends RefCounted
+	var definitions: Dictionary
+
+	func _init(value: Dictionary) -> void:
+		definitions = value
+
+	func find_by_id(dataset: String, definition_id: String) -> Dictionary:
+		for row in definitions.get(dataset, []):
+			if String(row.get("id", "")) == definition_id:
+				return row
+		return {}
+
 func run(asserts) -> void:
 	_definition_loader_and_samples(asserts)
+	_tea_resolution_definition_contract(asserts)
 	_catalog_bosses_complete_declared_dungeons(asserts)
 	_deterministic_phases_patterns_and_summons(asserts)
 	_combat_resolution_completes_dungeon_once(asserts)
@@ -54,6 +68,36 @@ func _definition_loader_and_samples(asserts) -> void:
 	var invalid := _boss_row()
 	invalid.phases[1].health_ratio_threshold = 1.0
 	asserts.false_value(BossDefinition.from_dictionary(invalid).ok, "non-descending phase thresholds are rejected")
+
+func _tea_resolution_definition_contract(asserts) -> void:
+	var valid := _boss_row()
+	valid.tea_resolution = _tea_resolution_config()
+	asserts.true_value(BossDefinition.from_dictionary(valid).ok, "boss definition accepts the typed tea resolution contract")
+
+	var bad_choice := valid.duplicate(true)
+	bad_choice.tea_resolution.choice_id = "Bad Choice"
+	asserts.false_value(BossDefinition.from_dictionary(bad_choice).ok, "tea resolution choice_id must be stable")
+	var bad_condition := valid.duplicate(true)
+	bad_condition.tea_resolution.peaceful_conditions = [{"type": "meta_flag", "id": "forbidden_meta"}]
+	asserts.false_value(BossDefinition.from_dictionary(bad_condition).ok, "tea resolution rejects unsupported condition types")
+	var bad_shape := valid.duplicate(true)
+	bad_shape.tea_resolution.peaceful_conditions = [{"type": "run_flag", "id": "met_boss", "value": 1}]
+	asserts.false_value(BossDefinition.from_dictionary(bad_shape).ok, "tea resolution rejects condition fields outside its shape")
+	var bad_hook := valid.duplicate(true)
+	bad_hook.tea_resolution.hooks.common.memory = ["dialogue.wrong_channel"]
+	asserts.false_value(BossDefinition.from_dictionary(bad_hook).ok, "tea resolution hook keys must be stable keys for their channel")
+
+	var catalog := BossTeaCatalog.new({
+		"bosses": [valid],
+		"choices": [{"id": "fixture_share_tea"}],
+		"teas": [{"id": "oribe_green_matcha"}]
+	})
+	asserts.true_value(BossDefinition.from_catalog(catalog, "fixture_boss").ok, "BossDefinition resolves tea choice and tea catalog references")
+	catalog.definitions.choices = []
+	asserts.false_value(BossDefinition.from_catalog(catalog, "fixture_boss").ok, "BossDefinition rejects a missing tea choice reference")
+	catalog.definitions.choices = [{"id": "fixture_share_tea"}]
+	catalog.definitions.teas = []
+	asserts.false_value(BossDefinition.from_catalog(catalog, "fixture_boss").ok, "BossDefinition rejects a missing required tea reference")
 
 func _catalog_bosses_complete_declared_dungeons(asserts) -> void:
 	var catalog := DataCatalog.new()
@@ -245,6 +289,20 @@ func _boss_row() -> Dictionary:
 		"resolution_types": ["combat", "peaceful"],
 		"reward_item_ids": ["humble_clay_bowl"],
 		"progression_unlock_ids": ["common_region"]
+	}
+
+func _tea_resolution_config() -> Dictionary:
+	return {
+		"choice_id": "fixture_share_tea",
+		"required_tea_ids": ["oribe_green_matcha"],
+		"peaceful_conditions": [
+			{"type": "prepared_tea", "id": "oribe_green_matcha"},
+			{"type": "run_flag", "id": "met_boss"}
+		],
+		"hooks": {
+			"common": {"memory": ["memory.fixture_boss.met"]},
+			"combat_started": {"dialogue": ["dialogue.fixture_boss.combat_started"]}
+		}
 	}
 
 func _dungeon_context() -> Dictionary:

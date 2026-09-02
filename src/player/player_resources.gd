@@ -133,3 +133,32 @@ func to_dictionary() -> Dictionary:
 		"kokoro_max": kokoro_max,
 		"kokoro_low_threshold": kokoro_low_threshold
 	}
+
+func prepare_snapshot_delta(before: Dictionary, after: Dictionary) -> Dictionary:
+	if not _valid_public_snapshot(before) or not _valid_public_snapshot(after):
+		return {"ok": false, "reason": "invalid_resource_snapshot", "error": "Resource delta requires complete public snapshots."}
+	if to_dictionary() != after:
+		return {"ok": false, "reason": "stale_resource_snapshot", "error": "Resource delta must match current resource state."}
+	return {"ok": true, "token": {"before": before.duplicate(true), "after": after.duplicate(true)}}
+
+func publish_snapshot_delta(token: Dictionary) -> void:
+	var before: Dictionary = token.before
+	var after: Dictionary = token.after
+	_publish_resource_delta(before, after, "hp", "hp_max", hp_changed, hp_depleted)
+	_publish_resource_delta(before, after, "ki", "ki_max", ki_changed, ki_depleted)
+	_publish_resource_delta(before, after, "kokoro", "kokoro_max", kokoro_changed, kokoro_depleted)
+
+func _publish_resource_delta(before: Dictionary, after: Dictionary, value_field: String, maximum_field: String, changed_signal: Signal, depleted_signal: Signal) -> void:
+	var previous := int(before[value_field])
+	var current := int(after[value_field])
+	if previous == current and int(before[maximum_field]) == int(after[maximum_field]):
+		return
+	changed_signal.emit(previous, current, int(after[maximum_field]))
+	if previous > 0 and current == 0:
+		depleted_signal.emit()
+
+func _valid_public_snapshot(snapshot: Dictionary) -> bool:
+	for field in ["hp", "hp_max", "ki", "ki_max", "kokoro", "kokoro_max", "kokoro_low_threshold"]:
+		if typeof(snapshot.get(field)) != TYPE_INT:
+			return false
+	return true

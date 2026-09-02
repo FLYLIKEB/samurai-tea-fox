@@ -156,7 +156,7 @@ func to_projection() -> Dictionary:
 	return projection
 
 func _build_resolution_event(resolution_type: String, input: Dictionary) -> Dictionary:
-	return {
+	var event := {
 		"event_type": EVENT_RESOLVED,
 		"encounter_id": _state.encounter_id,
 		"boss_id": _state.boss_id,
@@ -167,6 +167,18 @@ func _build_resolution_event(resolution_type: String, input: Dictionary) -> Dict
 		"reward_item_ids": _definition.reward_item_ids.duplicate(true),
 		"progression_unlock_ids": _definition.progression_unlock_ids.duplicate(true)
 	}
+	for field in [
+		"pre_boss_command",
+		"tea_resolution_outcome",
+		"tea_id",
+		"prepared_tea_id",
+		"memory_hook_keys",
+		"weakness_hook_keys",
+		"dialogue_hook_keys"
+	]:
+		if input.has(field):
+			event[field] = input[field].duplicate(true) if typeof(input[field]) in [TYPE_ARRAY, TYPE_DICTIONARY] else input[field]
+	return event
 
 func _require_active() -> Dictionary:
 	if _state.lifecycle_state != BossEncounterState.STATE_ACTIVE:

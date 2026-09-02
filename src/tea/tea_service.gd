@@ -262,6 +262,28 @@ func complete_drinking(action: Dictionary, resources = null) -> Dictionary:
 	_emit_changed()
 	return result
 
+func prepare_drink_commit(started_action: Dictionary, completion_result: Dictionary, committed_snapshot: Dictionary) -> Dictionary:
+	if not bool(completion_result.get("ok", false)) or not bool(completion_result.get("consumed", false)):
+		return _fail("invalid_drink_commit", "Published tea completion must be a successful consumed result.")
+	var completed_action = completion_result.get("action", {})
+	if typeof(completed_action) != TYPE_DICTIONARY \
+			or String(started_action.get("action_id", "")).is_empty() \
+			or String(completed_action.get("action_id", "")) != String(started_action.get("action_id", "")) \
+			or not bool(completed_action.get("completed", false)):
+		return _fail("invalid_drink_commit", "Published tea completion must match its completed start action.")
+	if committed_snapshot.is_empty() or to_snapshot() != committed_snapshot:
+		return _fail("stale_drink_commit", "Published tea completion must match current tea state.")
+	return {"ok": true, "token": {
+		"started_action": _duplicate_dictionary(started_action),
+		"completion_result": _duplicate_dictionary(completion_result),
+		"committed_snapshot": _duplicate_dictionary(committed_snapshot)
+	}}
+
+func publish_drink_commit(token: Dictionary) -> void:
+	drink_started.emit(_duplicate_dictionary(token.started_action))
+	drink_completed.emit(_duplicate_dictionary(token.completion_result))
+	changed.emit(_duplicate_dictionary(token.committed_snapshot))
+
 func interrupt_drinking(action: Dictionary, reason := "hit") -> Dictionary:
 	var action_result := _validate_action(action)
 	if not action_result.ok:

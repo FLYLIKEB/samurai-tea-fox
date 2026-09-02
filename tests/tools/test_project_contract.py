@@ -81,6 +81,13 @@ class ProjectContractTests(unittest.TestCase):
                 "summon_monster_ids": "monsters",
             },
         )
+        self.assertEqual(
+            bosses["nested_relations"],
+            {
+                "tea_resolution.choice_id": "choices",
+                "tea_resolution.required_tea_ids": "teas",
+            },
+        )
         self.assertTrue((ROOT / "data/generated/bosses.json").is_file())
         self.assertTrue((ROOT / "data/generated/dungeons.json").is_file())
 
