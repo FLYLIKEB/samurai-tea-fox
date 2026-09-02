@@ -114,6 +114,14 @@
         "field_map": {"차류": "tea_type", "산지": "origin", "기운 회복": "ki_recovery", "기억 보유": "memory", "기억 강도": "memory_strength", "특수 효과": "special_effect", "마시는 시간(초)": "drink_seconds", "1회 소비량": "serving_size", "휴대 횟수": "carry_uses", "회복 방식": "recovery_mode", "조건 키": "condition_key", "기운 유지 보정": "sustain_modifier", "우리기 장소 필요": "requires_brewing_location"},
         "relation_map": {"획득 지역 관계": {"field": "biome_ids", "target": "biomes", "many": true}}
       }
+    },
+    "shops": {
+      "file": "shops.json", "required_fields": ["id", "name", "status", "seller_id", "buy_price", "can_sell", "sell_price", "stock_quantity", "min_progress_stage", "unlock_condition"], "relations": {"item_id": "items", "tea_id": "teas"},
+      "notion": {
+        "source": "collection://3f6354ff-02fb-4b92-9b81-9f821ae6408b", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "재고 ID", "id_prefix": "shop",
+        "field_map": {"가격": "buy_price", "판매 가능": "can_sell", "판매가": "sell_price", "재고 수량": "stock_quantity", "최소 진행 단계": "min_progress_stage", "해금 조건": "unlock_condition"},
+        "relation_map": {"아이템": {"field": "item_id", "target": "items", "many": false}, "차": {"field": "tea_id", "target": "teas", "many": false}, "판매자": {"field": "seller_id", "target": "characters", "many": false}}
+      }
     }
   }
 }

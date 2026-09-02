@@ -199,6 +199,33 @@ class NotionExportPipelineTests(unittest.TestCase):
         with self.assertRaisesRegex(ExportValidationError, "items.*wood.*name"):
             self.pipeline.build_snapshots(invalid, "confirmed")
 
+    def test_shop_export_resolves_subject_and_seller_and_validates_numbers(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        overrides = json.loads(RUNTIME_ID_MAP.read_text(encoding="utf-8"))
+        rows = {
+            "items": [{"_notion_id": "item-page", "아이템 ID": {"number": 31}, "이름": "천 붕대", "설정 상태": "확정"}],
+            "shops": [{
+                "_notion_id": "shop-page", "재고 ID": {"number": 1}, "이름": "초기 — 천 붕대", "설정 상태": "테스트",
+                "판매자": ["3ce37369-9e66-818d-934e-c07894388bde"], "아이템": ["item-page"], "차": [],
+                "가격": 8, "판매 가능": True, "판매가": 4, "재고 수량": 5, "최소 진행 단계": 0, "해금 조건": "런 시작부터",
+            }],
+        }
+        capture = CaptureBuilder(schema, overrides).build_from_rows(rows, "notion-shop-fixture-v1")
+        snapshots = self.pipeline.build_snapshots(capture, "confirmed-test")
+        shop = snapshots["shops"]["items"][0]
+        self.assertEqual(shop["id"], "shop_1")
+        self.assertEqual(shop["item_id"], "item_31")
+        self.assertEqual(shop["seller_id"], "wandering_tea_merchant")
+        self.assertEqual((shop["buy_price"], shop["sell_price"]), (8, 4))
+        for field, value in (("buy_price", None), ("buy_price", 0), ("sell_price", -1), ("stock_quantity", 1.5)):
+            invalid = copy.deepcopy(capture)
+            if value is None:
+                invalid["datasets"]["shops"]["items"][0].pop(field)
+            else:
+                invalid["datasets"]["shops"]["items"][0][field] = value
+            with self.assertRaises(ExportValidationError):
+                self.pipeline.build_snapshots(invalid, "confirmed-test")
+
     def test_missing_or_unknown_status_fails_instead_of_silently_dropping_row(self):
         missing = copy.deepcopy(self.capture)
         del missing["datasets"]["balance"]["items"][0]["status"]

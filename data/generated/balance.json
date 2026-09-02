@@ -1,5 +1,5 @@
 {
-  "content_hash": "bb1b14166dcf861a9c26edccc5f4bb628f21577c4066f2cbffeb06d6d4cf08da",
+  "content_hash": "c54b653d9782a091446fa2b0ddd488e1362d41008dbf5ce215e3544d754a2a24",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -71,6 +71,16 @@
       "status": "테스트",
       "unit": "초",
       "value": 1
+    },
+    {
+      "category": "경제",
+      "description": "한 런에서 보유 가능한 동전 상한",
+      "formula_note": "0 <= currency <= 999",
+      "id": "currency_max_stack",
+      "name": "동전 최대 보유량",
+      "status": "테스트",
+      "unit": "개",
+      "value": 999
     },
     {
       "category": "心",

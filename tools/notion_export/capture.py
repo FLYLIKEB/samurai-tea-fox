@@ -138,12 +138,13 @@ class CaptureBuilder:
             resolved: list[str] = []
             target_ids = runtime_ids.get(relation["target"], {})
             for target_page_id in page_ids:
-                if target_page_id not in target_ids:
+                target_id = target_ids.get(target_page_id, self.page_overrides.get(target_page_id))
+                if target_id is None:
                     raise ExportValidationError(
                         f"{dataset_name} item {item['id']} relation {relation['field']} "
                         f"targets missing Notion page {target_page_id}"
                     )
-                resolved.append(target_ids[target_page_id])
+                resolved.append(target_id)
             if relation.get("many", True):
                 if resolved:
                     item[relation["field"]] = sorted(resolved)

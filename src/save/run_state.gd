@@ -7,6 +7,7 @@ var current_biome_id := ""
 var inventory := {}
 var equipment := {}
 var currency := 0
+var trade_stock := {}
 var tails := 1
 var abilities := []
 var completed_dungeon_ids := []
@@ -33,6 +34,7 @@ static func from_dictionary(data: Dictionary):
 	state.inventory = _dictionary_value(data.get("inventory", {}))
 	state.equipment = _dictionary_value(data.get("equipment", {}))
 	state.currency = int(data.get("currency", 0))
+	state.trade_stock = _dictionary_value(data.get("trade_stock", {}))
 	state.tails = int(data.get("tails", 1))
 	state.abilities = _array_value(data.get("abilities", []))
 	state.completed_dungeon_ids = _array_value(data.get("completed_dungeon_ids", []))
@@ -69,6 +71,7 @@ func to_dictionary() -> Dictionary:
 		"inventory": inventory.duplicate(true),
 		"equipment": equipment.duplicate(true),
 		"currency": currency,
+		"trade_stock": trade_stock.duplicate(true),
 		"tails": tails,
 		"abilities": abilities.duplicate(true),
 		"completed_dungeon_ids": completed_dungeon_ids.duplicate(true),
