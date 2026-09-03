@@ -155,6 +155,8 @@ class FakeCatalog:
 	func find_character_by_id(character_id: String) -> Dictionary:
 		if character_id == "CHR-1":
 			return {"character_id": "CHR-1", "name": "아버지 — 차를 사랑하는 구미호", "meta_memory": true}
+		if character_id == "CHR-5":
+			return {"character_id": "CHR-5", "name": "센리큐 — 이름 없는 노다인", "meta_memory": true}
 		if character_id == "CHR-8":
 			return {"character_id": "CHR-8", "name": "무차우", "meta_memory": false}
 		return {}
@@ -321,7 +323,15 @@ func _assert_narrative_dialogue_emits_option_commands(asserts) -> void:
 	asserts.true_value(hud.narrative_dialogue_visible(), "HUD reports the narrative panel as visible")
 	asserts.true_value(_tree_has_text(hud, "아버지 — 차를 사랑하는 구미호"), "HUD resolves narrative speaker names from character data")
 	asserts.true_value(_tree_has_text(hud, "물이 끓기 전에 서두르지 마라."), "HUD renders narrative dialogue text")
-	var button := _first_enabled_button_with_text(hud.get_node_or_null("Root/NarrativePanel/NarrativeRows/NarrativeOptions"), "고개를 끄덕인다")
+	asserts.true_value(_texture_rect_has_texture(hud.get_node_or_null("Root/NarrativeOverlay/NarrativeBackground")), "prologue dialogue renders its scene background")
+	asserts.true_value(_tree_uses_texture(hud.get_node_or_null("Root/NarrativeOverlay/LeftPortrait"), "kitsune_father_front_64x64.png"), "prologue dialogue renders the father portrait")
+	asserts.true_value(_tree_uses_texture(hud.get_node_or_null("Root/NarrativeOverlay/RightPortrait"), "fox_samurai_front_idle_64x64.png"), "prologue dialogue renders Muchau as the conversation partner")
+	asserts.false_value((hud.get_node_or_null("Root/StatusPanel") as Control).visible, "prologue hides the normal status HUD")
+	asserts.false_value((hud.get_node_or_null("Root/MapPanel") as Control).visible, "prologue hides the normal map HUD")
+	asserts.false_value((hud.get_node_or_null("Root/QuickSlotPanel") as Control).visible, "prologue hides the normal quickslot HUD")
+	asserts.false_value((hud.get_node_or_null("Root/ActionPanel") as Control).visible, "prologue hides the normal action HUD")
+	asserts.false_value(_tree_has_text(hud.get_node_or_null("Root/NarrativeOverlay/NarrativePanel/NarrativeRows/NarrativeOptions"), "고개를 끄덕인다"), "prologue does not show choice prose as button text")
+	var button := _first_enabled_button_with_text(hud.get_node_or_null("Root/NarrativeOverlay/NarrativePanel/NarrativeRows/NarrativeOptions"), "넘어가기")
 	if button != null:
 		button.pressed.emit()
 	asserts.equal(received.size(), 1, "narrative option emits one command")
@@ -332,6 +342,7 @@ func _assert_narrative_dialogue_emits_option_commands(asserts) -> void:
 		asserts.equal(received[0].payload.get("option_id", ""), "accept_farewell", "narrative command carries the option id")
 	asserts.true_value(hud.hide_narrative_dialogue(), "HUD hides narrative dialogue on request")
 	asserts.false_value(hud.narrative_dialogue_visible(), "HUD reports hidden narrative panel")
+	asserts.true_value((hud.get_node_or_null("Root/StatusPanel") as Control).visible, "normal status HUD is restored after prologue")
 	hud.free()
 
 func _configured_hud() -> GameHud:
@@ -362,6 +373,9 @@ func _tree_uses_texture(node: Node, needle: String) -> bool:
 		if _tree_uses_texture(child, needle):
 			return true
 	return false
+
+func _texture_rect_has_texture(node: Node) -> bool:
+	return node is TextureRect and (node as TextureRect).texture != null
 
 func _tree_has_text(node: Node, text: String) -> bool:
 	if node is Label and (node as Label).text == text:

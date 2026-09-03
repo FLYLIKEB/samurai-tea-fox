@@ -18,6 +18,11 @@ const ICON_TEA := "asset_assets_ui_icons_atlas_tea_action_cup_png"
 const ICON_CONSUMABLE := "asset_assets_ui_icons_atlas_gourd_png"
 const ICON_MOON := "asset_assets_ui_icons_atlas_moon_png"
 const BUTTON_DPAD := "asset_assets_ui_controls_dpad_png"
+const FIRST_RUN_PROLOGUE_EVENT_ID := "first_run_prologue"
+const PROLOGUE_BACKGROUND := "prologue_first_run_father_muchau_teahouse"
+const PORTRAIT_FATHER := "asset_assets_sprites_characters_family_chr_1_kitsune_father_kitsune_father_front_64x64_png"
+const PORTRAIT_MUCHAU := "asset_assets_sprites_characters_player_chr_8_fox_samurai_fox_samurai_front_idle_64x64_png"
+const PORTRAIT_SEN_RIKYU := "asset_assets_sprites_characters_bosses_chr_5_sen_rikyu_sen_rikyu_front_64x64_png"
 
 const BALANCE_ABILITY_SLOTS_ID := "ability_equip_slots"
 const STATUS_PANEL_SIZE := Vector2(150, 72)
@@ -65,6 +70,9 @@ var _action_grid: GridContainer
 var _menu_content: VBoxContainer
 var _minimap_grid: GridContainer
 var _narrative_options: HBoxContainer
+var _narrative_background: TextureRect
+var _narrative_left_portrait: TextureRect
+var _narrative_right_portrait: TextureRect
 var _open_menu_id := ""
 
 func _ready() -> void:
@@ -168,9 +176,20 @@ func hide_menu() -> bool:
 
 func show_narrative_dialogue(read_model: Dictionary) -> bool:
 	_build()
+	var overlay := _panels.get("narrative_overlay") as Control
 	var panel := _panels.get("narrative") as Control
 	if panel == null:
 		return false
+	var event_id := String(read_model.get("event_id", ""))
+	var node_id := String(read_model.get("node_id", ""))
+	var speaker_id := String(read_model.get("speaker_id", ""))
+	_set_gameplay_hud_visible(false)
+	if overlay != null:
+		overlay.visible = true
+	if _narrative_background != null:
+		_narrative_background.visible = event_id == FIRST_RUN_PROLOGUE_EVENT_ID
+		_narrative_background.texture = _load_texture(PROLOGUE_BACKGROUND)
+	_configure_narrative_portraits(event_id, speaker_id)
 	_set_label("narrative_speaker", _speaker_label(String(read_model.get("speaker_id", ""))))
 	_set_label("narrative_text", String(read_model.get("text", "")))
 	for child in _narrative_options.get_children():
@@ -178,8 +197,10 @@ func show_narrative_dialogue(read_model: Dictionary) -> bool:
 	for option in _array_value(read_model.get("options", [])):
 		if typeof(option) != TYPE_DICTIONARY:
 			continue
+		var option_id := String(option.get("id", ""))
 		var button := Button.new()
-		button.text = String(option.get("display_text", "다음"))
+		button.text = "넘어가기"
+		button.tooltip_text = String(option.get("display_text", "넘어가기"))
 		button.custom_minimum_size = Vector2(88, 30)
 		button.focus_mode = Control.FOCUS_ALL
 		button.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -188,9 +209,9 @@ func show_narrative_dialogue(read_model: Dictionary) -> bool:
 			Vector2i.ZERO,
 			-1,
 			{
-				"event_id": String(read_model.get("event_id", "")),
-				"node_id": String(read_model.get("node_id", "")),
-				"option_id": String(option.get("id", ""))
+				"event_id": event_id,
+				"node_id": node_id,
+				"option_id": option_id
 			}
 		)))
 		_narrative_options.add_child(button)
@@ -199,12 +220,19 @@ func show_narrative_dialogue(read_model: Dictionary) -> bool:
 	return true
 
 func hide_narrative_dialogue() -> bool:
+	var overlay := _panels.get("narrative_overlay") as Control
+	if overlay != null:
+		overlay.visible = false
 	var panel := _panels.get("narrative") as Control
 	if panel != null:
 		panel.visible = false
+	_set_gameplay_hud_visible(true)
 	return true
 
 func narrative_dialogue_visible() -> bool:
+	var overlay := _panels.get("narrative_overlay") as Control
+	if overlay != null:
+		return overlay.visible
 	var panel := _panels.get("narrative") as Control
 	return panel != null and panel.visible
 
@@ -302,19 +330,40 @@ func _build() -> void:
 	_panels.action = action_panel
 	_build_actions(action_panel)
 
-	var narrative_panel := _dialogue_panel(Vector2(520, 132))
-	narrative_panel.name = "NarrativePanel"
-	narrative_panel.visible = false
-	root.add_child(narrative_panel)
-	_panels.narrative = narrative_panel
-	_build_narrative_panel(narrative_panel)
-
 	var menu_panel := _panel(MENU_PANEL_SIZE)
 	menu_panel.name = "MenuPanel"
 	menu_panel.visible = false
 	root.add_child(menu_panel)
 	_panels.menu = menu_panel
 	_build_menu_panel(menu_panel)
+
+	var narrative_overlay := Control.new()
+	narrative_overlay.name = "NarrativeOverlay"
+	narrative_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	narrative_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	narrative_overlay.visible = false
+	root.add_child(narrative_overlay)
+	_panels.narrative_overlay = narrative_overlay
+
+	_narrative_background = TextureRect.new()
+	_narrative_background.name = "NarrativeBackground"
+	_narrative_background.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_narrative_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_narrative_background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_narrative_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	narrative_overlay.add_child(_narrative_background)
+
+	_narrative_left_portrait = _portrait_rect("LeftPortrait")
+	narrative_overlay.add_child(_narrative_left_portrait)
+	_narrative_right_portrait = _portrait_rect("RightPortrait")
+	narrative_overlay.add_child(_narrative_right_portrait)
+
+	var narrative_panel := _dialogue_panel(Vector2(520, 132))
+	narrative_panel.name = "NarrativePanel"
+	narrative_panel.visible = false
+	narrative_overlay.add_child(narrative_panel)
+	_panels.narrative = narrative_panel
+	_build_narrative_panel(narrative_panel)
 
 	_apply_safe_area_layout()
 
@@ -540,6 +589,55 @@ func _build_narrative_panel(parent: PanelContainer) -> void:
 	_ignore_mouse(_narrative_options)
 	_narrative_options.add_theme_constant_override("separation", 6)
 	rows.add_child(_narrative_options)
+
+func _portrait_rect(name: String) -> TextureRect:
+	var rect := TextureRect.new()
+	rect.name = name
+	rect.custom_minimum_size = Vector2(128, 128)
+	rect.size = Vector2(128, 128)
+	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return rect
+
+func _set_gameplay_hud_visible(visible: bool) -> void:
+	for panel_id in ["status", "map", "quickslot", "dpad", "action", "menu"]:
+		var panel := _panels.get(panel_id) as Control
+		if panel != null:
+			panel.visible = visible and panel_id != "dpad"
+	if not visible:
+		_open_menu_id = ""
+
+func _configure_narrative_portraits(event_id: String, speaker_id: String) -> void:
+	if _narrative_left_portrait == null or _narrative_right_portrait == null:
+		return
+	if event_id != FIRST_RUN_PROLOGUE_EVENT_ID:
+		_set_portrait(_narrative_left_portrait, _portrait_asset_id_for_speaker(speaker_id), true)
+		_set_portrait(_narrative_right_portrait, "", false)
+		return
+	var left_asset := PORTRAIT_FATHER
+	var right_asset := PORTRAIT_MUCHAU
+	if speaker_id == "CHR-5":
+		right_asset = PORTRAIT_SEN_RIKYU
+	_set_portrait(_narrative_left_portrait, left_asset, true)
+	_set_portrait(_narrative_right_portrait, right_asset, true)
+	_narrative_left_portrait.modulate = Color(1, 1, 1, 1) if speaker_id == "CHR-1" else Color(0.70, 0.70, 0.70, 0.72)
+	_narrative_right_portrait.modulate = Color(1, 1, 1, 1) if speaker_id != "CHR-1" else Color(0.70, 0.70, 0.70, 0.72)
+
+func _set_portrait(rect: TextureRect, asset_id: String, visible: bool) -> void:
+	rect.visible = visible and not asset_id.is_empty()
+	rect.texture = _load_texture(asset_id) if rect.visible else null
+
+func _portrait_asset_id_for_speaker(speaker_id: String) -> String:
+	match speaker_id:
+		"CHR-1":
+			return PORTRAIT_FATHER
+		"CHR-5":
+			return PORTRAIT_SEN_RIKYU
+		"CHR-8":
+			return PORTRAIT_MUCHAU
+		_:
+			return ""
 
 func _show_menu(title: String, rows: Array) -> void:
 	_build()
@@ -1179,6 +1277,28 @@ func _inventory_definition(item_id: String) -> Dictionary:
 
 func _apply_safe_area_layout() -> void:
 	var margin := _safe_margin()
+	var viewport_size := get_viewport().get_visible_rect().size if get_viewport() != null else Vector2(640, 360)
+	var narrative_overlay := _panels.get("narrative_overlay") as Control
+	if narrative_overlay != null:
+		narrative_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+		narrative_overlay.offset_left = 0
+		narrative_overlay.offset_top = 0
+		narrative_overlay.offset_right = 0
+		narrative_overlay.offset_bottom = 0
+	if _narrative_background != null:
+		_narrative_background.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_narrative_background.offset_left = 0
+		_narrative_background.offset_top = 0
+		_narrative_background.offset_right = 0
+		_narrative_background.offset_bottom = 0
+	var portrait_size := Vector2(128, 128)
+	var portrait_y := maxf(margin.y + 44.0, viewport_size.y - margin.w - 132.0 - portrait_size.y - 12.0)
+	if _narrative_left_portrait != null:
+		_narrative_left_portrait.size = portrait_size
+		_narrative_left_portrait.position = Vector2(margin.x + 28.0, portrait_y)
+	if _narrative_right_portrait != null:
+		_narrative_right_portrait.size = portrait_size
+		_narrative_right_portrait.position = Vector2(viewport_size.x - margin.z - portrait_size.x - 28.0, portrait_y)
 	_place_panel(_panels.status, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y))
 	_place_panel(_panels.map, Control.PRESET_TOP_RIGHT, Vector2(-margin.z, margin.y))
 	_place_panel(_panels.quickslot, Control.PRESET_CENTER_TOP, Vector2(0.0, margin.y))

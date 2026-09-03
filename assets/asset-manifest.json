@@ -1257,6 +1257,29 @@
       "rgba_sha256": "sha256:0a867aacb1fe213179b47bdb73f873d6e7cab93445c90ab37a6528c4d003fb52"
     },
     {
+      "id": "prologue_first_run_father_muchau_teahouse",
+      "name": "first_run_father_muchau_teahouse",
+      "status": "완료",
+      "kind": "background",
+      "path": "res://assets/backgrounds/prologue/first_run_father_muchau_teahouse.png",
+      "width": 640,
+      "height": 360,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 640,
+        "frame_height": 360
+      },
+      "alpha_required": false,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "runtime_scale": 1,
+      "source_sha256": "sha256:b82491acbf5cc796c697aeeb28f9e19d61791a2503c7652e29c9a09cc99ed4ca",
+      "rgba_sha256": "sha256:3f0edc021c09b02b999b2305284229d5c1ed75fcff43649fc4293cdecc196b40"
+    },
+    {
       "id": "asset_assets_sprites_characters_player_chr_8_fox_samurai_fox_samurai_back_idle_64x64_png",
       "name": "fox_samurai_back_idle_64x64",
       "status": "완료",
