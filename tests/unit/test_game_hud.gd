@@ -97,6 +97,31 @@ class FakeCraftingService:
 			return {"ok": true, "craftable": true}
 		return {"ok": false, "craftable": false, "reason": "missing_materials"}
 
+	func read_model(inventory, context := {}, options := {}) -> Dictionary:
+		var availability := can_craft("wooden_workbench", inventory, context)
+		var row := {
+			"recipe_id": "wooden_workbench",
+			"name": "목재 작업대 제작",
+			"category": "도구",
+			"selected": true,
+			"craftable": bool(availability.craftable),
+			"reason": String(availability.get("reason", "")),
+			"reason_label": "제작 가능" if bool(availability.craftable) else "재료 부족",
+			"result": {"item_id": "wooden_workbench", "name": "목재 작업대", "quantity": 1},
+			"materials": [{"item_id": "wood", "name": "목재", "available": inventory.get_total_quantity("wood"), "required": 2}],
+			"facilities": [],
+			"unlock_biome_id": "common_region"
+		}
+		return {
+			"ok": true,
+			"selected_filter": String(options.get("category", "all")),
+			"selected_recipe_id": "wooden_workbench",
+			"categories": ["all", "도구"],
+			"rows": [row],
+			"detail": row,
+			"counts": {"total": 1, "visible": 1, "craftable": 1 if bool(availability.craftable) else 0}
+		}
+
 class FakeTimeConfig:
 	func phase_duration_seconds(_phase: StringName) -> float:
 		return 120.0
@@ -240,8 +265,9 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	var received: Array = []
 	hud.mobile_command_issued.connect(func(command): received.append(command))
 	asserts.true_value(hud.show_crafting_menu(), "HUD opens the crafting menu")
-	asserts.true_value(_tree_has_text(hud, "제작"), "crafting menu exposes craft buttons")
-	var craft_button := _first_enabled_button(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuContent"))
+	asserts.true_value(_tree_has_text(hud, "제작법 1/1 · 가능 1 · 필터 전체"), "crafting menu shows recipe counts and active filter")
+	asserts.true_value(_tree_has_text(hud, "상세 wooden_workbench → 목재 작업대 x1 · 제작 가능 · 재료 목재 3/2 · 손제작 · 해금 common_region"), "crafting menu shows selected recipe detail")
+	var craft_button := _first_enabled_button_with_text(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuContent"), "제작")
 	if craft_button != null:
 		craft_button.pressed.emit()
 	asserts.equal(received.size(), 1, "crafting button emits one command")
@@ -296,6 +322,17 @@ func _first_enabled_button(node: Node) -> Button:
 		return node as Button
 	for child in node.get_children():
 		var found := _first_enabled_button(child)
+		if found != null:
+			return found
+	return null
+
+func _first_enabled_button_with_text(node: Node, text: String) -> Button:
+	if node == null:
+		return null
+	if node is Button and not (node as Button).disabled and (node as Button).text == text:
+		return node as Button
+	for child in node.get_children():
+		var found := _first_enabled_button_with_text(child, text)
 		if found != null:
 			return found
 	return null

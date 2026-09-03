@@ -61,3 +61,30 @@ func run(asserts) -> void:
 	asserts.false_value(dispatcher.dispatch("attack"), "non-command value is rejected")
 	asserts.equal(received.size(), 1, "dispatcher emits exactly one valid command")
 	asserts.equal(received[0], attack, "dispatcher preserves command identity")
+	_assert_menu_shortcut_keys_are_unique(asserts)
+
+func _assert_menu_shortcut_keys_are_unique(asserts) -> void:
+	var text := FileAccess.get_file_as_string("res://project.godot")
+	var menu_actions := ["open_inventory", "open_crafting", "open_facilities", "open_map", "open_tea_brewing", "open_meta_codex"]
+	var keycodes := {}
+	for action in menu_actions:
+		var keycode := _project_input_keycode(text, action)
+		asserts.true_value(keycode > 0, "%s has a keyboard binding" % action)
+		asserts.false_value(keycodes.has(keycode), "%s does not share a shortcut with %s" % [action, String(keycodes.get(keycode, ""))])
+		keycodes[keycode] = action
+
+func _project_input_keycode(text: String, action: String) -> int:
+	var start := text.find("%s={" % action)
+	if start < 0:
+		return -1
+	var section_end := text.find("\n}", start)
+	if section_end < 0:
+		return -1
+	var section := text.substr(start, section_end - start)
+	var marker := "\"keycode\":"
+	var marker_index := section.find(marker)
+	if marker_index < 0:
+		return -1
+	var value_start := marker_index + marker.length()
+	var value_end := section.find(",", value_start)
+	return int(section.substr(value_start, value_end - value_start))

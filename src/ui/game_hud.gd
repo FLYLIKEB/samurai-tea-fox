@@ -37,6 +37,8 @@ var run_state
 var tea_service
 var asset_catalog := AssetCatalog.new()
 var _asset_catalog_ready := false
+var _crafting_filter := "all"
+var _selected_recipe_id := ""
 var tea_brewing_command_runtime
 var meta_codex_command_runtime
 var crafting_service
@@ -736,37 +738,133 @@ func _meta_tab_label(tab: String) -> String:
 
 func _crafting_rows() -> Array:
 	var rows: Array = []
-	if crafting_service == null:
+	if crafting_service == null or not crafting_service.has_method("read_model"):
 		return rows
-	var recipe_ids: Array = crafting_service.recipe_definitions.keys()
-	recipe_ids.sort()
-	for index in range(mini(recipe_ids.size(), 5)):
-		var recipe_id := String(recipe_ids[index])
-		var recipe: Dictionary = crafting_service.recipe_for(recipe_id)
-		var availability: Dictionary = crafting_service.can_craft(recipe_id, inventory, crafting_context)
-		rows.append(_crafting_row(recipe, availability))
-	if recipe_ids.size() > 5:
-		rows.append(_label("… 제작법 %d개 더 있음" % (recipe_ids.size() - 5), 11))
+	var model: Dictionary = crafting_service.read_model(inventory, crafting_context, {
+		"category": _crafting_filter,
+		"selected_recipe_id": _selected_recipe_id
+	})
+	if not bool(model.get("ok", false)):
+		rows.append(_label("제작 read model 없음", 11))
+		return rows
+	_selected_recipe_id = String(model.get("selected_recipe_id", ""))
+	var counts: Dictionary = model.get("counts", {})
+	rows.append(_label("제작법 %d/%d · 가능 %d · 필터 %s" % [
+		int(counts.get("visible", 0)),
+		int(counts.get("total", 0)),
+		int(counts.get("craftable", 0)),
+		_crafting_filter_label(_crafting_filter)
+	], 11))
+	var filters := HBoxContainer.new()
+	_ignore_mouse(filters)
+	filters.add_theme_constant_override("separation", 4)
+	for category in model.get("categories", []):
+		var category_id := String(category)
+		filters.add_child(_crafting_filter_button(_crafting_filter_label(category_id), category_id))
+	rows.append(filters)
+	var model_rows: Array = model.get("rows", [])
+	var page_start := _crafting_page_start(model_rows, _selected_recipe_id, 5)
+	for index in range(page_start, mini(model_rows.size(), page_start + 5)):
+		rows.append(_crafting_row(model_rows[index]))
+	if model_rows.size() > 5:
+		rows.append(_label("항목 %d-%d / %d" % [page_start + 1, mini(model_rows.size(), page_start + 5), model_rows.size()], 10))
+	rows.append(_crafting_detail_row(model.get("detail", {})))
 	return rows
 
-func _crafting_row(recipe: Dictionary, availability: Dictionary) -> Control:
+func _crafting_row(row_model: Dictionary) -> Control:
 	var row := HBoxContainer.new()
 	_ignore_mouse(row)
 	row.add_theme_constant_override("separation", 4)
-	var label := _label("%s · %s" % [String(recipe.get("name", recipe.get("id", ""))), _crafting_reason_label(availability)], 10)
+	var prefix := "▶ " if bool(row_model.get("selected", false)) else ""
+	var label := _label("%s%s · %s" % [
+		prefix,
+		String(row_model.get("name", row_model.get("recipe_id", ""))),
+		String(row_model.get("reason_label", ""))
+	], 10)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(label)
+	var select_button := Button.new()
+	select_button.text = "상세"
+	select_button.custom_minimum_size = Vector2(52, 28)
+	select_button.focus_mode = Control.FOCUS_ALL
+	select_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	var recipe_id := String(row_model.get("recipe_id", ""))
+	select_button.pressed.connect(func():
+		_selected_recipe_id = recipe_id
+		_refresh_open_menu()
+	)
+	row.add_child(select_button)
 	var button := Button.new()
 	button.text = "제작"
-	button.disabled = not bool(availability.get("craftable", false))
-	button.focus_mode = Control.FOCUS_NONE
+	button.disabled = not bool(row_model.get("craftable", false))
+	button.focus_mode = Control.FOCUS_ALL
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	var recipe_id := String(recipe.get("id", ""))
 	button.pressed.connect(func():
 		mobile_command_issued.emit(GameCommand.new(GameCommand.Type.CRAFT_RECIPE, Vector2i.ZERO, 0, {"recipe_id": recipe_id}))
 	)
 	row.add_child(button)
 	return row
+
+func _crafting_filter_button(text: String, category: String) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(54, 28)
+	button.disabled = category == _crafting_filter
+	button.focus_mode = Control.FOCUS_ALL
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.pressed.connect(func():
+		_crafting_filter = category
+		_selected_recipe_id = ""
+		_refresh_open_menu()
+	)
+	return button
+
+func _crafting_detail_row(detail: Dictionary) -> Label:
+	if detail.is_empty():
+		return _label("상세: 표시할 제작법 없음", 10)
+	var result: Dictionary = detail.get("result", {})
+	var parts := [
+		"상세 %s → %s x%d" % [
+			String(detail.get("recipe_id", "")),
+			String(result.get("name", result.get("item_id", ""))),
+			int(result.get("quantity", 1))
+		],
+		String(detail.get("reason_label", ""))
+	]
+	var materials := []
+	for material in detail.get("materials", []):
+		materials.append("%s %d/%d" % [
+			String(material.get("name", material.get("item_id", ""))),
+			int(material.get("available", 0)),
+			int(material.get("required", 0))
+		])
+	if not materials.is_empty():
+		parts.append("재료 %s" % ", ".join(materials))
+	var facilities := []
+	for facility in detail.get("facilities", []):
+		facilities.append("%s%s" % [
+			String(facility.get("name", facility.get("item_id", ""))),
+			"" if bool(facility.get("available", false)) else "(필요)"
+		])
+	if facilities.is_empty():
+		parts.append("손제작")
+	else:
+		parts.append("시설 %s" % ", ".join(facilities))
+	var unlock_biome_id := String(detail.get("unlock_biome_id", ""))
+	if not unlock_biome_id.is_empty():
+		parts.append("해금 %s" % unlock_biome_id)
+	return _label(" · ".join(parts), 10)
+
+func _crafting_page_start(rows: Array, selected: String, page_size: int) -> int:
+	if rows.size() <= page_size:
+		return 0
+	for index in range(rows.size()):
+		if String(rows[index].get("recipe_id", "")) == selected:
+			return clampi(index - 2, 0, rows.size() - page_size)
+	return 0
+
+func _crafting_filter_label(category: String) -> String:
+	return "전체" if category == "all" else category
 
 func _facility_rows() -> Array:
 	var rows: Array = []
@@ -777,6 +875,28 @@ func _facility_rows() -> Array:
 			int(position.get("x", 0)),
 			int(position.get("y", 0))
 		], 11))
+	if crafting_service != null and crafting_service.has_method("read_model"):
+		var model: Dictionary = crafting_service.read_model(inventory, crafting_context)
+		var facilities := {}
+		for recipe in model.get("rows", []):
+			for facility in recipe.get("facilities", []):
+				var item_id := String(facility.get("item_id", ""))
+				if item_id.is_empty():
+					continue
+				var current: Dictionary = facilities.get(item_id, {
+					"name": String(facility.get("name", item_id)),
+					"available": false
+				})
+				current.available = bool(current.available) or bool(facility.get("available", false))
+				facilities[item_id] = current
+		var facility_ids := facilities.keys()
+		facility_ids.sort()
+		for item_id in facility_ids:
+			var facility: Dictionary = facilities[item_id]
+			rows.append(_label("%s · %s" % [
+				String(facility.get("name", item_id)),
+				"사용 가능" if bool(facility.get("available", false)) else "필요"
+			], 11))
 	return rows
 
 func _map_rows() -> Array:
@@ -886,21 +1006,6 @@ func _inventory_definition(item_id: String) -> Dictionary:
 	if catalog != null and catalog.has_method("find_by_id"):
 		return catalog.find_by_id("items", item_id)
 	return {"id": item_id, "name": item_id}
-
-func _crafting_reason_label(availability: Dictionary) -> String:
-	if bool(availability.get("craftable", false)):
-		return "가능"
-	match String(availability.get("reason", "")):
-		"missing_materials":
-			return "재료 부족"
-		"missing_facilities":
-			return "시설 필요"
-		"locked":
-			return "미해금"
-		"invalid_recipe_definition":
-			return "정의 확인"
-		_:
-			return "불가"
 
 func _apply_safe_area_layout() -> void:
 	var margin := _safe_margin()
