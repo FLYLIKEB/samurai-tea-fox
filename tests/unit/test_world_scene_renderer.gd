@@ -7,8 +7,10 @@ func run(asserts) -> void:
 	_assert_sixteen_adjacency_masks(asserts)
 	_assert_tilemap_layer_uses_adjacency_variants(asserts)
 	_assert_river_uses_connection_specific_sources(asserts)
+	_assert_path_uses_connection_specific_sources(asserts)
 	_assert_tree_footprints_overlay_base_terrain(asserts)
 	_assert_multicell_footprints_keep_original_texture(asserts)
+	_assert_dungeon_landmark_uses_multicell_house_and_label(asserts)
 	_assert_special_objects_have_role_colored_outlines(asserts)
 
 func _assert_sixteen_adjacency_masks(asserts) -> void:
@@ -74,6 +76,18 @@ func _assert_river_uses_connection_specific_sources(asserts) -> void:
 	asserts.true_value(curve != river, "curved river connection uses a promoted variant source")
 	asserts.true_value(vertical != horizontal, "straight river variants differ by connection direction")
 	asserts.true_value(curve != vertical and curve != horizontal, "curved river variant differs from straight variants")
+
+func _assert_path_uses_connection_specific_sources(asserts) -> void:
+	var renderer := WorldSceneRenderer.new()
+	var path := WorldSceneRenderer.PATH_BASE_SOURCE_ID
+	var vertical := renderer._terrain_source_for_adjacency(path, WorldSceneRenderer.ADJACENT_NORTH | WorldSceneRenderer.ADJACENT_SOUTH)
+	var horizontal := renderer._terrain_source_for_adjacency(path, WorldSceneRenderer.ADJACENT_EAST | WorldSceneRenderer.ADJACENT_WEST)
+	var curve := renderer._terrain_source_for_adjacency(path, WorldSceneRenderer.ADJACENT_NORTH | WorldSceneRenderer.ADJACENT_EAST)
+	asserts.equal(vertical, "asset_assets_tiles_terrain_paths_road_straight_vertical_32x32_png", "path vertical mask uses vertical straight road tile")
+	asserts.equal(horizontal, "asset_assets_tiles_terrain_paths_road_straight_horizontal_32x32_png", "path horizontal mask uses horizontal straight road tile")
+	asserts.equal(curve, "asset_assets_tiles_terrain_paths_road_corner_ne_32x32_png", "path curve mask uses north-east corner road tile")
+	asserts.true_value(vertical != horizontal, "vertical and horizontal route tiles remain visually distinct")
+	asserts.true_value(curve != vertical and curve != horizontal, "route corner tile differs from straight tiles")
 
 func _assert_tree_footprints_overlay_base_terrain(asserts) -> void:
 	var renderer := WorldSceneRenderer.new()
@@ -156,3 +170,26 @@ func _assert_special_objects_have_role_colored_outlines(asserts) -> void:
 		asserts.equal(outline.default_color, WorldSceneRenderer.TELEPORT_OUTLINE_COLOR, "special object outline keeps its role color")
 		asserts.equal(outline.width, 2.0, "special object outline stays crisp at pixel scale")
 	sprite.free()
+
+func _assert_dungeon_landmark_uses_multicell_house_and_label(asserts) -> void:
+	var renderer := WorldSceneRenderer.new()
+	var root := Node2D.new()
+	var input := {
+		"schema_version": 1,
+		"read_only": true,
+		"tile_size": 32,
+		"bounds": {"width": 4, "height": 4},
+		"layers": [],
+		"required_landmarks": [{"id": "core_dungeon_0", "kind": WorldData.LANDMARK_CORE_DUNGEON, "position": {"x": 1, "y": 1}}]
+	}
+	var result: Dictionary = renderer.render(root, input, {WorldData.LANDMARK_CORE_DUNGEON: "asset_assets_sprites_objects_structures_warehouse_2x2_64x64_png"})
+	asserts.true_value(result.ok, "dungeon landmark renders")
+	var landmarks := root.get_node_or_null(WorldSceneRenderer.LANDMARK_LAYER) as Node2D
+	asserts.true_value(landmarks != null, "landmark layer exists for dungeon")
+	if landmarks != null:
+		var sprite := landmarks.get_child(0) as Sprite2D
+		asserts.true_value(sprite != null and sprite.texture != null, "dungeon uses a structure sprite")
+		if sprite != null and sprite.texture != null:
+			asserts.equal(sprite.texture.get_width(), 64, "dungeon structure spans two tiles")
+		asserts.true_value(landmarks.get_node_or_null("DungeonSign") != null, "dungeon has an explicit entry sign")
+	root.queue_free()

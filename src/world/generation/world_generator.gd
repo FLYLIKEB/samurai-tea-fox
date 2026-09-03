@@ -55,6 +55,7 @@ const TERRAIN_RAINFOREST_RIVER_BANK := "rainforest_river_bank"
 
 const RENDER_GROUND := "terrain_plains_grass_ground_01"
 const RENDER_GRASS := "terrain_plains_grass_ground_01"
+const RENDER_PATH := "asset_assets_tiles_terrain_paths_road_isolated_32x32_png"
 const RENDER_FIELD := "terrain_plains_flower_grass_01"
 const RENDER_FOREST_TREE := "terrain_tree_broadleaf_32x32"
 const RENDER_WATER := "terrain_river_water_01"
@@ -101,6 +102,10 @@ const RENDER_RAINFOREST_RIVER_BANK := "asset_assets_tiles_terrain_plains_flower_
 const RENDER_RAINFOREST_RIVERSIDE_VILLAGE := "asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png"
 const RENDER_RAINFOREST_FOREST_TEA_ROOM := "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png"
 const RENDER_RAINFOREST_INCENSE_SPACE := "asset_assets_sprites_objects_shrine_props_incense_burner_32x32_png"
+const LARGE_HOUSE_SOURCE_ID := "asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png"
+const FENCE_CORNER_SOURCE_ID := "asset_assets_sprites_objects_structures_wood_fence_corner_32x32_png"
+const FENCE_HORIZONTAL_SOURCE_ID := "asset_assets_sprites_objects_structures_wood_fence_horizontal_1x2_64x32_png"
+const LARGE_HOUSE_ID := "large_fenced_house"
 
 const BALANCE_MIN_RESOURCE_NODES_ID := "biome_min_resource_nodes"
 const TEMPLATE_PATH_SPINE := "path_spine"
@@ -157,10 +162,15 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, progression_projection: Dictionary, profile: Dictionary) -> Dictionary:
 	var world_data := WorldData.new(MAP_WIDTH, MAP_HEIGHT, String(profile.default_terrain_id), bool(profile.default_walkable))
 	var chunks := _compose_chunks(rng, world_data, profile)
+	_apply_map_boundary(world_data, profile, progression_projection.get("edge_exit_positions", []))
 	var templates := _apply_common_templates(world_data, rng, chunks, profile)
 	var biome_id := String(biome_definition.get("id", ""))
 	var landmarks := _place_required_landmarks(world_data, rng, core_dungeon_count, teleport_zone_count, biome_id, profile)
 	_carve_landmark_paths(world_data, landmarks, profile)
+	var large_house_result := _place_large_fenced_house(world_data, rng, profile)
+	if not large_house_result.ok:
+		return _failed_attempt(seed, data_version, biome_definition, attempt, retry_limit, "large_fenced_house_placement_failed")
+	_place_path_edge_fences(world_data, rng, templates, profile)
 	var validator := ConnectivityValidator.new()
 	var facility_nodes := _place_facility_nodes(world_data, rng, landmarks, profile, validator.reachable_cell_keys_from_entry(world_data.to_dictionary()))
 	var reachable_cells := validator.reachable_cell_keys_from_entry(world_data.to_dictionary())
@@ -181,6 +191,7 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 		"biome_progression_order": biome_definition.get("progression_order", null),
 		"biome_generation_rule_id": String(profile.id),
 		"landmarks": landmarks,
+		"large_house": large_house_result.house,
 		"chunks": chunks,
 		"templates": templates,
 		"facility_nodes": facility_nodes,
@@ -208,6 +219,115 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 	if not world.ok:
 		world.failure_reason = _attempt_failure_reason(world.connectivity, world.facility_accessibility, world.resource_accessibility, facility_nodes.size(), int(profile.minimum_facility_nodes), resource_nodes.size(), min_resource_nodes)
 	return world
+
+func _failed_attempt(seed: int, data_version: String, biome_definition: Dictionary, attempt: int, retry_limit: int, reason: String) -> Dictionary:
+	return {
+		"ok": false,
+		"data_version": data_version,
+		"seed": seed,
+		"biome_id": String(biome_definition.get("id", "")),
+		"retry_attempt": attempt,
+		"retry_limit": retry_limit,
+		"failure_reason": reason
+	}
+
+func _place_large_fenced_house(world_data: WorldData, rng: DeterministicRng, profile: Dictionary) -> Dictionary:
+	var candidates: Array[Vector2i] = []
+	var center := Vector2i(MAP_WIDTH / 2 - 2, MAP_HEIGHT / 2 - 2)
+	for radius in range(0, 28):
+		for offset in [Vector2i(radius, 0), Vector2i(-radius, 0), Vector2i(0, radius), Vector2i(0, -radius), Vector2i(radius, radius), Vector2i(-radius, radius), Vector2i(radius, -radius), Vector2i(-radius, -radius)]:
+			var outer_origin: Vector2i = center + offset
+			if outer_origin.x < 2 or outer_origin.y < 2 or outer_origin.x + 4 >= MAP_WIDTH - 2 or outer_origin.y + 4 >= MAP_HEIGHT - 2:
+				continue
+			if not candidates.has(outer_origin):
+				candidates.append(outer_origin)
+	if candidates.is_empty():
+		return {"ok": false}
+	var start := rng.next_range(0, candidates.size() - 1)
+	var validator := ConnectivityValidator.new()
+	for attempt in range(candidates.size()):
+		var outer_origin: Vector2i = candidates[(start + attempt) % candidates.size()]
+		var all_cells := _large_house_footprint_cells(outer_origin)
+		var blocked := false
+		for position in all_cells:
+			if not world_data.contains(position) or not world_data.is_walkable(position):
+				blocked = true
+				break
+		if blocked:
+			continue
+		var house_origin := outer_origin + Vector2i.ONE
+		var house_reserved := world_data.reserve_entity(LARGE_HOUSE_ID, house_origin, Vector2i(2, 2), false, {
+			"source_id": LARGE_HOUSE_SOURCE_ID,
+			"role": "core_dungeon_entrance"
+		})
+		if not house_reserved.ok:
+			continue
+		var fence_result := _reserve_large_house_fence(world_data, outer_origin)
+		if not fence_result.ok or not validator.validate_world_data(world_data.to_dictionary()).valid:
+			world_data.release_footprint(LARGE_HOUSE_ID)
+			for owner_id in fence_result.get("owner_ids", []):
+				world_data.release_footprint(String(owner_id))
+			continue
+		return {
+			"ok": true,
+			"house": {
+				"id": LARGE_HOUSE_ID,
+				"source_id": LARGE_HOUSE_SOURCE_ID,
+				"position": _position_dictionary(house_origin),
+				"footprint_size": {"x": 2, "y": 2},
+				"fence_owner_ids": fence_result.owner_ids
+			}
+		}
+	return {"ok": false}
+
+func _large_house_footprint_cells(outer_origin: Vector2i) -> Array:
+	var cells: Array = []
+	for y in range(4):
+		for x in range(4):
+			cells.append(outer_origin + Vector2i(x, y))
+	return cells
+
+func _reserve_large_house_fence(world_data: WorldData, outer_origin: Vector2i) -> Dictionary:
+	var segments := [
+		{"id": "large_house_fence_nw", "origin": outer_origin, "size": Vector2i.ONE, "source_id": FENCE_CORNER_SOURCE_ID, "rotation_degrees": 0.0},
+		{"id": "large_house_fence_ne", "origin": outer_origin + Vector2i(3, 0), "size": Vector2i.ONE, "source_id": FENCE_CORNER_SOURCE_ID, "rotation_degrees": 90.0},
+		{"id": "large_house_fence_sw", "origin": outer_origin + Vector2i(0, 3), "size": Vector2i.ONE, "source_id": FENCE_CORNER_SOURCE_ID, "rotation_degrees": 270.0},
+		{"id": "large_house_fence_se", "origin": outer_origin + Vector2i(3, 3), "size": Vector2i.ONE, "source_id": FENCE_CORNER_SOURCE_ID, "rotation_degrees": 180.0},
+		{"id": "large_house_fence_n", "origin": outer_origin + Vector2i(1, 0), "size": Vector2i(2, 1), "source_id": FENCE_HORIZONTAL_SOURCE_ID, "rotation_degrees": 0.0},
+		{"id": "large_house_fence_s", "origin": outer_origin + Vector2i(1, 3), "size": Vector2i(2, 1), "source_id": FENCE_HORIZONTAL_SOURCE_ID, "rotation_degrees": 0.0},
+		{"id": "large_house_fence_w", "origin": outer_origin + Vector2i(0, 1), "size": Vector2i(1, 2), "source_id": FENCE_HORIZONTAL_SOURCE_ID, "rotation_degrees": 90.0},
+		{"id": "large_house_fence_e", "origin": outer_origin + Vector2i(3, 1), "size": Vector2i(1, 2), "source_id": FENCE_HORIZONTAL_SOURCE_ID, "rotation_degrees": 90.0}
+	]
+	var owner_ids: Array = []
+	for segment in segments:
+		var result := world_data.reserve_entity(String(segment.id), segment.origin, segment.size, false, {
+			"source_id": String(segment.source_id),
+			"role": "large_house_fence",
+			"rotation_degrees": float(segment.rotation_degrees)
+		})
+		if not result.ok:
+			for owner_id in owner_ids:
+				world_data.release_footprint(String(owner_id))
+			return {"ok": false, "owner_ids": owner_ids}
+		owner_ids.append(String(segment.id))
+	return {"ok": true, "owner_ids": owner_ids}
+
+func _apply_map_boundary(world_data: WorldData, profile: Dictionary, edge_exit_positions: Array) -> void:
+	var preserved := {}
+	for raw_position in edge_exit_positions:
+		var position: Variant = _vector_from_dictionary(raw_position) if raw_position is Dictionary else raw_position
+		if position is Vector2i and (position.x == 0 or position.y == 0 or position.x == MAP_WIDTH - 1 or position.y == MAP_HEIGHT - 1):
+			preserved[_key(position)] = true
+	var cliff_terrain_id := String(profile.get("boundary_terrain_id", TERRAIN_MOUNTAIN_CLIFF))
+	var cliff_render_id := String(profile.get("boundary_render_id", RENDER_MOUNTAIN_CLIFF))
+	for y in range(MAP_HEIGHT):
+		for x in range(MAP_WIDTH):
+			if x != 0 and y != 0 and x != MAP_WIDTH - 1 and y != MAP_HEIGHT - 1:
+				continue
+			var position := Vector2i(x, y)
+			if preserved.has(_key(position)):
+				continue
+			world_data.set_terrain(position, cliff_terrain_id, false, cliff_render_id)
 
 func _compose_chunks(rng: DeterministicRng, world_data: WorldData, profile: Dictionary) -> Array:
 	var chunks := []
@@ -256,7 +376,7 @@ func _apply_common_chunk(world_data: WorldData, chunk: Dictionary, rng: Determin
 						world_data.set_terrain(position, TERRAIN_GRASS, true, RENDER_GRASS)
 				3:
 					if y == origin.y + CHUNK_HEIGHT / 2:
-						world_data.set_terrain(position, TERRAIN_PATH, true, RENDER_GROUND)
+						world_data.set_terrain(position, TERRAIN_PATH, true, RENDER_PATH)
 					else:
 						world_data.set_terrain(position, TERRAIN_GROUND, true, RENDER_GROUND)
 				4:
@@ -561,8 +681,17 @@ func _apply_template_water_stroke(world_data: WorldData, rng: DeterministicRng, 
 func _apply_template_path_spine(world_data: WorldData, rng: DeterministicRng, profile: Dictionary) -> Dictionary:
 	var path_cells := []
 	var spine_y := rng.next_range(8, MAP_HEIGHT - 9)
+	var current_y := spine_y
 	for x in range(2, MAP_WIDTH - 2):
-		var position := Vector2i(x, spine_y)
+		var previous_y := current_y
+		if x > 2 and x % 4 == 0:
+			current_y = clampi(current_y + rng.next_range(-1, 1), 4, MAP_HEIGHT - 5)
+			var bend_step := 1 if current_y >= previous_y else -1
+			for bend_y in range(previous_y, current_y + bend_step, bend_step):
+				var bend_position := Vector2i(x, bend_y)
+				_make_path_cell(world_data, bend_position, profile)
+				path_cells.append(bend_position)
+		var position := Vector2i(x, current_y)
 		_make_path_cell(world_data, position, profile)
 		path_cells.append(position)
 	var branch_targets := [
@@ -570,10 +699,18 @@ func _apply_template_path_spine(world_data: WorldData, rng: DeterministicRng, pr
 		Vector2i(MAP_WIDTH / 2, rng.next_range(4, MAP_HEIGHT - 5)),
 		Vector2i(MAP_WIDTH / 4 * 3, rng.next_range(4, MAP_HEIGHT - 5))
 	]
-	for target in branch_targets:
-		var step := 1 if target.y >= spine_y else -1
-		for y in range(spine_y, target.y + step, step):
-			var branch_position := Vector2i(target.x, y)
+	for branch_index in range(branch_targets.size()):
+		var target: Vector2i = branch_targets[branch_index]
+		var branch_x := target.x + rng.next_range(-2, 2)
+		var anchor_y := spine_y
+		for row in path_cells:
+			var candidate: Vector2i = row
+			if candidate.x == branch_x:
+				anchor_y = candidate.y
+				break
+		var step := 1 if target.y >= anchor_y else -1
+		for y in range(anchor_y, target.y + step, step):
+			var branch_position := Vector2i(branch_x, y)
 			_make_path_cell(world_data, branch_position, profile)
 			path_cells.append(branch_position)
 	return {
@@ -687,6 +824,55 @@ func _make_path_cell(world_data: WorldData, position: Vector2i, profile: Diction
 	_clear_generated_tree_obstacle(world_data, position)
 	var terrain_id := String(profile.bridge_terrain_id) if not world_data.is_walkable(position) else String(profile.path_terrain_id)
 	world_data.set_terrain(position, terrain_id, true, String(profile.path_render_id))
+
+func _place_path_edge_fences(world_data: WorldData, rng: DeterministicRng, templates: Array, profile: Dictionary) -> void:
+	var path_template := {}
+	for template in templates:
+		if String(template.get("id", "")) == TEMPLATE_PATH_SPINE:
+			path_template = template
+			break
+	var path_positions := {}
+	# Include the spine and every landmark connector carved afterward; the
+	# visible road is often one of those connector cells.
+	for cell in world_data.to_dictionary().get("cells", []):
+		var terrain: Dictionary = cell.get("layers", {}).get(WorldData.LAYER_TERRAIN, {})
+		if String(terrain.get("id", "")) != String(profile.path_terrain_id):
+			continue
+		var position := _vector_from_dictionary(cell.get("position", {}))
+		path_positions[_key(position)] = position
+	var placed := 0
+	for value in path_positions.values():
+		var position: Vector2i = value
+		# Border both sides of the trail, leaving deterministic occasional gaps
+		# so the player can still cut across the surrounding terrain.
+		for side in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
+			if rng.next_range(0, 7) == 0:
+				continue
+			var fence_position: Vector2i = position + side
+			if not world_data.contains(fence_position) or path_positions.has(_key(fence_position)):
+				continue
+			# Never fill the narrow gap between two nearby road lanes.
+			var adjacent_path_count := 0
+			for adjacent_side in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
+				if path_positions.has(_key(fence_position + adjacent_side)):
+					adjacent_path_count += 1
+			if adjacent_path_count >= 2:
+				continue
+			if not world_data.is_walkable(fence_position):
+				continue
+			# A rotated 1x2 segment is taller than one tile and overlaps on
+			# descending lanes; use the 1x1 corner piece for those side posts.
+			var source_id := FENCE_CORNER_SOURCE_ID if side.x != 0 or placed % 5 == 4 else FENCE_HORIZONTAL_SOURCE_ID
+			var rotation_degrees := 90.0 if side.x != 0 else 0.0
+			var owner_id := "path_fence_%d_%d" % [fence_position.x, fence_position.y]
+			var reservation := world_data.reserve_entity(owner_id, fence_position, Vector2i.ONE, false, {
+				"source_id": source_id,
+				"rotation_degrees": rotation_degrees,
+				"terrain_overlay": "path_fence",
+				"path_terrain_id": String(profile.path_terrain_id)
+			})
+			if reservation.ok:
+				placed += 1
 
 func _set_tree_obstacle(world_data: WorldData, position: Vector2i, terrain_id: String, base_terrain_id: String, base_render_id: String, tree_source_id: String) -> bool:
 	_clear_generated_tree_obstacle(world_data, position)
@@ -935,7 +1121,7 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 				"default_walkable": true,
 				"path_terrain_id": TERRAIN_PATH,
 				"bridge_terrain_id": TERRAIN_BRIDGE,
-				"path_render_id": RENDER_GROUND,
+				"path_render_id": RENDER_PATH,
 				"water_terrain_id": TERRAIN_WATER,
 				"water_render_id": RENDER_WATER,
 				"water_walkable": false,

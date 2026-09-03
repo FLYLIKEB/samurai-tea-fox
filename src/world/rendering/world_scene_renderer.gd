@@ -3,8 +3,10 @@ class_name WorldSceneRenderer
 
 const WorldData = preload("res://src/world/data/world_data.gd")
 const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
+const PIXEL_FONT = preload("res://assets/fonts/galmuri/Galmuri11.ttf")
 
 const TERRAIN_LAYER := "TerrainTileMap"
+const TERRAIN_UNDERLAY_LAYER := "TerrainUnderlay"
 const TERRAIN_FOOTPRINT_LAYER := "TerrainFootprints"
 const FACILITY_LAYER := "Facilities"
 const ENTITY_LAYER := "Entities"
@@ -21,6 +23,31 @@ const ADJACENT_SOUTH := 4
 const ADJACENT_WEST := 8
 const RIVER_BASE_SOURCE_ID := "terrain_river_water_01"
 const TREE_UNDERLAY_SOURCE_ID := "terrain_plains_grass_ground_01"
+const GRASS_VARIANT_SOURCE_IDS := [
+	"terrain_plains_grass_ground_01",
+	"asset_assets_tiles_terrain_plains_grass_ground_02_32x32_png",
+	"asset_assets_tiles_terrain_plains_grass_ground_03_32x32_png",
+	"terrain_plains_flower_grass_01"
+]
+const PATH_BASE_SOURCE_ID := "asset_assets_tiles_terrain_paths_road_isolated_32x32_png"
+const PATH_MASK_SOURCE_IDS := [
+	"asset_assets_tiles_terrain_paths_road_isolated_32x32_png", # 0: isolated
+	"asset_assets_tiles_terrain_paths_road_end_north_32x32_png", # 1: north
+	"asset_assets_tiles_terrain_paths_road_end_east_32x32_png", # 2: east
+	"asset_assets_tiles_terrain_paths_road_corner_ne_32x32_png", # 3: north/east
+	"asset_assets_tiles_terrain_paths_road_end_south_32x32_png", # 4: south
+	"asset_assets_tiles_terrain_paths_road_straight_vertical_32x32_png", # 5: north/south
+	"asset_assets_tiles_terrain_paths_road_corner_se_32x32_png", # 6: east/south
+	"asset_assets_tiles_terrain_paths_road_t_junction_nes_32x32_png", # 7: north/east/south
+	"asset_assets_tiles_terrain_paths_road_end_west_32x32_png", # 8: west
+	"asset_assets_tiles_terrain_paths_road_corner_nw_32x32_png", # 9: north/west
+	"asset_assets_tiles_terrain_paths_road_straight_horizontal_32x32_png", # 10: east/west
+	"asset_assets_tiles_terrain_paths_road_t_junction_new_32x32_png", # 11: north/east/west
+	"asset_assets_tiles_terrain_paths_road_corner_sw_32x32_png", # 12: south/west
+	"asset_assets_tiles_terrain_paths_road_t_junction_nsw_32x32_png", # 13: north/south/west
+	"asset_assets_tiles_terrain_paths_road_t_junction_esw_32x32_png", # 14: east/south/west
+	"asset_assets_tiles_terrain_paths_road_cross_32x32_png" # 15: all directions
+]
 const TREE_OVERLAY_SOURCE_IDS := {
 	"terrain_tree_broadleaf_32x32": true,
 	"terrain_tree_pine_32x32": true,
@@ -65,6 +92,7 @@ func render(root: Node2D, renderer_input: Dictionary, owner_sources := {}, origi
 
 	var tile_size := int(renderer_input.get("tile_size", 32))
 	var rendered_counts := {}
+	var terrain_underlay_layer := _add_tilemap_layer(root, TERRAIN_UNDERLAY_LAYER, -110)
 	var terrain_layer := _add_tilemap_layer(root, TERRAIN_LAYER, -100)
 	var terrain_footprint_layer := _add_layer(root, TERRAIN_FOOTPRINT_LAYER, -90)
 	var facility_layer := _add_layer(root, FACILITY_LAYER, -20)
@@ -74,6 +102,7 @@ func render(root: Node2D, renderer_input: Dictionary, owner_sources := {}, origi
 	for layer in renderer_input.get("layers", []):
 		var layer_id := String(layer.get("id", ""))
 		if layer_id == WorldData.LAYER_TERRAIN:
+			_render_path_grass_underlay(terrain_underlay_layer, layer.get("cells", []), tile_size)
 			rendered_counts[layer_id] = _render_tilemap_cells(
 				terrain_layer,
 				terrain_footprint_layer,
@@ -99,6 +128,27 @@ func render(root: Node2D, renderer_input: Dictionary, owner_sources := {}, origi
 		"asset_report": asset_catalog.audit_references(_collect_source_references(renderer_input, owner_sources))
 	}
 
+func _render_path_grass_underlay(tilemap_layer: TileMapLayer, cells: Array, tile_size: int) -> void:
+	if tilemap_layer == null:
+		return
+	var path_positions: Array[Vector2i] = []
+	for cell in cells:
+		if String(cell.get("source_id", "")) == PATH_BASE_SOURCE_ID:
+			path_positions.append(_position_from_dictionary(cell.get("position", {})))
+	if path_positions.is_empty():
+		return
+	var path := _resource_path(TREE_UNDERLAY_SOURCE_ID)
+	if path.is_empty():
+		return
+	var tile_set := TileSet.new()
+	tile_set.tile_size = Vector2i(tile_size, tile_size)
+	var source_meta := _add_tileset_source(tile_set, path, tile_size)
+	if not source_meta.ok:
+		return
+	tilemap_layer.tile_set = tile_set
+	for position in path_positions:
+		tilemap_layer.set_cell(position, int(source_meta.source_index), Vector2i.ZERO, 0)
+
 func _render_tilemap_cells(tilemap_layer: TileMapLayer, footprint_layer: Node2D, cells: Array, tile_size: int) -> int:
 	var tile_set := TileSet.new()
 	tile_set.tile_size = Vector2i(tile_size, tile_size)
@@ -113,6 +163,8 @@ func _render_tilemap_cells(tilemap_layer: TileMapLayer, footprint_layer: Node2D,
 		var mask := _adjacency_mask_for_cell(position, source_id, terrain_index)
 		var tree_overlay_source_id := _tree_overlay_source_id(source_id)
 		var render_source_id := TREE_UNDERLAY_SOURCE_ID if not tree_overlay_source_id.is_empty() else _terrain_source_for_adjacency(source_id, mask)
+		if source_id == TREE_UNDERLAY_SOURCE_ID:
+			render_source_id = _grass_variant_source_id(position)
 		var path := _resource_path(render_source_id)
 		if path.is_empty():
 			continue
@@ -160,6 +212,7 @@ func _add_tileset_source(tile_set: TileSet, path: String, tile_size: int) -> Dic
 func _render_footprint_cells(parent: Node2D, cells: Array, tile_size: int, owner_sources: Dictionary, outline_color := Color.TRANSPARENT) -> int:
 	var rendered := 0
 	var seen_owners := {}
+	var owner_rotations := {}
 	for cell in cells:
 		var source_id := String(cell.get("source_id", ""))
 		if source_id.is_empty():
@@ -175,6 +228,7 @@ func _render_footprint_cells(parent: Node2D, cells: Array, tile_size: int, owner
 				seen_owners[key] = Vector2i(mini(current.x, position.x), mini(current.y, position.y))
 				continue
 			seen_owners[key] = position
+			owner_rotations[owner_id] = float(cell.get("rotation_degrees", 0.0))
 			continue
 		if _render_original_sprite(parent, _resource_path(source_id), position, tile_size, outline_color):
 			rendered += 1
@@ -182,11 +236,11 @@ func _render_footprint_cells(parent: Node2D, cells: Array, tile_size: int, owner
 		var parts := String(key).split("|", false)
 		if parts.size() < 2:
 			continue
-		if _render_original_sprite(parent, _resource_path(parts[1]), seen_owners[key], tile_size, outline_color):
+		if _render_original_sprite(parent, _resource_path(parts[1]), seen_owners[key], tile_size, outline_color, float(owner_rotations.get(parts[0], 0.0))):
 			rendered += 1
 	return rendered
 
-func _render_original_sprite(parent: Node2D, path: String, position: Vector2i, tile_size: int, outline_color := Color.TRANSPARENT) -> bool:
+func _render_original_sprite(parent: Node2D, path: String, position: Vector2i, tile_size: int, outline_color := Color.TRANSPARENT, rotation_degrees := 0.0) -> bool:
 	if path.is_empty():
 		return false
 	var texture := _texture_for_path(path)
@@ -195,10 +249,14 @@ func _render_original_sprite(parent: Node2D, path: String, position: Vector2i, t
 	var sprite := Sprite2D.new()
 	sprite.texture = texture
 	sprite.centered = true
+	var footprint_size := texture.get_size()
+	if is_equal_approx(absf(rotation_degrees), 90.0) or is_equal_approx(absf(rotation_degrees), 270.0):
+		footprint_size = Vector2(texture.get_height(), texture.get_width())
 	sprite.position = Vector2(
-		position.x * tile_size + float(texture.get_width()) * 0.5,
-		position.y * tile_size + float(texture.get_height()) * 0.5
+		position.x * tile_size + footprint_size.x * 0.5,
+		position.y * tile_size + footprint_size.y * 0.5
 	)
+	sprite.rotation_degrees = rotation_degrees
 	parent.add_child(sprite)
 	if outline_color.a > 0.0:
 		_add_special_outline(sprite, texture.get_size(), outline_color)
@@ -272,8 +330,43 @@ func _render_landmarks(parent: Node2D, landmarks: Array, tile_size: int, owner_s
 			continue
 		var position := _position_from_dictionary(landmark.get("position", {}))
 		if _render_original_sprite(parent, _resource_path(source_id), position, tile_size, _landmark_outline_color(landmark_kind)):
+			if landmark_kind == WorldData.LANDMARK_CORE_DUNGEON:
+				_add_dungeon_label(parent, position, tile_size)
 			rendered += 1
 	return rendered
+
+func _add_dungeon_label(parent: Node2D, position: Vector2i, tile_size: int) -> void:
+	var panel := PanelContainer.new()
+	panel.name = "DungeonSign"
+	panel.position = Vector2(position.x * tile_size - 16.0, position.y * tile_size - 52.0)
+	panel.size = Vector2(tile_size * 2 + 32.0, 44.0)
+	panel.z_index = 100
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var background := StyleBoxFlat.new()
+	background.bg_color = Color("1b1028", 0.96)
+	background.border_color = Color("d5a84a")
+	background.set_border_width_all(3)
+	background.corner_radius_top_left = 3
+	background.corner_radius_top_right = 3
+	background.corner_radius_bottom_left = 3
+	background.corner_radius_bottom_right = 3
+	background.content_margin_left = 3
+	background.content_margin_right = 3
+	background.content_margin_top = 1
+	background.content_margin_bottom = 1
+	panel.add_theme_stylebox_override("panel", background)
+	var label := Label.new()
+	label.text = "던전 입구\n[E] 입장"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_override("font", PIXEL_FONT)
+	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_color_override("font_color", Color("ffe7a3"))
+	label.add_theme_color_override("font_shadow_color", Color("1a1024"))
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	panel.add_child(label)
+	parent.add_child(panel)
 
 func _landmark_outline_color(landmark_kind: String) -> Color:
 	match landmark_kind:
@@ -324,7 +417,13 @@ func _atlas_coords_for_adjacency(mask: int, columns: int, rows: int) -> Vector2i
 func _terrain_source_for_adjacency(source_id: String, mask: int) -> String:
 	if source_id == RIVER_BASE_SOURCE_ID:
 		return String(RIVER_MASK_SOURCE_IDS[clampi(mask, 0, RIVER_MASK_SOURCE_IDS.size() - 1)])
+	if source_id == PATH_BASE_SOURCE_ID:
+		return String(PATH_MASK_SOURCE_IDS[clampi(mask, 0, PATH_MASK_SOURCE_IDS.size() - 1)])
 	return source_id
+
+func _grass_variant_source_id(position: Vector2i) -> String:
+	var index := absi(position.x * 31 + position.y * 17) % GRASS_VARIANT_SOURCE_IDS.size()
+	return String(GRASS_VARIANT_SOURCE_IDS[index])
 
 func _tree_overlay_source_id(source_id: String) -> String:
 	return source_id if TREE_OVERLAY_SOURCE_IDS.has(source_id) else ""

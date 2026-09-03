@@ -38,6 +38,8 @@ func run(asserts) -> void:
 	asserts.equal(a.renderer_input.read_only, true, "renderer input is read-only projection")
 	_assert_teleport_landmark_metadata(asserts, a.world_data, "common_region")
 	_assert_renderer_source_paths_exist(asserts, a.renderer_input)
+	_assert_large_fenced_house(asserts, a)
+	_assert_path_edge_fences(asserts, a)
 	_assert_tree_obstacles_render_over_base(asserts, a, WorldGenerator.TERRAIN_FOREST, WorldGenerator.RENDER_GRASS, WorldGenerator.RENDER_FOREST_TREE, "common forest")
 	_assert_resource_accessibility(asserts, a)
 	_assert_common_templates(asserts, a)
@@ -61,6 +63,7 @@ func run(asserts) -> void:
 		)
 		asserts.true_value(projected.ok, "world generation succeeds with progression projection")
 		_assert_projected_teleport_state(asserts, projected.renderer_input, "common_region", BiomeProgressionState.TELEPORT_BROKEN)
+	_assert_outer_boundary_is_cliff(asserts, a.world_data)
 
 	for seed in range(11000, 11125):
 		var generated := generator.generate(seed, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
@@ -132,6 +135,7 @@ func _assert_mountain_generation(asserts, catalog, generator: WorldGenerator) ->
 	_assert_resource_accessibility(asserts, generated)
 	_assert_facility_accessibility(asserts, generated)
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
+	_assert_large_fenced_house(asserts, generated)
 	_assert_mountain_terrain_profile(asserts, generated.world_data)
 	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_MOUNTAIN_CONIFER, WorldGenerator.RENDER_MOUNTAIN_SLOPE, WorldGenerator.RENDER_MOUNTAIN_CONIFER, "mountain conifer")
 	_assert_mountain_renderer_sources(asserts, generated.renderer_input)
@@ -181,6 +185,7 @@ func _assert_wasteland_generation(asserts, catalog, generator: WorldGenerator) -
 	_assert_resource_accessibility(asserts, generated)
 	_assert_facility_accessibility_for_terms(asserts, generated, ["폐촌", "버려진 초소", "무너진 다실", "전쟁터 흔적"])
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
+	_assert_large_fenced_house(asserts, generated)
 	_assert_wasteland_terrain_profile(asserts, generated.world_data)
 	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_WASTELAND_DEAD_TREE, WorldGenerator.RENDER_WASTELAND_DRY_SOIL, WorldGenerator.RENDER_WASTELAND_DEAD_TREE, "wasteland dead tree")
 	_assert_wasteland_renderer_sources(asserts, generated.renderer_input)
@@ -234,6 +239,7 @@ func _assert_snowfield_generation(asserts, catalog, generator: WorldGenerator) -
 	_assert_resource_accessibility(asserts, generated)
 	_assert_facility_accessibility_for_terms(asserts, generated, ["산장", "온천", "설원 사당", "얼어붙은 광산"])
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
+	_assert_large_fenced_house(asserts, generated)
 	_assert_snowfield_terrain_profile(asserts, generated.world_data)
 	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_SNOWFIELD_PINE, WorldGenerator.RENDER_SNOWFIELD_SNOW, WorldGenerator.RENDER_SNOWFIELD_PINE, "snowfield pine")
 	_assert_snowfield_renderer_sources(asserts, generated.renderer_input)
@@ -288,6 +294,7 @@ func _assert_rainforest_generation(asserts, catalog, generator: WorldGenerator) 
 	_assert_resource_accessibility(asserts, generated)
 	_assert_facility_accessibility_for_terms(asserts, generated, ["차 재배지", "강변 취락", "숲속 다실", "향 문화 공간"])
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
+	_assert_large_fenced_house(asserts, generated)
 	_assert_rainforest_terrain_profile(asserts, generated.world_data)
 	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_RAINFOREST_AGARWOOD, WorldGenerator.RENDER_RAINFOREST_RIVER_BANK, WorldGenerator.RENDER_RAINFOREST_AGARWOOD, "rainforest agarwood")
 	_assert_rainforest_renderer_sources(asserts, generated.renderer_input)
@@ -340,6 +347,16 @@ func _assert_resource_accessibility(asserts, world: Dictionary) -> void:
 	var access_validation := validator.validate_access_points(world.world_data, access_points)
 	asserts.true_value(access_validation.valid, "all resource access points are entry-reachable")
 
+func _assert_large_fenced_house(asserts, world: Dictionary) -> void:
+	var house: Dictionary = world.get("large_house", {})
+	asserts.true_value(not house.is_empty(), "every generated map includes a large fenced house")
+	asserts.equal(house.get("footprint_size", {}).get("x", 0), 2, "large house uses the 2x2 house footprint")
+	asserts.equal(house.get("footprint_size", {}).get("y", 0), 2, "large house uses the 2x2 house footprint height")
+	asserts.equal(house.get("fence_owner_ids", []).size(), 8, "large house has a complete eight-segment fence")
+	_assert_asset_reference_exists(asserts, WorldGenerator.LARGE_HOUSE_SOURCE_ID, "large house asset exists")
+	_assert_asset_reference_exists(asserts, WorldGenerator.FENCE_CORNER_SOURCE_ID, "fence corner asset exists")
+	_assert_asset_reference_exists(asserts, WorldGenerator.FENCE_HORIZONTAL_SOURCE_ID, "fence segment asset exists")
+
 func _assert_facility_accessibility(asserts, world: Dictionary) -> void:
 	_assert_facility_accessibility_for_terms(asserts, world, ["광산", "산사", "폐광", "산중 찻집"])
 
@@ -384,6 +401,23 @@ func _assert_projected_teleport_state(asserts, renderer_input: Dictionary, biome
 	if not teleports.is_empty():
 		asserts.equal(teleports[0].teleport_biome_id, biome_id, "renderer projection exposes stable teleport biome id")
 		asserts.equal(teleports[0].teleport_state, expected_state, "renderer projection uses progression teleport state")
+
+func _assert_outer_boundary_is_cliff(asserts, world_data: Dictionary) -> void:
+	var bounds: Dictionary = world_data.get("bounds", {})
+	var width := int(bounds.get("width", 0))
+	var height := int(bounds.get("height", 0))
+	var checked := 0
+	for cell in world_data.get("cells", []):
+		var position: Dictionary = cell.get("position", {})
+		var x := int(position.get("x", -1))
+		var y := int(position.get("y", -1))
+		if x != 0 and y != 0 and x != width - 1 and y != height - 1:
+			continue
+		var terrain: Dictionary = cell.get("layers", {}).get("terrain", {})
+		asserts.false_value(bool(terrain.get("walkable", true)), "map boundary cells are blocked by cliffs")
+		asserts.equal(String(terrain.get("id", "")), WorldGenerator.TERRAIN_MOUNTAIN_CLIFF, "map boundary uses the cliff terrain id")
+		checked += 1
+	asserts.equal(checked, width * 2 + (height - 2) * 2, "all outer map cells receive the cliff boundary")
 
 func _interactable_owner_ids(renderer_input: Dictionary) -> Dictionary:
 	return _layer_owner_ids(renderer_input, WorldData.LAYER_INTERACTABLES)
@@ -475,6 +509,44 @@ func _assert_common_templates(asserts, world: Dictionary) -> void:
 		WorldGenerator.TEMPLATE_RESOURCE_CLUSTER
 	]:
 		asserts.true_value(ids.has(template_id), "world applies common template: %s" % template_id)
+	var path_template := _template_by_id(world, WorldGenerator.TEMPLATE_PATH_SPINE)
+	var path_cells: Array = path_template.get("cells", [])
+	asserts.true_value(path_cells.size() > WorldGenerator.MAP_WIDTH, "path template contains a long traversable route")
+	var path_positions := {}
+	for row in path_cells:
+		path_positions[_key(_vector_from_dictionary(row))] = true
+	var has_bend := false
+	for row in path_cells:
+		var position := _vector_from_dictionary(row)
+		var has_horizontal := path_positions.has(_key(position + Vector2i.LEFT)) or path_positions.has(_key(position + Vector2i.RIGHT))
+		var has_vertical := path_positions.has(_key(position + Vector2i.UP)) or path_positions.has(_key(position + Vector2i.DOWN))
+		if has_horizontal and has_vertical:
+			has_bend = true
+			break
+	asserts.true_value(has_bend, "path template includes a connected bend")
+
+func _assert_path_edge_fences(asserts, world: Dictionary) -> void:
+	var path_positions := {}
+	var path_template := _template_by_id(world, WorldGenerator.TEMPLATE_PATH_SPINE)
+	for row in path_template.get("cells", []):
+		path_positions[_key(_vector_from_dictionary(row))] = true
+	var fence_count := 0
+	var fence_sources := {}
+	for reservation in world.world_data.get("reservations", []):
+		var metadata: Dictionary = reservation.get("metadata", {})
+		if String(metadata.get("terrain_overlay", "")) != "path_fence":
+			continue
+		fence_count += 1
+		var position := _vector_from_dictionary(reservation.get("origin", {}))
+		var next_to_path := false
+		for offset in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
+			if path_positions.has(_key(position + offset)):
+				next_to_path = true
+				break
+		asserts.true_value(next_to_path, "path fence is placed beside a route cell")
+		fence_sources[String(metadata.get("source_id", ""))] = true
+	asserts.true_value(fence_count > 0, "generated route has intermittent edge fences")
+	asserts.true_value(fence_sources.has(WorldGenerator.FENCE_HORIZONTAL_SOURCE_ID), "route uses the existing wooden fence object")
 
 func _assert_continuous_water_stroke(asserts, world: Dictionary) -> void:
 	var water_template := _template_by_id(world, WorldGenerator.TEMPLATE_WATER_STROKE)
