@@ -12,6 +12,13 @@ const HANDCRAFT_LABELS := {
 	"손제작": true,
 	"handcraft": true
 }
+const BIOME_DISPLAY_NAMES := {
+	"common_region": "일반 지역",
+	"mountain_region": "산악 지역",
+	"rainforest": "열대우림",
+	"snowfield": "설원",
+	"wasteland": "황무지"
+}
 
 var data_version := ""
 var recipe_definitions: Dictionary = {}
@@ -74,8 +81,9 @@ func read_model(inventory, context := {}, options := {}) -> Dictionary:
 		var recipe_id := String(recipe_id_value)
 		var recipe: Dictionary = recipe_definitions[recipe_id]
 		var availability: Dictionary = can_craft(recipe_id, inventory, context)
-		if String(availability.get("reason", "")) == "locked":
-			continue
+		# Keep locked recipes in the read model so the crafting screen remains a
+		# complete catalog.  Hiding them here made valid facility recipes appear
+		# to be missing; sorting below still puts currently craftable rows first.
 		unlocked_total += 1
 		var category := String(recipe.get("category", ""))
 		if not category.is_empty() and not categories.has(category):
@@ -220,6 +228,11 @@ func _validate_craft(recipe_id: String, inventory, context) -> Dictionary:
 
 func _recipe_read_model_row(recipe: Dictionary, availability: Dictionary, inventory) -> Dictionary:
 	var recipe_id := String(recipe.id)
+	var reason_label := _availability_label(availability)
+	if String(availability.get("reason", "")) == "locked":
+		var unlock_biome_id := String(recipe.get("unlock_biome_id", ""))
+		if not unlock_biome_id.is_empty():
+			reason_label = "미해금 · %s 필요" % String(BIOME_DISPLAY_NAMES.get(unlock_biome_id, unlock_biome_id))
 	return {
 		"recipe_id": recipe_id,
 		"name": String(recipe.get("name", recipe_id)),
@@ -236,7 +249,7 @@ func _recipe_read_model_row(recipe: Dictionary, availability: Dictionary, invent
 		"unlock_condition": String(recipe.get("unlock_condition", "")),
 		"craftable": bool(availability.get("craftable", false)),
 		"reason": String(availability.get("reason", "")),
-		"reason_label": _availability_label(availability),
+		"reason_label": reason_label,
 		"errors": _duplicate_array(availability.get("errors", []))
 	}
 

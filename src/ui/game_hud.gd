@@ -160,6 +160,7 @@ var _action_menu_open := false
 var _action_grid: GridContainer
 var _secondary_action_bar: HBoxContainer
 var _action_menu_grid: GridContainer
+var _interaction_button: Button
 var _menu_content: VBoxContainer
 var _minimap_grid: GridContainer
 var _action_scroll: ScrollContainer
@@ -785,6 +786,7 @@ func _rebuild_action_buttons() -> void:
 			_add_icon_action(_secondary_action_bar, "QuickAbilityButton", ICON_ABILITY, "요술 사용", "cast_ability", Vector2i.ZERO, 0)
 	_clear_container_children(_action_grid)
 	_add_text_action(_action_grid, "AttackButton", ICON_ATTACK, "공격", "attack", Vector2i.ZERO, 0)
+	_interaction_button = _add_interaction_action(_action_grid)
 	_add_text_action(_action_grid, "DodgeButton", ICON_DODGE, "회피", "dodge", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "InventoryButton", ICON_BAG, "가방", "open_inventory", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "CraftingButton", ICON_CONSUMABLE, "제작", "open_crafting", Vector2i.ZERO, 0)
@@ -864,6 +866,33 @@ func _add_text_action(parent: Container, name: String, icon_path: String, text: 
 	button.add_theme_stylebox_override("pressed", _button_style(Color(0.77, 0.54, 0.25, 0.96), true))
 	button.pressed.connect(func(): press_mobile_button(button_id, direction, slot))
 	parent.add_child(button)
+
+func _add_interaction_action(parent: Container) -> Button:
+	var button := Button.new()
+	button.name = "InteractionButton"
+	button.custom_minimum_size = Vector2(48, 48)
+	button.text = "상호\n작용"
+	button.tooltip_text = "가까운 유적·텔레포트와 상호작용"
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.add_theme_font_size_override("font_size", 10)
+	button.add_theme_stylebox_override("normal", _circle_button_style(Color(0.10, 0.22, 0.16, 0.92)))
+	button.add_theme_stylebox_override("hover", _circle_button_style(Color(0.16, 0.38, 0.25, 0.96)))
+	button.add_theme_stylebox_override("pressed", _circle_button_style(Color(0.35, 0.68, 0.42, 0.98)))
+	button.pressed.connect(func(): press_mobile_button("interact", Vector2i.ZERO, 0))
+	parent.add_child(button)
+	return button
+
+func _circle_button_style(color: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = color
+	style.border_color = Color(0.72, 0.84, 0.62, 0.9)
+	style.set_border_width_all(2)
+	style.corner_radius_top_left = 24
+	style.corner_radius_top_right = 24
+	style.corner_radius_bottom_left = 24
+	style.corner_radius_bottom_right = 24
+	return style
 
 func _add_icon_action(parent: Container, name: String, icon_path: String, tooltip: String, button_id: String, direction: Vector2i, slot: int) -> void:
 	var button := Button.new()
@@ -1709,8 +1738,14 @@ func _map_rows() -> Array:
 	var bounds: Dictionary = model.bounds
 	rows.append(_label("지도 %dx%d · 발견 %d · 안개 %d" % [int(bounds.width), int(bounds.height), int(model.discovered_count), int(model.fog_count)], 11))
 	rows.append(_label("플레이어 (%d,%d)" % [int(model.player.position.x), int(model.player.position.y)], 11))
-	var dungeon_progress: Dictionary = model.get("dungeon_progress", {})
-	rows.append(_label("현재 던전: %s" % String(dungeon_progress.get("label", "미확인")), 11))
+	var current_biome_id := String(world.get("biome_id", ""))
+	if current_biome_id.is_empty() and run_state != null:
+		current_biome_id = String(run_state.current_biome_id)
+	var dungeon_cleared: bool = run_state != null and run_state.completed_dungeon_ids.has(current_biome_id)
+	if run_state != null:
+		dungeon_cleared = dungeon_cleared or String(run_state.teleport_states.get(current_biome_id, "")) in ["repairable", "repaired"]
+		dungeon_cleared = dungeon_cleared or run_state.crafting_unlocks.has(current_biome_id)
+	rows.append(_label("현재 던전: %s" % ("클리어" if dungeon_cleared else "미클리어"), 11))
 	rows.append(_map_color_grid(model.minimap, Vector2(8, 8)))
 	var markers: Array = model.markers
 	rows.append(_label("중요 오브젝트", 11))
@@ -1754,22 +1789,24 @@ func _map_back_button() -> Button:
 	return button
 
 func _ruin_travel_rows() -> Array:
-	var rows: Array = [_label("유적 수리 완료 · 연결된 다음 지역을 선택하세요", 11)]
+	var rows: Array = [_label("수리된 다른 유적을 선택하세요", 11)]
 	var current_id := String(world.get("biome_id", ""))
-	var next_id := ""
-	if biome_progression_state != null and biome_progression_state.has_method("next_biome_id"):
-		next_id = String(biome_progression_state.next_biome_id())
-	if next_id.is_empty():
-		rows.append(_label("연결된 다음 지역이 없습니다", 11))
-		return rows
-	var definition := _biome_definition(next_id)
-	var button := Button.new()
-	button.text = "이동 · %s" % String(definition.get("name", next_id))
-	button.custom_minimum_size = Vector2(220, 34)
-	button.pressed.connect(func():
-		mobile_command_issued.emit(GameCommand.new(GameCommand.Type.TRAVEL_TO_BIOME, Vector2i.ZERO, -1, {"biome_id": next_id}))
-	)
-	rows.append(button)
+	var repaired_ids: Array = []
+	if run_state != null:
+		repaired_ids = run_state.completed_dungeon_ids
+	for definition in _ordered_biome_definitions():
+		var destination_id := String(definition.get("id", ""))
+		if destination_id.is_empty() or destination_id == current_id or not repaired_ids.has(destination_id):
+			continue
+		var button := Button.new()
+		button.text = "이동 · %s" % String(definition.get("name", destination_id))
+		button.custom_minimum_size = Vector2(220, 34)
+		button.pressed.connect(func():
+			mobile_command_issued.emit(GameCommand.new(GameCommand.Type.TRAVEL_TO_BIOME, Vector2i.ZERO, -1, {"biome_id": destination_id, "travel_mode": "ruin"}))
+		)
+		rows.append(button)
+	if rows.size() == 1:
+		rows.append(_label("이동할 수리 완료 유적이 없습니다", 11))
 	rows.append(_label("텔레포트는 별도로 수리·관리됩니다", 10))
 	return rows
 
@@ -1798,7 +1835,7 @@ func _teleport_travel_rows() -> Array:
 		button.text = "이동 · %s" % String(definition.get("name", destination_id))
 		button.custom_minimum_size = Vector2(220, 34)
 		button.pressed.connect(func():
-			mobile_command_issued.emit(GameCommand.new(GameCommand.Type.TRAVEL_TO_BIOME, Vector2i.ZERO, -1, {"biome_id": destination_id}))
+			mobile_command_issued.emit(GameCommand.new(GameCommand.Type.TRAVEL_TO_BIOME, Vector2i.ZERO, -1, {"biome_id": destination_id, "travel_mode": "teleport"}))
 		)
 		rows.append(button)
 	if destinations.is_empty():

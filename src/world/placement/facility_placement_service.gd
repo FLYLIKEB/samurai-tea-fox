@@ -3,11 +3,12 @@ class_name FacilityPlacementService
 
 const ConnectivityValidator = preload("res://src/world/generation/connectivity_validator.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
+const RuntimeConstants = preload("res://src/core/config/runtime_constants.gd")
 
 const ITEM_SOURCE := "items"
 const DEFAULT_FOOTPRINT := Vector2i.ONE
-const DEFAULT_PLACEMENT_SEARCH_RADIUS := 2
-const DEFAULT_USE_DISTANCE := 1
+static var DEFAULT_PLACEMENT_SEARCH_RADIUS := RuntimeConstants.int_value("placement.search_radius")
+static var DEFAULT_USE_DISTANCE := RuntimeConstants.int_value("placement.use_distance")
 
 signal operation_failed(error: Dictionary)
 signal facility_placed(result: Dictionary)
@@ -98,11 +99,11 @@ func find_placement_near(facility_item_id: String, world_data, anchor: Vector2i,
 		"anchor": _position_dictionary(anchor)
 	}
 
-func facility_item_ids_near(world_data, position: Vector2i, max_distance := DEFAULT_USE_DISTANCE) -> Array:
+func facility_item_ids_near(world_data, position: Vector2i, max_distance := -1) -> Array:
 	var ids: Array = []
 	if world_data == null or not world_data.has_method("to_dictionary"):
 		return ids
-	var distance_limit := maxi(0, int(max_distance))
+	var distance_limit := DEFAULT_USE_DISTANCE if int(max_distance) < 0 else maxi(0, int(max_distance))
 	for reservation in world_data.to_dictionary().get("reservations", []):
 		if String(reservation.get("kind", "")) != "facility":
 			continue
