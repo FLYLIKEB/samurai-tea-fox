@@ -582,6 +582,8 @@ func _queue_pointer_landmark(target_id: String, target_cell: Vector2i) -> bool:
 		return submit_interaction_at_world_cell(target_cell)
 	var player_cell := world_cell_from_world_position(player.global_position)
 	if _player_can_interact_with_target(player_cell, target_id, target_cell):
+		if _is_landmark_target(target_id):
+			return submit_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": target_id}))
 		return submit_interaction_at_world_cell(target_cell)
 	var approach_cell := _nearest_walkable_adjacent_cell_for_target(target_id, target_cell, player_cell)
 	if approach_cell == target_cell:
@@ -773,6 +775,11 @@ func submit_action_command(command) -> bool:
 			if accepted:
 				_play_feedback_beep()
 			return accepted
+		GameCommand.Type.TRAVEL_TO_BIOME:
+			var accepted: bool = _travel_to_biome(String(command.payload.get("biome_id", "")))
+			if accepted:
+				_play_feedback_beep()
+			return accepted
 		GameCommand.Type.FACILITY_ROTATE:
 			return _rotate_pending_facility()
 		GameCommand.Type.FACILITY_CONFIRM:
@@ -945,8 +952,10 @@ func snapshot_run_state() -> Dictionary:
 		run_state = RunState.new()
 	if inventory != null:
 		run_state.inventory = inventory.to_snapshot()
-	if player != null and player.resources != null:
-		run_state.player_resources = player.resources.to_dictionary()
+	if player != null:
+		var player_resources = player.get("resources")
+		if player_resources != null and player_resources.has_method("to_dictionary"):
+			run_state.player_resources = player_resources.to_dictionary()
 	if acquisition_service != null and not _in_dungeon_map:
 		run_state.acquisitions = acquisition_service.to_snapshot()
 	if not _in_dungeon_map and combat_dummy != null and is_instance_valid(combat_dummy):
@@ -1680,6 +1689,18 @@ func _on_dungeon_enemy_defeated(_event: Dictionary, enemy, owner_id: String) -> 
 		world_data.release_footprint(owner_id)
 	var remaining := _combat_targets().size()
 	_dungeon_debug("던전 몬스터 처치: %s, remaining=%d" % [owner_id, remaining])
+	if remaining == 0 and dungeon_runtime != null:
+		var clear_result: Dictionary = dungeon_runtime.complete_dungeon({
+			"objective_complete": true,
+			"resolution_type": "combat",
+			"choice_key": "dungeon_boss_defeated",
+			"run_flag": "dungeon_boss_defeated",
+			"reward_item_ids": [],
+			"progression_unlock_ids": [String(run_state.current_biome_id)]
+		})
+		_dungeon_debug("던전 클리어 기록: ok=%s reason=%s" % [clear_result.get("ok", false), clear_result.get("reason", "")])
+		if not clear_result.ok:
+			return
 	if game_hud != null:
 		game_hud.show_status_toast("던전 클리어! 유적으로 돌아가세요." if remaining == 0 else "적을 처치했다!")
 	_save_progress_after_turn()
@@ -2219,6 +2240,8 @@ func _complete_pending_pointer_interaction() -> void:
 	_dungeon_debug("입구 도착, 상호작용 실행: target=%s cell=%s" % [target_id, target_cell])
 	if _is_dungeon_resource_target(target_id):
 		_gather_dungeon_ore(target_id, target_cell)
+	elif _is_landmark_target(target_id):
+		submit_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": target_id}))
 	else:
 		submit_interaction_at_world_cell(target_cell)
 
@@ -2431,10 +2454,18 @@ func _is_large_house_dungeon_target(target_id: String) -> bool:
 
 func _handle_landmark_interaction(target_id: String) -> bool:
 	if _in_dungeon_map and target_id == "dungeon_entry":
-		if dungeon_runtime == null or not _dungeon_runtime_is_active():
+		if dungeon_runtime == null:
 			return false
-		dungeon_runtime.begin_return()
-		dungeon_runtime.finish_return()
+		var lifecycle := String(dungeon_runtime.to_projection().get("lifecycle_state", DungeonInstanceState.STATE_OUTSIDE))
+		if lifecycle == DungeonInstanceState.STATE_ACTIVE and _combat_targets().is_empty():
+			var clear_result: Dictionary = dungeon_runtime.complete_dungeon({"objective_complete": true, "resolution_type": "combat", "choice_key": "dungeon_boss_defeated", "run_flag": "dungeon_boss_defeated", "reward_item_ids": [], "progression_unlock_ids": [String(run_state.current_biome_id)]})
+			if not clear_result.ok:
+				return false
+			lifecycle = DungeonInstanceState.STATE_COMPLETED
+		if lifecycle != DungeonInstanceState.STATE_COMPLETED:
+			return false
+		if not dungeon_runtime.begin_return().ok or not dungeon_runtime.finish_return().ok:
+			return false
 		_return_from_dungeon_map()
 		save_current_run()
 		_configure_game_hud()
@@ -2444,16 +2475,51 @@ func _handle_landmark_interaction(target_id: String) -> bool:
 		return true
 	if _is_core_dungeon_target(target_id):
 		_dungeon_debug("던전 랜드마크 상호작용: %s" % target_id)
+		if run_state != null and run_state.completed_dungeon_ids.has(String(run_state.current_biome_id)):
+			if game_hud != null:
+				game_hud.show_command_feedback("유적 수리 완료 · 이동은 텔레포트를 이용하세요")
+			return true
 		return _handle_complete_dungeon_command(GameCommand.new(GameCommand.Type.COMPLETE_DUNGEON, Vector2i.ZERO, -1, {"entry_only": true}))
 	if target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE):
 		var biome_id := String(run_state.current_biome_id) if run_state != null else ""
 		var progression := _ensure_biome_progression_state()
 		if not progression.ok:
 			return false
-		var teleport_state: String = biome_progression_state.teleport_state_for(biome_id)
-		var command_type := GameCommand.Type.ADVANCE_BIOME if teleport_state == BiomeProgressionState.TELEPORT_REPAIRED else GameCommand.Type.REPAIR_TELEPORT
-		return _handle_biome_progression_command(GameCommand.new(command_type, Vector2i.ZERO, -1, {"biome_id": biome_id}))
+		var teleport_state: String = String(run_state.teleport_states.get(biome_id, "")) if run_state != null else biome_progression_state.teleport_state_for(biome_id)
+		if teleport_state != BiomeProgressionState.TELEPORT_REPAIRED:
+			return _handle_biome_progression_command(GameCommand.new(GameCommand.Type.REPAIR_TELEPORT, Vector2i.ZERO, -1, {"biome_id": biome_id}))
+		if game_hud != null:
+			game_hud.show_teleport_travel_menu()
+		return true
 	return false
+
+func _travel_to_biome(biome_id: String) -> bool:
+	if run_state == null or biome_id.is_empty():
+		return false
+	var current_id := String(run_state.current_biome_id)
+	var progression := _ensure_biome_progression_state()
+	if not progression.ok or not _is_connected_biome(current_id, biome_id):
+		return false
+	run_state.current_biome_id = biome_id
+	run_state.teleport_states[biome_id] = BiomeProgressionState.TELEPORT_BROKEN
+	var world_result := _configure_world_for_current_run()
+	if not world_result.ok:
+		return false
+	save_current_run()
+	return true
+
+func _is_connected_biome(from_id: String, to_id: String) -> bool:
+	if biome_progression_state == null:
+		return false
+	var ordered: Array = biome_progression_state.to_projection().get("biome_order", [])
+	var from_index := ordered.find(from_id)
+	var to_index := ordered.find(to_id)
+	if from_index < 0 or to_index < 0 or absi(from_index - to_index) != 1:
+		return false
+	# A forward destination must first be opened by clearing the current ruin.
+	if to_index > from_index and not run_state.completed_dungeon_ids.has(from_id):
+		return false
+	return to_index < from_index or String(run_state.teleport_states.get(to_id, "undiscovered")) != "undiscovered"
 
 func _is_available_acquisition_target(target_id: String) -> bool:
 	if acquisition_service == null or target_id.is_empty():
@@ -3093,6 +3159,12 @@ func _restore_placed_facilities_for_current_biome() -> Dictionary:
 
 func _unlocked_biome_ids() -> Array:
 	var ids: Array = []
+	if _start_mode == START_MODE_CHEAT and catalog != null and catalog.has_method("get_definitions"):
+		for definition in catalog.get_definitions("biomes"):
+			var cheat_id := String(definition.get("id", ""))
+			if not cheat_id.is_empty() and not ids.has(cheat_id):
+				ids.append(cheat_id)
+		return ids
 	if run_state != null:
 		for biome_id in run_state.crafting_unlocks:
 			var id := String(biome_id)
