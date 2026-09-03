@@ -23,18 +23,23 @@ const PROLOGUE_BACKGROUND := "prologue_first_run_father_muchau_teahouse"
 const PORTRAIT_FATHER := "asset_assets_sprites_characters_family_chr_1_kitsune_father_kitsune_father_front_64x64_png"
 const PORTRAIT_MUCHAU := "asset_assets_sprites_characters_player_chr_8_fox_samurai_fox_samurai_front_idle_64x64_png"
 const PORTRAIT_SEN_RIKYU := "asset_assets_sprites_characters_bosses_chr_5_sen_rikyu_sen_rikyu_front_64x64_png"
+const PORTRAIT_PLAYER := PORTRAIT_MUCHAU
 
 const BALANCE_ABILITY_SLOTS_ID := "ability_equip_slots"
-const STATUS_PANEL_SIZE := Vector2(150, 72)
-const MAP_PANEL_SIZE := Vector2(176, 86)
-const MAP_PANEL_TIME_HEIGHT := 108.0
+const STATUS_PANEL_SIZE := Vector2(220, 88)
+const PORTRAIT_BOX_SIZE := Vector2(58, 58)
+const RESOURCE_BAR_SIZE := Vector2(92, 4)
+const ENEMY_PANEL_SIZE := Vector2(170, 58)
+const MAP_PANEL_SIZE := Vector2(152, 64)
+const MAP_PANEL_TIME_HEIGHT := 96.0
 const QUICKSLOT_PANEL_SIZE := Vector2(248, 36)
-const DPAD_PANEL_SIZE := Vector2(108, 108)
-const DPAD_BOARD_SIZE := Vector2(96, 96)
-const ACTION_BUTTON_SIZE := Vector2(52, 34)
-const ACTION_PANEL_COLUMNS := 4
-const MENU_PANEL_SIZE := Vector2(232, 148)
-const MENU_CONTENT_SIZE := Vector2(216, 92)
+const DPAD_PANEL_SIZE := Vector2(82, 82)
+const DPAD_BOARD_SIZE := Vector2(70, 70)
+const ACTION_BUTTON_SIZE := Vector2(70, 30)
+const ACTION_PANEL_SIZE := Vector2(86, 226)
+const ACTION_PANEL_COLUMNS := 1
+const MENU_PANEL_SIZE := Vector2(356, 158)
+const MENU_CONTENT_SIZE := Vector2(340, 104)
 
 signal mobile_command_issued(command)
 
@@ -49,6 +54,7 @@ var inventory_command_runtime
 var map_read_model_builder
 var world_data
 var world_origin := Vector2.ZERO
+var combat_target
 var run_state
 var tea_service
 var asset_catalog := AssetCatalog.new()
@@ -69,6 +75,7 @@ var _time_refresh_elapsed := 0.0
 var _action_grid: GridContainer
 var _menu_content: VBoxContainer
 var _minimap_grid: GridContainer
+var _action_scroll: ScrollContainer
 var _narrative_options: HBoxContainer
 var _narrative_background: TextureRect
 var _narrative_left_portrait: TextureRect
@@ -92,6 +99,7 @@ func configure(player_node, generated_world: Dictionary, generated_render_result
 		map_read_model_builder = runtime_context.get("map_read_model_builder", null)
 		world_data = runtime_context.get("world_data", null)
 		world_origin = runtime_context.get("world_origin", Vector2.ZERO)
+		combat_target = runtime_context.get("combat_target", null)
 		run_state = runtime_context.get("run_state", null)
 		tea_service = runtime_context.get("tea_service", null)
 		tea_brewing_command_runtime = runtime_context.get("tea_brewing_command_runtime", null)
@@ -124,6 +132,7 @@ func runtime_read_model() -> Dictionary:
 		"time_phase": phase_name,
 		"time_phase_label": _time_phase_label(phase_name),
 		"time_progress_percent": _time_progress_percent(),
+		"combat_target": _combat_target_read_model(),
 		"biome_label": _biome_label(String(world.get("biome_id", "common_region"))),
 		"terrain_count": _render_count("terrain"),
 		"object_count": _render_count("entities") + _render_count("Landmarks"),
@@ -186,6 +195,7 @@ func show_narrative_dialogue(read_model: Dictionary) -> bool:
 	_set_gameplay_hud_visible(false)
 	if overlay != null:
 		overlay.visible = true
+		overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	if _narrative_background != null:
 		_narrative_background.visible = event_id == FIRST_RUN_PROLOGUE_EVENT_ID
 		_narrative_background.texture = _load_texture(PROLOGUE_BACKGROUND)
@@ -222,10 +232,12 @@ func hide_narrative_dialogue() -> bool:
 	var overlay := _panels.get("narrative_overlay") as Control
 	if overlay != null:
 		overlay.visible = false
+		overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var panel := _panels.get("narrative") as Control
 	if panel != null:
 		panel.visible = false
 	_set_gameplay_hud_visible(true)
+	_update()
 	return true
 
 func narrative_dialogue_visible() -> bool:
@@ -275,13 +287,22 @@ func _build() -> void:
 	status_panel.name = "StatusPanel"
 	root.add_child(status_panel)
 	_panels.status = status_panel
+	var status_body := HBoxContainer.new()
+	status_body.name = "StatusBody"
+	_ignore_mouse(status_body)
+	status_body.add_theme_constant_override("separation", 8)
+	status_panel.add_child(status_body)
+	var portrait_box := _portrait_box(PORTRAIT_PLAYER)
+	portrait_box.name = "PlayerPortrait"
+	status_body.add_child(portrait_box)
 	var status_rows := VBoxContainer.new()
+	status_rows.name = "StatusRows"
 	_ignore_mouse(status_rows)
-	status_rows.add_theme_constant_override("separation", 4)
-	status_panel.add_child(status_rows)
-	_labels.hp = _add_icon_row(status_rows, ICON_HP, "HP")
-	_labels.ki = _add_icon_row(status_rows, ICON_KI, "기운")
-	_labels.kokoro = _add_icon_row(status_rows, ICON_KOKORO, "心")
+	status_rows.add_theme_constant_override("separation", 5)
+	status_body.add_child(status_rows)
+	_labels.hp = _add_resource_row(status_rows, ICON_HP, "체력", Color(0.76, 0.24, 0.13, 1.0))
+	_labels.ki = _add_resource_row(status_rows, ICON_KI, "차기", Color(0.82, 0.53, 0.19, 1.0))
+	_labels.kokoro = _add_resource_row(status_rows, ICON_KOKORO, "정신", Color(0.34, 0.61, 0.76, 1.0))
 
 	var map_panel := _panel(MAP_PANEL_SIZE)
 	map_panel.name = "MapPanel"
@@ -303,6 +324,22 @@ func _build() -> void:
 	_ignore_mouse(_minimap_grid)
 	map_rows.add_child(_minimap_grid)
 
+	var enemy_panel := _panel(ENEMY_PANEL_SIZE)
+	enemy_panel.name = "EnemyPanel"
+	enemy_panel.visible = false
+	root.add_child(enemy_panel)
+	_panels.enemy = enemy_panel
+	var enemy_rows := VBoxContainer.new()
+	enemy_rows.name = "EnemyRows"
+	_ignore_mouse(enemy_rows)
+	enemy_rows.add_theme_constant_override("separation", 3)
+	enemy_panel.add_child(enemy_rows)
+	_labels.enemy_name = _add_icon_row(enemy_rows, ICON_ATTACK, "적 없음")
+	_labels.enemy_hp = _label("HP 0/0", 11)
+	enemy_rows.add_child(_labels.enemy_hp)
+	_labels.enemy_attack = _label("공격 0", 10)
+	enemy_rows.add_child(_labels.enemy_attack)
+
 	var quickslot_panel := _panel(QUICKSLOT_PANEL_SIZE)
 	quickslot_panel.name = "QuickSlotPanel"
 	root.add_child(quickslot_panel)
@@ -318,18 +355,17 @@ func _build() -> void:
 
 	var dpad_panel := _panel(DPAD_PANEL_SIZE)
 	dpad_panel.name = "DPadPanel"
-	dpad_panel.visible = false
 	root.add_child(dpad_panel)
 	_panels.dpad = dpad_panel
 	_build_dpad(dpad_panel)
 
-	var action_panel := _panel(Vector2(220, 108))
+	var action_panel := _panel(ACTION_PANEL_SIZE)
 	action_panel.name = "ActionPanel"
 	root.add_child(action_panel)
 	_panels.action = action_panel
 	_build_actions(action_panel)
 
-	var menu_panel := _panel(MENU_PANEL_SIZE)
+	var menu_panel := _menu_panel(MENU_PANEL_SIZE)
 	menu_panel.name = "MenuPanel"
 	menu_panel.visible = false
 	root.add_child(menu_panel)
@@ -339,7 +375,7 @@ func _build() -> void:
 	var narrative_overlay := Control.new()
 	narrative_overlay.name = "NarrativeOverlay"
 	narrative_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	narrative_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	narrative_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	narrative_overlay.visible = false
 	root.add_child(narrative_overlay)
 	_panels.narrative_overlay = narrative_overlay
@@ -373,11 +409,18 @@ func _update() -> void:
 	if not _built:
 		return
 	var model := runtime_read_model()
-	_set_label("hp", "HP %d / %d" % [model.hp, model.hp_max])
-	_set_label("ki", "기운 %d / %d" % [model.ki, model.ki_max])
-	_set_label("kokoro", "心 %d / %d" % [model.kokoro, model.kokoro_max])
+	_set_label("hp", "체력        %d/%d" % [model.hp, model.hp_max])
+	_set_label("ki", "차기        %d/%d" % [model.ki, model.ki_max])
+	_set_label("kokoro", "정신        %d/%d" % [model.kokoro, model.kokoro_max])
 	_set_label("map_title", model.biome_label)
 	_set_label("time", "%s %d%%" % [model.time_phase_label, model.time_progress_percent])
+	var combat_model: Dictionary = model.get("combat_target", {})
+	var enemy_panel := _panels.get("enemy") as Control
+	if enemy_panel != null:
+		enemy_panel.visible = bool(combat_model.get("visible", false))
+	_set_label("enemy_name", String(combat_model.get("name", "적 없음")))
+	_set_label("enemy_hp", "HP %d/%d" % [int(combat_model.get("hp", 0)), int(combat_model.get("hp_max", 0))])
+	_set_label("enemy_attack", "무기 공격 %d" % int(combat_model.get("attack", 0)))
 	var time_label := _labels.get("time") as Label
 	if time_label != null:
 		time_label.get_parent().visible = time_state != null
@@ -401,6 +444,8 @@ func _bind_runtime_signals() -> void:
 	_connect_runtime_signal(resources, &"kokoro_changed", Callable(self, "_on_resources_changed"))
 	_connect_runtime_signal(inventory, &"changed", Callable(self, "_on_snapshot_changed"))
 	_connect_runtime_signal(inventory_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
+	_connect_runtime_signal(combat_target, &"damaged", Callable(self, "_on_combat_target_damaged"))
+	_connect_runtime_signal(combat_target, &"defeated", Callable(self, "_on_combat_target_defeated"))
 	_connect_runtime_signal(tea_service, &"changed", Callable(self, "_on_snapshot_changed"))
 	_connect_runtime_signal(tea_brewing_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
 	_connect_runtime_signal(meta_codex_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
@@ -413,6 +458,8 @@ func _unbind_runtime_signals() -> void:
 	_disconnect_runtime_signal(resources, &"kokoro_changed", Callable(self, "_on_resources_changed"))
 	_disconnect_runtime_signal(inventory, &"changed", Callable(self, "_on_snapshot_changed"))
 	_disconnect_runtime_signal(inventory_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
+	_disconnect_runtime_signal(combat_target, &"damaged", Callable(self, "_on_combat_target_damaged"))
+	_disconnect_runtime_signal(combat_target, &"defeated", Callable(self, "_on_combat_target_defeated"))
 	_disconnect_runtime_signal(tea_service, &"changed", Callable(self, "_on_snapshot_changed"))
 	_disconnect_runtime_signal(tea_brewing_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
 	_disconnect_runtime_signal(meta_codex_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
@@ -432,6 +479,12 @@ func _on_resources_changed(_previous, _current, _maximum) -> void:
 func _on_snapshot_changed(_snapshot) -> void:
 	_update()
 	_refresh_open_menu()
+
+func _on_combat_target_damaged(_event: Dictionary, _applied_damage: int) -> void:
+	_update()
+
+func _on_combat_target_defeated() -> void:
+	_update()
 
 func _on_phase_changed(_previous, _current) -> void:
 	_time_refresh_elapsed = 0.0
@@ -459,13 +512,23 @@ func _build_dpad(parent: PanelContainer) -> void:
 	_add_direction_button(board, "DPadStop", Rect2(cell, cell, cell, cell), Vector2i.ZERO, "정지")
 
 func _build_actions(parent: PanelContainer) -> void:
+	_action_scroll = ScrollContainer.new()
+	_action_scroll.name = "ActionScroll"
+	_action_scroll.custom_minimum_size = Vector2(ACTION_PANEL_SIZE.x - 12.0, ACTION_PANEL_SIZE.y - 12.0)
+	_action_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_action_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_action_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_ignore_mouse(_action_scroll)
+	_ignore_mouse(_action_scroll.get_h_scroll_bar())
+	_ignore_mouse(_action_scroll.get_v_scroll_bar())
+	parent.add_child(_action_scroll)
 	_action_grid = GridContainer.new()
 	_action_grid.name = "ActionGrid"
 	_ignore_mouse(_action_grid)
 	_action_grid.columns = ACTION_PANEL_COLUMNS
 	_action_grid.add_theme_constant_override("h_separation", 4)
 	_action_grid.add_theme_constant_override("v_separation", 4)
-	parent.add_child(_action_grid)
+	_action_scroll.add_child(_action_grid)
 	_rebuild_action_buttons()
 
 func _rebuild_action_buttons() -> void:
@@ -489,15 +552,10 @@ func _rebuild_action_buttons() -> void:
 	_add_text_action(_action_grid, "SleepButton", ICON_TEA, "수면", "sleep", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "DungeonButton", ICON_ATTACK, "던전", "complete_dungeon", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "TeleportRepairButton", ICON_MAP, "수리", "repair_teleport", Vector2i.ZERO, 0)
-	var row_count := maxi(1, int(ceil(float(_action_grid.get_child_count()) / float(_action_grid.columns))))
-	var action_size := Vector2(
-		12 + ACTION_PANEL_COLUMNS * ACTION_BUTTON_SIZE.x + (ACTION_PANEL_COLUMNS - 1) * 4,
-		12 + row_count * ACTION_BUTTON_SIZE.y + (row_count - 1) * 4
-	)
 	var action_panel := _panels.get("action") as Control
 	if action_panel != null:
-		action_panel.custom_minimum_size = action_size
-		action_panel.size = action_size
+		action_panel.custom_minimum_size = ACTION_PANEL_SIZE
+		action_panel.size = ACTION_PANEL_SIZE
 
 func _add_direction_button(parent: Control, name: String, rect: Rect2, direction: Vector2i, tooltip: String) -> void:
 	var button := Button.new()
@@ -521,13 +579,14 @@ func _add_text_action(parent: Container, name: String, icon_path: String, text: 
 	button.text = text
 	button.icon = _load_texture(icon_path)
 	button.expand_icon = true
-	button.add_theme_constant_override("icon_max_width", 16)
+	button.add_theme_constant_override("icon_max_width", 18)
 	button.tooltip_text = text
 	button.focus_mode = Control.FOCUS_NONE
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	button.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.08, 0.06, 0.92)))
-	button.add_theme_stylebox_override("hover", _button_style(Color(0.16, 0.12, 0.08, 0.95)))
-	button.add_theme_stylebox_override("pressed", _button_style(Color(0.23, 0.17, 0.10, 0.98)))
+	button.add_theme_font_size_override("font_size", 11)
+	button.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.08, 0.06, 0.82), true))
+	button.add_theme_stylebox_override("hover", _button_style(Color(0.16, 0.12, 0.08, 0.92), true))
+	button.add_theme_stylebox_override("pressed", _button_style(Color(0.77, 0.54, 0.25, 0.96), true))
 	button.pressed.connect(func(): press_mobile_button(button_id, direction, slot))
 	parent.add_child(button)
 
@@ -600,10 +659,10 @@ func _portrait_rect(name: String) -> TextureRect:
 	return rect
 
 func _set_gameplay_hud_visible(visible: bool) -> void:
-	for panel_id in ["status", "map", "quickslot", "dpad", "action", "menu"]:
+	for panel_id in ["status", "map", "enemy", "quickslot", "dpad", "action", "menu"]:
 		var panel := _panels.get(panel_id) as Control
 		if panel != null:
-			panel.visible = visible and panel_id != "dpad"
+			panel.visible = visible and (panel_id != "menu" or not _open_menu_id.is_empty())
 	if not visible:
 		_open_menu_id = ""
 
@@ -683,7 +742,7 @@ func _inventory_rows() -> Array:
 	var rows: Array = []
 	if inventory_command_runtime != null and inventory_command_runtime.has_method("read_model"):
 		var model: Dictionary = inventory_command_runtime.read_model()
-		rows.append(_label("가방 %d/%d · 필터 %s" % [int(model.capacity.used), int(model.capacity.total), String(model.filter_kind)], 11))
+		rows.append(_section_label("차 & 도구 (인벤토리) · %d/%d · %s" % [int(model.capacity.used), int(model.capacity.total), String(model.filter_kind)]))
 		var toolbar := HBoxContainer.new()
 		_ignore_mouse(toolbar)
 		toolbar.add_theme_constant_override("separation", 4)
@@ -696,24 +755,64 @@ func _inventory_rows() -> Array:
 		var visible_rows: Array = model.slots
 		var page_start := _inventory_page_start(visible_rows, int(model.get("selected_slot_index", -1)), 6)
 		var page_end := mini(visible_rows.size(), page_start + 6)
+		var slot_strip := HBoxContainer.new()
+		slot_strip.name = "InventorySlotStrip"
+		_ignore_mouse(slot_strip)
+		slot_strip.add_theme_constant_override("separation", 5)
 		for row_index in range(page_start, page_end):
 			var row: Dictionary = visible_rows[row_index]
-			var line := HBoxContainer.new()
-			_ignore_mouse(line)
-			line.add_theme_constant_override("separation", 4)
-			var prefix := "▶ " if bool(row.get("selected", false)) else ""
-			line.add_child(_label("%s%s" % [prefix, String(row.get("label", ""))], 11))
-			line.add_child(_inventory_command_button("선택", GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, int(row.slot_index), {"slot_index": int(row.slot_index)})))
-			if bool(row.get("can_use", false)):
-				line.add_child(_inventory_command_button("사용", GameCommand.new(GameCommand.Type.USE_INVENTORY_SLOT, Vector2i.ZERO, int(row.slot_index), {"slot_index": int(row.slot_index)})))
-			if bool(row.get("can_equip", false)):
-				line.add_child(_inventory_command_button("장착", GameCommand.new(GameCommand.Type.EQUIP_INVENTORY_SLOT, Vector2i.ZERO, int(row.slot_index), {"slot_index": int(row.slot_index)})))
-			rows.append(line)
+			slot_strip.add_child(_inventory_slot_card(row))
+		rows.append(slot_strip)
 		if visible_rows.size() > 6:
 			rows.append(_label("%d-%d / %d" % [page_start + 1, page_end, visible_rows.size()], 11))
+		var selected := _selected_inventory_row(visible_rows, int(model.get("selected_slot_index", -1)))
+		rows.append(_inventory_detail_card(selected))
 		return rows
 	rows.append(_label("인벤토리 read model 없음", 11))
 	return rows
+
+func _inventory_slot_card(row: Dictionary) -> Button:
+	var button := _inventory_command_button(
+		"빈칸" if bool(row.get("empty", false)) else "%s\nx%d" % [String(row.get("name", row.get("item_id", ""))), int(row.get("quantity", 0))],
+		GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, int(row.slot_index), {"slot_index": int(row.slot_index)})
+	)
+	button.name = "InventorySlotCard%d" % int(row.get("slot_index", -1))
+	button.custom_minimum_size = Vector2(50, 52)
+	button.add_theme_font_size_override("font_size", 10)
+	button.add_theme_stylebox_override("normal", _button_style(Color(0.72, 0.59, 0.38, 0.92)))
+	if bool(row.get("selected", false)):
+		button.add_theme_stylebox_override("normal", _button_style(Color(0.90, 0.72, 0.42, 0.96)))
+	button.disabled = bool(row.get("empty", false))
+	return button
+
+func _selected_inventory_row(rows: Array, selected_slot_index: int) -> Dictionary:
+	for row in rows:
+		if typeof(row) == TYPE_DICTIONARY and int(row.get("slot_index", -1)) == selected_slot_index:
+			return row
+	return rows[0] if not rows.is_empty() and typeof(rows[0]) == TYPE_DICTIONARY else {}
+
+func _inventory_detail_card(row: Dictionary) -> Control:
+	var card := _detail_card("선택한 슬롯")
+	var text := "표시할 항목 없음"
+	if not row.is_empty() and not bool(row.get("empty", false)):
+		text = "%s\n%s · 수량 %d · %s" % [
+			String(row.get("name", row.get("item_id", ""))),
+			String(row.get("kind", "")),
+			int(row.get("quantity", 0)),
+			String(row.get("stack_label", ""))
+		]
+	(card.get_node("Rows") as VBoxContainer).add_child(_label(text, 11))
+	var actions := HBoxContainer.new()
+	_ignore_mouse(actions)
+	actions.add_theme_constant_override("separation", 4)
+	if not row.is_empty():
+		var slot_index := int(row.get("slot_index", -1))
+		if bool(row.get("can_use", false)):
+			actions.add_child(_inventory_command_button("사용", GameCommand.new(GameCommand.Type.USE_INVENTORY_SLOT, Vector2i.ZERO, slot_index, {"slot_index": slot_index})))
+		if bool(row.get("can_equip", false)):
+			actions.add_child(_inventory_command_button("장착", GameCommand.new(GameCommand.Type.EQUIP_INVENTORY_SLOT, Vector2i.ZERO, slot_index, {"slot_index": slot_index})))
+	(card.get_node("Rows") as VBoxContainer).add_child(actions)
+	return card
 
 func _inventory_command_button(text: String, command: GameCommand) -> Button:
 	var button := Button.new()
@@ -959,12 +1058,12 @@ func _crafting_rows() -> Array:
 		return rows
 	_selected_recipe_id = String(model.get("selected_recipe_id", ""))
 	var counts: Dictionary = model.get("counts", {})
-	rows.append(_label("제작법 %d/%d · 가능 %d · 필터 %s" % [
+	rows.append(_section_label("제작법 %d/%d · 가능 %d · 필터 %s" % [
 		int(counts.get("visible", 0)),
 		int(counts.get("total", 0)),
 		int(counts.get("craftable", 0)),
 		_crafting_filter_label(_crafting_filter)
-	], 11))
+	]))
 	var filters := HBoxContainer.new()
 	_ignore_mouse(filters)
 	filters.add_theme_constant_override("separation", 4)
@@ -974,28 +1073,36 @@ func _crafting_rows() -> Array:
 	rows.append(filters)
 	var model_rows: Array = model.get("rows", [])
 	var page_start := _crafting_page_start(model_rows, _selected_recipe_id, 5)
+	var recipe_strip := HBoxContainer.new()
+	recipe_strip.name = "CraftingRecipeStrip"
+	_ignore_mouse(recipe_strip)
+	recipe_strip.add_theme_constant_override("separation", 5)
 	for index in range(page_start, mini(model_rows.size(), page_start + 5)):
-		rows.append(_crafting_row(model_rows[index]))
+		recipe_strip.add_child(_crafting_row(model_rows[index]))
+	rows.append(recipe_strip)
 	if model_rows.size() > 5:
 		rows.append(_label("항목 %d-%d / %d" % [page_start + 1, mini(model_rows.size(), page_start + 5), model_rows.size()], 10))
 	rows.append(_crafting_detail_row(model.get("detail", {})))
 	return rows
 
 func _crafting_row(row_model: Dictionary) -> Control:
-	var row := HBoxContainer.new()
-	_ignore_mouse(row)
-	row.add_theme_constant_override("separation", 4)
-	var prefix := "▶ " if bool(row_model.get("selected", false)) else ""
-	var label := _label("%s%s · %s" % [
-		prefix,
+	var card := VBoxContainer.new()
+	card.name = "CraftingRecipeCard"
+	_ignore_mouse(card)
+	card.custom_minimum_size = Vector2(88, 62)
+	card.add_theme_constant_override("separation", 3)
+	var label := _label("%s\n%s" % [
 		String(row_model.get("name", row_model.get("recipe_id", ""))),
 		String(row_model.get("reason_label", ""))
 	], 10)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(label)
+	card.add_child(label)
+	var actions := HBoxContainer.new()
+	_ignore_mouse(actions)
+	actions.add_theme_constant_override("separation", 3)
 	var select_button := Button.new()
 	select_button.text = "상세"
-	select_button.custom_minimum_size = Vector2(52, 28)
+	select_button.custom_minimum_size = Vector2(40, 24)
 	select_button.focus_mode = Control.FOCUS_ALL
 	select_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	var recipe_id := String(row_model.get("recipe_id", ""))
@@ -1003,17 +1110,19 @@ func _crafting_row(row_model: Dictionary) -> Control:
 		_selected_recipe_id = recipe_id
 		_refresh_open_menu()
 	)
-	row.add_child(select_button)
+	actions.add_child(select_button)
 	var button := Button.new()
 	button.text = "제작"
 	button.disabled = not bool(row_model.get("craftable", false))
 	button.focus_mode = Control.FOCUS_ALL
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.custom_minimum_size = Vector2(40, 24)
 	button.pressed.connect(func():
 		mobile_command_issued.emit(GameCommand.new(GameCommand.Type.CRAFT_RECIPE, Vector2i.ZERO, 0, {"recipe_id": recipe_id}))
 	)
-	row.add_child(button)
-	return row
+	actions.add_child(button)
+	card.add_child(actions)
+	return _card_frame(card, bool(row_model.get("selected", false)))
 
 func _crafting_filter_button(text: String, category: String) -> Button:
 	var button := Button.new()
@@ -1029,12 +1138,12 @@ func _crafting_filter_button(text: String, category: String) -> Button:
 	)
 	return button
 
-func _crafting_detail_row(detail: Dictionary) -> Label:
+func _crafting_detail_row(detail: Dictionary) -> Control:
 	if detail.is_empty():
-		return _label("상세: 표시할 제작법 없음", 10)
+		return _detail_card_with_text("상세", "표시할 제작법 없음")
 	var result: Dictionary = detail.get("result", {})
 	var parts := [
-		"상세 %s → %s x%d" % [
+		"%s → %s x%d" % [
 			String(detail.get("recipe_id", "")),
 			String(result.get("name", result.get("item_id", ""))),
 			int(result.get("quantity", 1))
@@ -1063,7 +1172,7 @@ func _crafting_detail_row(detail: Dictionary) -> Label:
 	var unlock_biome_id := String(detail.get("unlock_biome_id", ""))
 	if not unlock_biome_id.is_empty():
 		parts.append("해금 %s" % unlock_biome_id)
-	return _label(" · ".join(parts), 10)
+	return _detail_card_with_text("제작 상세", " · ".join(parts))
 
 func _crafting_page_start(rows: Array, selected: String, page_size: int) -> int:
 	if rows.size() <= page_size:
@@ -1078,13 +1187,20 @@ func _crafting_filter_label(category: String) -> String:
 
 func _facility_rows() -> Array:
 	var rows: Array = []
+	rows.append(_section_label("시설"))
+	var facility_strip := HBoxContainer.new()
+	facility_strip.name = "FacilityCardStrip"
+	_ignore_mouse(facility_strip)
+	facility_strip.add_theme_constant_override("separation", 5)
 	for node in world.get("facility_nodes", []):
 		var position: Dictionary = node.get("position", {})
-		rows.append(_label("%s (%d,%d)" % [
+		facility_strip.add_child(_detail_card_with_text("지도 시설", "%s (%d,%d)" % [
 			String(node.get("facility_term", node.get("id", ""))),
 			int(position.get("x", 0)),
 			int(position.get("y", 0))
-		], 11))
+		]))
+	if facility_strip.get_child_count() > 0:
+		rows.append(facility_strip)
 	if crafting_service != null and crafting_service.has_method("read_model"):
 		var model: Dictionary = crafting_service.read_model(inventory, crafting_context)
 		var facilities := {}
@@ -1103,10 +1219,10 @@ func _facility_rows() -> Array:
 		facility_ids.sort()
 		for item_id in facility_ids:
 			var facility: Dictionary = facilities[item_id]
-			rows.append(_label("%s · %s" % [
+			rows.append(_detail_card_with_text("제작 연계", "%s · %s" % [
 				String(facility.get("name", item_id)),
 				"사용 가능" if bool(facility.get("available", false)) else "필요"
-			], 11))
+			]))
 	return rows
 
 func _map_rows() -> Array:
@@ -1149,6 +1265,27 @@ func _map_read_model(options := {}) -> Dictionary:
 	if map_read_model_builder == null or not map_read_model_builder.has_method("build"):
 		return {"ok": false, "reason": "missing_map_read_model_builder"}
 	return map_read_model_builder.build(world_data if world_data != null else world, run_state, _player_cell(), options)
+
+func _combat_target_read_model() -> Dictionary:
+	var combatant = _object_property(combat_target, "combatant")
+	if combatant == null:
+		return {"visible": false}
+	var hp := int(_object_property(combatant, "hp", 0))
+	var hp_max := int(_object_property(combatant, "hp_max", 0))
+	if hp_max <= 0:
+		return {"visible": false}
+	var definition_id := String(_object_property(combatant, "definition_id", _object_property(combat_target, "monster_id", "")))
+	var definition := {}
+	if catalog != null and catalog.has_method("find_by_id") and not definition_id.is_empty():
+		definition = catalog.find_by_id("monsters", definition_id)
+	return {
+		"visible": hp > 0,
+		"id": definition_id,
+		"name": String(definition.get("name", definition_id if not definition_id.is_empty() else "적")),
+		"hp": hp,
+		"hp_max": hp_max,
+		"attack": int(_object_property(combatant, "attack", 0))
+	}
 
 func _player_cell() -> Vector2i:
 	var position := Vector2.ZERO
@@ -1310,8 +1447,9 @@ func _apply_safe_area_layout() -> void:
 		_narrative_right_portrait.position = Vector2(viewport_size.x - margin.z - portrait_size.x - 28.0, portrait_y)
 	_place_panel(_panels.status, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y))
 	_place_panel(_panels.map, Control.PRESET_TOP_RIGHT, Vector2(-margin.z, margin.y))
+	_place_panel(_panels.enemy, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y + STATUS_PANEL_SIZE.y + 8.0))
 	_place_panel(_panels.quickslot, Control.PRESET_CENTER_TOP, Vector2(0.0, margin.y))
-	_place_panel(_panels.menu, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y + STATUS_PANEL_SIZE.y + 8.0))
+	_place_panel(_panels.menu, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w))
 	_place_panel(_panels.dpad, Control.PRESET_BOTTOM_LEFT, Vector2(margin.x, -margin.w))
 	_place_panel(_panels.action, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w))
 	_place_panel(_panels.narrative, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w - 6.0))
@@ -1389,8 +1527,57 @@ func _dialogue_panel(size: Vector2) -> PanelContainer:
 	panel.size = size
 	panel.custom_minimum_size = size
 	_ignore_mouse(panel)
-	panel.add_theme_stylebox_override("panel", _panel_style())
+	panel.add_theme_stylebox_override("panel", _parchment_style())
 	return panel
+
+func _menu_panel(size: Vector2) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.size = size
+	panel.custom_minimum_size = size
+	_ignore_mouse(panel)
+	panel.add_theme_stylebox_override("panel", _parchment_style())
+	return panel
+
+func _portrait_box(asset_id: String) -> PanelContainer:
+	var box := PanelContainer.new()
+	box.custom_minimum_size = PORTRAIT_BOX_SIZE
+	box.add_theme_stylebox_override("panel", _button_style(Color(0.12, 0.08, 0.05, 0.86)))
+	_ignore_mouse(box)
+	var texture := TextureRect.new()
+	texture.name = "PortraitTexture"
+	texture.custom_minimum_size = PORTRAIT_BOX_SIZE - Vector2(8, 8)
+	texture.texture = _load_texture(asset_id)
+	texture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	texture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	texture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(texture)
+	return box
+
+func _add_resource_row(parent: Container, icon_path: String, text: String, color: Color) -> Label:
+	var row := HBoxContainer.new()
+	_ignore_mouse(row)
+	row.add_theme_constant_override("separation", 5)
+	parent.add_child(row)
+	var icon := TextureRect.new()
+	_ignore_mouse(icon)
+	icon.custom_minimum_size = Vector2(16, 16)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture = _load_texture(icon_path)
+	row.add_child(icon)
+	var column := VBoxContainer.new()
+	_ignore_mouse(column)
+	column.add_theme_constant_override("separation", 2)
+	row.add_child(column)
+	var value := _label(text, 12)
+	column.add_child(value)
+	var bar := ColorRect.new()
+	bar.name = "%sBar" % text
+	bar.custom_minimum_size = RESOURCE_BAR_SIZE
+	bar.color = color
+	_ignore_mouse(bar)
+	column.add_child(bar)
+	return value
 
 func _add_icon_row(parent: Container, icon_path: String, text: String) -> Label:
 	var row := HBoxContainer.new()
@@ -1415,6 +1602,43 @@ func _label(text: String, font_size := 13) -> Label:
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", Color(0.93, 0.83, 0.63, 1.0))
 	return label
+
+func _section_label(text: String) -> Label:
+	var label := _label(text, 12)
+	label.add_theme_color_override("font_color", Color(0.12, 0.08, 0.04, 1.0))
+	return label
+
+func _card_frame(content: Control, selected := false) -> PanelContainer:
+	var frame := PanelContainer.new()
+	frame.custom_minimum_size = content.custom_minimum_size + Vector2(8, 8)
+	_ignore_mouse(frame)
+	var color := Color(0.69, 0.56, 0.36, 0.93)
+	if selected:
+		color = Color(0.86, 0.66, 0.36, 0.96)
+	frame.add_theme_stylebox_override("panel", _button_style(color))
+	frame.add_child(content)
+	return frame
+
+func _detail_card(title: String) -> PanelContainer:
+	var card := PanelContainer.new()
+	card.name = "DetailCard"
+	card.custom_minimum_size = Vector2(320, 46)
+	_ignore_mouse(card)
+	card.add_theme_stylebox_override("panel", _button_style(Color(0.69, 0.56, 0.36, 0.94)))
+	var rows := VBoxContainer.new()
+	rows.name = "Rows"
+	_ignore_mouse(rows)
+	rows.add_theme_constant_override("separation", 3)
+	card.add_child(rows)
+	var title_label := _section_label(title)
+	rows.add_child(title_label)
+	return card
+
+func _detail_card_with_text(title: String, text: String) -> PanelContainer:
+	var card := _detail_card(title)
+	var rows := card.get_node("Rows") as VBoxContainer
+	rows.add_child(_section_label(text))
+	return card
 
 func _set_label(id: String, text: String) -> void:
 	var label := _labels.get(id) as Label
@@ -1460,7 +1684,7 @@ func _panel_style() -> StyleBoxFlat:
 	style.content_margin_bottom = 6
 	return style
 
-func _button_style(color: Color) -> StyleBoxFlat:
+func _button_style(color: Color, rounded := false) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = color
 	style.border_color = Color(0.73, 0.55, 0.31, 0.95)
@@ -1472,6 +1696,25 @@ func _button_style(color: Color) -> StyleBoxFlat:
 	style.content_margin_top = 3
 	style.content_margin_right = 3
 	style.content_margin_bottom = 3
+	if rounded:
+		style.corner_radius_top_left = 12
+		style.corner_radius_top_right = 12
+		style.corner_radius_bottom_right = 12
+		style.corner_radius_bottom_left = 12
+	return style
+
+func _parchment_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.67, 0.55, 0.36, 0.96)
+	style.border_color = Color(0.30, 0.12, 0.06, 0.96)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.content_margin_left = 8
+	style.content_margin_top = 6
+	style.content_margin_right = 8
+	style.content_margin_bottom = 6
 	return style
 
 func _biome_label(id: String) -> String:
@@ -1595,7 +1838,10 @@ func _load_texture(reference: String) -> Texture2D:
 	var image := Image.new()
 	if image.load(path) != OK:
 		return null
-	return ImageTexture.create_from_image(image)
+	var texture := ImageTexture.create_from_image(image)
+	if texture != null:
+		texture.resource_path = path
+	return texture
 
 func _ensure_asset_catalog() -> bool:
 	if _asset_catalog_ready:

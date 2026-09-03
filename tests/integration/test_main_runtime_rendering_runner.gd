@@ -104,21 +104,28 @@ func run() -> void:
 	if hud == null:
 		failures.append("main scene owns a runtime HUD")
 	else:
+		if hud.has_method("narrative_dialogue_visible") and hud.narrative_dialogue_visible():
+			hud.hide_narrative_dialogue()
+			await process_frame
 		var status_panel := hud.get_node_or_null("Root/StatusPanel")
 		var map_panel := hud.get_node_or_null("Root/MapPanel")
 		var quickslot_panel := hud.get_node_or_null("Root/QuickSlotPanel")
 		var dpad_panel := hud.get_node_or_null("Root/DPadPanel")
 		var action_panel := hud.get_node_or_null("Root/ActionPanel")
-		if status_panel == null or map_panel == null or quickslot_panel == null or dpad_panel == null or action_panel == null:
-			failures.append("runtime HUD shows status, map, quickslot, dpad, and action panels")
-		elif dpad_panel.visible:
-			failures.append("runtime HUD keeps the directional pad hidden")
-		elif _texture_rect_count(status_panel) < 3 or _label_count(status_panel) < 3:
-			failures.append("runtime HUD status panel renders icon-backed HP/ki/kokoro rows")
+		var enemy_panel := hud.get_node_or_null("Root/EnemyPanel")
+		if status_panel == null or map_panel == null or quickslot_panel == null or dpad_panel == null or action_panel == null or enemy_panel == null:
+			failures.append("runtime HUD shows status, map, enemy, quickslot, dpad, and action panels")
+		elif not dpad_panel.visible or dpad_panel.custom_minimum_size.x > 90.0:
+			failures.append("runtime HUD shows the compact mockup-style directional pad")
+		elif _texture_rect_count(status_panel) < 4 or _label_count(status_panel) < 3:
+			failures.append("runtime HUD status panel renders portrait plus icon-backed resource rows")
+		elif not enemy_panel.visible or _label_count(enemy_panel) < 3:
+			failures.append("runtime HUD enemy panel renders combat target name, HP, and weapon stats")
 		elif _texture_rect_count(quickslot_panel) < 4 or _label_count(quickslot_panel) < 4:
 			failures.append("runtime HUD quickslots render icon-backed rows")
 		else:
-			_assert_hud_layout_fits_viewport([status_panel, map_panel, quickslot_panel, action_panel])
+			_assert_hud_layout_fits_viewport([status_panel, map_panel, enemy_panel, quickslot_panel, action_panel])
+			_assert_hud_layout_keeps_center_play_area_clear([status_panel, map_panel, enemy_panel, quickslot_panel, dpad_panel, action_panel])
 			if _button_count(action_panel) < 15:
 				failures.append("runtime HUD exposes attack, dodge, tea, consumable, ability, inventory, tea brewing, meta codex, map, crafting, facilities, sleep, dungeon, and teleport controls")
 			var time_label := hud.get("_labels").get("time") as Label
@@ -199,6 +206,15 @@ func _assert_hud_layout_fits_viewport(panels: Array) -> void:
 		var minimum := control.get_combined_minimum_size()
 		if minimum.x > control.size.x + 0.5 or minimum.y > control.size.y + 0.5:
 			failures.append("runtime HUD panel content fits its frame: %s" % control.name)
+
+func _assert_hud_layout_keeps_center_play_area_clear(panels: Array) -> void:
+	var center_play_area := Rect2(Vector2(272, 132), Vector2(96, 96))
+	for panel in panels:
+		var control := panel as Control
+		if control == null or not control.visible:
+			continue
+		if center_play_area.intersects(control.get_global_rect(), true):
+			failures.append("runtime HUD panel avoids the central 640x360 play area: %s rect=%s safe=%s" % [control.name, control.get_global_rect(), center_play_area])
 
 func _assert_runtime_death_replaces_run(main, player) -> void:
 	_cleanup_lifecycle_files()
