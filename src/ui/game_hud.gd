@@ -441,6 +441,11 @@ func _ignore_mouse(control: Control) -> void:
 func _block_mouse(control: Control) -> void:
 	control.mouse_filter = Control.MOUSE_FILTER_STOP
 
+func _clear_container_children(container: Node) -> void:
+	for child in container.get_children():
+		container.remove_child(child)
+		child.queue_free()
+
 func _update() -> void:
 	if not _built:
 		return
@@ -614,22 +619,19 @@ func _rebuild_action_buttons() -> void:
 	if _action_grid == null:
 		return
 	if _secondary_action_bar != null:
-		for child in _secondary_action_bar.get_children():
-			child.free()
+		_clear_container_children(_secondary_action_bar)
 		if _tea_quickslot_count() > 0:
 			_add_icon_action(_secondary_action_bar, "QuickTeaButton", ICON_TEA, "차 사용", "drink_tea", Vector2i.ZERO, 0)
 		_add_icon_action(_secondary_action_bar, "QuickConsumableButton", ICON_CONSUMABLE, "소모품 사용", "use_consumable", Vector2i.ZERO, 0)
 		if _balance_integer(BALANCE_ABILITY_SLOTS_ID) > 0:
 			_add_icon_action(_secondary_action_bar, "QuickAbilityButton", ICON_ABILITY, "요술 사용", "cast_ability", Vector2i.ZERO, 0)
-	for child in _action_grid.get_children():
-		child.free()
+	_clear_container_children(_action_grid)
 	_add_text_action(_action_grid, "AttackButton", ICON_ATTACK, "공격", "attack", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "DodgeButton", ICON_DODGE, "회피", "dodge", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "InventoryButton", ICON_BAG, "가방", "open_inventory", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "CraftingButton", ICON_CONSUMABLE, "제작", "open_crafting", Vector2i.ZERO, 0)
 	if _action_menu_grid != null:
-		for child in _action_menu_grid.get_children():
-			child.free()
+		_clear_container_children(_action_menu_grid)
 		for slot in range(_tea_quickslot_count()):
 			_add_text_action(_action_menu_grid, "TeaButton%d" % (slot + 1), ICON_TEA, "차%d" % (slot + 1), "drink_tea", Vector2i.ZERO, slot)
 		_add_text_action(_action_menu_grid, "ConsumableButton", ICON_CONSUMABLE, "소모", "use_consumable", Vector2i.ZERO, 0)
@@ -846,8 +848,7 @@ func _show_menu(title: String, rows: Array) -> void:
 	if panel == null or _menu_content == null:
 		return
 	_set_label("menu_title", title)
-	for child in _menu_content.get_children():
-		child.free()
+	_clear_container_children(_menu_content)
 	if rows.is_empty():
 		_menu_content.add_child(_label("표시할 항목 없음", 11))
 	else:
@@ -1503,8 +1504,7 @@ func _map_color_grid(minimap: Dictionary, cell_size: Vector2) -> GridContainer:
 func _render_minimap_grid(grid: GridContainer, minimap: Dictionary, cell_size: Vector2) -> void:
 	if grid == null:
 		return
-	for child in grid.get_children():
-		child.free()
+	_clear_container_children(grid)
 	var size: Dictionary = minimap.get("size", {})
 	var width := int(size.get("width", 0))
 	var height := int(size.get("height", 0))
