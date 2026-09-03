@@ -40,6 +40,17 @@ static func button_style(color: Color, rounded := false) -> StyleBoxFlat:
 		style.corner_radius_bottom_left = 12
 	return style
 
+static func panel_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.055, 0.049, 0.038, 0.90)
+	style.border_color = BORDER_COLOR
+	style.set_border_width_all(2)
+	style.content_margin_left = 6
+	style.content_margin_top = 6
+	style.content_margin_right = 6
+	style.content_margin_bottom = 6
+	return style
+
 static func _load_font() -> Font:
 	if not ResourceLoader.exists(FONT_GALMURI):
 		return null

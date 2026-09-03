@@ -51,6 +51,11 @@ const MENU_PANEL_SIZE := Vector2(560, 280)
 const MENU_CONTENT_SIZE := Vector2(544, 228)
 const MENU_VIEWPORT_RATIO := Vector2(0.88, 0.78)
 const MENU_PANEL_PADDING := Vector2(16, 52)
+const NARRATIVE_PANEL_SIZE := Vector2(540, 126)
+const NARRATIVE_PORTRAIT_SIZE := Vector2(128, 128)
+const NARRATIVE_PORTRAIT_FRAME_SIZE := Vector2(136, 136)
+const NARRATIVE_PORTRAIT_INSET := 4.0
+const NARRATIVE_PANEL_BOTTOM_OFFSET := 10.0
 
 signal mobile_command_issued(command)
 
@@ -421,7 +426,7 @@ func _build() -> void:
 	_narrative_right_portrait = _portrait_rect("RightPortrait")
 	narrative_overlay.add_child(_narrative_right_portrait)
 
-	var narrative_panel := _dialogue_panel(Vector2(520, 132))
+	var narrative_panel := _dialogue_panel(NARRATIVE_PANEL_SIZE)
 	narrative_panel.name = "NarrativePanel"
 	narrative_panel.visible = false
 	narrative_overlay.add_child(narrative_panel)
@@ -767,15 +772,15 @@ func _build_narrative_panel(parent: PanelContainer) -> void:
 func _portrait_rect(name: String) -> TextureRect:
 	var rect := TextureRect.new()
 	rect.name = name
-	rect.custom_minimum_size = Vector2(128, 128)
-	rect.size = Vector2(128, 128)
+	rect.custom_minimum_size = NARRATIVE_PORTRAIT_SIZE
+	rect.size = NARRATIVE_PORTRAIT_SIZE
 	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return rect
 
 func _narrative_portrait_frame(name: String) -> PanelContainer:
-	var frame := _menu_panel(Vector2(128, 128))
+	var frame := _menu_panel(NARRATIVE_PORTRAIT_FRAME_SIZE)
 	frame.name = name
 	return frame
 
@@ -1614,20 +1619,24 @@ func _apply_safe_area_layout() -> void:
 		_narrative_background.offset_top = 0
 		_narrative_background.offset_right = 0
 		_narrative_background.offset_bottom = 0
-	var portrait_size := Vector2(128, 128)
-	var portrait_y := maxf(margin.y + 44.0, viewport_size.y - margin.w - 132.0 - portrait_size.y - 12.0)
+	var portrait_y := maxf(
+		margin.y + 44.0,
+		viewport_size.y - margin.w - NARRATIVE_PANEL_BOTTOM_OFFSET - NARRATIVE_PANEL_SIZE.y - NARRATIVE_PORTRAIT_FRAME_SIZE.y - 8.0
+	)
+	var left_frame_position := Vector2(margin.x + 18.0, portrait_y)
+	var right_frame_position := Vector2(viewport_size.x - margin.z - NARRATIVE_PORTRAIT_FRAME_SIZE.x - 18.0, portrait_y)
 	if _narrative_left_portrait != null:
-		_narrative_left_portrait.size = portrait_size
-		_narrative_left_portrait.position = Vector2(margin.x + 28.0, portrait_y)
+		_narrative_left_portrait.size = NARRATIVE_PORTRAIT_SIZE
+		_narrative_left_portrait.position = left_frame_position + Vector2.ONE * NARRATIVE_PORTRAIT_INSET
 	if _narrative_left_portrait_frame != null:
-		_narrative_left_portrait_frame.size = portrait_size
-		_narrative_left_portrait_frame.position = Vector2(margin.x + 28.0, portrait_y)
+		_narrative_left_portrait_frame.size = NARRATIVE_PORTRAIT_FRAME_SIZE
+		_narrative_left_portrait_frame.position = left_frame_position
 	if _narrative_right_portrait != null:
-		_narrative_right_portrait.size = portrait_size
-		_narrative_right_portrait.position = Vector2(viewport_size.x - margin.z - portrait_size.x - 28.0, portrait_y)
+		_narrative_right_portrait.size = NARRATIVE_PORTRAIT_SIZE
+		_narrative_right_portrait.position = right_frame_position + Vector2.ONE * NARRATIVE_PORTRAIT_INSET
 	if _narrative_right_portrait_frame != null:
-		_narrative_right_portrait_frame.size = portrait_size
-		_narrative_right_portrait_frame.position = Vector2(viewport_size.x - margin.z - portrait_size.x - 28.0, portrait_y)
+		_narrative_right_portrait_frame.size = NARRATIVE_PORTRAIT_FRAME_SIZE
+		_narrative_right_portrait_frame.position = right_frame_position
 	_place_panel(_panels.status, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y))
 	_place_panel(_panels.map, Control.PRESET_TOP_RIGHT, Vector2(-margin.z, margin.y))
 	_place_panel(_panels.enemy, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y + STATUS_PANEL_SIZE.y + 8.0))
@@ -1637,7 +1646,7 @@ func _apply_safe_area_layout() -> void:
 	_place_panel(_panels.dpad, Control.PRESET_BOTTOM_LEFT, Vector2(margin.x, -margin.w))
 	_place_panel(_panels.action_menu, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w - ACTION_PANEL_SIZE.y - 8.0))
 	_place_panel(_panels.action, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w))
-	_place_panel(_panels.narrative, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w - 6.0))
+	_place_panel(_panels.narrative, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w - NARRATIVE_PANEL_BOTTOM_OFFSET))
 
 func _place_panel(panel, preset: int, offset: Vector2) -> void:
 	if not panel is Control:
@@ -1881,18 +1890,7 @@ func _pixel_theme() -> Theme:
 	return PixelUiTheme.create()
 
 func _panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.055, 0.049, 0.038, 0.86)
-	style.border_color = Color(0.73, 0.55, 0.31, 0.95)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.content_margin_left = 6
-	style.content_margin_top = 6
-	style.content_margin_right = 6
-	style.content_margin_bottom = 6
-	return style
+	return PixelUiTheme.panel_style()
 
 func _button_style(color: Color, rounded := false) -> StyleBoxFlat:
 	return PixelUiTheme.button_style(color, rounded)
