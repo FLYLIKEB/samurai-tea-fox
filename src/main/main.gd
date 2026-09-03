@@ -189,20 +189,30 @@ var _active_narrative_node_id := ""
 var _start_mode := START_MODE_RESUME
 var _force_first_run_prologue := false
 var _death_transition_active := false
+var _loading_label: Label
 
 func _ready() -> void:
+	_create_loading_overlay()
+	_set_loading_status("게임 데이터 불러오는 중…")
+	await get_tree().process_frame
 	_configure_audio_feedback()
 	_consume_start_mode()
 	catalog = DataCatalog.new()
+	_set_loading_status("콘텐츠 카탈로그 준비 중…")
+	await get_tree().process_frame
 	var result: Dictionary = catalog.load_from_directory("res://data/generated")
 	if not result.ok:
 		push_error(result.error)
 		return
 	var loaded_run := load_or_create_run_state()
+	_set_loading_status("저장 데이터 확인 중…")
+	await get_tree().process_frame
 	if not loaded_run.ok:
 		push_error(loaded_run.error)
 		return
 	var runtime_result := _configure_run_services(catalog)
+	_set_loading_status("게임 시스템 준비 중…")
+	await get_tree().process_frame
 	if not runtime_result.ok:
 		push_error(runtime_result.error)
 		return
@@ -221,15 +231,45 @@ func _ready() -> void:
 	if run_state.seed == 0:
 		run_state.seed = DEFAULT_RUN_SEED
 	var world_result := _configure_world_for_current_run()
+	_set_loading_status("월드 생성 중…")
+	await get_tree().process_frame
 	if not world_result.ok:
 		push_error(world_result.error)
 	else:
+		_set_loading_status("플레이 화면 준비 중…")
+		await get_tree().process_frame
 		if bool(cheat_result.get("applied", false)):
 			var cheat_save_result := save_current_run()
 			if not cheat_save_result.ok:
 				push_error(cheat_save_result.error)
 				return
 		_maybe_show_first_run_prologue()
+		_clear_loading_overlay()
+
+func _create_loading_overlay() -> void:
+	var layer := CanvasLayer.new()
+	layer.name = "LoadingOverlay"
+	layer.layer = 200
+	add_child(layer)
+	_loading_label = Label.new()
+	_loading_label.name = "LoadingStatus"
+	_loading_label.text = "준비 중…"
+	_loading_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_loading_label.add_theme_font_size_override("font_size", 14)
+	_loading_label.set_anchors_preset(Control.PRESET_CENTER)
+	_loading_label.position = Vector2(-180.0, 110.0)
+	_loading_label.size = Vector2(360.0, 28.0)
+	_loading_label.modulate = Color(1.0, 0.91, 0.68, 1.0)
+	layer.add_child(_loading_label)
+
+func _set_loading_status(message: String) -> void:
+	if _loading_label != null:
+		_loading_label.text = message
+
+func _clear_loading_overlay() -> void:
+	var overlay := get_node_or_null("LoadingOverlay")
+	if overlay != null:
+		overlay.queue_free()
 
 func _configure_combat_lifecycle() -> Dictionary:
 	var player_combat_result: Dictionary = player.configure_combat(catalog)
@@ -2453,6 +2493,7 @@ func _is_landmark_footprint_cell(cell: Vector2i) -> bool:
 func _is_landmark_target(target_id: String) -> bool:
 	return (_in_dungeon_map and target_id == "dungeon_entry") \
 		or _is_core_dungeon_target(target_id) \
+		or target_id.begins_with("%s_" % WorldData.LANDMARK_RUIN) \
 		or target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE)
 
 func _is_core_dungeon_target(target_id: String) -> bool:
@@ -2491,6 +2532,10 @@ func _handle_landmark_interaction(target_id: String) -> bool:
 				game_hud.show_command_feedback("유적 수리 완료 · 이동은 텔레포트를 이용하세요")
 			return true
 		return _handle_complete_dungeon_command(GameCommand.new(GameCommand.Type.COMPLETE_DUNGEON, Vector2i.ZERO, -1, {"entry_only": true}))
+	if target_id.begins_with("%s_" % WorldData.LANDMARK_RUIN):
+		if game_hud != null:
+			game_hud.show_command_feedback("유적은 수리 가능한 별도 시설입니다")
+		return true
 	if target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE):
 		var biome_id := String(run_state.current_biome_id) if run_state != null else ""
 		var progression := _ensure_biome_progression_state()
@@ -3477,6 +3522,7 @@ func _owner_sprite_sources(world: Dictionary) -> Dictionary:
 	var sources := {
 		WorldData.LANDMARK_ENTRY: "small_signpost",
 		WorldData.LANDMARK_CORE_DUNGEON: "asset_assets_sprites_objects_structures_warehouse_2x2_64x64_png",
+		WorldData.LANDMARK_RUIN: "asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png",
 		WorldData.LANDMARK_TELEPORT_ZONE: WorldGenerator.RENDER_TELEPORT_ZONE,
 		"wood": "log_resource",
 		"stone": "small_rock_resource",
