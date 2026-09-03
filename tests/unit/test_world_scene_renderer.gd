@@ -9,6 +9,7 @@ func run(asserts) -> void:
 	_assert_river_uses_connection_specific_sources(asserts)
 	_assert_tree_footprints_overlay_base_terrain(asserts)
 	_assert_multicell_footprints_keep_original_texture(asserts)
+	_assert_special_objects_have_role_colored_outlines(asserts)
 
 func _assert_sixteen_adjacency_masks(asserts) -> void:
 	var renderer := WorldSceneRenderer.new()
@@ -143,3 +144,15 @@ func _assert_multicell_footprints_keep_original_texture(asserts) -> void:
 			asserts.equal(sprite.region_enabled, false, "multi-cell footprint is not cropped into a 32x32 atlas region")
 	asserts.true_value("asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png" in result.asset_report.used_asset_ids, "renderer asset report resolves manifest ID footprint references")
 	root.queue_free()
+
+func _assert_special_objects_have_role_colored_outlines(asserts) -> void:
+	var renderer := WorldSceneRenderer.new()
+	var sprite := Sprite2D.new()
+	sprite.texture = ImageTexture.create_from_image(Image.create(32, 32, false, Image.FORMAT_RGBA8))
+	renderer._add_special_outline(sprite, Vector2(32, 32), WorldSceneRenderer.TELEPORT_OUTLINE_COLOR)
+	var outline := sprite.get_node_or_null("SpecialOutline") as Line2D
+	asserts.true_value(outline != null, "special object receives a visible outline")
+	if outline != null:
+		asserts.equal(outline.default_color, WorldSceneRenderer.TELEPORT_OUTLINE_COLOR, "special object outline keeps its role color")
+		asserts.equal(outline.width, 2.0, "special object outline stays crisp at pixel scale")
+	sprite.free()

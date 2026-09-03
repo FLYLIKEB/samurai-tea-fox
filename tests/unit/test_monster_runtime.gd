@@ -61,6 +61,7 @@ func run(asserts) -> void:
 	_assert_damage_stagger_death_and_drop_hooks(asserts)
 	_assert_damage_ignores_dead_and_zero_applied_hits(asserts)
 	_assert_combat_dummy_preserves_no_arg_defeated_signal(asserts)
+	_assert_combat_dummy_damage_popup_is_world_anchored(asserts)
 	_assert_invalid_data_is_rejected(asserts)
 
 func _assert_generated_definitions_load(asserts) -> void:
@@ -222,6 +223,21 @@ func _assert_combat_dummy_preserves_no_arg_defeated_signal(asserts) -> void:
 		asserts.equal(probe.monster_defeat_events[0].combat_id, "dummy_test", "monster_defeated carries event")
 	if not probe.defeat_events.is_empty():
 		asserts.equal(probe.defeat_events[0].definition_id, "wild_dog", "defeat_event carries event")
+
+func _assert_combat_dummy_damage_popup_is_world_anchored(asserts) -> void:
+	var dummy := CombatDummy.new()
+	dummy._show_damage_popup(17)
+	var popup := dummy.get_node_or_null("DamagePopup") as Label
+	asserts.true_value(popup != null, "combat target owns its damage popup in world space")
+	asserts.equal(popup.text, "-17", "damage popup shows applied damage")
+	asserts.true_value(popup.visible, "damage popup becomes visible on hit")
+	asserts.true_value(popup.position.y < -16.0, "damage popup appears above the enemy sprite and health bar")
+	asserts.true_value(popup.get_theme_color("font_color").r > popup.get_theme_color("font_color").g * 2.0, "damage popup uses red text")
+	asserts.true_value(popup.get_theme_font("font") != null, "damage popup uses the project pixel font")
+	asserts.equal(popup.get_theme_font_size("font_size"), 13, "damage popup uses a readable pixel font size")
+	asserts.equal(popup.get_theme_constant("outline_size"), 1, "damage popup keeps a crisp one-pixel outline")
+	asserts.equal(popup.get_theme_constant("shadow_offset_x"), 2, "damage popup uses an integer pixel shadow")
+	dummy.free()
 
 func _assert_invalid_data_is_rejected(asserts) -> void:
 	var missing: Dictionary = MonsterDefinition.from_dictionary({"id": "broken", "hp": 10, "attack": 1, "movement_speed": 1.0, "attack_period_seconds": 1.0})

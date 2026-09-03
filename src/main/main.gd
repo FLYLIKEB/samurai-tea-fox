@@ -87,6 +87,8 @@ var _desktop_adapter := DesktopCommandAdapter.new()
 var _movement_selector := MovementCommandSelector.new()
 var _has_pointer_move_target := false
 var _pointer_move_target_world := Vector2.ZERO
+var _pending_pointer_interaction_target_id := ""
+var _pending_pointer_interaction_cell := Vector2i.ZERO
 var _feedback_player: AudioStreamPlayer
 var _feedback_playback: AudioStreamGeneratorPlayback
 var feedback_beep_count := 0
@@ -307,8 +309,12 @@ func submit_pointer_interaction(world_position: Vector2) -> bool:
 		return true
 	var clicked_cell := world_cell_from_world_position(world_position)
 	for cell in _pointer_candidate_cells(clicked_cell):
-		if submit_interaction_at_world_cell(cell):
-			return true
+		var target_id := _interaction_target_id_for_cell(cell)
+		if target_id.is_empty():
+			continue
+		if _is_available_acquisition_target(target_id):
+			return _queue_pointer_acquisition(target_id, cell)
+		return submit_interaction_at_world_cell(cell)
 	return false
 
 func _pointer_enemy_clicked(world_position: Vector2) -> bool:
@@ -319,6 +325,22 @@ func _pointer_enemy_clicked(world_position: Vector2) -> bool:
 		return false
 	var hit_radius := maxf(_runtime_tile_size() * 0.5, 16.0)
 	return combat_dummy.global_position.distance_to(world_position) <= hit_radius
+
+func _queue_pointer_acquisition(target_id: String, target_cell: Vector2i) -> bool:
+	if player == null:
+		return submit_interaction_at_world_cell(target_cell)
+	var player_cell := world_cell_from_world_position(player.global_position)
+	if _cells_are_adjacent(player_cell, target_cell):
+		return submit_interaction_at_world_cell(target_cell)
+	var approach_cell := _nearest_walkable_adjacent_cell(target_cell, player_cell)
+	if approach_cell == target_cell:
+		return false
+	_pointer_move_target_world = world_position_for_cell_center(approach_cell)
+	_has_pointer_move_target = true
+	_pending_pointer_interaction_target_id = target_id
+	_pending_pointer_interaction_cell = target_cell
+	_movement_selector.submit_mobile_command(GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO))
+	return true
 
 func _submit_pointer_enemy_attack(world_position: Vector2) -> bool:
 	if player == null \
@@ -331,7 +353,8 @@ func _submit_pointer_enemy_attack(world_position: Vector2) -> bool:
 	if direction == Vector2i.ZERO:
 		direction = _resolved_grid_direction(Vector2i.ZERO)
 	_clear_pointer_movement()
-	return submit_action_command(GameCommand.new(GameCommand.Type.ATTACK, direction))
+	var accepted := submit_action_command(GameCommand.new(GameCommand.Type.ATTACK, direction))
+	return accepted
 
 func submit_pointer_movement(world_position: Vector2) -> bool:
 	var target_cell := world_cell_from_world_position(world_position)
@@ -1282,7 +1305,7 @@ func _pointer_movement_command() -> GameCommand:
 		return GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO)
 	var delta: Vector2 = _pointer_move_target_world - player.global_position
 	if delta.length() <= POINTER_MOVE_STOP_DISTANCE_PIXELS:
-		_clear_pointer_movement()
+		_complete_pending_pointer_interaction()
 		return GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO)
 	var direction := Vector2i(
 		0 if absf(delta.x) <= POINTER_MOVE_STOP_DISTANCE_PIXELS else int(signf(delta.x)),
@@ -1295,6 +1318,35 @@ func _pointer_movement_command() -> GameCommand:
 func _clear_pointer_movement() -> void:
 	_has_pointer_move_target = false
 	_pointer_move_target_world = Vector2.ZERO
+	_pending_pointer_interaction_target_id = ""
+	_pending_pointer_interaction_cell = Vector2i.ZERO
+
+func _complete_pending_pointer_interaction() -> void:
+	var target_id := _pending_pointer_interaction_target_id
+	var target_cell := _pending_pointer_interaction_cell
+	_clear_pointer_movement()
+	if target_id.is_empty() or not _is_available_acquisition_target(target_id):
+		return
+	if player == null or not _cells_are_adjacent(world_cell_from_world_position(player.global_position), target_cell):
+		return
+	submit_interaction_at_world_cell(target_cell)
+
+func _cells_are_adjacent(first: Vector2i, second: Vector2i) -> bool:
+	var offset := second - first
+	return absi(offset.x) + absi(offset.y) <= 1
+
+func _nearest_walkable_adjacent_cell(target_cell: Vector2i, player_cell: Vector2i) -> Vector2i:
+	var best_cell := target_cell
+	var best_distance := 1 << 30
+	for offset in [Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP]:
+		var candidate: Vector2i = target_cell + offset
+		if world_data == null or not world_data.contains(candidate) or not world_data.is_walkable(candidate):
+			continue
+		var distance := absi(candidate.x - player_cell.x) + absi(candidate.y - player_cell.y)
+		if distance < best_distance:
+			best_cell = candidate
+			best_distance = distance
+	return best_cell
 
 func _runtime_tile_size() -> float:
 	if world_data != null:

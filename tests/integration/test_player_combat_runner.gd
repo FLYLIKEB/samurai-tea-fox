@@ -93,6 +93,8 @@ func run() -> void:
 	var dummy_hit_count_before: int = dummy.received_hit_count()
 	if not player.submit_command(GameCommand.new(GameCommand.Type.ATTACK, Vector2i.RIGHT)):
 		failures.append("attack command is accepted")
+	if player.walk_animator.current_direction() != "east":
+		failures.append("attack command immediately faces the player toward the target")
 	if player.walk_animator.current_asset_id() != "chr_8_fox_samurai_attack":
 		failures.append("attack command starts the promoted player attack animation")
 	await physics_frame
@@ -128,6 +130,9 @@ func run() -> void:
 		var hit_count_before: int = dummy.received_hit_count()
 		if not player.submit_command(GameCommand.new(GameCommand.Type.ATTACK, directional_case[0])):
 			failures.append("attack command is accepted for direction %s" % directional_case[0])
+		var expected_facing := "north" if directional_case[0] == Vector2i.UP else "west" if directional_case[0] == Vector2i.LEFT else "south"
+		if player.walk_animator.current_direction() != expected_facing:
+			failures.append("attack faces player %s" % expected_facing)
 		await physics_frame
 		await physics_frame
 		if dummy.received_hit_count() != hit_count_before + 1:

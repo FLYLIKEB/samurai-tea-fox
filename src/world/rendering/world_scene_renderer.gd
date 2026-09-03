@@ -10,6 +10,11 @@ const FACILITY_LAYER := "Facilities"
 const ENTITY_LAYER := "Entities"
 const LANDMARK_LAYER := "Landmarks"
 
+const FACILITY_OUTLINE_COLOR := Color("d6a75d")
+const ENTRY_OUTLINE_COLOR := Color("c9d7c0")
+const TELEPORT_OUTLINE_COLOR := Color("5f879b")
+const DUNGEON_OUTLINE_COLOR := Color("7a668e")
+
 const ADJACENT_NORTH := 1
 const ADJACENT_EAST := 2
 const ADJACENT_SOUTH := 4
@@ -79,7 +84,8 @@ func render(root: Node2D, renderer_input: Dictionary, owner_sources := {}, origi
 			var target := _target_layer(layer_id, facility_layer, entity_layer)
 			if target == null:
 				continue
-			rendered_counts[layer_id] = _render_footprint_cells(target, layer.get("cells", []), tile_size, owner_sources)
+			var outline_color := FACILITY_OUTLINE_COLOR if layer_id == WorldData.LAYER_FACILITIES else Color.TRANSPARENT
+			rendered_counts[layer_id] = _render_footprint_cells(target, layer.get("cells", []), tile_size, owner_sources, outline_color)
 
 	rendered_counts[LANDMARK_LAYER] = _render_landmarks(
 		landmark_layer,
@@ -151,7 +157,7 @@ func _add_tileset_source(tile_set: TileSet, path: String, tile_size: int) -> Dic
 	var source_index := tile_set.add_source(source)
 	return {"ok": true, "source_index": source_index, "columns": columns, "rows": rows}
 
-func _render_footprint_cells(parent: Node2D, cells: Array, tile_size: int, owner_sources: Dictionary) -> int:
+func _render_footprint_cells(parent: Node2D, cells: Array, tile_size: int, owner_sources: Dictionary, outline_color := Color.TRANSPARENT) -> int:
 	var rendered := 0
 	var seen_owners := {}
 	for cell in cells:
@@ -170,17 +176,17 @@ func _render_footprint_cells(parent: Node2D, cells: Array, tile_size: int, owner
 				continue
 			seen_owners[key] = position
 			continue
-		if _render_original_sprite(parent, _resource_path(source_id), position, tile_size):
+		if _render_original_sprite(parent, _resource_path(source_id), position, tile_size, outline_color):
 			rendered += 1
 	for key in seen_owners:
 		var parts := String(key).split("|", false)
 		if parts.size() < 2:
 			continue
-		if _render_original_sprite(parent, _resource_path(parts[1]), seen_owners[key], tile_size):
+		if _render_original_sprite(parent, _resource_path(parts[1]), seen_owners[key], tile_size, outline_color):
 			rendered += 1
 	return rendered
 
-func _render_original_sprite(parent: Node2D, path: String, position: Vector2i, tile_size: int) -> bool:
+func _render_original_sprite(parent: Node2D, path: String, position: Vector2i, tile_size: int, outline_color := Color.TRANSPARENT) -> bool:
 	if path.is_empty():
 		return false
 	var texture := _texture_for_path(path)
@@ -194,7 +200,26 @@ func _render_original_sprite(parent: Node2D, path: String, position: Vector2i, t
 		position.y * tile_size + float(texture.get_height()) * 0.5
 	)
 	parent.add_child(sprite)
+	if outline_color.a > 0.0:
+		_add_special_outline(sprite, texture.get_size(), outline_color)
 	return true
+
+func _add_special_outline(sprite: Sprite2D, texture_size: Vector2, color: Color) -> void:
+	var half_size := texture_size * 0.5
+	var outline := Line2D.new()
+	outline.name = "SpecialOutline"
+	outline.points = PackedVector2Array([
+		Vector2(-half_size.x + 1.0, -half_size.y + 1.0),
+		Vector2(half_size.x - 1.0, -half_size.y + 1.0),
+		Vector2(half_size.x - 1.0, half_size.y - 1.0),
+		Vector2(-half_size.x + 1.0, half_size.y - 1.0)
+	])
+	outline.closed = true
+	outline.width = 2.0
+	outline.default_color = color
+	outline.antialiased = false
+	outline.z_index = 1
+	sprite.add_child(outline)
 
 func _texture_for_path(path: String) -> Texture2D:
 	if path.is_empty() or not (ResourceLoader.exists(path, "Texture2D") or FileAccess.file_exists(path)):
@@ -246,9 +271,20 @@ func _render_landmarks(parent: Node2D, landmarks: Array, tile_size: int, owner_s
 		if source_id.is_empty():
 			continue
 		var position := _position_from_dictionary(landmark.get("position", {}))
-		if _render_original_sprite(parent, _resource_path(source_id), position, tile_size):
+		if _render_original_sprite(parent, _resource_path(source_id), position, tile_size, _landmark_outline_color(landmark_kind)):
 			rendered += 1
 	return rendered
+
+func _landmark_outline_color(landmark_kind: String) -> Color:
+	match landmark_kind:
+		WorldData.LANDMARK_TELEPORT_ZONE:
+			return TELEPORT_OUTLINE_COLOR
+		WorldData.LANDMARK_CORE_DUNGEON:
+			return DUNGEON_OUTLINE_COLOR
+		WorldData.LANDMARK_ENTRY:
+			return ENTRY_OUTLINE_COLOR
+		_:
+			return FACILITY_OUTLINE_COLOR
 
 func _texture_for_source(source_id: String, tile_size: int, position: Vector2i) -> Texture2D:
 	var path := _resource_path(source_id)

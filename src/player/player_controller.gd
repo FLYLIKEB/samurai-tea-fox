@@ -214,10 +214,11 @@ func _start_attack(direction: Vector2i) -> bool:
 	if not _pending_swing.ok:
 		_pending_swing = {}
 		return false
+	movement_state.face(Vector2i(int(round(attack_direction.x)), int(round(attack_direction.y))))
 	_pending_swing["direction"] = attack_direction
 	_position_attack_area(attack_direction, float(_pending_swing.range_tiles))
 	if _walk_animator_ready:
-		walk_animator.play_attack(_animation_direction_for_vector(attack_direction))
+		walk_animator.play_attack(_animation_direction_for_facing())
 		_current_sprite_asset_id = walk_animator.current_asset_id()
 	_attack_query_pending = true
 	attack_started.emit(_pending_swing)

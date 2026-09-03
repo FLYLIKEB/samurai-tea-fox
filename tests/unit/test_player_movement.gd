@@ -18,6 +18,9 @@ func run(asserts) -> void:
 
 	movement.resolve(Vector2i.UP)
 	asserts.equal(movement.facing, PlayerMovementState.Facing.UP, "vertical input updates facing")
+	var faced := movement.face(Vector2i.LEFT)
+	asserts.equal(faced, Vector2.LEFT, "explicit facing resolves to a cardinal direction without movement")
+	asserts.equal(movement.facing, PlayerMovementState.Facing.LEFT, "explicit facing updates the persistent player direction")
 
 	var desktop := DesktopCommandAdapter.new()
 	var mobile := MobileCommandAdapter.new()

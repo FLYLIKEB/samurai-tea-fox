@@ -7,6 +7,10 @@ const MonsterSpawnFactory = preload("res://src/enemy/monster_spawn_factory.gd")
 const TILE_SIZE_PIXELS := 32.0
 const HIT_FLASH_SECONDS := 0.16
 const HIT_FLASH_COLOR := Color(1.0, 0.26, 0.18, 1.0)
+const DAMAGE_POPUP_FONT := "res://assets/fonts/galmuri/Galmuri11.ttf"
+const DAMAGE_POPUP_COLOR := Color(1.0, 0.10, 0.07, 1.0)
+const DAMAGE_POPUP_SECONDS := 0.7
+const DAMAGE_POPUP_RISE_PIXELS := 8.0
 const DUMMY_CHARACTER_ID := "CHR-2"
 const IDLE_ASSET_IDS := {
 	"south": "wasteland_daimyo_front_idle",
@@ -47,6 +51,8 @@ var _grid_world_origin := Vector2.ZERO
 var _grid_tile_size := TILE_SIZE_PIXELS
 var walk_animator := DirectionalWalkAnimator.new()
 var _walk_animator_ready := false
+var _damage_popup: Label
+var _damage_popup_tween: Tween
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var body: Polygon2D = $Body
@@ -54,6 +60,7 @@ var _walk_animator_ready := false
 @onready var health_fill: Polygon2D = $HealthFill
 
 func _ready() -> void:
+	_ensure_damage_popup()
 	_apply_sprite()
 
 func configure_combat(catalog, attack_target = null, config = null) -> Dictionary:
@@ -99,9 +106,56 @@ func apply_damage_event(event: Dictionary) -> int:
 		if knockback_tiles > 0.0 and direction is Vector2 and direction != Vector2.ZERO:
 			_apply_grid_knockback(direction.normalized(), int(round(knockback_tiles)))
 		_start_hit_effect()
+		_show_damage_popup(applied)
 		damaged.emit(event, applied)
 		_update_health_bar()
 	return applied
+
+func _ensure_damage_popup() -> Label:
+	if _damage_popup != null and is_instance_valid(_damage_popup):
+		return _damage_popup
+	_damage_popup = Label.new()
+	_damage_popup.name = "DamagePopup"
+	_damage_popup.position = Vector2(-20.0, -34.0)
+	_damage_popup.size = Vector2(40.0, 16.0)
+	_damage_popup.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_damage_popup.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var popup_font := ResourceLoader.load(DAMAGE_POPUP_FONT) as Font
+	if popup_font is FontFile:
+		var font_file := popup_font as FontFile
+		font_file.antialiasing = TextServer.FONT_ANTIALIASING_NONE
+		font_file.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
+	if popup_font != null:
+		_damage_popup.add_theme_font_override("font", popup_font)
+	_damage_popup.add_theme_font_size_override("font_size", 13)
+	_damage_popup.add_theme_color_override("font_color", DAMAGE_POPUP_COLOR)
+	_damage_popup.add_theme_color_override("font_outline_color", Color(0.12, 0.06, 0.04, 1.0))
+	_damage_popup.add_theme_color_override("font_shadow_color", Color(0.16, 0.02, 0.01, 0.95))
+	_damage_popup.add_theme_constant_override("outline_size", 1)
+	_damage_popup.add_theme_constant_override("shadow_offset_x", 2)
+	_damage_popup.add_theme_constant_override("shadow_offset_y", 2)
+	_damage_popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_damage_popup.z_index = 10
+	_damage_popup.visible = false
+	add_child(_damage_popup)
+	return _damage_popup
+
+func _show_damage_popup(applied_damage: int) -> void:
+	if applied_damage <= 0:
+		return
+	var popup := _ensure_damage_popup()
+	if _damage_popup_tween != null and _damage_popup_tween.is_valid():
+		_damage_popup_tween.kill()
+	popup.text = "-%d" % applied_damage
+	popup.position = Vector2(-20.0, -34.0)
+	popup.modulate = Color.WHITE
+	popup.visible = true
+	if not is_inside_tree():
+		return
+	_damage_popup_tween = create_tween().set_parallel(true)
+	_damage_popup_tween.tween_property(popup, "position:y", popup.position.y - DAMAGE_POPUP_RISE_PIXELS, DAMAGE_POPUP_SECONDS)
+	_damage_popup_tween.tween_property(popup, "modulate:a", 0.0, DAMAGE_POPUP_SECONDS).set_delay(0.25)
+	_damage_popup_tween.chain().tween_callback(func(): popup.visible = false)
 
 func attack_target(attack_target, hit_invulnerability_seconds := 0.0) -> int:
 	if combatant == null or attack_target == null or not attack_target.has_method("apply_damage_event"):

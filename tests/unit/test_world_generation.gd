@@ -29,7 +29,7 @@ func run(asserts) -> void:
 	asserts.true_value(a.resource_accessibility.valid, "resources have reachable access points")
 	asserts.equal(a.data_version, "notion-2026-09-01", "world stores data version")
 	asserts.true_value(a.chunks.size() > 0, "world records deterministic chunk composition")
-	asserts.equal(a.min_resource_nodes, 9, "minimum resource nodes come from balance data")
+	asserts.equal(a.min_resource_nodes, 14, "minimum resource nodes come from balance data")
 	asserts.true_value(a.resource_nodes.size() >= a.min_resource_nodes, "world places minimum resources")
 	asserts.equal(a.connectivity.required_landmark_ids.size(), 3, "entry, teleport, and core dungeon are required")
 	asserts.equal(a.biome_generation_rule_id, "common_region", "common biome uses its own generation ruleset")

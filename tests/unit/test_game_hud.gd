@@ -196,6 +196,9 @@ class FakeCatalog:
 
 func run(asserts) -> void:
 	_assert_read_model_uses_runtime_and_balance_sources(asserts)
+	_assert_status_resources_use_visual_meters(asserts)
+	_assert_resource_details_open_without_emitting_movement(asserts)
+	_assert_time_uses_circular_dial(asserts)
 	_assert_runtime_signals_refresh_labels(asserts)
 	_assert_reconfigure_clears_missing_time_context(asserts)
 	_assert_dpad_emits_press_and_release_movement(asserts)
@@ -248,25 +251,82 @@ func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:
 	asserts.true_value(hud.get_node_or_null("Root/EnemyPanel") != null, "HUD renders the mockup-style enemy status panel")
 	hud.free()
 
+func _assert_resource_details_open_without_emitting_movement(asserts) -> void:
+	var hud := _configured_hud()
+	var received_commands: Array = []
+	hud.mobile_command_issued.connect(func(command): received_commands.append(command))
+	var health_row := hud.get_node_or_null("Root/StatusPanel/StatusBody/StatusRows/HealthDisplay") as Control
+	var ki_row := hud.get_node_or_null("Root/StatusPanel/StatusBody/StatusRows/KiDisplay") as Control
+	var detail_panel := hud.get_node_or_null("Root/ResourceDetailPanel") as Control
+	var enemy_panel := hud.get_node_or_null("Root/EnemyPanel") as Control
+	asserts.true_value(health_row != null and health_row.mouse_filter == Control.MOUSE_FILTER_STOP, "resource row consumes pointer input")
+	asserts.true_value(detail_panel != null and not detail_panel.visible, "resource detail starts hidden")
+	var click := InputEventMouseButton.new()
+	click.button_index = MOUSE_BUTTON_LEFT
+	click.pressed = true
+	health_row.gui_input.emit(click)
+	asserts.true_value(detail_panel.visible, "clicking a resource opens its detail panel")
+	asserts.true_value(_tree_has_text(detail_panel, "자원 상세\n체력 82 / 100\n차기 36 / 60\n정신 7 / 10"), "resource detail shows all exact values together")
+	asserts.true_value(detail_panel.position.y + detail_panel.size.y <= enemy_panel.position.y, "open resource detail does not overlap enemy information")
+	asserts.equal(received_commands.size(), 0, "resource detail click emits no gameplay command")
+	ki_row.gui_input.emit(click)
+	asserts.false_value(detail_panel.visible, "clicking the active resource closes its detail panel")
+	hud.free()
+
+func _assert_status_resources_use_visual_meters(asserts) -> void:
+	var hud := _configured_hud()
+	var hearts := hud.get_node_or_null("Root/StatusPanel/StatusBody/StatusRows/HealthDisplay/Icons") as HBoxContainer
+	asserts.true_value(hearts != null, "HUD renders HP as a heart row")
+	if hearts != null:
+		asserts.equal(hearts.get_child_count(), 5, "HP uses five heart slots")
+		asserts.equal((hearts.get_child(0) as Control).custom_minimum_size, Vector2(16, 16), "resource icons use the balanced HUD size")
+		asserts.equal((hearts.get_child(0) as TextureRect).expand_mode, TextureRect.EXPAND_IGNORE_SIZE, "resource icons ignore their source texture size")
+		asserts.equal((hearts.get_child(0) as TextureRect).get_meta("fill_ratio"), 1.0, "full HP heart is filled")
+		asserts.true_value(is_equal_approx(float((hearts.get_child(4) as TextureRect).get_meta("fill_ratio")), 0.1), "partial HP remains visible in the final heart")
+	var ki_icons := hud.get_node_or_null("Root/StatusPanel/StatusBody/StatusRows/KiDisplay/Icons") as HBoxContainer
+	var kokoro_icons := hud.get_node_or_null("Root/StatusPanel/StatusBody/StatusRows/KokoroDisplay/Icons") as HBoxContainer
+	asserts.true_value(ki_icons != null and ki_icons.get_child_count() == 5, "ki uses five tea cup icons")
+	asserts.true_value(kokoro_icons != null and kokoro_icons.get_child_count() == 5, "kokoro uses five tea leaf icons")
+	if ki_icons != null:
+		asserts.equal((ki_icons.get_child(2) as TextureRect).get_meta("fill_ratio"), 1.0, "ki icon row observes the runtime ratio")
+	if kokoro_icons != null:
+		asserts.equal((kokoro_icons.get_child(3) as TextureRect).get_meta("fill_ratio"), 0.5, "kokoro icon row observes the runtime ratio")
+	hud.free()
+
+func _assert_time_uses_circular_dial(asserts) -> void:
+	var hud := _configured_hud()
+	var dial := hud.get_node_or_null("Root/MapPanel/MapRows/TimeDialRow/TimeDial") as Control
+	asserts.true_value(dial != null, "HUD renders time as a circular dial")
+	if dial != null:
+		asserts.equal(dial.custom_minimum_size, Vector2(28, 28), "time dial remains compact beside the minimap")
+		asserts.equal(dial.get("phase"), "night", "time dial observes the runtime phase")
+		asserts.equal(dial.get("progress_percent"), 25, "time dial observes phase progress")
+	asserts.true_value(_tree_has_text(hud.get_node("Root/MapPanel/MapRows/TimeDialRow"), "밤"), "time dial keeps a text phase cue")
+	asserts.true_value(_tree_has_text(hud.get_node("Root/MapPanel/MapRows/TimeDialRow"), "25%"), "time dial keeps a numeric progress cue")
+	hud.free()
+
 func _assert_runtime_signals_refresh_labels(asserts) -> void:
 	var hud := _configured_hud()
 	var resources = hud.player.resources
 	resources.set_hp(61)
 	var hp_label := hud.get("_labels").get("hp") as Label
-	asserts.equal(hp_label.text, "체력        61/100", "resource signals refresh HUD labels without frame polling")
+	asserts.equal(hp_label.text, "체력", "resource signals keep the permanent HUD label compact")
+	var fourth_heart := hud.get_node_or_null("Root/StatusPanel/StatusBody/StatusRows/HealthDisplay/Icons/Icon4") as TextureRect
+	asserts.true_value(is_equal_approx(float(fourth_heart.get_meta("fill_ratio")), 0.05), "resource signals refresh partial heart fill")
 	hud.time_state.phase = &"dusk"
 	hud.time_state.phase_changed.emit(&"night", &"dusk")
-	var time_label := hud.get("_labels").get("time") as Label
+	var time_label := hud.get("_labels").get("time_phase") as Label
 	asserts.true_value(time_label.text.begins_with("해질녘"), "time phase events refresh the HUD")
 	hud.free()
 
+
 func _assert_reconfigure_clears_missing_time_context(asserts) -> void:
 	var hud := _configured_hud()
-	var time_label := hud.get("_labels").get("time") as Label
-	asserts.true_value(time_label.get_parent().visible, "HUD shows time while a runtime time state is supplied")
+	var time_label := hud.get("_labels").get("time_phase") as Label
+	asserts.true_value(time_label.get_parent().get_parent().visible, "HUD shows time while a runtime time state is supplied")
 	hud.configure(FakePlayer.new(), {"biome_id": "common_region"}, {"counts": {}}, {})
 	asserts.equal(hud.time_state, null, "HUD clears a stale time observer when the new runtime context omits it")
-	asserts.false_value(time_label.get_parent().visible, "HUD hides the time row after its runtime time state is removed")
+	asserts.false_value(time_label.get_parent().get_parent().visible, "HUD hides the time row after its runtime time state is removed")
 	hud.free()
 
 func _assert_dpad_emits_press_and_release_movement(asserts) -> void:
@@ -276,17 +336,28 @@ func _assert_dpad_emits_press_and_release_movement(asserts) -> void:
 	var dpad_panel := hud.get_node_or_null("Root/DPadPanel") as Control
 	asserts.true_value(dpad_panel != null, "HUD keeps the dpad command surface")
 	if dpad_panel != null:
-		asserts.true_value(dpad_panel.visible, "HUD displays the compact mockup-style directional pad")
+		asserts.true_value(dpad_panel.visible, "HUD displays the compact directional pad")
+		asserts.false_value(_panel_uses_dark_background(dpad_panel), "dpad omits the outer dark panel background")
+		asserts.equal(dpad_panel.custom_minimum_size, Vector2(84, 84), "dpad provides a larger mobile touch surface")
 	var left_button := hud.get_node_or_null("Root/DPadPanel/DPadBoard/DPadLeft") as Button
 	asserts.true_value(left_button != null, "HUD owns a left dpad button")
 	if left_button != null:
+		var press_feedback := left_button.get_node_or_null("PressFeedback") as Control
+		asserts.true_value(press_feedback != null and not press_feedback.visible, "dpad direction owns hidden press feedback")
 		left_button.button_down.emit()
+		asserts.true_value(press_feedback.visible, "dpad direction shows feedback while pressed")
 		left_button.button_up.emit()
+		asserts.false_value(press_feedback.visible, "dpad direction clears feedback on release")
 	asserts.equal(received, [Vector2i.LEFT, Vector2i.ZERO], "dpad press starts movement and release stops it")
 	hud.free()
 
 func _assert_mobile_controls_emit_shared_commands(asserts) -> void:
 	var hud := _configured_hud()
+	var action_panel := hud.get_node_or_null("Root/ActionPanel") as Control
+	asserts.true_value(action_panel != null, "HUD keeps the action command surface")
+	if action_panel != null:
+		asserts.false_value(_panel_uses_dark_background(action_panel), "action controls omit the outer dark panel background")
+		asserts.equal(action_panel.custom_minimum_size, Vector2(154, 96), "action controls provide larger mobile touch targets")
 	var received: Array = []
 	hud.mobile_command_issued.connect(func(command): received.append(command))
 	asserts.true_value(hud.press_mobile_button("move", Vector2i.LEFT), "HUD accepts mobile movement control")
@@ -349,8 +420,15 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 		asserts.true_value(_panel_uses_dark_background(menu_panel), "fast menu uses the shared dark HUD panel background")
 	asserts.equal((hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll") as Control).mouse_filter, Control.MOUSE_FILTER_STOP, "menu scroll consumes touch input instead of moving the player")
 	asserts.true_value(_tree_has_text(hud, "차 & 도구 (인벤토리) · 3/14 · all"), "inventory menu renders the mockup-style inventory header")
-	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip/InventorySlotCard0") != null, "inventory menu renders slot cards")
-	asserts.true_value(_button_has_icon(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip/InventorySlotCard0")), "inventory slot cards render item images")
+	var inventory_toolbar := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryToolbar")
+	asserts.true_value(_tree_has_icon_button_with_text(inventory_toolbar, "정렬"), "inventory toolbar uses icon-backed touch commands")
+	var inventory_grid := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip") as GridContainer
+	asserts.true_value(inventory_grid != null and inventory_grid.columns == 4, "inventory menu renders a mobile-friendly four-column grid")
+	var inventory_card := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip/InventorySlotCard0") as Button
+	asserts.true_value(inventory_card != null, "inventory menu renders slot cards")
+	asserts.true_value(_button_has_icon(inventory_card), "inventory slot cards render item images")
+	if inventory_card != null:
+		asserts.equal(inventory_card.custom_minimum_size, Vector2(66, 60), "inventory slot cards keep a stable mobile touch size")
 	asserts.true_value(_tree_has_text(hud, "wood\n* 10"), "inventory menu groups duplicate item slots into one total")
 	asserts.false_value(_tree_has_text(hud, "wood\n* 7"), "inventory menu does not render duplicate item stacks as separate cards")
 	asserts.true_value(_panel_uses_dark_background(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/DetailCard") as Control), "inventory detail card uses the shared dark inner background")
@@ -361,12 +439,17 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	hud.mobile_command_issued.connect(func(command): received.append(command))
 	asserts.true_value(hud.show_crafting_menu(), "HUD opens the crafting menu")
 	asserts.true_value(_tree_has_text(hud, "제작법 2/2 · 가능 1 · 필터 전체"), "crafting menu shows recipe counts and active filter")
+	var crafting_filter_bar := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingFilterBar")
+	asserts.true_value(_tree_has_icon_button_with_text(crafting_filter_bar, "전체"), "crafting filters use icon-backed touch commands")
+	var crafting_grid := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip") as GridContainer
+	asserts.true_value(crafting_grid != null and crafting_grid.columns == 3, "crafting menu renders a mobile-friendly three-column grid")
 	asserts.true_value(_tree_has_text(hud, "wooden_workbench → 목재 작업대 x1"), "crafting menu shows selected recipe result")
 	asserts.true_value(_tree_has_text(hud, "상태 제작 가능"), "crafting menu shows selected recipe status on its own row")
 	asserts.true_value(_tree_has_text(hud, "재료 목재 3/2"), "crafting menu shows selected recipe materials on their own row")
 	asserts.true_value(_tree_has_text(hud, "시설 손제작"), "crafting menu shows selected recipe facility on its own row")
 	asserts.true_value(_tree_has_text(hud, "해금 common_region"), "crafting menu shows selected recipe unlock on its own row")
 	asserts.true_value(_tree_has_textured_item_icon(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip")), "crafting recipe cards render result item images")
+	asserts.true_value(_tree_has_textured_item_icon(crafting_grid), "crafting recipe cards include state/result icons")
 	asserts.true_value(_panel_uses_dark_background(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/DetailCard") as Control), "crafting detail card uses the shared dark inner background")
 	asserts.true_value(_crafting_recipe_cards_have_distinct_state_styles(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip")), "crafting cards visibly separate craftable and missing-material states")
 	var craft_button := _first_enabled_button_with_text(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent"), "제작")
@@ -480,6 +563,16 @@ func _panel_uses_dark_background(panel: Control) -> bool:
 
 func _button_has_icon(node: Node) -> bool:
 	return node is Button and (node as Button).icon != null
+
+func _tree_has_icon_button_with_text(node: Node, text: String) -> bool:
+	if node == null:
+		return false
+	if node is Button and (node as Button).icon != null and (node as Button).text == text:
+		return true
+	for child in node.get_children():
+		if _tree_has_icon_button_with_text(child, text):
+			return true
+	return false
 
 func _tree_has_textured_item_icon(node: Node) -> bool:
 	if node == null:

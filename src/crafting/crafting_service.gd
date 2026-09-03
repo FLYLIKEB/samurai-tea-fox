@@ -83,6 +83,8 @@ func read_model(inventory, context := {}, options := {}) -> Dictionary:
 		if selected_filter != "all" and category != selected_filter:
 			continue
 		rows.append(_recipe_read_model_row(recipe, availability, inventory))
+	if selected_filter == "all":
+		rows.sort_custom(_craftable_rows_first)
 	if rows.is_empty():
 		selected_recipe_id = ""
 	elif selected_recipe_id.is_empty() or not _rows_contain_recipe(rows, selected_recipe_id):
@@ -108,6 +110,13 @@ func read_model(inventory, context := {}, options := {}) -> Dictionary:
 			"craftable": _craftable_count(rows)
 		}
 	}
+
+func _craftable_rows_first(left: Dictionary, right: Dictionary) -> bool:
+	var left_craftable := bool(left.get("craftable", false))
+	var right_craftable := bool(right.get("craftable", false))
+	if left_craftable != right_craftable:
+		return left_craftable
+	return String(left.get("recipe_id", "")) < String(right.get("recipe_id", ""))
 
 func craft(recipe_id: String, inventory, context := {}) -> Dictionary:
 	var validation := can_craft(recipe_id, inventory, context)

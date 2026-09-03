@@ -78,12 +78,22 @@ func run(asserts) -> void:
 
 	var pointer_runtime := _configured_runtime(catalog, RunState.new(), Vector2i.ZERO)
 	asserts.true_value(pointer_runtime.result.ok, "pointer interaction fixture configures")
+	var pointer_player := MovementPlayer.new()
+	pointer_runtime.main.player = pointer_player
+	pointer_player.global_position = pointer_runtime.main.world_position_for_cell_center(Vector2i(2, 0))
 	var pointer_position: Vector2 = pointer_runtime.main.world_position_for_cell_center(Vector2i.ZERO)
-	asserts.true_value(pointer_runtime.main.submit_pointer_interaction(pointer_position), "pointer click resolves the clicked interactable cell")
-	asserts.equal(pointer_runtime.main.inventory.get_total_quantity("wood"), 1, "pointer click grants through the shared acquisition command")
+	asserts.true_value(pointer_runtime.main.submit_pointer_interaction(pointer_position), "pointer click queues movement toward the clicked interactable cell")
+	asserts.equal(pointer_runtime.main.inventory.get_total_quantity("wood"), 0, "distant pointer click does not grant before arrival")
+	asserts.equal(pointer_runtime.main.world_cell_from_world_position(pointer_runtime.main._pointer_move_target_world), Vector2i(1, 0), "pointer acquisition targets a walkable adjacent cell")
+	pointer_player.global_position = pointer_runtime.main._pointer_move_target_world
+	pointer_runtime.main.movement_command_for_current_inputs(GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO))
+	asserts.equal(pointer_runtime.main.inventory.get_total_quantity("wood"), 1, "pointer arrival grants through the shared acquisition command")
 
 	var near_pointer_runtime := _configured_runtime(catalog, RunState.new(), Vector2i.RIGHT)
 	asserts.true_value(near_pointer_runtime.result.ok, "nearby pointer interaction fixture configures")
+	var near_pointer_player := MovementPlayer.new()
+	near_pointer_runtime.main.player = near_pointer_player
+	near_pointer_player.global_position = near_pointer_runtime.main.world_position_for_cell_center(Vector2i.ZERO)
 	var near_pointer_position: Vector2 = near_pointer_runtime.main.world_position_for_cell_center(Vector2i.ZERO)
 	asserts.true_value(near_pointer_runtime.main.submit_pointer_interaction(near_pointer_position), "pointer click tolerates one-cell sprite edge misses")
 	asserts.equal(near_pointer_runtime.main.inventory.get_total_quantity("wood"), 1, "nearby pointer click grants through the shared acquisition command")
@@ -151,7 +161,9 @@ func run(asserts) -> void:
 	runtime.main.free()
 	desktop_runtime.main.free()
 	mobile_button_runtime.main.free()
+	pointer_player.free()
 	pointer_runtime.main.free()
+	near_pointer_player.free()
 	near_pointer_runtime.main.free()
 	empty_click_runtime.main.free()
 	tea_runtime.main.free()

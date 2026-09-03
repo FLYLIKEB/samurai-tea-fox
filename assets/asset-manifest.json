@@ -8485,8 +8485,8 @@
       "texture_filter": "nearest",
       "placeholder": false,
       "runtime_scale": 1,
-      "source_sha256": "sha256:aee28e95b7c2b642f87be0bedfb9025b4233f175c3d0a204cf729e0fd98daa81",
-      "rgba_sha256": "sha256:988d3295bc62838b45c4c7e0bfdba79e4efdbccd36ae2f844c2279e0c1e3429a"
+      "source_sha256": "sha256:9c9115720c99cb2956c41592db78c057e5ce6fe960a91e03509a04c7ddba9767",
+      "rgba_sha256": "sha256:663b30282e3faa60fb2cd324033431d17ee88fc847a38d593122d364c9b25785"
     },
     {
       "id": "asset_assets_ui_controls_eye_button_png",
