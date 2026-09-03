@@ -22,16 +22,6 @@
 
 ## Notion 확인 순서
 
-### GJC Notion MCP 접근
-
-GJC에서 Notion을 직접 확인해야 할 때는 시작 전에 MCP 상태를 먼저 확인한다.
-
-- `gjc mcp list --json`에서 hosted Notion MCP `notion` 또는 local Notion API MCP가 autoload 상태인지 확인한다.
-- hosted MCP는 OAuth 인증이 필요하다. 인증이 만료되었거나 누락되었으면 새 GJC TUI 세션에서 `/mcp reauth notion`으로 로그인한다.
-- local MCP는 Notion integration token이 필요하며 `NOTION_TOKEN` 또는 `NOTION_ACCESS_TOKEN` 환경변수로 제공한다.
-- MCP 등록이나 OAuth 인증은 보통 새 세션 시작 시 도구 목록에 반영된다. 이미 실행 중인 API/비대화형 세션에 Notion 도구가 보이지 않으면 새 GJC 세션에서 재확인한다.
-- Notion MCP가 끝내 연결되지 않으면 `data/generated/` snapshot과 `docs/notion-source-map.md`만 근거로 사용할 수 있으며, 실시간 Notion 정본 미확인 상태를 차단 사유로 보고한다.
-
 1. `무차우: 한 잔의 도 — 게임 컨셉 바이블`을 라우팅 인덱스로 확인한다.
 2. `00. 기획 아키텍처·정본 규칙`을 확인한다.
 3. `12. 기술 스펙·아키텍처`를 확인한다.
