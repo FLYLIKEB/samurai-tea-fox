@@ -101,6 +101,7 @@ var _overworld_world_data_snapshot: Dictionary = {}
 var _overworld_player_cell := Vector2i.ZERO
 var _overworld_combat_dummy_cell := Vector2i.ZERO
 var _in_dungeon_map := false
+var _dungeon_resources: Array = []
 var _desktop_adapter := DesktopCommandAdapter.new()
 var _movement_selector := MovementCommandSelector.new()
 var _has_pointer_move_target := false
@@ -1138,7 +1139,7 @@ func _ensure_current_dungeon_entered() -> Dictionary:
 	definition["biome_id"] = biome_id
 	var layout := WorldData.new(12, 9, "terrain_plains_grass_ground_01", true)
 	layout.add_required_landmark(WorldData.LANDMARK_ENTRY, "dungeon_entry", Vector2i(1, 1), {"dungeon_id": String(definition.id)})
-	var dungeon_resources: Array = []
+	_dungeon_resources.clear()
 	for y in range(layout.height):
 		for x in range(layout.width):
 			layout.set_terrain(Vector2i(x, y), "dungeon_grass", true, "terrain_plains_grass_ground_02")
@@ -1147,7 +1148,7 @@ func _ensure_current_dungeon_entered() -> Dictionary:
 		var resource_id := "dungeon_iron_ore_%d" % index
 		var reservation := layout.reserve_entity(resource_id, resource_cell, Vector2i.ONE, true, {"source_id": "asset_assets_sprites_objects_mining_iron_ore_32x32_png"})
 		if reservation.ok:
-			dungeon_resources.append({"id": resource_id, "resource_id": "iron_ore", "position": {"x": resource_cell.x, "y": resource_cell.y}, "source_id": "asset_assets_sprites_objects_mining_iron_ore_32x32_png"})
+			_dungeon_resources.append({"id": resource_id, "resource_id": "iron_ore", "position": {"x": resource_cell.x, "y": resource_cell.y}, "source_id": "asset_assets_sprites_objects_mining_iron_ore_32x32_png"})
 	for enemy in [{"id": "dungeon_enemy_0", "cell": Vector2i(7, 2)}, {"id": "dungeon_enemy_1", "cell": Vector2i(9, 5)}, {"id": "dungeon_enemy_2", "cell": Vector2i(5, 7)}, {"id": "dungeon_boss", "cell": Vector2i(10, 7)}]:
 		layout.reserve_entity(String(enemy.id), enemy.cell, Vector2i.ONE, false, {"source_id": "asset_assets_sprites_characters_bosses_chr_6_yokai_tea_master_yokai_tea_master_front_32x32_png" if enemy.id == "dungeon_boss" else "monster_foxfire_front_idle", "role": "boss" if enemy.id == "dungeon_boss" else "dungeon_enemy"})
 	var enter_result: Dictionary = dungeon_runtime.enter_dungeon(
@@ -1185,14 +1186,14 @@ func _enter_dungeon_map(layout: WorldData, definition: Dictionary) -> void:
 		"world_data": dungeon_data,
 		"renderer_input": dungeon_projection,
 		"required_landmarks": dungeon_projection.get("required_landmarks", []),
-		"resource_nodes": dungeon_resources
+		"resource_nodes": _dungeon_resources
 	}
 	world_data = layout
 	_in_dungeon_map = true
 	if acquisition_service != null:
 		acquisition_service = AcquisitionService.new()
 		var dungeon_definitions := []
-		for node in dungeon_resources:
+		for node in _dungeon_resources:
 			dungeon_definitions.append({"id": String(node.id), "item_id": "iron_ore", "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT})
 		acquisition_service.configure(inventory, world_data, dungeon_definitions, [])
 	_render_generated_world(generated_world)
