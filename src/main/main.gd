@@ -43,6 +43,7 @@ const FEEDBACK_BEEP_MIX_RATE := 22050.0
 const FEEDBACK_BEEP_SECONDS := 0.045
 const FEEDBACK_BEEP_FREQUENCY := 880.0
 const FIRST_RUN_PROLOGUE_EVENT_ID := "first_run_prologue"
+const TURN_TIME_SECONDS := 1.0
 
 @onready var player = $Player
 @onready var combat_dummy = $CombatDummy
@@ -181,8 +182,6 @@ func _configure_world_for_current_run() -> Dictionary:
 	return {"ok": true}
 
 func _physics_process(_delta: float) -> void:
-	if time_state != null and player != null and player.resources != null:
-		time_state.tick(_delta, player.resources)
 	if player != null and player.ability_runtime != null:
 		player.ability_runtime.tick(_delta)
 	_record_current_map_discovery()
@@ -358,6 +357,7 @@ func submit_action_command(command) -> bool:
 			var accepted: bool = _handle_consumable_command(command)
 			if accepted:
 				_play_feedback_beep()
+				_advance_time_for_player_turn()
 			return accepted
 		GameCommand.Type.SLEEP:
 			var accepted: bool = _handle_sleep_command()
@@ -368,11 +368,13 @@ func submit_action_command(command) -> bool:
 			var accepted: bool = _handle_complete_dungeon_command(command)
 			if accepted:
 				_play_feedback_beep()
+				_advance_time_for_player_turn()
 			return accepted
 		GameCommand.Type.REPAIR_TELEPORT, GameCommand.Type.ADVANCE_BIOME:
 			var accepted: bool = _handle_biome_progression_command(command)
 			if accepted:
 				_play_feedback_beep()
+				_advance_time_for_player_turn()
 			return accepted
 		GameCommand.Type.OPEN_TEA_BREWING:
 			var accepted: bool = game_hud != null and game_hud.show_tea_brewing_menu()
@@ -1023,8 +1025,14 @@ func _on_combat_dummy_defeated(_event: Dictionary) -> void:
 func _queue_enemy_turn_after_player_action() -> void:
 	if _enemy_turn_queued:
 		return
+	_advance_time_for_player_turn()
 	_enemy_turn_queued = true
 	call_deferred("_run_enemy_turn_after_player_action")
+
+func _advance_time_for_player_turn() -> void:
+	if time_state == null or player == null or player.resources == null:
+		return
+	time_state.tick(TURN_TIME_SECONDS, player.resources)
 
 func _run_enemy_turn_after_player_action() -> void:
 	if player != null and player.has_method("is_grid_step_active") and player.is_grid_step_active():

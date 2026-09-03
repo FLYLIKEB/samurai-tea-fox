@@ -37,6 +37,13 @@ func run(asserts) -> void:
 	asserts.equal(main.generated_world.biome_id, "common_region", "vertical slice starts in the common biome")
 	asserts.true_value(main.world_render_result.ok, "common biome world renders for playable runtime")
 	asserts.true_value(main.game_hud.narrative_dialogue_visible(), "first launch shows the first-run prologue dialogue")
+	var initial_phase: StringName = main.time_state.phase
+	var initial_elapsed: float = main.time_state.phase_elapsed_seconds
+	main._physics_process(600.0)
+	asserts.equal(main.time_state.phase, initial_phase, "passive physics frames do not advance roguelike time")
+	asserts.equal(main.time_state.phase_elapsed_seconds, initial_elapsed, "standing still does not add time pressure")
+	main._advance_time_for_player_turn()
+	asserts.equal(main.time_state.phase_elapsed_seconds, initial_elapsed + Main.TURN_TIME_SECONDS, "a resolved player turn advances time once")
 	var prologue_model: Dictionary = main.first_run_prologue_read_model({"run_count": 0, "dialogue_memory_flags": [], "unlocked_meta_flags": []})
 	asserts.true_value(prologue_model.ok, "first-run prologue has a read model before completion")
 	if prologue_model.ok:
