@@ -93,6 +93,8 @@ var _action_scroll: ScrollContainer
 var _action_menu_scroll: ScrollContainer
 var _narrative_options: HBoxContainer
 var _narrative_background: TextureRect
+var _narrative_left_portrait_frame: PanelContainer
+var _narrative_right_portrait_frame: PanelContainer
 var _narrative_left_portrait: TextureRect
 var _narrative_right_portrait: TextureRect
 var _open_menu_id := ""
@@ -410,8 +412,12 @@ func _build() -> void:
 	_narrative_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	narrative_overlay.add_child(_narrative_background)
 
+	_narrative_left_portrait_frame = _narrative_portrait_frame("LeftPortraitFrame")
+	narrative_overlay.add_child(_narrative_left_portrait_frame)
 	_narrative_left_portrait = _portrait_rect("LeftPortrait")
 	narrative_overlay.add_child(_narrative_left_portrait)
+	_narrative_right_portrait_frame = _narrative_portrait_frame("RightPortraitFrame")
+	narrative_overlay.add_child(_narrative_right_portrait_frame)
 	_narrative_right_portrait = _portrait_rect("RightPortrait")
 	narrative_overlay.add_child(_narrative_right_portrait)
 
@@ -768,6 +774,11 @@ func _portrait_rect(name: String) -> TextureRect:
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return rect
 
+func _narrative_portrait_frame(name: String) -> PanelContainer:
+	var frame := _menu_panel(Vector2(128, 128))
+	frame.name = name
+	return frame
+
 func _set_gameplay_hud_visible(visible: bool) -> void:
 	for panel_id in ["status", "map", "enemy", "quickslot", "dpad", "action", "action_menu", "menu"]:
 		var panel := _panels.get(panel_id) as Control
@@ -809,6 +820,9 @@ func _configure_narrative_portraits(event_id: String, speaker_id: String) -> voi
 func _set_portrait(rect: TextureRect, asset_id: String, visible: bool) -> void:
 	rect.visible = visible and not asset_id.is_empty()
 	rect.texture = _load_texture(asset_id) if rect.visible else null
+	var frame := rect.get_parent().get_node_or_null("%sFrame" % rect.name) as Control
+	if frame != null:
+		frame.visible = rect.visible
 
 func _portrait_asset_id_for_speaker(speaker_id: String) -> String:
 	match speaker_id:
@@ -1611,9 +1625,15 @@ func _apply_safe_area_layout() -> void:
 	if _narrative_left_portrait != null:
 		_narrative_left_portrait.size = portrait_size
 		_narrative_left_portrait.position = Vector2(margin.x + 28.0, portrait_y)
+	if _narrative_left_portrait_frame != null:
+		_narrative_left_portrait_frame.size = portrait_size
+		_narrative_left_portrait_frame.position = Vector2(margin.x + 28.0, portrait_y)
 	if _narrative_right_portrait != null:
 		_narrative_right_portrait.size = portrait_size
 		_narrative_right_portrait.position = Vector2(viewport_size.x - margin.z - portrait_size.x - 28.0, portrait_y)
+	if _narrative_right_portrait_frame != null:
+		_narrative_right_portrait_frame.size = portrait_size
+		_narrative_right_portrait_frame.position = Vector2(viewport_size.x - margin.z - portrait_size.x - 28.0, portrait_y)
 	_place_panel(_panels.status, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y))
 	_place_panel(_panels.map, Control.PRESET_TOP_RIGHT, Vector2(-margin.z, margin.y))
 	_place_panel(_panels.enemy, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y + STATUS_PANEL_SIZE.y + 8.0))
@@ -1714,13 +1734,16 @@ func _safe_margin() -> Vector4:
 func _panel(size: Vector2) -> PanelContainer:
 	return _styled_panel(size, _panel_style())
 
+func _unstyled_panel(size: Vector2) -> PanelContainer:
+	return _styled_panel(size, StyleBoxEmpty.new())
+
 func _dialogue_panel(size: Vector2) -> PanelContainer:
-	return _styled_panel(size, _parchment_style())
+	return _menu_panel(size)
 
 func _menu_panel(size: Vector2) -> PanelContainer:
 	return _styled_panel(size, _panel_style())
 
-func _styled_panel(size: Vector2, style: StyleBoxFlat) -> PanelContainer:
+func _styled_panel(size: Vector2, style: StyleBox) -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.size = size
 	panel.custom_minimum_size = size
