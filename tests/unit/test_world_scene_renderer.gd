@@ -99,7 +99,7 @@ func _assert_tree_terrain_renders_grass_underlay(asserts) -> void:
 	if tilemap != null and tilemap.tile_set != null:
 		var source_id := tilemap.get_cell_source_id(Vector2i.ZERO)
 		var source := tilemap.tile_set.get_source(source_id) as TileSetAtlasSource
-		asserts.true_value(source != null and source.texture != null and source.texture.resource_path.ends_with("grass_ground_01_32x32.png"), "tree terrain lays grass under the tree sprite")
+		asserts.true_value(source != null and source.texture != null and source.texture.resource_path.ends_with("grass_ground_01_32x32_crop_1_1_30x30_resize_32x32.png"), "tree terrain lays grass under the tree sprite")
 	if footprints != null:
 		asserts.equal(footprints.get_child_count(), 1, "tree terrain draws one tree overlay sprite")
 		var sprite := footprints.get_child(0) as Sprite2D

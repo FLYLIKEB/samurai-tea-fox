@@ -1860,13 +1860,13 @@
       "rgba_sha256": "sha256:427007f2235d16f90cbbec3492adecff44b3485d814d6de472f36b417a28efcb"
     },
     {
-      "path": "assets/tiles/terrain/plains/grass_ground_01_32x32.png",
+      "path": "assets/tiles/terrain/plains/grass_ground_01_32x32_crop_1_1_30x30_resize_32x32.png",
       "width": 32,
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:fa8ef817281e5df3b88b2c33f3f1c9bd7adb205693f95217757ad83f76d30b15",
-      "rgba_sha256": "sha256:196190f647d8590985b0c28c52ff4f7502cb98b243d1d2a07a58b3d899ea4ba3"
+      "source_sha256": "sha256:d4237f21de8624c16ac712be877ab11c6b0953fbfe9c19b0d2e39b533844ecc0",
+      "rgba_sha256": "sha256:d397298b3aa0ff02de4d94da620859164bdc618c64067398fed96d3cc1632aff"
     },
     {
       "path": "assets/tiles/terrain/plains/grass_ground_02_32x32.png",
