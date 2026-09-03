@@ -64,6 +64,7 @@ var _time_refresh_elapsed := 0.0
 var _action_grid: GridContainer
 var _menu_content: VBoxContainer
 var _minimap_grid: GridContainer
+var _narrative_options: HBoxContainer
 var _open_menu_id := ""
 
 func _ready() -> void:
@@ -165,6 +166,48 @@ func hide_menu() -> bool:
 		panel.visible = false
 	return true
 
+func show_narrative_dialogue(read_model: Dictionary) -> bool:
+	_build()
+	var panel := _panels.get("narrative") as Control
+	if panel == null:
+		return false
+	_set_label("narrative_speaker", _speaker_label(String(read_model.get("speaker_id", ""))))
+	_set_label("narrative_text", String(read_model.get("text", "")))
+	for child in _narrative_options.get_children():
+		child.free()
+	for option in _array_value(read_model.get("options", [])):
+		if typeof(option) != TYPE_DICTIONARY:
+			continue
+		var button := Button.new()
+		button.text = String(option.get("display_text", "다음"))
+		button.custom_minimum_size = Vector2(88, 30)
+		button.focus_mode = Control.FOCUS_ALL
+		button.mouse_filter = Control.MOUSE_FILTER_STOP
+		button.pressed.connect(func(): mobile_command_issued.emit(GameCommand.new(
+			GameCommand.Type.NARRATIVE_SELECT_OPTION,
+			Vector2i.ZERO,
+			-1,
+			{
+				"event_id": String(read_model.get("event_id", "")),
+				"node_id": String(read_model.get("node_id", "")),
+				"option_id": String(option.get("id", ""))
+			}
+		)))
+		_narrative_options.add_child(button)
+	panel.visible = true
+	_apply_safe_area_layout()
+	return true
+
+func hide_narrative_dialogue() -> bool:
+	var panel := _panels.get("narrative") as Control
+	if panel != null:
+		panel.visible = false
+	return true
+
+func narrative_dialogue_visible() -> bool:
+	var panel := _panels.get("narrative") as Control
+	return panel != null and panel.visible
+
 func active_menu_id() -> String:
 	return _open_menu_id
 
@@ -258,6 +301,13 @@ func _build() -> void:
 	root.add_child(action_panel)
 	_panels.action = action_panel
 	_build_actions(action_panel)
+
+	var narrative_panel := _dialogue_panel(Vector2(520, 132))
+	narrative_panel.name = "NarrativePanel"
+	narrative_panel.visible = false
+	root.add_child(narrative_panel)
+	_panels.narrative = narrative_panel
+	_build_narrative_panel(narrative_panel)
 
 	var menu_panel := _panel(MENU_PANEL_SIZE)
 	menu_panel.name = "MenuPanel"
@@ -472,6 +522,24 @@ func _build_menu_panel(parent: PanelContainer) -> void:
 	scroll.add_child(_menu_content)
 	_labels.menu_feedback = _label("", 11)
 	rows.add_child(_labels.menu_feedback)
+
+func _build_narrative_panel(parent: PanelContainer) -> void:
+	var rows := VBoxContainer.new()
+	rows.name = "NarrativeRows"
+	_ignore_mouse(rows)
+	rows.add_theme_constant_override("separation", 6)
+	parent.add_child(rows)
+	_labels.narrative_speaker = _label("", 13)
+	rows.add_child(_labels.narrative_speaker)
+	_labels.narrative_text = _label("", 12)
+	_labels.narrative_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_labels.narrative_text.custom_minimum_size = Vector2(492, 48)
+	rows.add_child(_labels.narrative_text)
+	_narrative_options = HBoxContainer.new()
+	_narrative_options.name = "NarrativeOptions"
+	_ignore_mouse(_narrative_options)
+	_narrative_options.add_theme_constant_override("separation", 6)
+	rows.add_child(_narrative_options)
 
 func _show_menu(title: String, rows: Array) -> void:
 	_build()
@@ -1117,6 +1185,7 @@ func _apply_safe_area_layout() -> void:
 	_place_panel(_panels.menu, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y + STATUS_PANEL_SIZE.y + 8.0))
 	_place_panel(_panels.dpad, Control.PRESET_BOTTOM_LEFT, Vector2(margin.x, -margin.w))
 	_place_panel(_panels.action, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w))
+	_place_panel(_panels.narrative, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w - 6.0))
 
 func _place_panel(panel, preset: int, offset: Vector2) -> void:
 	if not panel is Control:
@@ -1186,6 +1255,14 @@ func _panel(size: Vector2) -> PanelContainer:
 	panel.add_theme_stylebox_override("panel", _panel_style())
 	return panel
 
+func _dialogue_panel(size: Vector2) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.size = size
+	panel.custom_minimum_size = size
+	_ignore_mouse(panel)
+	panel.add_theme_stylebox_override("panel", _panel_style())
+	return panel
+
 func _add_icon_row(parent: Container, icon_path: String, text: String) -> Label:
 	var row := HBoxContainer.new()
 	_ignore_mouse(row)
@@ -1214,6 +1291,13 @@ func _set_label(id: String, text: String) -> void:
 	var label := _labels.get(id) as Label
 	if label != null:
 		label.text = text
+
+func _speaker_label(speaker_id: String) -> String:
+	if catalog != null and catalog.has_method("find_character_by_id"):
+		var character: Dictionary = catalog.find_character_by_id(speaker_id)
+		if not character.is_empty():
+			return String(character.get("name", speaker_id))
+	return speaker_id
 
 func _pixel_theme() -> Theme:
 	var theme := Theme.new()

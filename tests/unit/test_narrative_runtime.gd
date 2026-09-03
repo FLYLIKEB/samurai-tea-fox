@@ -50,8 +50,13 @@ func _assert_generated_events_execute_from_data(asserts) -> void:
 	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": "common_region"}
 	var meta_state := {"dialogue_memory_flags": [], "unlocked_meta_flags": [], "run_count": 0}
 	var teahouse_model: Dictionary = runtime_result.runtime.read_model_for_event("roadside_teahouse_intro", run_state, meta_state)
+	var prologue_model: Dictionary = runtime_result.runtime.read_model_for_event("first_run_prologue", run_state, meta_state)
 	var shrine_model: Dictionary = runtime_result.runtime.read_model_for_event("mountain_shrine_echo", run_state, meta_state)
 	asserts.true_value(teahouse_model.ok, "first sample story event opens from generated data")
+	asserts.true_value(prologue_model.ok, "first-run prologue opens from generated data")
+	if prologue_model.ok:
+		asserts.equal(prologue_model.read_model.speaker_id, "CHR-1", "first-run prologue begins with the father")
+		asserts.equal(_option_ids(prologue_model.read_model), ["accept_farewell"], "first-run prologue starts with one dialogue advance option")
 	asserts.false_value(shrine_model.ok, "ordinary generated speaker cannot query meta state")
 	asserts.equal(shrine_model.reason, "unknown_meta_memory_speaker", "generated speaker without a character policy returns stable rejection")
 

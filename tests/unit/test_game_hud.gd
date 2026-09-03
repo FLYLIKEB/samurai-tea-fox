@@ -152,6 +152,13 @@ class FakeCatalog:
 				return definition
 		return {}
 
+	func find_character_by_id(character_id: String) -> Dictionary:
+		if character_id == "CHR-1":
+			return {"character_id": "CHR-1", "name": "아버지 — 차를 사랑하는 구미호", "meta_memory": true}
+		if character_id == "CHR-8":
+			return {"character_id": "CHR-8", "name": "무차우", "meta_memory": false}
+		return {}
+
 func run(asserts) -> void:
 	_assert_read_model_uses_runtime_and_balance_sources(asserts)
 	_assert_runtime_signals_refresh_labels(asserts)
@@ -161,6 +168,7 @@ func run(asserts) -> void:
 	_assert_dodge_control_does_not_use_baked_dash_asset(asserts)
 	_assert_fast_menus_show_runtime_read_models(asserts)
 	_assert_safe_area_layout_uses_viewport_top(asserts)
+	_assert_narrative_dialogue_emits_option_commands(asserts)
 
 func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:
 	var hud := _configured_hud()
@@ -297,6 +305,33 @@ func _assert_safe_area_layout_uses_viewport_top(asserts) -> void:
 		asserts.equal(int(round(status_panel.position.y)), 12, "status panel anchors to the viewport top margin")
 	if quickslot_panel != null:
 		asserts.equal(int(round(quickslot_panel.position.y)), 12, "quickslot panel anchors to the viewport top margin")
+	hud.free()
+
+func _assert_narrative_dialogue_emits_option_commands(asserts) -> void:
+	var hud := _configured_hud()
+	var received: Array = []
+	hud.mobile_command_issued.connect(func(command): received.append(command))
+	asserts.true_value(hud.show_narrative_dialogue({
+		"event_id": "first_run_prologue",
+		"node_id": "father_farewell",
+		"speaker_id": "CHR-1",
+		"text": "물이 끓기 전에 서두르지 마라.",
+		"options": [{"id": "accept_farewell", "display_text": "고개를 끄덕인다"}]
+	}), "HUD shows narrative dialogue read models")
+	asserts.true_value(hud.narrative_dialogue_visible(), "HUD reports the narrative panel as visible")
+	asserts.true_value(_tree_has_text(hud, "아버지 — 차를 사랑하는 구미호"), "HUD resolves narrative speaker names from character data")
+	asserts.true_value(_tree_has_text(hud, "물이 끓기 전에 서두르지 마라."), "HUD renders narrative dialogue text")
+	var button := _first_enabled_button_with_text(hud.get_node_or_null("Root/NarrativePanel/NarrativeRows/NarrativeOptions"), "고개를 끄덕인다")
+	if button != null:
+		button.pressed.emit()
+	asserts.equal(received.size(), 1, "narrative option emits one command")
+	if not received.is_empty():
+		asserts.equal(received[0].type, GameCommand.Type.NARRATIVE_SELECT_OPTION, "narrative option emits the shared narrative select command")
+		asserts.equal(received[0].payload.get("event_id", ""), "first_run_prologue", "narrative command carries the event id")
+		asserts.equal(received[0].payload.get("node_id", ""), "father_farewell", "narrative command carries the node id")
+		asserts.equal(received[0].payload.get("option_id", ""), "accept_farewell", "narrative command carries the option id")
+	asserts.true_value(hud.hide_narrative_dialogue(), "HUD hides narrative dialogue on request")
+	asserts.false_value(hud.narrative_dialogue_visible(), "HUD reports hidden narrative panel")
 	hud.free()
 
 func _configured_hud() -> GameHud:
