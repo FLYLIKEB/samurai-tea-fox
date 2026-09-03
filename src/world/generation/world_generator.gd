@@ -103,6 +103,14 @@ const RENDER_RAINFOREST_FOREST_TEA_ROOM := "asset_assets_sprites_objects_craftin
 const RENDER_RAINFOREST_INCENSE_SPACE := "asset_assets_sprites_objects_shrine_props_incense_burner_32x32_png"
 
 const BALANCE_MIN_RESOURCE_NODES_ID := "biome_min_resource_nodes"
+const TEMPLATE_PATH_SPINE := "path_spine"
+const TEMPLATE_WATER_STROKE := "water_stroke"
+const TEMPLATE_RESOURCE_CLUSTER := "resource_cluster"
+const COMMON_TEMPLATE_IDS := [
+	TEMPLATE_PATH_SPINE,
+	TEMPLATE_WATER_STROKE,
+	TEMPLATE_RESOURCE_CLUSTER
+]
 
 func generate(seed: int, data_version: String, biome_definition: Dictionary, balance_definitions: Array, item_definitions := [], options := {}) -> Dictionary:
 	var retry_limit := int(options.get("retry_limit", DEFAULT_RETRY_LIMIT))
@@ -149,13 +157,14 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, progression_projection: Dictionary, profile: Dictionary) -> Dictionary:
 	var world_data := WorldData.new(MAP_WIDTH, MAP_HEIGHT, String(profile.default_terrain_id), bool(profile.default_walkable))
 	var chunks := _compose_chunks(rng, world_data, profile)
+	var templates := _apply_common_templates(world_data, rng, chunks, profile)
 	var biome_id := String(biome_definition.get("id", ""))
 	var landmarks := _place_required_landmarks(world_data, rng, core_dungeon_count, teleport_zone_count, biome_id, profile)
 	_carve_landmark_paths(world_data, landmarks, profile)
 	var validator := ConnectivityValidator.new()
 	var facility_nodes := _place_facility_nodes(world_data, rng, landmarks, profile, validator.reachable_cell_keys_from_entry(world_data.to_dictionary()))
 	var reachable_cells := validator.reachable_cell_keys_from_entry(world_data.to_dictionary())
-	var resource_nodes := _place_resource_nodes(world_data, rng, min_resource_nodes, max_resource_placement_attempts, resource_ids, reachable_cells, profile.get("resource_source_by_id", {}))
+	var resource_nodes := _place_resource_nodes(world_data, rng, min_resource_nodes, max_resource_placement_attempts, resource_ids, reachable_cells, profile.get("resource_source_by_id", {}), templates, landmarks)
 	var access_points := []
 	for resource_node in resource_nodes:
 		access_points.append(resource_node.access_position)
@@ -173,6 +182,7 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 		"biome_generation_rule_id": String(profile.id),
 		"landmarks": landmarks,
 		"chunks": chunks,
+		"templates": templates,
 		"facility_nodes": facility_nodes,
 		"resource_nodes": resource_nodes,
 		"min_resource_nodes": min_resource_nodes,
@@ -509,6 +519,107 @@ func _rainforest_feature_for_variant(variant: int) -> String:
 		_:
 			return "rainforest"
 
+func _apply_common_templates(world_data: WorldData, rng: DeterministicRng, chunks: Array, profile: Dictionary) -> Array:
+	var templates := []
+	var water_template := _apply_template_water_stroke(world_data, rng, profile)
+	templates.append(water_template)
+	var path_template := _apply_template_path_spine(world_data, rng, profile)
+	templates.append(path_template)
+	templates.append(_apply_template_resource_cluster_anchors(rng, chunks, path_template, water_template))
+	return templates
+
+func _apply_template_water_stroke(world_data: WorldData, rng: DeterministicRng, profile: Dictionary) -> Dictionary:
+	var water_cells := []
+	var shore_cells := []
+	var x := rng.next_range(MAP_WIDTH / 3, MAP_WIDTH / 3 * 2)
+	for y in range(1, MAP_HEIGHT - 1):
+		var position := Vector2i(x, y)
+		_paint_water_cell(world_data, position, profile, water_cells)
+		_paint_shore_cell(world_data, position + Vector2i.LEFT, profile, shore_cells)
+		_paint_shore_cell(world_data, position + Vector2i.RIGHT, profile, shore_cells)
+		if y % CHUNK_HEIGHT == CHUNK_HEIGHT - 1 and y < MAP_HEIGHT - 2:
+			var bend := rng.next_range(-1, 1)
+			var next_x := clampi(x + bend, 3, MAP_WIDTH - 4)
+			var step := 1 if next_x >= x else -1
+			for connector_x in range(x + step, next_x + step, step):
+				var connector := Vector2i(connector_x, y)
+				_paint_water_cell(world_data, connector, profile, water_cells)
+				_paint_shore_cell(world_data, connector + Vector2i.UP, profile, shore_cells)
+				_paint_shore_cell(world_data, connector + Vector2i.DOWN, profile, shore_cells)
+			x = next_x
+	return {
+		"id": TEMPLATE_WATER_STROKE,
+		"water_terrain_id": String(profile.water_terrain_id),
+		"water_render_id": String(profile.water_render_id),
+		"shore_terrain_id": String(profile.shore_terrain_id),
+		"shore_render_id": String(profile.shore_render_id),
+		"cells": _position_dictionary_array(water_cells),
+		"shore_cells": _position_dictionary_array(shore_cells),
+		"crosses_chunk_boundary": _positions_cross_chunk_boundary(water_cells)
+	}
+
+func _apply_template_path_spine(world_data: WorldData, rng: DeterministicRng, profile: Dictionary) -> Dictionary:
+	var path_cells := []
+	var spine_y := rng.next_range(8, MAP_HEIGHT - 9)
+	for x in range(2, MAP_WIDTH - 2):
+		var position := Vector2i(x, spine_y)
+		_make_path_cell(world_data, position, profile)
+		path_cells.append(position)
+	var branch_targets := [
+		Vector2i(MAP_WIDTH / 4, rng.next_range(4, MAP_HEIGHT - 5)),
+		Vector2i(MAP_WIDTH / 2, rng.next_range(4, MAP_HEIGHT - 5)),
+		Vector2i(MAP_WIDTH / 4 * 3, rng.next_range(4, MAP_HEIGHT - 5))
+	]
+	for target in branch_targets:
+		var step := 1 if target.y >= spine_y else -1
+		for y in range(spine_y, target.y + step, step):
+			var branch_position := Vector2i(target.x, y)
+			_make_path_cell(world_data, branch_position, profile)
+			path_cells.append(branch_position)
+	return {
+		"id": TEMPLATE_PATH_SPINE,
+		"path_terrain_id": String(profile.path_terrain_id),
+		"path_render_id": String(profile.path_render_id),
+		"cells": _position_dictionary_array(_unique_positions(path_cells))
+	}
+
+func _apply_template_resource_cluster_anchors(rng: DeterministicRng, chunks: Array, path_template: Dictionary, water_template: Dictionary) -> Dictionary:
+	var path_cells := _vector_array_from_dictionaries(path_template.get("cells", []))
+	var water_cells := _vector_array_from_dictionaries(water_template.get("cells", []))
+	var anchors := []
+	var candidate_indexes := [
+		maxi(0, path_cells.size() / 5),
+		maxi(0, path_cells.size() / 2),
+		maxi(0, path_cells.size() / 5 * 4)
+	]
+	for index in candidate_indexes:
+		if path_cells.is_empty():
+			break
+		var anchor: Vector2i = path_cells[clampi(index + rng.next_range(-2, 2), 0, path_cells.size() - 1)]
+		anchors.append(anchor)
+	for chunk_index in range(mini(3, chunks.size())):
+		var chunk: Dictionary = chunks[(chunk_index * 7 + rng.next_range(0, 3)) % chunks.size()]
+		var origin := _vector_from_dictionary(chunk.origin)
+		anchors.append(Vector2i(origin.x + CHUNK_WIDTH / 2, origin.y + CHUNK_HEIGHT / 2))
+	return {
+		"id": TEMPLATE_RESOURCE_CLUSTER,
+		"anchors": _position_dictionary_array(_unique_positions(anchors)),
+		"path_cell_count": path_cells.size(),
+		"water_cell_count": water_cells.size()
+	}
+
+func _paint_water_cell(world_data: WorldData, position: Vector2i, profile: Dictionary, water_cells: Array) -> void:
+	if not world_data.contains(position):
+		return
+	world_data.set_terrain(position, String(profile.water_terrain_id), bool(profile.water_walkable), String(profile.water_render_id))
+	water_cells.append(position)
+
+func _paint_shore_cell(world_data: WorldData, position: Vector2i, profile: Dictionary, shore_cells: Array) -> void:
+	if not world_data.contains(position) or not world_data.is_walkable(position):
+		return
+	world_data.set_terrain(position, String(profile.shore_terrain_id), true, String(profile.shore_render_id))
+	shore_cells.append(position)
+
 func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, core_dungeon_count: int, teleport_zone_count: int, biome_id: String, profile: Dictionary) -> Array:
 	var landmarks := []
 	landmarks.append(_add_landmark(world_data, WorldData.LANDMARK_ENTRY, 0, Vector2i(3, rng.next_range(8, MAP_HEIGHT - 9)), profile))
@@ -571,40 +682,135 @@ func _make_path_cell(world_data: WorldData, position: Vector2i, profile: Diction
 	var terrain_id := String(profile.bridge_terrain_id) if not world_data.is_walkable(position) else String(profile.path_terrain_id)
 	world_data.set_terrain(position, terrain_id, true, String(profile.path_render_id))
 
-func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, reachable_cells: Dictionary, source_by_resource_id: Dictionary) -> Array:
+func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, reachable_cells: Dictionary, source_by_resource_id: Dictionary, templates := [], landmarks := []) -> Array:
 	var nodes := []
 	var max_attempts: int = max(0, max_resource_placement_attempts)
 	var cardinal_offsets := [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]
-	for attempt in range(max_attempts):
+	var candidate_positions := _resource_candidate_positions(rng, templates, landmarks)
+	var path_cell_keys := _template_path_key_set(templates)
+	var attempt := 0
+	for candidate_position in candidate_positions:
 		if nodes.size() >= min_resource_nodes:
 			break
-		var position := Vector2i(rng.next_range(2, MAP_WIDTH - 3), rng.next_range(2, MAP_HEIGHT - 3))
+		if attempt >= max_attempts:
+			break
+		attempt += 1
+		var position: Vector2i = candidate_position
+		if path_cell_keys.has(_key(position)):
+			continue
 		if not world_data.is_walkable(position) or not reachable_cells.has(_key(position)):
 			continue
 		var access_position := _reachable_access_position(position, reachable_cells, cardinal_offsets)
 		if access_position == Vector2i(-1, -1):
 			continue
-		var owner_id := "resource_%d" % nodes.size()
-		var resource_id: String = String(resource_ids[nodes.size() % resource_ids.size()])
-		var source_id := String(source_by_resource_id.get(resource_id, ""))
-		var metadata := {"resource_id": resource_id}
-		if not source_id.is_empty():
-			metadata["source_id"] = source_id
-		var reserved := world_data.reserve_entity(owner_id, position, Vector2i.ONE, true, metadata)
-		if not reserved.ok:
+		_try_place_resource_node(world_data, position, access_position, resource_ids, source_by_resource_id, nodes)
+	while nodes.size() < min_resource_nodes and attempt < max_attempts:
+		attempt += 1
+		var position := Vector2i(rng.next_range(2, MAP_WIDTH - 3), rng.next_range(2, MAP_HEIGHT - 3))
+		if path_cell_keys.has(_key(position)):
 			continue
-		var node := {
-			"id": owner_id,
-			"resource_id": resource_id,
-			"position": _position_dictionary(position),
-			"access_position": _position_dictionary(access_position),
-			"placement_was_entry_reachable": true,
-			"interactable": true
-		}
-		if not source_id.is_empty():
-			node["source_id"] = source_id
-		nodes.append(node)
+		if not world_data.is_walkable(position) or not reachable_cells.has(_key(position)):
+			continue
+		var access_position := _reachable_access_position(position, reachable_cells, cardinal_offsets)
+		if access_position == Vector2i(-1, -1):
+			continue
+		_try_place_resource_node(world_data, position, access_position, resource_ids, source_by_resource_id, nodes)
 	return nodes
+
+func _template_path_key_set(templates: Array) -> Dictionary:
+	var path_keys := {}
+	for position in _template_path_cells(templates):
+		path_keys[_key(position)] = true
+	return path_keys
+
+func _try_place_resource_node(world_data: WorldData, position: Vector2i, access_position: Vector2i, resource_ids: Array, source_by_resource_id: Dictionary, nodes: Array) -> bool:
+	var owner_id := "resource_%d" % nodes.size()
+	var resource_id: String = String(resource_ids[nodes.size() % resource_ids.size()])
+	var source_id := String(source_by_resource_id.get(resource_id, ""))
+	var metadata := {"resource_id": resource_id}
+	if not source_id.is_empty():
+		metadata["source_id"] = source_id
+	var reserved := world_data.reserve_entity(owner_id, position, Vector2i.ONE, true, metadata)
+	if not reserved.ok:
+		return false
+	var validator := ConnectivityValidator.new()
+	var world_dictionary := world_data.to_dictionary()
+	if not bool(validator.validate_world_data(world_dictionary).get("valid", false)):
+		world_data.release_footprint(owner_id)
+		return false
+	var access_points := []
+	for node in nodes:
+		access_points.append(node.access_position)
+	access_points.append(_position_dictionary(access_position))
+	if not bool(validator.validate_access_points(world_dictionary, access_points).get("valid", false)):
+		world_data.release_footprint(owner_id)
+		return false
+	var node := {
+		"id": owner_id,
+		"resource_id": resource_id,
+		"position": _position_dictionary(position),
+		"access_position": _position_dictionary(access_position),
+		"placement_was_entry_reachable": true,
+		"interactable": true
+	}
+	if not source_id.is_empty():
+		node["source_id"] = source_id
+	nodes.append(node)
+	return true
+
+func _resource_candidate_positions(rng: DeterministicRng, templates: Array, landmarks: Array) -> Array:
+	var candidates := []
+	var anchors := _resource_cluster_anchors(templates)
+	for anchor in anchors:
+		candidates.append_array(_cluster_positions_near(anchor))
+	for path_cell in _template_path_cells(templates):
+		if rng.next_range(0, 99) < 40:
+			candidates.append_array(_cardinal_positions_near(path_cell))
+	for landmark in landmarks:
+		candidates.append_array(_cluster_positions_near(_vector_from_dictionary(landmark.get("position", {}))))
+	return _unique_positions(candidates)
+
+func _resource_cluster_anchors(templates: Array) -> Array:
+	for template in templates:
+		if String(template.get("id", "")) == TEMPLATE_RESOURCE_CLUSTER:
+			return _vector_array_from_dictionaries(template.get("anchors", []))
+	return []
+
+func _template_path_cells(templates: Array) -> Array:
+	for template in templates:
+		if String(template.get("id", "")) == TEMPLATE_PATH_SPINE:
+			return _vector_array_from_dictionaries(template.get("cells", []))
+	return []
+
+func _cluster_positions_near(anchor: Vector2i) -> Array:
+	var positions := []
+	for offset in [
+		Vector2i.ZERO,
+		Vector2i.RIGHT,
+		Vector2i.LEFT,
+		Vector2i.DOWN,
+		Vector2i.UP,
+		Vector2i(1, 1),
+		Vector2i(-1, 1),
+		Vector2i(1, -1),
+		Vector2i(-1, -1),
+		Vector2i(2, 0),
+		Vector2i(-2, 0),
+		Vector2i(0, 2),
+		Vector2i(0, -2)
+	]:
+		var position: Vector2i = anchor + offset
+		if position.x >= 2 and position.y >= 2 and position.x < MAP_WIDTH - 2 and position.y < MAP_HEIGHT - 2:
+			positions.append(position)
+	return positions
+
+func _cardinal_positions_near(anchor: Vector2i) -> Array:
+	return [
+		anchor + Vector2i.RIGHT,
+		anchor + Vector2i.LEFT,
+		anchor + Vector2i.DOWN,
+		anchor + Vector2i.UP
+	]
 
 func _place_facility_nodes(world_data: WorldData, rng: DeterministicRng, landmarks: Array, profile: Dictionary, reachable_cells: Dictionary) -> Array:
 	var nodes := []
@@ -702,6 +908,11 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 				"path_terrain_id": TERRAIN_PATH,
 				"bridge_terrain_id": TERRAIN_BRIDGE,
 				"path_render_id": RENDER_GROUND,
+				"water_terrain_id": TERRAIN_WATER,
+				"water_render_id": RENDER_WATER,
+				"water_walkable": false,
+				"shore_terrain_id": TERRAIN_GRASS,
+				"shore_render_id": RENDER_GRASS,
 				"required_terrain_terms": [],
 				"facility_terms": [],
 				"facility_source_by_term": {},
@@ -728,6 +939,11 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 				"path_terrain_id": TERRAIN_MOUNTAIN_PATH,
 				"bridge_terrain_id": TERRAIN_MOUNTAIN_PATH,
 				"path_render_id": RENDER_MOUNTAIN_PATH,
+				"water_terrain_id": TERRAIN_MOUNTAIN_VALLEY_WATER,
+				"water_render_id": RENDER_WATER,
+				"water_walkable": false,
+				"shore_terrain_id": TERRAIN_MOUNTAIN_PATH,
+				"shore_render_id": RENDER_MOUNTAIN_PATH,
 				"required_terrain_terms": required_terms,
 				"facility_terms": facility_terms,
 				"facility_source_by_term": {
@@ -759,6 +975,11 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 				"path_terrain_id": TERRAIN_WASTELAND_DETOUR_PATH,
 				"bridge_terrain_id": TERRAIN_WASTELAND_DETOUR_PATH,
 				"path_render_id": RENDER_WASTELAND_DETOUR_PATH,
+				"water_terrain_id": TERRAIN_WASTELAND_DRY_RIVER,
+				"water_render_id": RENDER_WASTELAND_DRY_RIVER,
+				"water_walkable": false,
+				"shore_terrain_id": TERRAIN_WASTELAND_DETOUR_PATH,
+				"shore_render_id": RENDER_WASTELAND_DETOUR_PATH,
 				"required_terrain_terms": required_terms,
 				"facility_terms": facility_terms,
 				"facility_source_by_term": {
@@ -792,6 +1013,11 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 				"path_terrain_id": TERRAIN_SNOWFIELD_SNOW_PATH,
 				"bridge_terrain_id": TERRAIN_SNOWFIELD_ICE_EDGE,
 				"path_render_id": RENDER_SNOWFIELD_PATH,
+				"water_terrain_id": TERRAIN_SNOWFIELD_ICE,
+				"water_render_id": RENDER_SNOWFIELD_ICE,
+				"water_walkable": false,
+				"shore_terrain_id": TERRAIN_SNOWFIELD_ICE_EDGE,
+				"shore_render_id": RENDER_SNOWFIELD_ICE_EDGE,
 				"required_terrain_terms": required_terms,
 				"facility_terms": facility_terms,
 				"facility_source_by_term": {
@@ -825,6 +1051,11 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 				"path_terrain_id": TERRAIN_RAINFOREST_VINE_PATH,
 				"bridge_terrain_id": TERRAIN_RAINFOREST_RIVER_BANK,
 				"path_render_id": RENDER_RAINFOREST_VINE_PATH,
+				"water_terrain_id": TERRAIN_RAINFOREST_RIVER,
+				"water_render_id": RENDER_RAINFOREST_RIVER,
+				"water_walkable": false,
+				"shore_terrain_id": TERRAIN_RAINFOREST_RIVER_BANK,
+				"shore_render_id": RENDER_RAINFOREST_RIVER_BANK,
 				"required_terrain_terms": required_terms,
 				"facility_terms": facility_terms,
 				"facility_source_by_term": {
@@ -913,6 +1144,41 @@ func _combined_seed(seed: int, data_version: String, biome_id: String) -> int:
 	for character in "%s:%s" % [data_version, biome_id]:
 		hash = int((hash * 31 + character.unicode_at(0)) % DeterministicRng.MODULUS)
 	return max(1, hash)
+
+func _position_dictionary_array(positions: Array) -> Array:
+	var rows := []
+	for position in positions:
+		rows.append(_position_dictionary(position))
+	return rows
+
+func _vector_array_from_dictionaries(rows: Array) -> Array:
+	var positions := []
+	for row in rows:
+		if typeof(row) == TYPE_DICTIONARY:
+			positions.append(_vector_from_dictionary(row))
+	return positions
+
+func _unique_positions(positions: Array) -> Array:
+	var seen := {}
+	var unique := []
+	for position in positions:
+		var key := _key(position)
+		if seen.has(key):
+			continue
+		seen[key] = true
+		unique.append(position)
+	return unique
+
+func _positions_cross_chunk_boundary(positions: Array) -> bool:
+	if positions.is_empty():
+		return false
+	var previous_chunk := Vector2i(-1, -1)
+	for position in positions:
+		var chunk := Vector2i(position.x / CHUNK_WIDTH, position.y / CHUNK_HEIGHT)
+		if previous_chunk != Vector2i(-1, -1) and chunk != previous_chunk:
+			return true
+		previous_chunk = chunk
+	return false
 
 func _position_dictionary(position: Vector2i) -> Dictionary:
 	return {"x": position.x, "y": position.y}

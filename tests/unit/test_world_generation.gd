@@ -39,6 +39,9 @@ func run(asserts) -> void:
 	_assert_teleport_landmark_metadata(asserts, a.world_data, "common_region")
 	_assert_renderer_source_paths_exist(asserts, a.renderer_input)
 	_assert_resource_accessibility(asserts, a)
+	_assert_common_templates(asserts, a)
+	_assert_continuous_water_stroke(asserts, a)
+	_assert_resources_near_templates(asserts, a)
 	_assert_mountain_generation(asserts, catalog, generator)
 	_assert_wasteland_generation(asserts, catalog, generator)
 	_assert_snowfield_generation(asserts, catalog, generator)
@@ -69,6 +72,9 @@ func run(asserts) -> void:
 		asserts.true_value(generated.resource_nodes.size() >= generated.min_resource_nodes, "seed %d places minimum resources" % seed)
 		_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 		_assert_resource_accessibility(asserts, generated)
+		_assert_common_templates(asserts, generated)
+		_assert_continuous_water_stroke(asserts, generated)
+		_assert_resources_near_templates(asserts, generated)
 
 	var impossible_options := {"min_resource_nodes": 5000, "retry_limit": 2, "max_resource_placement_attempts": 32}
 	var failed := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), impossible_options)
@@ -129,6 +135,9 @@ func _assert_mountain_generation(asserts, catalog, generator: WorldGenerator) ->
 	_assert_mountain_renderer_sources(asserts, generated.renderer_input)
 	_assert_landmark_terrain_terms(asserts, generated.landmarks)
 	_assert_resource_ids_resolve_to_mountain_materials(asserts, generated.resource_nodes, mountain, catalog.get_definitions("items"))
+	_assert_common_templates(asserts, generated)
+	_assert_continuous_water_stroke(asserts, generated)
+	_assert_resources_near_templates(asserts, generated)
 
 	for seed in range(22000, 22020):
 		var sampled := generator.generate(seed, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"))
@@ -175,6 +184,9 @@ func _assert_wasteland_generation(asserts, catalog, generator: WorldGenerator) -
 	_assert_landmark_terms(asserts, generated.landmarks, ["마른 흙", "갈라진 땅", "죽은 나무", "폐허", "말라붙은 하천", "군영 흔적"])
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, wasteland, catalog.get_definitions("items"))
 	_assert_wasteland_chunk_features(asserts, generated.chunks)
+	_assert_common_templates(asserts, generated)
+	_assert_continuous_water_stroke(asserts, generated)
+	_assert_resources_near_templates(asserts, generated)
 
 	for seed in range(34000, 34025):
 		var sampled := generator.generate(seed, catalog.data_version, wasteland, catalog.get_definitions("balance"), catalog.get_definitions("items"))
@@ -225,6 +237,9 @@ func _assert_snowfield_generation(asserts, catalog, generator: WorldGenerator) -
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, snowfield, catalog.get_definitions("items"))
 	_assert_snowfield_chunk_features(asserts, generated.chunks)
 	_assert_no_temperature_state(asserts, generated)
+	_assert_common_templates(asserts, generated)
+	_assert_continuous_water_stroke(asserts, generated)
+	_assert_resources_near_templates(asserts, generated)
 
 	for seed in range(35000, 35025):
 		var sampled := generator.generate(seed, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"))
@@ -276,6 +291,9 @@ func _assert_rainforest_generation(asserts, catalog, generator: WorldGenerator) 
 	_assert_rainforest_rare_resource_ids(asserts, generated.resource_nodes)
 	_assert_rainforest_chunk_features(asserts, generated.chunks)
 	_assert_no_forbidden_survival_state(asserts, generated)
+	_assert_common_templates(asserts, generated)
+	_assert_continuous_water_stroke(asserts, generated)
+	_assert_resources_near_templates(asserts, generated)
 
 	for seed in range(36000, 36025):
 		var sampled := generator.generate(seed, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"))
@@ -403,6 +421,78 @@ func _assert_renderer_source_paths_exist(asserts, renderer_input: Dictionary) ->
 	for source_id in seen.keys():
 		asserts.true_value(not asset_catalog.id_for_reference(source_id).is_empty(), "renderer source reference uses manifest ID: %s" % source_id)
 		asserts.true_value(not asset_catalog.path_for_reference(source_id).is_empty(), "renderer source reference path exists: %s" % source_id)
+
+func _assert_common_templates(asserts, world: Dictionary) -> void:
+	asserts.true_value(world.has("templates"), "world records common map templates")
+	var ids := {}
+	for template in world.get("templates", []):
+		ids[String(template.get("id", ""))] = true
+	for template_id in [
+		WorldGenerator.TEMPLATE_PATH_SPINE,
+		WorldGenerator.TEMPLATE_WATER_STROKE,
+		WorldGenerator.TEMPLATE_RESOURCE_CLUSTER
+	]:
+		asserts.true_value(ids.has(template_id), "world applies common template: %s" % template_id)
+
+func _assert_continuous_water_stroke(asserts, world: Dictionary) -> void:
+	var water_template := _template_by_id(world, WorldGenerator.TEMPLATE_WATER_STROKE)
+	asserts.false_value(water_template.is_empty(), "water stroke template is recorded")
+	var water_cells: Array = water_template.get("cells", [])
+	asserts.true_value(water_cells.size() >= WorldGenerator.MAP_HEIGHT - 2, "water stroke spans the map height")
+	asserts.true_value(bool(water_template.get("crosses_chunk_boundary", false)), "water stroke crosses chunk boundaries")
+	var cell_index := _world_cell_index(world.world_data)
+	var bridge_count := 0
+	var water_count := 0
+	for index in range(water_cells.size()):
+		var position := _vector_from_dictionary(water_cells[index])
+		var cell: Dictionary = cell_index.get(_key(position), {})
+		if bool(cell.layers.terrain.walkable):
+			bridge_count += 1
+		else:
+			water_count += 1
+			asserts.equal(String(cell.layers.terrain.id), String(water_template.water_terrain_id), "recorded water cell uses template water terrain")
+			asserts.equal(String(cell.layers.terrain.render_id), String(water_template.water_render_id), "recorded water cell uses template water render id")
+		if index > 0:
+			var previous := _vector_from_dictionary(water_cells[index - 1])
+			asserts.true_value(_position_distance(previous, position) <= 1, "water stroke remains continuous")
+	asserts.true_value(water_count > 0, "water stroke leaves readable non-walkable water")
+	asserts.true_value(bridge_count > 0, "path template creates walkable crossings through water")
+
+func _assert_resources_near_templates(asserts, world: Dictionary) -> void:
+	var template_positions := _template_neighborhood_positions(world)
+	asserts.true_value(not template_positions.is_empty(), "template neighborhoods are available for resource placement")
+	for node in world.resource_nodes:
+		var position := _vector_from_dictionary(node.position)
+		var near_template := false
+		for candidate in template_positions:
+			if _position_distance(position, candidate) <= 3:
+				near_template = true
+				break
+		asserts.true_value(near_template, "%s resource is clustered near a path, landmark, or template anchor" % node.id)
+
+func _template_by_id(world: Dictionary, template_id: String) -> Dictionary:
+	for template in world.get("templates", []):
+		if String(template.get("id", "")) == template_id:
+			return template
+	return {}
+
+func _template_neighborhood_positions(world: Dictionary) -> Array:
+	var positions := []
+	var path_template := _template_by_id(world, WorldGenerator.TEMPLATE_PATH_SPINE)
+	for row in path_template.get("cells", []):
+		positions.append(_vector_from_dictionary(row))
+	var cluster_template := _template_by_id(world, WorldGenerator.TEMPLATE_RESOURCE_CLUSTER)
+	for row in cluster_template.get("anchors", []):
+		positions.append(_vector_from_dictionary(row))
+	for landmark in world.get("landmarks", []):
+		positions.append(_vector_from_dictionary(landmark.position))
+	return positions
+
+func _world_cell_index(world_data: Dictionary) -> Dictionary:
+	var index := {}
+	for cell in world_data.cells:
+		index[_key(_vector_from_dictionary(cell.position))] = cell
+	return index
 
 func _assert_asset_reference_exists(asserts, source_id: String, message: String) -> void:
 	var asset_catalog := AssetCatalog.new()
@@ -675,6 +765,15 @@ func _assert_no_forbidden_survival_state(asserts, world: Dictionary) -> void:
 
 func _manhattan_distance(a: Dictionary, b: Dictionary) -> int:
 	return abs(int(a.x) - int(b.x)) + abs(int(a.y) - int(b.y))
+
+func _position_distance(a: Vector2i, b: Vector2i) -> int:
+	return abs(a.x - b.x) + abs(a.y - b.y)
+
+func _vector_from_dictionary(data: Dictionary) -> Vector2i:
+	return Vector2i(int(data.get("x", 0)), int(data.get("y", 0)))
+
+func _key(position: Vector2i) -> String:
+	return "%d,%d" % [position.x, position.y]
 
 func _canonical_world(world: Dictionary) -> Dictionary:
 	var canonical := world.duplicate(true)

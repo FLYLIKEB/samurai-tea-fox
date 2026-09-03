@@ -5,6 +5,7 @@ const GameCommand = preload("res://src/core/commands/game_command.gd")
 const Main = preload("res://src/main/main.gd")
 const RunState = preload("res://src/save/run_state.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
+const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 
 class DropSource:
 	extends Node
@@ -148,6 +149,7 @@ func _assert_main_generates_current_biome(asserts, catalog: DataCatalog, biome_i
 		asserts.equal(runtime.generated_world.get("biome_id", ""), biome_id, "main uses current_biome_id instead of hard-coded common_region")
 		asserts.equal(runtime.generated_world.get("biome_generation_rule_id", ""), biome_id, "main feeds the current biome definition into WorldGenerator")
 		asserts.true_value(runtime.world_render_result.get("ok", false), "%s runtime render uses generated renderer input" % biome_id)
+		_assert_runtime_templates(asserts, runtime.generated_world)
 		if biome_id == "wasteland":
 			_assert_wasteland_runtime_sources(asserts, runtime)
 		elif biome_id == "snowfield":
@@ -157,6 +159,17 @@ func _assert_main_generates_current_biome(asserts, catalog: DataCatalog, biome_i
 	runtime.free()
 	combat_source.free()
 	world_root.free()
+
+func _assert_runtime_templates(asserts, world: Dictionary) -> void:
+	var template_ids := {}
+	for template in world.get("templates", []):
+		template_ids[String(template.get("id", ""))] = true
+	for template_id in [
+		WorldGenerator.TEMPLATE_PATH_SPINE,
+		WorldGenerator.TEMPLATE_WATER_STROKE,
+		WorldGenerator.TEMPLATE_RESOURCE_CLUSTER
+	]:
+		asserts.true_value(template_ids.has(template_id), "runtime world includes common template: %s" % template_id)
 
 func _assert_wasteland_runtime_sources(asserts, runtime: Main) -> void:
 	var owner_sources: Dictionary = runtime._owner_sprite_sources(runtime.generated_world)
