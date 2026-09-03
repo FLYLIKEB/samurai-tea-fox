@@ -55,10 +55,11 @@ const TESTS := [
 func _init() -> void:
 	var asserts := TestAssert.new()
 	var test_filter := OS.get_environment("TEST_FILTER")
+	var filters := _test_filters(test_filter)
 	var selected_count := 0
 
 	for script in TESTS:
-		if not test_filter.is_empty() and not test_filter in script.resource_path:
+		if not filters.is_empty() and not _matches_any_filter(script.resource_path, filters):
 			continue
 		selected_count += 1
 		var test = script.new()
@@ -78,3 +79,17 @@ func _init() -> void:
 	for failure in asserts.failures:
 		push_error(failure)
 	quit(1)
+
+func _test_filters(test_filter: String) -> Array[String]:
+	var filters: Array[String] = []
+	for raw_filter in test_filter.split(",", false):
+		var filter := raw_filter.strip_edges()
+		if not filter.is_empty():
+			filters.append(filter)
+	return filters
+
+func _matches_any_filter(resource_path: String, filters: Array[String]) -> bool:
+	for filter in filters:
+		if filter in resource_path:
+			return true
+	return false

@@ -10,6 +10,7 @@ const DIVIDER_ASSET_ID := "divider_under_brand"
 const START_MODE_META := "muchau_start_mode"
 const START_MODE_NEW := "new"
 const START_MODE_RESUME := "resume"
+const DEFAULT_WINDOW_SIZE := Vector2i(1280, 720)
 
 @onready var start_button: Button = %StartButton
 @onready var continue_button: Button = %ContinueButton
@@ -22,9 +23,15 @@ var _asset_catalog := AssetCatalog.new()
 var _save_store := SaveStore.new()
 
 func _ready() -> void:
+	_apply_default_window_size()
 	_apply_manifest_textures()
 	_update_continue_button()
 	start_button.grab_focus()
+
+func _apply_default_window_size() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	DisplayServer.window_set_size(DEFAULT_WINDOW_SIZE)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_accept") and not event.is_echo():

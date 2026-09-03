@@ -26,20 +26,20 @@ const PORTRAIT_SEN_RIKYU := "asset_assets_sprites_characters_bosses_chr_5_sen_ri
 const PORTRAIT_PLAYER := PORTRAIT_MUCHAU
 
 const BALANCE_ABILITY_SLOTS_ID := "ability_equip_slots"
-const STATUS_PANEL_SIZE := Vector2(220, 88)
-const PORTRAIT_BOX_SIZE := Vector2(58, 58)
-const RESOURCE_BAR_SIZE := Vector2(92, 4)
-const ENEMY_PANEL_SIZE := Vector2(170, 58)
-const MAP_PANEL_SIZE := Vector2(152, 64)
-const MAP_PANEL_TIME_HEIGHT := 96.0
-const QUICKSLOT_PANEL_SIZE := Vector2(248, 36)
-const DPAD_PANEL_SIZE := Vector2(82, 82)
-const DPAD_BOARD_SIZE := Vector2(70, 70)
-const ACTION_BUTTON_SIZE := Vector2(70, 30)
-const ACTION_PANEL_SIZE := Vector2(86, 226)
+const STATUS_PANEL_SIZE := Vector2(196, 76)
+const PORTRAIT_BOX_SIZE := Vector2(48, 48)
+const RESOURCE_BAR_SIZE := Vector2(76, 3)
+const ENEMY_PANEL_SIZE := Vector2(150, 50)
+const MAP_PANEL_SIZE := Vector2(132, 58)
+const MAP_PANEL_TIME_HEIGHT := 84.0
+const QUICKSLOT_PANEL_SIZE := Vector2(218, 32)
+const DPAD_PANEL_SIZE := Vector2(66, 66)
+const DPAD_BOARD_SIZE := Vector2(56, 56)
+const ACTION_BUTTON_SIZE := Vector2(62, 26)
+const ACTION_PANEL_SIZE := Vector2(76, 194)
 const ACTION_PANEL_COLUMNS := 1
-const MENU_PANEL_SIZE := Vector2(356, 158)
-const MENU_CONTENT_SIZE := Vector2(340, 104)
+const MENU_PANEL_SIZE := Vector2(320, 142)
+const MENU_CONTENT_SIZE := Vector2(304, 90)
 
 signal mobile_command_issued(command)
 
@@ -210,7 +210,7 @@ func show_narrative_dialogue(read_model: Dictionary) -> bool:
 		var button := Button.new()
 		button.text = "넘어가기"
 		button.tooltip_text = String(option.get("display_text", "넘어가기"))
-		button.custom_minimum_size = Vector2(88, 30)
+		button.custom_minimum_size = Vector2(76, 26)
 		button.focus_mode = Control.FOCUS_ALL
 		button.mouse_filter = Control.MOUSE_FILTER_STOP
 		button.pressed.connect(func(): mobile_command_issued.emit(GameCommand.new(
@@ -579,11 +579,11 @@ func _add_text_action(parent: Container, name: String, icon_path: String, text: 
 	button.text = text
 	button.icon = _load_texture(icon_path)
 	button.expand_icon = true
-	button.add_theme_constant_override("icon_max_width", 18)
+	button.add_theme_constant_override("icon_max_width", 16)
 	button.tooltip_text = text
 	button.focus_mode = Control.FOCUS_NONE
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	button.add_theme_font_size_override("font_size", 11)
+	button.add_theme_font_size_override("font_size", 10)
 	button.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.08, 0.06, 0.82), true))
 	button.add_theme_stylebox_override("hover", _button_style(Color(0.16, 0.12, 0.08, 0.92), true))
 	button.add_theme_stylebox_override("pressed", _button_style(Color(0.77, 0.54, 0.25, 0.96), true))
@@ -600,7 +600,7 @@ func _build_menu_panel(parent: PanelContainer) -> void:
 	_ignore_mouse(header)
 	header.add_theme_constant_override("separation", 8)
 	rows.add_child(header)
-	_labels.menu_title = _label("메뉴", 14)
+	_labels.menu_title = _label("메뉴", 12)
 	header.add_child(_labels.menu_title)
 	var spacer := Control.new()
 	_ignore_mouse(spacer)
@@ -640,7 +640,7 @@ func _build_narrative_panel(parent: PanelContainer) -> void:
 	rows.add_child(_labels.narrative_speaker)
 	_labels.narrative_text = _label("", 12)
 	_labels.narrative_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_labels.narrative_text.custom_minimum_size = Vector2(492, 48)
+	_labels.narrative_text.custom_minimum_size = Vector2(460, 44)
 	rows.add_child(_labels.narrative_text)
 	_narrative_options = HBoxContainer.new()
 	_narrative_options.name = "NarrativeOptions"
@@ -777,8 +777,8 @@ func _inventory_slot_card(row: Dictionary) -> Button:
 		GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, int(row.slot_index), {"slot_index": int(row.slot_index)})
 	)
 	button.name = "InventorySlotCard%d" % int(row.get("slot_index", -1))
-	button.custom_minimum_size = Vector2(50, 52)
-	button.add_theme_font_size_override("font_size", 10)
+	button.custom_minimum_size = Vector2(44, 48)
+	button.add_theme_font_size_override("font_size", 9)
 	button.add_theme_stylebox_override("normal", _button_style(Color(0.72, 0.59, 0.38, 0.92)))
 	if bool(row.get("selected", false)):
 		button.add_theme_stylebox_override("normal", _button_style(Color(0.90, 0.72, 0.42, 0.96)))
@@ -817,7 +817,7 @@ func _inventory_detail_card(row: Dictionary) -> Control:
 func _inventory_command_button(text: String, command: GameCommand) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(44, 28)
+	button.custom_minimum_size = Vector2(40, 24)
 	button.focus_mode = Control.FOCUS_ALL
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.pressed.connect(func(): mobile_command_issued.emit(command))
@@ -906,7 +906,7 @@ func _tea_brewing_option_row(text: String, command: GameCommand) -> HBoxContaine
 func _tea_brewing_command_button(text: String, command: GameCommand) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(44, 28)
+	button.custom_minimum_size = Vector2(40, 24)
 	button.focus_mode = Control.FOCUS_ALL
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.pressed.connect(func(): mobile_command_issued.emit(command))
@@ -992,7 +992,7 @@ func _meta_codex_option_row(text: String, command: GameCommand) -> HBoxContainer
 func _meta_codex_command_button(text: String, command: GameCommand) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(44, 28)
+	button.custom_minimum_size = Vector2(40, 24)
 	button.focus_mode = Control.FOCUS_ALL
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.pressed.connect(func(): mobile_command_issued.emit(command))
@@ -1089,12 +1089,12 @@ func _crafting_row(row_model: Dictionary) -> Control:
 	var card := VBoxContainer.new()
 	card.name = "CraftingRecipeCard"
 	_ignore_mouse(card)
-	card.custom_minimum_size = Vector2(88, 62)
+	card.custom_minimum_size = Vector2(78, 54)
 	card.add_theme_constant_override("separation", 3)
 	var label := _label("%s\n%s" % [
 		String(row_model.get("name", row_model.get("recipe_id", ""))),
 		String(row_model.get("reason_label", ""))
-	], 10)
+	], 9)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.add_child(label)
 	var actions := HBoxContainer.new()
@@ -1102,7 +1102,7 @@ func _crafting_row(row_model: Dictionary) -> Control:
 	actions.add_theme_constant_override("separation", 3)
 	var select_button := Button.new()
 	select_button.text = "상세"
-	select_button.custom_minimum_size = Vector2(40, 24)
+	select_button.custom_minimum_size = Vector2(36, 22)
 	select_button.focus_mode = Control.FOCUS_ALL
 	select_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	var recipe_id := String(row_model.get("recipe_id", ""))
@@ -1116,7 +1116,7 @@ func _crafting_row(row_model: Dictionary) -> Control:
 	button.disabled = not bool(row_model.get("craftable", false))
 	button.focus_mode = Control.FOCUS_ALL
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	button.custom_minimum_size = Vector2(40, 24)
+	button.custom_minimum_size = Vector2(36, 22)
 	button.pressed.connect(func():
 		mobile_command_issued.emit(GameCommand.new(GameCommand.Type.CRAFT_RECIPE, Vector2i.ZERO, 0, {"recipe_id": recipe_id}))
 	)
@@ -1127,7 +1127,7 @@ func _crafting_row(row_model: Dictionary) -> Control:
 func _crafting_filter_button(text: String, category: String) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(54, 28)
+	button.custom_minimum_size = Vector2(48, 24)
 	button.disabled = category == _crafting_filter
 	button.focus_mode = Control.FOCUS_ALL
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -1560,7 +1560,7 @@ func _add_resource_row(parent: Container, icon_path: String, text: String, color
 	parent.add_child(row)
 	var icon := TextureRect.new()
 	_ignore_mouse(icon)
-	icon.custom_minimum_size = Vector2(16, 16)
+	icon.custom_minimum_size = Vector2(14, 14)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	icon.texture = _load_texture(icon_path)
@@ -1569,7 +1569,7 @@ func _add_resource_row(parent: Container, icon_path: String, text: String, color
 	_ignore_mouse(column)
 	column.add_theme_constant_override("separation", 2)
 	row.add_child(column)
-	var value := _label(text, 12)
+	var value := _label(text, 11)
 	column.add_child(value)
 	var bar := ColorRect.new()
 	bar.name = "%sBar" % text
@@ -1582,11 +1582,11 @@ func _add_resource_row(parent: Container, icon_path: String, text: String, color
 func _add_icon_row(parent: Container, icon_path: String, text: String) -> Label:
 	var row := HBoxContainer.new()
 	_ignore_mouse(row)
-	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("separation", 6)
 	parent.add_child(row)
 	var icon := TextureRect.new()
 	_ignore_mouse(icon)
-	icon.custom_minimum_size = Vector2(20, 20)
+	icon.custom_minimum_size = Vector2(18, 18)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	icon.texture = _load_texture(icon_path)
@@ -1595,7 +1595,7 @@ func _add_icon_row(parent: Container, icon_path: String, text: String) -> Label:
 	row.add_child(value)
 	return value
 
-func _label(text: String, font_size := 13) -> Label:
+func _label(text: String, font_size := 12) -> Label:
 	var label := Label.new()
 	_ignore_mouse(label)
 	label.text = text
@@ -1604,13 +1604,13 @@ func _label(text: String, font_size := 13) -> Label:
 	return label
 
 func _section_label(text: String) -> Label:
-	var label := _label(text, 12)
+	var label := _label(text, 11)
 	label.add_theme_color_override("font_color", Color(0.12, 0.08, 0.04, 1.0))
 	return label
 
 func _card_frame(content: Control, selected := false) -> PanelContainer:
 	var frame := PanelContainer.new()
-	frame.custom_minimum_size = content.custom_minimum_size + Vector2(8, 8)
+	frame.custom_minimum_size = content.custom_minimum_size + Vector2(6, 6)
 	_ignore_mouse(frame)
 	var color := Color(0.69, 0.56, 0.36, 0.93)
 	if selected:
@@ -1622,7 +1622,7 @@ func _card_frame(content: Control, selected := false) -> PanelContainer:
 func _detail_card(title: String) -> PanelContainer:
 	var card := PanelContainer.new()
 	card.name = "DetailCard"
-	card.custom_minimum_size = Vector2(320, 46)
+	card.custom_minimum_size = Vector2(288, 42)
 	_ignore_mouse(card)
 	card.add_theme_stylebox_override("panel", _button_style(Color(0.69, 0.56, 0.36, 0.94)))
 	var rows := VBoxContainer.new()
@@ -1657,7 +1657,7 @@ func _pixel_theme() -> Theme:
 	var font := _load_font(FONT_GALMURI)
 	if font != null:
 		theme.default_font = font
-	theme.default_font_size = 13
+	theme.default_font_size = 12
 	return theme
 
 func _load_font(path: String) -> Font:
