@@ -43,6 +43,9 @@ func _assert_generated_catalog_configures_crafting(asserts) -> void:
 	if not service_result.ok:
 		return
 	var service: CraftingService = service_result.crafting_service
+	for recipe_id in service.recipe_definitions.keys():
+		var recipe: Dictionary = service.recipe_definitions[recipe_id]
+		asserts.equal(recipe.get("definition_errors", []), [], "generated recipe has no definition errors: %s" % recipe_id)
 	asserts.true_value(service.has_recipe("wooden_workbench"), "generated handcraft recipe is available")
 	asserts.true_value(service.is_handcraft("wooden_workbench"), "손제작 recipe has no facility requirement")
 	asserts.equal(service.recipe_for("wooden_workbench").unlock_biome_id, "common_region", "generated recipe carries stable unlock biome id")

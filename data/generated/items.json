@@ -287,6 +287,165 @@
       "type": "재료"
     },
     {
+      "craftable": false,
+      "grade": "일반",
+      "id": "iron_ore",
+      "max_stack": 20,
+      "name": "철광석",
+      "status": "초안",
+      "type": "재료"
+    },
+    {
+      "craftable": false,
+      "grade": "일반",
+      "id": "copper_ore",
+      "max_stack": 20,
+      "name": "구리광석",
+      "status": "초안",
+      "type": "재료"
+    },
+    {
+      "craftable": false,
+      "grade": "일반",
+      "id": "snowfield_mineral",
+      "max_stack": 20,
+      "name": "설원 광물",
+      "status": "초안",
+      "type": "재료"
+    },
+    {
+      "craftable": false,
+      "grade": "일반",
+      "id": "conifer_wood",
+      "max_stack": 20,
+      "name": "침엽수 목재",
+      "status": "초안",
+      "type": "재료"
+    },
+    {
+      "craftable": false,
+      "grade": "일반",
+      "id": "rare_wood",
+      "max_stack": 20,
+      "name": "희귀 목재",
+      "status": "초안",
+      "type": "재료"
+    },
+    {
+      "craftable": false,
+      "grade": "일반",
+      "id": "old_wood",
+      "max_stack": 20,
+      "name": "오래된 목재",
+      "status": "초안",
+      "type": "재료"
+    },
+    {
+      "craftable": false,
+      "grade": "일반",
+      "id": "charcoal",
+      "max_stack": 20,
+      "name": "숯",
+      "status": "초안",
+      "type": "재료"
+    },
+    {
+      "craftable": true,
+      "grade": "일반",
+      "id": "incense_sticks",
+      "max_stack": 10,
+      "name": "선향",
+      "status": "초안",
+      "type": "향"
+    },
+    {
+      "craftable": true,
+      "grade": "일반",
+      "id": "insulated_tea_bottle",
+      "max_stack": 1,
+      "name": "보온 차병",
+      "status": "초안",
+      "type": "다구"
+    },
+    {
+      "craftable": true,
+      "grade": "일반",
+      "id": "iron_kettle",
+      "max_stack": 1,
+      "name": "철 차솥",
+      "status": "초안",
+      "type": "다구"
+    },
+    {
+      "base_damage": 18,
+      "craftable": true,
+      "equipment_slot": "무기",
+      "attack_speed": 1,
+      "effect_type": "공격",
+      "effect_value": 18,
+      "grade": "일반",
+      "id": "mountain_iron_dagger",
+      "max_stack": 1,
+      "name": "산철 단도",
+      "range": 1.15,
+      "status": "초안",
+      "type": "무기"
+    },
+    {
+      "craftable": true,
+      "grade": "일반",
+      "id": "mountain_kiln",
+      "max_stack": 1,
+      "name": "산중 가마",
+      "status": "초안",
+      "type": "도구"
+    },
+    {
+      "craftable": true,
+      "grade": "일반",
+      "id": "portable_brazier",
+      "max_stack": 1,
+      "name": "휴대 화로",
+      "status": "초안",
+      "type": "도구"
+    },
+    {
+      "craftable": true,
+      "grade": "일반",
+      "id": "repair_hammer",
+      "max_stack": 1,
+      "name": "수선 망치",
+      "status": "초안",
+      "type": "도구"
+    },
+    {
+      "craftable": true,
+      "grade": "일반",
+      "id": "wood_incense_burner",
+      "max_stack": 1,
+      "name": "목향 향로",
+      "status": "초안",
+      "type": "다구"
+    },
+    {
+      "craftable": false,
+      "grade": "일반",
+      "id": "metal_workbench",
+      "max_stack": 1,
+      "name": "금속 가공대",
+      "status": "초안",
+      "type": "도구"
+    },
+    {
+      "craftable": false,
+      "grade": "일반",
+      "id": "blacksmith_forge",
+      "max_stack": 1,
+      "name": "대장간",
+      "status": "초안",
+      "type": "도구"
+    },
+    {
       "craftable": true,
       "grade": "일반",
       "id": "wooden_workbench",

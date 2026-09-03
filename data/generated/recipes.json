@@ -34,6 +34,16 @@
       "category": "향",
       "facility": "목재 작업대",
       "id": "incense_sticks",
+      "materials": [
+        {
+          "item_id": "item_5",
+          "quantity": 1
+        },
+        {
+          "item_id": "rare_wood",
+          "quantity": 1
+        }
+      ],
       "materials_note": "침향 소량 + 희귀 목재 가루",
       "name": "선향 제작",
       "status": "초안",
