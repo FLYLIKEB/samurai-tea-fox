@@ -14,3 +14,5 @@ func run(asserts) -> void:
 	asserts.equal(WorldData.new(1, 1).tile_size, 32, "new world data uses the configured tile size")
 	asserts.equal(WorldGenerator.MAP_WIDTH, RuntimeConstants.int_value("world.overworld_width"), "world generator width is configured")
 	asserts.equal(WorldGenerator.MAP_HEIGHT, RuntimeConstants.int_value("world.overworld_height"), "world generator height is configured")
+	asserts.equal(WorldGenerator.TEMPLATE_BANK.size(), 10, "world template bank contains ten layouts")
+	asserts.true_value(not String(WorldGenerator._template_for_seed(11037, "common_region").get("id", "")).is_empty(), "seed selects a named world template")

@@ -2021,7 +2021,7 @@ func _register_mountain_mineral_gatherables(definition_ids: Dictionary) -> Dicti
 		if parts.size() != 2:
 			continue
 		var position := Vector2i(int(parts[0]), int(parts[1]))
-		var registered := acquisition_service.register_gatherable(id, id, position)
+		var registered: Dictionary = acquisition_service.register_gatherable(id, id, position)
 		if not registered.ok:
 			return registered
 	return {"ok": true}

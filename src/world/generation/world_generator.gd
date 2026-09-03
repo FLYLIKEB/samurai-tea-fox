@@ -12,6 +12,8 @@ static var MAP_HEIGHT := RuntimeConstants.int_value("world.overworld_height")
 static var CHUNK_WIDTH := RuntimeConstants.int_value("world.chunk_width")
 static var CHUNK_HEIGHT := RuntimeConstants.int_value("world.chunk_height")
 static var DEFAULT_RETRY_LIMIT := RuntimeConstants.int_value("world.generation_retry_limit")
+const TEMPLATE_PATH := "res://data/world_templates.json"
+static var TEMPLATE_BANK: Array = _load_template_bank()
 const BIOME_COMMON := "common_region"
 const BIOME_MOUNTAIN := "mountain_region"
 const BIOME_WASTELAND := "wasteland"
@@ -144,15 +146,20 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 	# balance data is missing or temporarily sets the count to zero.
 	var teleport_zone_count := maxi(1, _balance_value(balance_definitions, "biome_teleport_zone_count", 1))
 	var combined_seed := _combined_seed(seed, data_version, biome_definition.get("id", ""))
+	var template := _template_for_seed(seed, String(biome_definition.get("id", "")))
 	var progression_projection: Dictionary = options.get("progression_projection", {})
 
 	for attempt in range(retry_limit + 1):
-		var rng := DeterministicRng.new(combined_seed + attempt)
+		# Layout randomness comes from the selected template. Run randomness is
+		# kept separate so resources can vary without changing the map shape.
+		var layout_rng := DeterministicRng.new(int(template.seed) + attempt)
+		var content_rng := DeterministicRng.new(combined_seed + attempt)
 		var world := _generate_attempt(
 			seed,
 			data_version,
 			biome_definition,
-			rng,
+			layout_rng,
+			content_rng,
 			attempt,
 			retry_limit,
 			int(core_dungeon_count),
@@ -164,26 +171,27 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 			profile
 		)
 		if world.ok:
+			world.template_id = String(template.id)
 			return world
 
 	return _failure(seed, data_version, biome_definition, retry_limit, "connectivity_or_resource_validation_failed")
 
-func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, progression_projection: Dictionary, profile: Dictionary) -> Dictionary:
+func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, layout_rng: DeterministicRng, content_rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, progression_projection: Dictionary, profile: Dictionary) -> Dictionary:
 	var world_data := WorldData.new(MAP_WIDTH, MAP_HEIGHT, String(profile.default_terrain_id), bool(profile.default_walkable))
-	var chunks := _compose_chunks(rng, world_data, profile)
+	var chunks := _compose_chunks(layout_rng, world_data, profile)
 	_apply_map_boundary(world_data, profile, progression_projection.get("edge_exit_positions", []))
-	var templates := _apply_common_templates(world_data, rng, chunks, profile)
+	var templates := _apply_common_templates(world_data, layout_rng, chunks, profile)
 	var biome_id := String(biome_definition.get("id", ""))
-	var landmarks := _place_required_landmarks(world_data, rng, core_dungeon_count, teleport_zone_count, biome_id, profile)
+	var landmarks := _place_required_landmarks(world_data, layout_rng, core_dungeon_count, teleport_zone_count, biome_id, profile)
 	_carve_landmark_paths(world_data, landmarks, profile)
-	var large_house_result := _place_large_fenced_house(world_data, rng, profile)
+	var large_house_result := _place_large_fenced_house(world_data, layout_rng, profile)
 	if not large_house_result.ok:
 		return _failed_attempt(seed, data_version, biome_definition, attempt, retry_limit, "large_fenced_house_placement_failed")
-	_place_path_edge_fences(world_data, rng, templates, profile)
+	_place_path_edge_fences(world_data, layout_rng, templates, profile)
 	var validator := ConnectivityValidator.new()
-	var facility_nodes := _place_facility_nodes(world_data, rng, landmarks, profile, validator.reachable_cell_keys_from_entry(world_data.to_dictionary()))
+	var facility_nodes := _place_facility_nodes(world_data, layout_rng, landmarks, profile, validator.reachable_cell_keys_from_entry(world_data.to_dictionary()))
 	var reachable_cells := validator.reachable_cell_keys_from_entry(world_data.to_dictionary())
-	var resource_nodes := _place_resource_nodes(world_data, rng, min_resource_nodes, max_resource_placement_attempts, resource_ids, reachable_cells, profile.get("resource_source_by_id", {}), templates, landmarks)
+	var resource_nodes := _place_resource_nodes(world_data, content_rng, min_resource_nodes, max_resource_placement_attempts, resource_ids, reachable_cells, profile.get("resource_source_by_id", {}), templates, landmarks)
 	var access_points := []
 	for resource_node in resource_nodes:
 		access_points.append(resource_node.access_position)
@@ -196,6 +204,7 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 		"ok": false,
 		"data_version": data_version,
 		"seed": seed,
+		"template_id": "",
 		"biome_id": biome_id,
 		"biome_progression_order": biome_definition.get("progression_order", null),
 		"biome_generation_rule_id": String(profile.id),
@@ -228,6 +237,26 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 	if not world.ok:
 		world.failure_reason = _attempt_failure_reason(world.connectivity, world.facility_accessibility, world.resource_accessibility, facility_nodes.size(), int(profile.minimum_facility_nodes), resource_nodes.size(), min_resource_nodes)
 	return world
+
+static func _load_template_bank() -> Array:
+	if not FileAccess.file_exists(TEMPLATE_PATH):
+		push_error("Missing world template bank: %s" % TEMPLATE_PATH)
+		return []
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(TEMPLATE_PATH))
+	var templates = parsed.get("templates", []) if typeof(parsed) == TYPE_DICTIONARY else []
+	if templates is not Array or templates.is_empty():
+		push_error("World template bank must contain templates: %s" % TEMPLATE_PATH)
+		return []
+	return templates.duplicate(true)
+
+static func _template_for_seed(seed: int, biome_id: String) -> Dictionary:
+	if TEMPLATE_BANK.is_empty():
+		return {"id": "fallback", "seed": seed}
+	var biome_hash := 0
+	for character in biome_id:
+		biome_hash = (biome_hash * 31 + character.unicode_at(0)) & 0x7fffffff
+	var index := absi(seed + biome_hash) % TEMPLATE_BANK.size()
+	return TEMPLATE_BANK[index].duplicate(true)
 
 func _failed_attempt(seed: int, data_version: String, biome_definition: Dictionary, attempt: int, retry_limit: int, reason: String) -> Dictionary:
 	return {

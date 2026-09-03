@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "templates": [
+    {"id": "layout_00", "seed": 17001},
+    {"id": "layout_01", "seed": 17002},
+    {"id": "layout_02", "seed": 17003},
+    {"id": "layout_03", "seed": 17004},
+    {"id": "layout_04", "seed": 17005},
+    {"id": "layout_05", "seed": 17006},
+    {"id": "layout_06", "seed": 17007},
+    {"id": "layout_07", "seed": 17008},
+    {"id": "layout_08", "seed": 17009},
+    {"id": "layout_09", "seed": 17010}
+  ]
+}
