@@ -71,6 +71,7 @@ const NARRATIVE_PORTRAIT_FRAME_SIZE := Vector2(104, 104)
 const NARRATIVE_PORTRAIT_INSET := 4.0
 const NARRATIVE_PANEL_BOTTOM_OFFSET := 12.0
 const TIME_DIAL_SIZE := Vector2(28, 28)
+const STATUS_TOAST_DURATION := 0.9
 
 class TimeDial:
 	extends Control
@@ -919,7 +920,7 @@ func _advance_status_toast() -> void:
 	_toast_label.text = _toast_queue.pop_front()
 	_toast_label.visible = true
 	_toast_panel.visible = true
-	_toast_remaining = 2.2
+	_toast_remaining = STATUS_TOAST_DURATION
 
 func _placement_command_button(text: String, command_type: int) -> Button:
 	var button := Button.new()
@@ -1730,7 +1731,11 @@ func _ordered_biome_definitions() -> Array:
 		return []
 	var definitions: Array = catalog.get_definitions("biomes")
 	definitions.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
-		return floori(float(left.get("progression_order", 999))) < floori(float(right.get("progression_order", 999)))
+		var left_order = left.get("progression_order", 999)
+		var right_order = right.get("progression_order", 999)
+		var left_value: int = 999 if left_order == null else int(left_order)
+		var right_value: int = 999 if right_order == null else int(right_order)
+		return left_value < right_value
 	)
 	return definitions
 
