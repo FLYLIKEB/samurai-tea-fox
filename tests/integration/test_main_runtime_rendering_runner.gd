@@ -145,9 +145,11 @@ func run() -> void:
 	if not main.submit_mobile_action_command(unopened_inventory):
 		failures.append("OPEN_INVENTORY opens the fast inventory menu")
 	if hud != null:
-		var inventory_menu := hud.get_node_or_null("Root/MenuPanel")
+		var inventory_menu := hud.get_node_or_null("Root/MenuPanel") as Control
 		if inventory_menu == null or not inventory_menu.visible:
-			failures.append("inventory command makes the side menu visible without covering screen center")
+			failures.append("inventory command makes the shared menu visible")
+		elif not _menu_panel_is_centered_and_large(inventory_menu):
+			failures.append("inventory command opens a centered near-fullscreen menu: rect=%s viewport=%s" % [inventory_menu.get_global_rect(), inventory_menu.get_viewport_rect()])
 	if main.feedback_beep_count <= 0:
 		failures.append("accepted runtime UI command plays feedback beep")
 
@@ -213,6 +215,16 @@ func _is_interactive_surface(control: Control) -> bool:
 		"MenuPanel",
 		"MenuScroll"
 	]
+
+func _menu_panel_is_centered_and_large(panel: Control) -> bool:
+	var viewport_rect := panel.get_viewport_rect()
+	var panel_rect := panel.get_global_rect()
+	if viewport_rect.size.x <= 0.0 or viewport_rect.size.y <= 0.0:
+		return false
+	var center_delta := panel_rect.get_center().distance_to(viewport_rect.get_center())
+	if center_delta > 2.0:
+		return false
+	return panel_rect.size.x >= viewport_rect.size.x * 0.75 and panel_rect.size.y >= viewport_rect.size.y * 0.70
 
 func _assert_hud_layout_fits_viewport(panels: Array) -> void:
 	var viewport_size := Vector2(640, 360)

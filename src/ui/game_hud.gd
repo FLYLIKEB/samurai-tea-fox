@@ -41,8 +41,10 @@ const SECONDARY_ACTION_ICON_BUTTON_SIZE := Vector2(22, 22)
 const ACTION_PANEL_SIZE := Vector2(142, 84)
 const ACTION_MENU_PANEL_SIZE := Vector2(142, 132)
 const ACTION_PANEL_COLUMNS := 2
-const MENU_PANEL_SIZE := Vector2(320, 142)
-const MENU_CONTENT_SIZE := Vector2(304, 90)
+const MENU_PANEL_SIZE := Vector2(560, 280)
+const MENU_CONTENT_SIZE := Vector2(544, 228)
+const MENU_VIEWPORT_RATIO := Vector2(0.88, 0.78)
+const MENU_PANEL_PADDING := Vector2(16, 52)
 
 signal mobile_command_issued(command)
 
@@ -1555,7 +1557,8 @@ func _apply_safe_area_layout() -> void:
 	_place_panel(_panels.map, Control.PRESET_TOP_RIGHT, Vector2(-margin.z, margin.y))
 	_place_panel(_panels.enemy, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y + STATUS_PANEL_SIZE.y + 8.0))
 	_place_panel(_panels.quickslot, Control.PRESET_CENTER_TOP, Vector2(0.0, margin.y))
-	_place_panel(_panels.menu, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w))
+	_resize_menu_panel(viewport_size, margin)
+	_place_panel(_panels.menu, Control.PRESET_CENTER, Vector2.ZERO)
 	_place_panel(_panels.dpad, Control.PRESET_BOTTOM_LEFT, Vector2(margin.x, -margin.w))
 	_place_panel(_panels.action_menu, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w - ACTION_PANEL_SIZE.y - 8.0))
 	_place_panel(_panels.action, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w))
@@ -1599,6 +1602,32 @@ func _place_panel(panel, preset: int, offset: Vector2) -> void:
 			control.offset_top = offset.y - panel_size.y
 			control.offset_right = panel_size.x * 0.5
 			control.offset_bottom = offset.y
+		Control.PRESET_CENTER:
+			control.offset_left = -panel_size.x * 0.5 + offset.x
+			control.offset_top = -panel_size.y * 0.5 + offset.y
+			control.offset_right = panel_size.x * 0.5 + offset.x
+			control.offset_bottom = panel_size.y * 0.5 + offset.y
+
+func _resize_menu_panel(viewport_size: Vector2, margin: Vector4) -> void:
+	var menu_panel := _panels.get("menu") as Control
+	if menu_panel == null:
+		return
+	var available := Vector2(
+		maxf(1.0, viewport_size.x - margin.x - margin.z),
+		maxf(1.0, viewport_size.y - margin.y - margin.w)
+	)
+	var target := Vector2(
+		maxf(minf(MENU_PANEL_SIZE.x, available.x), available.x * MENU_VIEWPORT_RATIO.x),
+		maxf(minf(MENU_PANEL_SIZE.y, available.y), available.y * MENU_VIEWPORT_RATIO.y)
+	)
+	menu_panel.custom_minimum_size = target
+	menu_panel.size = target
+	var scroll := menu_panel.get_node_or_null("MenuRows/MenuScroll") as Control
+	if scroll != null:
+		scroll.custom_minimum_size = Vector2(
+			maxf(120.0, target.x - MENU_PANEL_PADDING.x),
+			maxf(80.0, target.y - MENU_PANEL_PADDING.y)
+		)
 
 func _safe_margin() -> Vector4:
 	var fallback := Vector4(12, 12, 12, 12)

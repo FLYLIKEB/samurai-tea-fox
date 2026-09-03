@@ -321,6 +321,13 @@ func _assert_dodge_control_does_not_use_baked_dash_asset(asserts) -> void:
 func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	var hud := _configured_hud()
 	asserts.true_value(hud.show_inventory_menu(), "HUD opens the inventory menu")
+	var menu_panel := hud.get_node_or_null("Root/MenuPanel") as Control
+	asserts.true_value(menu_panel != null, "HUD owns the shared fast menu panel")
+	if menu_panel != null:
+		asserts.equal(int(round(menu_panel.custom_minimum_size.x)), 560, "fast menu expands to a near-full logical viewport width")
+		asserts.equal(int(round(menu_panel.custom_minimum_size.y)), 280, "fast menu expands to a near-full logical viewport height")
+		asserts.equal(int(round(menu_panel.anchor_left * 100.0)), 50, "fast menu anchors from the horizontal center")
+		asserts.equal(int(round(menu_panel.anchor_top * 100.0)), 50, "fast menu anchors from the vertical center")
 	asserts.equal((hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll") as Control).mouse_filter, Control.MOUSE_FILTER_STOP, "menu scroll consumes touch input instead of moving the player")
 	asserts.true_value(_tree_has_text(hud, "차 & 도구 (인벤토리) · 2/14 · all"), "inventory menu renders the mockup-style inventory header")
 	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip/InventorySlotCard0") != null, "inventory menu renders slot cards")
