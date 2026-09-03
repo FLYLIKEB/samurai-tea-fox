@@ -60,6 +60,51 @@ func can_craft(recipe_id: String, inventory, context := {}) -> Dictionary:
 	validation["craftable"] = bool(validation.ok)
 	return validation
 
+func read_model(inventory, context := {}, options := {}) -> Dictionary:
+	var selected_filter := String(options.get("category", options.get("filter", "all")))
+	if selected_filter.is_empty():
+		selected_filter = "all"
+	var selected_recipe_id := String(options.get("selected_recipe_id", ""))
+	var categories := ["all"]
+	var recipe_ids := recipe_definitions.keys()
+	recipe_ids.sort()
+	var rows := []
+	for recipe_id_value in recipe_ids:
+		var recipe_id := String(recipe_id_value)
+		var recipe: Dictionary = recipe_definitions[recipe_id]
+		var category := String(recipe.get("category", ""))
+		if not category.is_empty() and not categories.has(category):
+			categories.append(category)
+		if selected_filter != "all" and category != selected_filter:
+			continue
+		var availability: Dictionary = can_craft(recipe_id, inventory, context)
+		rows.append(_recipe_read_model_row(recipe, availability, inventory))
+	if rows.is_empty():
+		selected_recipe_id = ""
+	elif selected_recipe_id.is_empty() or not _rows_contain_recipe(rows, selected_recipe_id):
+		selected_recipe_id = String(rows[0].recipe_id)
+	var detail := {}
+	for row in rows:
+		if String(row.recipe_id) == selected_recipe_id:
+			row["selected"] = true
+			detail = row.duplicate(true)
+		else:
+			row["selected"] = false
+	return {
+		"ok": true,
+		"data_version": data_version,
+		"selected_filter": selected_filter,
+		"selected_recipe_id": selected_recipe_id,
+		"categories": categories,
+		"rows": rows,
+		"detail": detail,
+		"counts": {
+			"total": recipe_definitions.size(),
+			"visible": rows.size(),
+			"craftable": _craftable_count(rows)
+		}
+	}
+
 func craft(recipe_id: String, inventory, context := {}) -> Dictionary:
 	var validation := can_craft(recipe_id, inventory, context)
 	if not validation.ok:
@@ -95,6 +140,9 @@ func required_facility_item_ids(recipe_id: String) -> Array:
 	if not recipe_definitions.has(recipe_id):
 		return []
 	return _duplicate_array(recipe_definitions[recipe_id].facility_item_ids)
+
+func item_name(item_id: String) -> String:
+	return String(item_definitions.get(item_id, {}).get("name", item_id))
 
 func is_handcraft(recipe_id: String) -> bool:
 	return required_facility_item_ids(recipe_id).is_empty()
@@ -144,6 +192,88 @@ func _validate_craft(recipe_id: String, inventory, context) -> Dictionary:
 		"missing_facility_item_ids": missing_facilities,
 		"recipe": _duplicate_dictionary(recipe)
 	}
+
+func _recipe_read_model_row(recipe: Dictionary, availability: Dictionary, inventory) -> Dictionary:
+	var recipe_id := String(recipe.id)
+	return {
+		"recipe_id": recipe_id,
+		"name": String(recipe.get("name", recipe_id)),
+		"category": String(recipe.get("category", "")),
+		"status": String(recipe.get("status", "")),
+		"result": {
+			"item_id": String(recipe.get("result_item_id", "")),
+			"name": item_name(String(recipe.get("result_item_id", ""))),
+			"quantity": int(recipe.get("result_quantity", 1))
+		},
+		"materials": _material_read_model_rows(_duplicate_array(recipe.get("materials", [])), inventory),
+		"facilities": _facility_read_model_rows(_duplicate_array(recipe.get("facility_item_ids", [])), availability),
+		"unlock_biome_id": String(recipe.get("unlock_biome_id", "")),
+		"unlock_condition": String(recipe.get("unlock_condition", "")),
+		"craftable": bool(availability.get("craftable", false)),
+		"reason": String(availability.get("reason", "")),
+		"reason_label": _availability_label(availability),
+		"errors": _duplicate_array(availability.get("errors", []))
+	}
+
+func _material_read_model_rows(materials: Array, inventory) -> Array:
+	var rows := []
+	for material in materials:
+		var item_id := String(material.get("item_id", ""))
+		var required := int(material.get("quantity", 0))
+		var available := 0
+		if inventory != null and inventory.has_method("get_total_quantity"):
+			available = int(inventory.get_total_quantity(item_id))
+		rows.append({
+			"item_id": item_id,
+			"name": item_name(item_id),
+			"required": required,
+			"available": available,
+			"missing": maxi(0, required - available),
+			"met": available >= required
+		})
+	return rows
+
+func _facility_read_model_rows(facility_item_ids: Array, availability: Dictionary) -> Array:
+	var rows := []
+	var missing := {}
+	for facility_id in _duplicate_array(availability.get("missing_facility_item_ids", [])):
+		missing[String(facility_id)] = true
+	for facility_id_value in facility_item_ids:
+		var facility_id := String(facility_id_value)
+		rows.append({
+			"item_id": facility_id,
+			"name": item_name(facility_id),
+			"available": not missing.has(facility_id)
+		})
+	return rows
+
+func _availability_label(availability: Dictionary) -> String:
+	if bool(availability.get("craftable", false)):
+		return "제작 가능"
+	match String(availability.get("reason", "")):
+		"missing_materials":
+			return "재료 부족"
+		"missing_facilities":
+			return "시설 필요"
+		"locked":
+			return "현재 런 미해금"
+		"invalid_recipe_definition":
+			return "정의 오류"
+		_:
+			return "제작 불가"
+
+func _rows_contain_recipe(rows: Array, recipe_id: String) -> bool:
+	for row in rows:
+		if String(row.get("recipe_id", "")) == recipe_id:
+			return true
+	return false
+
+func _craftable_count(rows: Array) -> int:
+	var count := 0
+	for row in rows:
+		if bool(row.get("craftable", false)):
+			count += 1
+	return count
 
 func _missing_facility_item_ids(required_facilities: Array, context) -> Array:
 	if required_facilities.is_empty():

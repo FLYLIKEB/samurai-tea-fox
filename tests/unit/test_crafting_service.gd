@@ -27,6 +27,7 @@ func run(asserts) -> void:
 	_assert_generated_catalog_configures_crafting(asserts)
 	_assert_handcraft_consumes_materials_and_grants_result(asserts)
 	_assert_material_and_facility_requirements_are_reported(asserts)
+	_assert_crafting_read_model_reports_filters_detail_and_reasons(asserts)
 	_assert_current_run_biome_unlock_allows_recipe(asserts)
 	_assert_crafting_rolls_back_when_result_grant_fails(asserts)
 	_assert_facility_placement_reserves_valid_footprint(asserts)
@@ -101,6 +102,37 @@ func _assert_material_and_facility_requirements_are_reported(asserts) -> void:
 
 	var craftable: Dictionary = service.can_craft("humble_clay_bowl", inventory, {"facility_item_id": "wooden_workbench"})
 	asserts.true_value(craftable.ok, "facility item context allows recipe")
+
+func _assert_crafting_read_model_reports_filters_detail_and_reasons(asserts) -> void:
+	var service := _fixture_crafting_service()
+	var inventory := _fixture_inventory(6)
+	asserts.true_value(inventory.add_item("wood", 6).ok, "read model wood add succeeds")
+	asserts.true_value(inventory.add_item("stone", 3).ok, "read model stone add succeeds")
+	asserts.true_value(inventory.add_item("clay", 2).ok, "read model partial clay add succeeds")
+
+	var model: Dictionary = service.read_model(inventory, {"unlocked_biome_ids": ["common_region"]}, {
+		"category": "다구",
+		"selected_recipe_id": "humble_clay_bowl"
+	})
+	asserts.true_value(model.ok, "crafting read model builds")
+	asserts.equal(model.selected_filter, "다구", "read model records selected category filter")
+	asserts.equal(model.rows.size(), 3, "category filter includes all teaware recipes")
+	asserts.equal(model.detail.recipe_id, "humble_clay_bowl", "read model keeps selected stable recipe id")
+	asserts.equal(model.detail.result.item_id, "humble_clay_bowl", "read model exposes result item id")
+	asserts.equal(model.detail.result.name, "소박한 흙사발", "read model resolves result item name")
+	asserts.equal(model.detail.materials[0].item_id, "clay", "read model exposes material item id")
+	asserts.equal(model.detail.materials[0].available, 2, "read model exposes owned material quantity")
+	asserts.equal(model.detail.materials[0].required, 3, "read model exposes required material quantity")
+	asserts.equal(model.detail.reason, "missing_materials", "read model distinguishes material shortage")
+	asserts.equal(model.detail.reason_label, "재료 부족", "read model labels material shortage")
+	asserts.true_value(inventory.add_item("clay", 1).ok, "read model remaining clay add succeeds")
+	var locked: Dictionary = service.read_model(inventory, {}, {"selected_recipe_id": "regional_bowl"})
+	asserts.equal(locked.detail.reason, "locked", "read model distinguishes current-run locked recipe")
+	var missing_facility: Dictionary = service.read_model(inventory, {"unlocked_biome_ids": ["common_region"]}, {"selected_recipe_id": "humble_clay_bowl"})
+	asserts.equal(missing_facility.detail.facilities[0].item_id, "wooden_workbench", "read model exposes required facility item id")
+	asserts.false_value(missing_facility.detail.facilities[0].available, "read model marks missing facility")
+	var facility_available: Dictionary = service.read_model(inventory, {"facility_item_id": "wooden_workbench"}, {"selected_recipe_id": "humble_clay_bowl"})
+	asserts.true_value(facility_available.detail.facilities[0].available, "read model marks available facility")
 
 func _assert_crafting_rolls_back_when_result_grant_fails(asserts) -> void:
 	var service := _fixture_crafting_service()
@@ -201,8 +233,8 @@ func _item_rows() -> Array:
 
 func _recipe_rows() -> Array:
 	return [
-		{"id": "wooden_workbench", "name": "목재 작업대 제작", "status": "테스트", "facility": "손제작", "materials_note": "목재 6 + 돌 3"},
-		{"id": "humble_clay_bowl", "name": "소박한 흙사발 제작", "status": "테스트", "facility": "목재 작업대", "materials_note": "점토 3"},
-		{"id": "regional_bowl", "result_item_id": "humble_clay_bowl", "name": "지역 흙사발 제작", "status": "테스트", "facility": "손제작", "materials_note": "점토 3", "unlock_biome_id": "common_region"},
-		{"id": "crowded_bowl", "name": "꽉 찬 사발 제작", "status": "테스트", "facility": "손제작", "materials": [{"item_id": "clay", "quantity": 2}]}
+		{"id": "wooden_workbench", "name": "목재 작업대 제작", "status": "테스트", "category": "도구", "facility": "손제작", "materials_note": "목재 6 + 돌 3"},
+		{"id": "humble_clay_bowl", "name": "소박한 흙사발 제작", "status": "테스트", "category": "다구", "facility": "목재 작업대", "materials_note": "점토 3"},
+		{"id": "regional_bowl", "result_item_id": "humble_clay_bowl", "name": "지역 흙사발 제작", "status": "테스트", "category": "다구", "facility": "손제작", "materials_note": "점토 3", "unlock_biome_id": "common_region"},
+		{"id": "crowded_bowl", "name": "꽉 찬 사발 제작", "status": "테스트", "category": "다구", "facility": "손제작", "materials": [{"item_id": "clay", "quantity": 2}]}
 	]

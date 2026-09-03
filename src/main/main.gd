@@ -1106,7 +1106,8 @@ func _record_current_map_discovery() -> void:
 func _crafting_context() -> Dictionary:
 	return {
 		"available_facility_item_ids": _available_facility_item_ids(),
-		"unlocked_biome_ids": _unlocked_biome_ids()
+		"unlocked_biome_ids": _unlocked_biome_ids(),
+		"current_biome_id": String(generated_world.get("biome_id", ""))
 	}
 
 func _available_facility_item_ids() -> Array:
@@ -1123,10 +1124,12 @@ func _available_facility_item_ids() -> Array:
 	return ids
 
 func _unlocked_biome_ids() -> Array:
-	var ids := []
-	var biome_id := String(generated_world.get("biome_id", ""))
-	if not biome_id.is_empty():
-		ids.append(biome_id)
+	var ids: Array = []
+	if run_state != null:
+		for biome_id in run_state.crafting_unlocks:
+			var id := String(biome_id)
+			if not id.is_empty() and not ids.has(id):
+				ids.append(id)
 	return ids
 
 func _on_tea_drink_completed(result: Dictionary) -> void:

@@ -27,6 +27,7 @@ func run(asserts) -> void:
 	_assert_main_generates_current_biome(asserts, catalog, "wasteland")
 	_assert_main_generates_current_biome(asserts, catalog, "snowfield")
 	_assert_main_generates_current_biome(asserts, catalog, "rainforest")
+	_assert_main_crafting_context_uses_current_run_unlocks(asserts)
 	var runtime := _configured_runtime(catalog, RunState.new())
 	asserts.true_value(runtime.result.ok, "main configures acquisition against generated world data: %s" % runtime.result.get("error", ""))
 	if not runtime.result.ok:
@@ -200,6 +201,16 @@ func _assert_rainforest_runtime_sources(asserts, runtime: Main) -> void:
 		has_agarwood_source = true
 	asserts.true_value(has_agarwood_source, "rainforest runtime generates sourced agarwood resources")
 	asserts.true_value(has_incense_gatherable, "rainforest runtime registers confirmed 침향 rare resources")
+
+func _assert_main_crafting_context_uses_current_run_unlocks(asserts) -> void:
+	var runtime := Main.new()
+	runtime.run_state = RunState.new()
+	runtime.generated_world = {"biome_id": "common_region"}
+	asserts.equal(runtime._crafting_context().current_biome_id, "common_region", "crafting context carries current biome for display")
+	asserts.equal(runtime._crafting_context().unlocked_biome_ids, [], "current biome alone does not grant crafting unlock")
+	runtime.run_state.crafting_unlocks = ["common_region"]
+	asserts.equal(runtime._crafting_context().unlocked_biome_ids, ["common_region"], "crafting context uses current-run crafting unlocks")
+	runtime.free()
 
 func _configured_runtime(catalog, state: RunState, resource_position := Vector2i.ZERO) -> Dictionary:
 	var runtime := Main.new()
