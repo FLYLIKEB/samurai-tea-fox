@@ -3,19 +3,21 @@ class_name GameHud
 
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const MobileCommandAdapter = preload("res://src/core/commands/mobile_command_adapter.gd")
+const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
 
 const FONT_GALMURI := "res://assets/fonts/galmuri/Galmuri11.ttf"
-const ICON_HP := "res://assets/ui/icons/hp_heart_32.png"
-const ICON_KI := "res://assets/ui/icons/tea_cup_32.png"
-const ICON_KOKORO := "res://assets/ui/icons/tea_leaf_32.png"
-const ICON_MAP := "res://assets/ui/icons/map_pin_32.png"
-const ICON_BAG := "res://assets/ui/icons/atlas/bag.png"
-const ICON_ABILITY := "res://assets/ui/icons/atlas/talisman.png"
-const ICON_DODGE := "res://assets/ui/icons/atlas/dash_streaks.png"
-const ICON_ATTACK := "res://assets/ui/icons/atlas/attack_sword.png"
-const ICON_TEA := "res://assets/ui/icons/atlas/tea_action_cup.png"
-const ICON_CONSUMABLE := "res://assets/ui/icons/atlas/gourd.png"
-const BUTTON_DPAD := "res://assets/ui/controls/dpad.png"
+const ICON_HP := "ui_hp_heart_icon"
+const ICON_KI := "ui_tea_cup_icon"
+const ICON_KOKORO := "ui_tea_leaf_icon"
+const ICON_MAP := "ui_map_pin_icon"
+const ICON_BAG := "asset_assets_ui_icons_atlas_bag_png"
+const ICON_ABILITY := "asset_assets_ui_icons_atlas_talisman_png"
+const ICON_DODGE := "asset_assets_ui_icons_atlas_dash_streaks_png"
+const ICON_ATTACK := "asset_assets_ui_icons_atlas_attack_sword_png"
+const ICON_TEA := "asset_assets_ui_icons_atlas_tea_action_cup_png"
+const ICON_CONSUMABLE := "asset_assets_ui_icons_atlas_gourd_png"
+const ICON_MOON := "asset_assets_ui_icons_atlas_moon_png"
+const BUTTON_DPAD := "asset_assets_ui_controls_dpad_png"
 
 const BALANCE_ABILITY_SLOTS_ID := "ability_equip_slots"
 
@@ -33,6 +35,8 @@ var map_read_model_builder
 var world_data
 var run_state
 var tea_service
+var asset_catalog := AssetCatalog.new()
+var _asset_catalog_ready := false
 var tea_brewing_command_runtime
 var meta_codex_command_runtime
 var crafting_service
@@ -203,7 +207,7 @@ func _build() -> void:
 	map_rows.add_theme_constant_override("separation", 3)
 	map_panel.add_child(map_rows)
 	_labels.map_title = _add_icon_row(map_rows, ICON_MAP, "초록 평원")
-	_labels.time = _add_icon_row(map_rows, "res://assets/ui/icons/atlas/moon.png", "낮 0%")
+	_labels.time = _add_icon_row(map_rows, ICON_MOON, "낮 0%")
 	_labels.map_stats = _label("타일 0 · 사물 0", 11)
 	map_rows.add_child(_labels.map_stats)
 	_labels.minimap = _label("", 9)
@@ -1154,7 +1158,10 @@ func _dictionary_value(value) -> Dictionary:
 		return {}
 	return value.duplicate(true)
 
-func _load_texture(path: String) -> Texture2D:
+func _load_texture(reference: String) -> Texture2D:
+	var path := reference
+	if _ensure_asset_catalog():
+		path = asset_catalog.path_for_reference(reference)
 	if ResourceLoader.exists(path, "Texture2D"):
 		var loaded := ResourceLoader.load(path, "Texture2D") as Texture2D
 		if loaded != null:
@@ -1163,3 +1170,13 @@ func _load_texture(path: String) -> Texture2D:
 	if image.load(path) != OK:
 		return null
 	return ImageTexture.create_from_image(image)
+
+func _ensure_asset_catalog() -> bool:
+	if _asset_catalog_ready:
+		return true
+	var result: Dictionary = asset_catalog.load_manifest()
+	if result.ok:
+		_asset_catalog_ready = true
+		return true
+	push_warning("HUD asset manifest failed: %s" % result.get("error", "unknown error"))
+	return false

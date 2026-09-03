@@ -2,9 +2,9 @@ extends SceneTree
 
 const START_SCREEN_PATH := "res://scenes/ui/start_screen.tscn"
 const GAMEPLAY_SCENE_PATH := "res://src/main/main.tscn"
-const BACKGROUND_PATH := "res://assets/backgrounds/interiors/teahouse-interiors/clean_warm_teahouse_interior.png"
-const LOGO_PATH := "res://assets/ui/branding/muchau_title_plaque.png"
-const DIVIDER_PATH := "res://assets/ui/decorators/divider_under_brand.png"
+const BACKGROUND_ASSET_ID := "clean_warm_teahouse_interior"
+const LOGO_ASSET_ID := "muchau_title_plaque"
+const DIVIDER_ASSET_ID := "divider_under_brand"
 
 var failures: Array[String] = []
 
@@ -27,9 +27,9 @@ func run() -> void:
 		finish()
 		return
 
-	_assert_texture(start_screen, "Background", BACKGROUND_PATH, "promoted teahouse background")
-	_assert_texture(start_screen, "Content/Logo", LOGO_PATH, "Muchau title plaque")
-	_assert_texture(start_screen, "Content/Divider", DIVIDER_PATH, "brand divider")
+	_assert_texture(start_screen, "Background", BACKGROUND_ASSET_ID, "promoted teahouse background")
+	_assert_texture(start_screen, "Content/Logo", LOGO_ASSET_ID, "Muchau title plaque")
+	_assert_texture(start_screen, "Content/Divider", DIVIDER_ASSET_ID, "brand divider")
 
 	var start_button := start_screen.get_node_or_null("Content/StartButton") as Button
 	if start_button == null:
@@ -62,10 +62,17 @@ func run() -> void:
 
 	finish()
 
-func _assert_texture(scene: Node, node_path: String, expected_path: String, label: String) -> void:
+func _assert_texture(scene: Node, node_path: String, expected_asset_id: String, label: String) -> void:
 	var texture_rect := scene.get_node_or_null(node_path) as TextureRect
-	if texture_rect == null or texture_rect.texture == null or texture_rect.texture.resource_path != expected_path:
+	if texture_rect == null or texture_rect.texture == null:
 		failures.append("start screen reuses the %s" % label)
+		return
+	var expected_texture := current_scene._asset_catalog.load_texture(expected_asset_id) as Texture2D
+	if expected_texture == null:
+		failures.append("start screen manifest resolves the %s" % label)
+		return
+	if texture_rect.texture.get_width() != expected_texture.get_width() or texture_rect.texture.get_height() != expected_texture.get_height():
+		failures.append("start screen reuses the %s at manifest dimensions" % label)
 
 func finish() -> void:
 	if failures.is_empty():
