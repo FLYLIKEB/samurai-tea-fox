@@ -4,6 +4,7 @@ class_name GameHud
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const MobileCommandAdapter = preload("res://src/core/commands/mobile_command_adapter.gd")
 const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
+const WorldData = preload("res://src/world/data/world_data.gd")
 
 const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
 const ICON_HP := "ui_hp_heart_icon"
@@ -146,6 +147,7 @@ var crafting_service
 var crafting_context: Dictionary = {}
 var biome_progression_state
 var cheat_mode := false
+var biome_map_previews: Dictionary = {}
 var _selected_map_biome_id := ""
 var time_state
 var _labels: Dictionary = {}
@@ -202,6 +204,7 @@ func configure(player_node, generated_world: Dictionary, generated_render_result
 		crafting_context = runtime_context.get("crafting_context", {}).duplicate(true)
 		biome_progression_state = runtime_context.get("biome_progression_state", null)
 		cheat_mode = bool(runtime_context.get("cheat_mode", false))
+		biome_map_previews = runtime_context.get("biome_map_previews", {}).duplicate(true)
 		time_state = runtime_context.get("time_state", null)
 	_build()
 	_rebuild_action_buttons()
@@ -1688,13 +1691,16 @@ func _facility_rows() -> Array:
 
 func _map_rows() -> Array:
 	var rows: Array = []
-	var model := _map_read_model({"minimap_width": 48, "minimap_height": 28, "reveal_all": true})
+	var selected_id := _selected_map_biome_id if not _selected_map_biome_id.is_empty() else String(world.get("biome_id", ""))
+	var map_source = world_data
+	if selected_id != String(world.get("biome_id", "")) and biome_map_previews.has(selected_id):
+		map_source = WorldData.from_dictionary(biome_map_previews[selected_id].get("world_data", {}))
+	var model := _map_read_model({"minimap_width": 48, "minimap_height": 28, "reveal_all": true}, map_source)
 	if not bool(model.get("ok", false)):
 		rows.append(_label("지도 read model 없음", 11))
 		return rows
 	rows.append(_section_label("전체 지도 · 접근 가능한 지역을 선택하세요"))
 	rows.append(_biome_map_selector())
-	var selected_id := _selected_map_biome_id if not _selected_map_biome_id.is_empty() else String(world.get("biome_id", ""))
 	var selected := _biome_definition(selected_id)
 	rows.append(_label("현재 보기: %s%s" % [String(selected.get("name", selected_id)), " · 현재 위치" if selected_id == String(world.get("biome_id", "")) else ""], 12))
 	if selected_id != String(world.get("biome_id", "")) and not _is_biome_map_accessible(selected_id):
@@ -1863,10 +1869,11 @@ func _minimap_read_model() -> Dictionary:
 		"minimap": model.minimap
 	}
 
-func _map_read_model(options := {}) -> Dictionary:
+func _map_read_model(options := {}, source_world_data = null) -> Dictionary:
 	if map_read_model_builder == null or not map_read_model_builder.has_method("build"):
 		return {"ok": false, "reason": "missing_map_read_model_builder"}
-	return map_read_model_builder.build(world_data if world_data != null else world, run_state, _player_cell(), options)
+	var selected_source = source_world_data if source_world_data != null else (world_data if world_data != null else world)
+	return map_read_model_builder.build(selected_source, run_state, _player_cell(), options)
 
 func _combat_target_read_model() -> Dictionary:
 	var combatant = _object_property(combat_target, "combatant")
@@ -1905,6 +1912,8 @@ func _marker_label(marker_type: String) -> String:
 			return "플레이어"
 		"dungeon":
 			return "던전"
+		"ruin":
+			return "유적"
 		"teleport":
 			return "텔레포트"
 		_:
@@ -1943,7 +1952,9 @@ func _marker_glyph(marker_type: String) -> String:
 		"player":
 			return "@"
 		"dungeon":
-			return "D"
+			return "R"
+		"ruin":
+			return "U"
 		"teleport":
 			return "T"
 		_:

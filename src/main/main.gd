@@ -1,6 +1,7 @@
 extends Node2D
 
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
+const RuntimeConstants = preload("res://src/core/config/runtime_constants.gd")
 const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
 const CoreTeaWareCollection = preload("res://src/dungeon/core_tea_ware_collection.gd")
 const DesktopCommandAdapter = preload("res://src/core/commands/desktop_command_adapter.gd")
@@ -83,13 +84,13 @@ class FacilityPlacementPreview extends Node2D:
 		draw_rect(rect, fill, true)
 		draw_rect(rect, outline, false, 2.0)
 
-const DEFAULT_RUN_SEED := 11037
+static var DEFAULT_RUN_SEED := RuntimeConstants.int_value("world.default_seed")
 const FRESH_RUN_SEED := 0
-const POINTER_MOVE_STOP_DISTANCE_PIXELS := 4.0
-const FEEDBACK_BEEP_MIX_RATE := 22050.0
-const FEEDBACK_BEEP_SECONDS := 0.045
-const FEEDBACK_BEEP_FREQUENCY := 880.0
-const TIME_SECONDS_PER_TURN := 1.0
+static var POINTER_MOVE_STOP_DISTANCE_PIXELS := RuntimeConstants.float_value("input.pointer_stop_distance_pixels")
+static var FEEDBACK_BEEP_MIX_RATE := RuntimeConstants.float_value("audio.feedback_mix_rate")
+static var FEEDBACK_BEEP_SECONDS := RuntimeConstants.float_value("audio.feedback_beep_seconds")
+static var FEEDBACK_BEEP_FREQUENCY := RuntimeConstants.float_value("audio.feedback_beep_frequency")
+static var TIME_SECONDS_PER_TURN := RuntimeConstants.float_value("game.turn_seconds")
 const FIRST_RUN_PROLOGUE_EVENT_ID := "first_run_prologue"
 const START_MODE_META := "muchau_start_mode"
 const START_MODE_NEW := "new"
@@ -109,7 +110,7 @@ const DUNGEON_FLOOR_ATLAS_COORDS := [
 	Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)
 ]
 const START_SCREEN_SCENE_PATH := "res://scenes/ui/start_screen.tscn"
-const THE_END_DURATION_SECONDS := 1.8
+static var THE_END_DURATION_SECONDS := RuntimeConstants.float_value("narrative.the_end_duration_seconds")
 const LARGE_HOUSE_DUNGEON_OWNER_IDS := [
 	"large_fenced_house",
 	"large_house_fence_nw",
@@ -155,6 +156,7 @@ var save_store = SaveStore.new()
 var run_state: RunState
 var world_data
 var generated_world: Dictionary = {}
+var _biome_map_previews: Dictionary = {}
 var world_render_result: Dictionary = {}
 var _overworld_generated_world: Dictionary = {}
 var _overworld_world_data_snapshot: Dictionary = {}
@@ -289,6 +291,15 @@ func _configure_world_for_current_run() -> Dictionary:
 	generated_world = generator.generate(run_state.seed, catalog.data_version, current_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), {"progression_projection": projection})
 	if not generated_world.get("ok", false):
 		return {"ok": false, "reason": "world_generation_failed", "error": String(generated_world.get("failure_reason", "World generation failed."))}
+	_biome_map_previews.clear()
+	for biome_definition in catalog.get_definitions("biomes"):
+		var preview_id := String(biome_definition.get("id", ""))
+		if preview_id.is_empty() or preview_id == current_biome_id:
+			continue
+		var preview_seed := int(run_state.seed) ^ (preview_id.hash() & 0x7fffffff)
+		var preview := generator.generate(preview_seed, catalog.data_version, biome_definition, catalog.get_definitions("balance"), catalog.get_definitions("items"), {"progression_projection": projection})
+		if bool(preview.get("ok", false)):
+			_biome_map_previews[preview_id] = preview
 	var acquisition_result := _configure_acquisition_for_generated_world()
 	if not acquisition_result.ok:
 		return acquisition_result
@@ -3297,6 +3308,7 @@ func _configure_runtime_camera() -> void:
 	var camera := player.get_node_or_null("Camera2D") as Camera2D
 	if camera == null:
 		return
+	camera.zoom = Vector2.ONE * RuntimeConstants.float_value("camera.zoom")
 	var origin := _runtime_world_origin()
 	var tile_size := _runtime_tile_size()
 	camera.limit_left = int(floor(origin.x))
@@ -3363,7 +3375,8 @@ func _configure_game_hud() -> void:
 		"biome_progression_state": biome_progression_state,
 		"cheat_mode": _start_mode == START_MODE_CHEAT,
 		"time_state": time_state,
-		"world_origin": _runtime_world_origin()
+		"world_origin": _runtime_world_origin(),
+		"biome_map_previews": _biome_map_previews
 	})
 	_maybe_show_first_run_prologue()
 
