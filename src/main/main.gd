@@ -12,6 +12,7 @@ const InventoryModel = preload("res://src/inventory/inventory_model.gd")
 const MapReadModelBuilder = preload("res://src/world/map/map_read_model_builder.gd")
 const MovementCommandSelector = preload("res://src/core/commands/movement_command_selector.gd")
 const MemoryTeaCutsceneRuntime = preload("res://src/narrative/memory_tea_cutscene_runtime.gd")
+const NarrativeRuntime = preload("res://src/narrative/narrative_runtime.gd")
 const EndingRouteRuntime = preload("res://src/meta/ending_route_runtime.gd")
 const PlayerMovementState = preload("res://src/player/player_movement_state.gd")
 const TeaBrewingCommandRuntime = preload("res://src/tea/tea_brewing_command_runtime.gd")
@@ -41,6 +42,7 @@ const POINTER_MOVE_STOP_DISTANCE_PIXELS := 4.0
 const FEEDBACK_BEEP_MIX_RATE := 22050.0
 const FEEDBACK_BEEP_SECONDS := 0.045
 const FEEDBACK_BEEP_FREQUENCY := 880.0
+const FIRST_RUN_PROLOGUE_EVENT_ID := "first_run_prologue"
 
 @onready var player = $Player
 @onready var combat_dummy = $CombatDummy
@@ -64,6 +66,7 @@ var sen_rikyu_phase_one_runtime
 var sen_rikyu_phase_two_runtime
 var sen_rikyu_phase_three_runtime
 var memory_tea_cutscene_runtime
+var narrative_runtime
 var ending_route_runtime
 var acquisition_service
 var dungeon_runtime
@@ -82,6 +85,8 @@ var _feedback_player: AudioStreamPlayer
 var _feedback_playback: AudioStreamGeneratorPlayback
 var feedback_beep_count := 0
 var _enemy_turn_queued := false
+var _active_narrative_event_id := ""
+var _active_narrative_node_id := ""
 
 func _ready() -> void:
 	_configure_audio_feedback()
@@ -111,6 +116,8 @@ func _ready() -> void:
 	var world_result := _configure_world_for_current_run()
 	if not world_result.ok:
 		push_error(world_result.error)
+	else:
+		_maybe_show_first_run_prologue()
 
 func _configure_combat_lifecycle() -> Dictionary:
 	var player_combat_result: Dictionary = player.configure_combat(catalog)
@@ -322,6 +329,11 @@ func submit_action_command(command) -> bool:
 	if not command is GameCommand:
 		return false
 	match command.type:
+		GameCommand.Type.NARRATIVE_SELECT_OPTION:
+			var narrative_accepted := _handle_narrative_option_command(command)
+			if narrative_accepted:
+				_play_feedback_beep()
+			return narrative_accepted
 		GameCommand.Type.INTERACT:
 			var target_id := String(command.payload.get("target_id", ""))
 			if target_id.is_empty():
@@ -669,6 +681,10 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 		var memory_load_result: Dictionary = memory_tea_cutscene_runtime.load_snapshot(run_state.memory_tea_cutscene)
 		if not memory_load_result.ok:
 			return memory_load_result
+	narrative_runtime = NarrativeRuntime.new()
+	var narrative_result: Dictionary = narrative_runtime.from_catalog(loaded_catalog)
+	if not narrative_result.ok:
+		return narrative_result
 	return {"ok": true}
 
 func final_room_gate_query() -> Dictionary:
@@ -1650,6 +1666,68 @@ func _configure_game_hud() -> void:
 		"time_state": time_state,
 		"world_origin": _runtime_world_origin()
 	})
+	_maybe_show_first_run_prologue()
+
+func first_run_prologue_read_model(meta_state = null) -> Dictionary:
+	if narrative_runtime == null:
+		return {"ok": false, "reason": "missing_narrative_runtime", "error": "Narrative runtime is not configured."}
+	if run_state == null:
+		run_state = RunState.new()
+	var meta = meta_state if meta_state != null else _current_meta_state_snapshot()
+	if int(meta.get("run_count", 0)) != 0:
+		return {"ok": false, "reason": "not_first_run", "error": "First-run prologue only opens before any completed run."}
+	return narrative_runtime.read_model_for_event(FIRST_RUN_PROLOGUE_EVENT_ID, run_state, meta)
+
+func _maybe_show_first_run_prologue() -> Dictionary:
+	if game_hud == null or narrative_runtime == null:
+		return {"ok": false, "reason": "missing_presentation", "error": "Prologue presentation is not ready."}
+	var model_result := first_run_prologue_read_model()
+	if not model_result.ok:
+		if game_hud.has_method("hide_narrative_dialogue"):
+			game_hud.hide_narrative_dialogue()
+		return model_result
+	_active_narrative_event_id = String(model_result.read_model.event_id)
+	_active_narrative_node_id = String(model_result.read_model.node_id)
+	game_hud.show_narrative_dialogue(model_result.read_model)
+	return {"ok": true, "read_model": model_result.read_model}
+
+func _handle_narrative_option_command(command: GameCommand) -> bool:
+	if narrative_runtime == null or run_state == null:
+		return false
+	var event_id := String(command.payload.get("event_id", _active_narrative_event_id))
+	var node_id := String(command.payload.get("node_id", _active_narrative_node_id))
+	var option_id := String(command.payload.get("option_id", ""))
+	if event_id.is_empty() or node_id.is_empty() or option_id.is_empty():
+		return false
+	var result: Dictionary = narrative_runtime.select_option(event_id, node_id, option_id, run_state, _current_meta_state_snapshot())
+	if not result.ok:
+		return false
+	_apply_narrative_result_commands(result.get("commands", []))
+	if bool(result.get("complete", false)):
+		_active_narrative_event_id = ""
+		_active_narrative_node_id = ""
+		if game_hud != null and game_hud.has_method("hide_narrative_dialogue"):
+			game_hud.hide_narrative_dialogue()
+	else:
+		var read_model: Dictionary = result.get("read_model", {})
+		_active_narrative_event_id = String(read_model.get("event_id", event_id))
+		_active_narrative_node_id = String(read_model.get("node_id", ""))
+		if game_hud != null and game_hud.has_method("show_narrative_dialogue"):
+			game_hud.show_narrative_dialogue(read_model)
+	save_current_run()
+	return true
+
+func _apply_narrative_result_commands(commands: Array) -> void:
+	if run_state == null:
+		run_state = RunState.new()
+	for command in commands:
+		if not command is GameCommand or command.type != GameCommand.Type.NARRATIVE_RESULT:
+			continue
+		var result: Dictionary = command.payload.get("result", {})
+		if String(result.get("type", "")) == NarrativeRuntime.RESULT_SET_RUN_FLAG:
+			var flag_id := String(result.get("id", ""))
+			if not flag_id.is_empty() and not run_state.narrative_flags.has(flag_id):
+				run_state.narrative_flags.append(flag_id)
 
 func _configure_audio_feedback() -> void:
 	if _feedback_player != null:

@@ -1,5 +1,5 @@
 {
-  "content_hash": "89a98aa39c74c70556873c030ec6d8a8ace86fbe0f7aed0ae0241260ee9db894",
+  "content_hash": "433144ba4c7d9425c22dd38a9222f4515fdf2b1dd7cb5026b2f882548ad26e6f",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -441,6 +441,65 @@
       ],
       "replay_policy": "once",
       "start_node_id": "start",
+      "status": "확정"
+    },
+    {
+      "id": "first_run_prologue",
+      "name": "첫 실행 프롤로그 — 백국의 작별과 홍국의 첫 잔",
+      "nodes": [
+        {
+          "id": "father_farewell",
+          "options": [
+            {
+              "completes_event": false,
+              "conditions": [],
+              "display_text": "고개를 끄덕인다",
+              "id": "accept_farewell",
+              "next_node_id": "muchau_question",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-1",
+          "text": "물이 끓기 전에 서두르지 마라. 길도 차도, 네가 닿을 때 비로소 한 번의 자리가 된단다."
+        },
+        {
+          "id": "muchau_question",
+          "options": [
+            {
+              "completes_event": false,
+              "conditions": [],
+              "display_text": "홍국으로 향한다",
+              "id": "cross_sea",
+              "next_node_id": "border_cup",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "차를 마시는 것이 어떻게 하나의 도가 될 수 있을까?"
+        },
+        {
+          "id": "border_cup",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "첫 길을 걷는다",
+              "id": "begin_road",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "first_run_prologue_completed",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "차를 알고 싶다면 사람을 만나거라."
+        }
+      ],
+      "replay_policy": "once",
+      "start_node_id": "father_farewell",
       "status": "확정"
     },
     {

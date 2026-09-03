@@ -36,6 +36,36 @@ func run(asserts) -> void:
 	var main: Main = runtime.main
 	asserts.equal(main.generated_world.biome_id, "common_region", "vertical slice starts in the common biome")
 	asserts.true_value(main.world_render_result.ok, "common biome world renders for playable runtime")
+	asserts.true_value(main.game_hud.narrative_dialogue_visible(), "first launch shows the first-run prologue dialogue")
+	var prologue_model: Dictionary = main.first_run_prologue_read_model({"run_count": 0, "dialogue_memory_flags": [], "unlocked_meta_flags": []})
+	asserts.true_value(prologue_model.ok, "first-run prologue has a read model before completion")
+	if prologue_model.ok:
+		asserts.equal(prologue_model.read_model.speaker_id, "CHR-1", "first-run prologue starts as father dialogue")
+	asserts.true_value(main.submit_action_command(GameCommand.new(GameCommand.Type.NARRATIVE_SELECT_OPTION, Vector2i.ZERO, -1, {
+		"event_id": "first_run_prologue",
+		"node_id": "father_farewell",
+		"option_id": "accept_farewell"
+	})), "first-run prologue advances from father farewell")
+	asserts.true_value(main.game_hud.narrative_dialogue_visible(), "first-run prologue remains visible after the first advance")
+	asserts.true_value(main.submit_action_command(GameCommand.new(GameCommand.Type.NARRATIVE_SELECT_OPTION, Vector2i.ZERO, -1, {
+		"event_id": "first_run_prologue",
+		"node_id": "muchau_question",
+		"option_id": "cross_sea"
+	})), "first-run prologue advances through Muchau's question")
+	asserts.true_value(main.submit_action_command(GameCommand.new(GameCommand.Type.NARRATIVE_SELECT_OPTION, Vector2i.ZERO, -1, {
+		"event_id": "first_run_prologue",
+		"node_id": "border_cup",
+		"option_id": "begin_road"
+	})), "first-run prologue completes at the Hongguk border cup")
+	asserts.false_value(main.game_hud.narrative_dialogue_visible(), "first-run prologue closes after completion")
+	asserts.equal(int(main.run_state.narrative_event_counts.get("first_run_prologue", 0)), 1, "first-run prologue completion is recorded in run state")
+	asserts.true_value(main.run_state.narrative_flags.has("first_run_prologue_completed"), "first-run prologue applies its completion run flag")
+	asserts.false_value(main.first_run_prologue_read_model({"run_count": 0, "dialogue_memory_flags": [], "unlocked_meta_flags": []}).ok, "completed first-run prologue cannot reopen in the same run")
+	var repeat_runtime := _configured_runtime(catalog, RunState.new(), {"run_count": 1})
+	asserts.true_value(repeat_runtime.result.ok, "repeat-run fixture configures")
+	if repeat_runtime.result.ok:
+		asserts.false_value(repeat_runtime.main.game_hud.narrative_dialogue_visible(), "repeat-run meta state does not auto-open the first-run prologue")
+		asserts.equal(repeat_runtime.main.first_run_prologue_read_model({"run_count": 1}).reason, "not_first_run", "repeat-run meta state rejects first-run prologue")
 	asserts.equal(main.player.ability_runtime.equipped_ability_id(0), "ember", "first-tail playable ability is equipped by default")
 	main.player.global_position = main.world_position_for_cell_center(Vector2i(1, 1))
 	main.combat_dummy.global_position = main.world_position_for_cell_center(Vector2i(3, 1))
@@ -132,9 +162,14 @@ func run(asserts) -> void:
 	restored.dummy.free()
 	restored.world_root.free()
 	restored.hud.free()
+	repeat_runtime.main.free()
+	repeat_runtime.player.free()
+	repeat_runtime.dummy.free()
+	repeat_runtime.world_root.free()
+	repeat_runtime.hud.free()
 	_cleanup()
 
-func _configured_runtime(catalog: DataCatalog, state) -> Dictionary:
+func _configured_runtime(catalog: DataCatalog, state, meta_snapshot := {}) -> Dictionary:
 	var main := Main.new()
 	var player := PlayerController.new()
 	var dummy := CombatDummy.new()
@@ -147,6 +182,8 @@ func _configured_runtime(catalog: DataCatalog, state) -> Dictionary:
 	main.world_visuals = world_root
 	main.game_hud = hud
 	main.save_store = SaveStore.new(RUN_PATH, META_PATH)
+	if not meta_snapshot.is_empty():
+		main.save_store.save_meta(meta_snapshot)
 	main.run_state = state
 	var loaded_run: Dictionary = main.load_or_create_run_state()
 	if not loaded_run.ok:
