@@ -1621,6 +1621,9 @@ func _dungeon_cell_is_blocked(cell: Vector2i) -> bool:
 func _is_dungeon_resource_target(target_id: String) -> bool:
 	return target_id.begins_with("dungeon_iron_ore_") or target_id.begins_with("dungeon_stone_")
 
+func _is_mining_target(target_id: String) -> bool:
+	return _is_dungeon_resource_target(target_id) or target_id.begins_with("terrain_mountain_mineral_")
+
 func _dungeon_runtime_is_active() -> bool:
 	return dungeon_runtime != null and String(dungeon_runtime.to_projection().get("lifecycle_state", DungeonInstanceState.STATE_OUTSIDE)) == DungeonInstanceState.STATE_ACTIVE
 
@@ -1886,6 +1889,7 @@ func _configure_acquisition_for_generated_world() -> Dictionary:
 	acquisition_service = AcquisitionService.new()
 	var definitions := _confirmed_generated_resource_definitions(generated_world.get("resource_nodes", []))
 	definitions.append_array(_terrain_tree_gatherable_definitions())
+	definitions.append_array(_mountain_mineral_gatherable_definitions())
 	var configured: Dictionary = acquisition_service.configure(inventory, world_data, definitions, _generated_drop_definitions())
 	if not configured.ok:
 		return configured
@@ -1906,6 +1910,9 @@ func _configure_acquisition_for_generated_world() -> Dictionary:
 	var terrain_tree_result := _register_terrain_tree_gatherables(definition_ids)
 	if not terrain_tree_result.ok:
 		return terrain_tree_result
+	var mountain_mineral_result := _register_mountain_mineral_gatherables(definition_ids)
+	if not mountain_mineral_result.ok:
+		return mountain_mineral_result
 	if not saved_acquisitions.is_empty():
 		var loaded: Dictionary = acquisition_service.load_snapshot(saved_acquisitions)
 		if not loaded.ok:
@@ -1982,6 +1989,43 @@ func _register_terrain_tree_gatherables(definition_ids: Dictionary) -> Dictionar
 func _terrain_tree_gatherable_id(position: Vector2i) -> String:
 	return "%s_%d_%d" % [TREE_HARVEST_DEFINITION_PREFIX, position.x, position.y]
 
+func _mountain_mineral_gatherable_definitions() -> Array:
+	var definitions: Array = []
+	if world_data == null:
+		return definitions
+	for cell in world_data.to_dictionary().get("cells", []):
+		var terrain: Dictionary = cell.get("layers", {}).get(WorldData.LAYER_TERRAIN, {})
+		if String(terrain.get("id", "")) != WorldGenerator.TERRAIN_MOUNTAIN_ROCK:
+			continue
+		var position := _vector_from_dictionary(cell.get("position", {}))
+		var node_id := "terrain_mountain_mineral_%d_%d" % [position.x, position.y]
+		var item_id := "iron_ore" if absi(position.x * 31 + position.y * 17) % 3 == 0 else "stone"
+		definitions.append({
+			"id": node_id,
+			"item_id": item_id,
+			"quantity": 1,
+			"policy": AcquisitionService.POLICY_DIRECT,
+			"required_tool_item_id": "stone_axe",
+			"depleted_terrain": {"id": WorldGenerator.TERRAIN_MOUNTAIN_SLOPE, "render_id": WorldGenerator.RENDER_MOUNTAIN_SLOPE, "walkable": true}
+		})
+	return definitions
+
+func _register_mountain_mineral_gatherables(definition_ids: Dictionary) -> Dictionary:
+	if world_data == null or acquisition_service == null:
+		return {"ok": true}
+	for definition_id in definition_ids:
+		var id := String(definition_id)
+		if not id.begins_with("terrain_mountain_mineral_") or not acquisition_service.gatherable_for(id).is_empty():
+			continue
+		var parts := id.trim_prefix("terrain_mountain_mineral_").split("_")
+		if parts.size() != 2:
+			continue
+		var position := Vector2i(int(parts[0]), int(parts[1]))
+		var registered := acquisition_service.register_gatherable(id, id, position)
+		if not registered.ok:
+			return registered
+	return {"ok": true}
+
 func _tree_harvest_profile_for_cell(cell: Dictionary) -> Dictionary:
 	var layers: Dictionary = cell.get("layers", {})
 	var terrain: Dictionary = layers.get(WorldData.LAYER_TERRAIN, {})
@@ -2042,8 +2086,8 @@ func _on_acquisition_completed(result: Dictionary) -> void:
 	var item_id := String(result.get("item_id", ""))
 	if item_id.is_empty():
 		return
-	var source_id := String(result.get("source_id", result.get("id", result.get("target_id", ""))))
-	if _in_dungeon_map and _is_dungeon_resource_target(source_id) and world_data != null:
+	var source_id := String(result.get("source_id", result.get("node_id", result.get("id", result.get("target_id", "")))))
+	if _is_mining_target(source_id) and world_data != null:
 		# Direct dungeon gathering grants the item immediately, so clear the
 		# reservation as soon as the node is depleted to keep the tile walkable.
 		world_data.release_footprint(source_id)
