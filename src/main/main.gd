@@ -28,6 +28,7 @@ const SenRikyuPhaseThreeRuntime = preload("res://src/dungeon/sen_rikyu_phase_thr
 const AcquisitionService = preload("res://src/world/interactions/acquisition_service.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
+const WorldRendererProjection = preload("res://src/world/rendering/world_renderer_projection.gd")
 const WorldSceneRenderer = preload("res://src/world/rendering/world_scene_renderer.gd")
 const RunLifecycleService = preload("res://src/save/run_lifecycle_service.gd")
 const SaveStore = preload("res://src/save/save_store.gd")
@@ -80,6 +81,7 @@ var _pointer_move_target_world := Vector2.ZERO
 var _feedback_player: AudioStreamPlayer
 var _feedback_playback: AudioStreamGeneratorPlayback
 var feedback_beep_count := 0
+var _enemy_turn_queued := false
 
 func _ready() -> void:
 	_configure_audio_feedback()
@@ -129,6 +131,10 @@ func _configure_combat_lifecycle() -> Dictionary:
 		var ability_result := _equip_default_playable_ability()
 		if not ability_result.ok:
 			return ability_result
+	if combat_dummy.has_signal("defeat_event") and not combat_dummy.is_connected("defeat_event", Callable(self, "_on_combat_dummy_defeated")):
+		combat_dummy.connect("defeat_event", Callable(self, "_on_combat_dummy_defeated"))
+	if player.has_signal("grid_step_finished") and not player.is_connected("grid_step_finished", Callable(self, "_on_player_grid_step_finished")):
+		player.connect("grid_step_finished", Callable(self, "_on_player_grid_step_finished"))
 	return {"ok": true}
 
 func _connect_player_feedback_signals() -> void:
@@ -138,6 +144,9 @@ func _connect_player_feedback_signals() -> void:
 
 func _on_player_activity_feedback(_a = null, _b = null, _c = null) -> void:
 	_play_feedback_beep()
+
+func _on_player_grid_step_finished(_cell: Vector2i) -> void:
+	_queue_enemy_turn_after_player_action()
 
 func _configure_world_for_current_run() -> Dictionary:
 	var generator := WorldGenerator.new()
@@ -325,11 +334,13 @@ func submit_action_command(command) -> bool:
 			var accepted: bool = acquisition_service != null and bool(acquisition_service.handle_command(command).ok)
 			if accepted:
 				_play_feedback_beep()
+				_queue_enemy_turn_after_player_action()
 			return accepted
 		GameCommand.Type.DRINK_TEA:
 			var accepted: bool = _handle_tea_command(command)
 			if accepted:
 				_play_feedback_beep()
+				_queue_enemy_turn_after_player_action()
 			return accepted
 		GameCommand.Type.USE_CONSUMABLE:
 			var accepted: bool = _handle_consumable_command(command)
@@ -400,6 +411,7 @@ func submit_action_command(command) -> bool:
 			var accepted: bool = _handle_craft_recipe_command(command)
 			if accepted:
 				_play_feedback_beep()
+				_queue_enemy_turn_after_player_action()
 			return accepted
 		GameCommand.Type.INVENTORY_SET_FILTER, GameCommand.Type.INVENTORY_SORT, GameCommand.Type.INVENTORY_SELECT_SLOT, GameCommand.Type.INVENTORY_NAVIGATE, GameCommand.Type.EQUIP_INVENTORY_SLOT, GameCommand.Type.UNEQUIP_SLOT, GameCommand.Type.USE_INVENTORY_SLOT:
 			var accepted: bool = _handle_inventory_command(command)
@@ -411,8 +423,12 @@ func submit_action_command(command) -> bool:
 				var accepted: bool = _handle_sen_rikyu_phase_two_action(command)
 				if accepted:
 					_play_feedback_beep()
+					_queue_enemy_turn_after_player_action()
 				return accepted
-			return player != null and player.submit_command(command)
+			var accepted: bool = player != null and player.submit_command(command)
+			if accepted and _is_turn_advancing_player_action(command):
+				_queue_enemy_turn_after_player_action()
+			return accepted
 
 func movement_command_for_current_inputs(desktop_command) -> GameCommand:
 	if desktop_command is GameCommand and desktop_command.type == GameCommand.Type.MOVE and desktop_command.direction != Vector2i.ZERO:
@@ -964,19 +980,58 @@ func _connect_acquisition_combat_source(source) -> Dictionary:
 func _on_acquisition_changed(snapshot: Dictionary) -> void:
 	if run_state != null:
 		run_state.acquisitions = snapshot.duplicate(true)
+	_sync_runtime_world_render()
 
 func _on_combat_drop_requested(event: Dictionary) -> void:
 	if acquisition_service == null:
 		return
 	var normalized := event.duplicate(true)
 	if not normalized.has("position") and combat_dummy != null:
+		var drop_cell := world_cell_from_world_position(combat_dummy.global_position)
 		normalized.position = {
-			"x": int(round(combat_dummy.global_position.x / 32.0)),
-			"y": int(round(combat_dummy.global_position.y / 32.0))
+			"x": drop_cell.x,
+			"y": drop_cell.y
 		}
 	var result: Dictionary = acquisition_service.process_drop_request(normalized)
 	if not result.ok:
 		push_error(result.error)
+
+func _on_combat_dummy_defeated(_event: Dictionary) -> void:
+	if combat_dummy == null:
+		return
+	combat_dummy.visible = false
+	combat_dummy.automatic_attacks = false
+	combat_dummy.collision_layer = 0
+	combat_dummy.collision_mask = 0
+
+func _queue_enemy_turn_after_player_action() -> void:
+	if _enemy_turn_queued:
+		return
+	_enemy_turn_queued = true
+	call_deferred("_run_enemy_turn_after_player_action")
+
+func _run_enemy_turn_after_player_action() -> void:
+	if player != null and player.has_method("is_grid_step_active") and player.is_grid_step_active():
+		call_deferred("_run_enemy_turn_after_player_action")
+		return
+	_enemy_turn_queued = false
+	if combat_dummy == null or player == null or not combat_dummy.visible:
+		return
+	if combat_dummy.has_method("take_turn"):
+		combat_dummy.take_turn(player)
+
+func _is_turn_advancing_player_action(command) -> bool:
+	if not command is GameCommand:
+		return false
+	return [
+		GameCommand.Type.ATTACK,
+		GameCommand.Type.DODGE,
+		GameCommand.Type.CAST_ABILITY,
+		GameCommand.Type.USE_CONSUMABLE,
+		GameCommand.Type.COMPLETE_DUNGEON,
+		GameCommand.Type.REPAIR_TELEPORT,
+		GameCommand.Type.ADVANCE_BIOME
+	].has(command.type)
 
 func _on_player_hp_depleted() -> Dictionary:
 	if run_lifecycle_service == null:
@@ -1520,7 +1575,55 @@ func _render_generated_world(world: Dictionary) -> void:
 	if not world_render_result.ok:
 		push_error(world_render_result.error)
 	if player != null and player.has_method("configure_grid_navigation"):
+		player.global_position = world_position_for_cell_center(_entry_spawn_cell(world))
 		player.configure_grid_navigation(world_data, _runtime_world_origin(), _runtime_tile_size())
+	_configure_runtime_camera()
+	if combat_dummy != null and combat_dummy.has_method("configure_grid_navigation"):
+		combat_dummy.configure_grid_navigation(world_data, _runtime_world_origin(), _runtime_tile_size())
+
+func _sync_runtime_world_render() -> void:
+	if world_visuals == null or world_data == null or world_render_result.is_empty():
+		return
+	var world_snapshot: Dictionary = world_data.to_dictionary()
+	var renderer_input: Dictionary = WorldRendererProjection.new().project(world_snapshot)
+	var previous_renderer_input: Dictionary = generated_world.get("renderer_input", {})
+	if previous_renderer_input.has("required_landmarks"):
+		renderer_input["required_landmarks"] = previous_renderer_input.required_landmarks.duplicate(true)
+	generated_world["world_data"] = world_snapshot
+	generated_world["renderer_input"] = renderer_input
+	var origin := _centered_world_origin(renderer_input)
+	world_render_result = WorldSceneRenderer.new().render(
+		world_visuals,
+		renderer_input,
+		_owner_sprite_sources(generated_world),
+		origin
+	)
+	if not world_render_result.ok:
+		push_error(world_render_result.error)
+	_configure_runtime_camera()
+	if combat_dummy != null and combat_dummy.has_method("configure_grid_navigation"):
+		combat_dummy.configure_grid_navigation(world_data, _runtime_world_origin(), _runtime_tile_size())
+
+func _configure_runtime_camera() -> void:
+	if player == null or world_data == null:
+		return
+	var camera := player.get_node_or_null("Camera2D") as Camera2D
+	if camera == null:
+		return
+	var origin := _runtime_world_origin()
+	var tile_size := _runtime_tile_size()
+	camera.limit_left = int(floor(origin.x))
+	camera.limit_top = int(floor(origin.y))
+	camera.limit_right = int(ceil(origin.x + float(world_data.width) * tile_size))
+	camera.limit_bottom = int(ceil(origin.y + float(world_data.height) * tile_size))
+	camera.enabled = true
+
+func _entry_spawn_cell(world: Dictionary) -> Vector2i:
+	for landmark in world.get("required_landmarks", []):
+		if String(landmark.get("kind", landmark.get("type", ""))) != WorldData.LANDMARK_ENTRY:
+			continue
+		return _vector_from_dictionary(landmark.get("position", {}))
+	return Vector2i.ZERO
 
 func _on_hud_mobile_command_issued(command) -> void:
 	submit_mobile_action_command(command)
@@ -1544,7 +1647,8 @@ func _configure_game_hud() -> void:
 		"meta_codex_command_runtime": meta_codex_command_runtime,
 		"crafting_service": crafting_service,
 		"crafting_context": _tea_brewing_context(),
-		"time_state": time_state
+		"time_state": time_state,
+		"world_origin": _runtime_world_origin()
 	})
 
 func _configure_audio_feedback() -> void:
@@ -1607,3 +1711,8 @@ func _hide_prototype_visuals() -> void:
 	for child in get_children():
 		if child is Polygon2D:
 			child.visible = false
+		if child is StaticBody2D:
+			child.collision_layer = 0
+			child.collision_mask = 0
+			for descendant in child.find_children("*", "CollisionShape2D", true, false):
+				(descendant as CollisionShape2D).disabled = true

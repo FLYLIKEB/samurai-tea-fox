@@ -1,11 +1,13 @@
 extends RefCounted
 
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
+const CombatDummy = preload("res://src/combat/combat_dummy.gd")
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const Main = preload("res://src/main/main.gd")
 const RunState = preload("res://src/save/run_state.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
+const WorldRendererProjection = preload("res://src/world/rendering/world_renderer_projection.gd")
 
 class DropSource:
 	extends Node
@@ -39,6 +41,29 @@ func run(asserts) -> void:
 	asserts.true_value(runtime.main.submit_mobile_action_command(command), "main routes target INTERACT into acquisition")
 	asserts.equal(runtime.main.inventory.get_total_quantity("wood"), 1, "live interaction grants the confirmed resource")
 	asserts.true_value(runtime.main.run_state.acquisitions.gatherables[0].depleted, "live acquisition changes persist into RunState")
+
+	var render_runtime := _configured_runtime(catalog, RunState.new())
+	asserts.true_value(render_runtime.result.ok, "visual acquisition fixture configures")
+	render_runtime.main.world_visuals = Node2D.new()
+	render_runtime.main._render_generated_world(render_runtime.main.generated_world)
+	var entities_before := render_runtime.main.world_visuals.get_node_or_null("Entities") as Node2D
+	asserts.true_value(entities_before != null and entities_before.get_child_count() == 1, "generated resource renders before pickup")
+	asserts.true_value(render_runtime.main.submit_mobile_action_command(command), "visual acquisition interaction is accepted")
+	var entities_after := render_runtime.main.world_visuals.get_node_or_null("Entities") as Node2D
+	asserts.true_value(entities_after != null and entities_after.get_child_count() == 0, "depleted resource sprite is removed after acquisition")
+
+	var dummy_runtime := Main.new()
+	var dummy := CombatDummy.new()
+	dummy_runtime.combat_dummy = dummy
+	dummy.collision_layer = 2
+	dummy.collision_mask = 1
+	dummy.visible = true
+	dummy.automatic_attacks = true
+	dummy_runtime._on_combat_dummy_defeated({"type": "monster_defeated"})
+	asserts.false_value(dummy.visible, "defeated combat dummy is hidden from the playfield")
+	asserts.equal(dummy.collision_layer, 0, "defeated combat dummy stops occupying collision")
+	asserts.equal(dummy.collision_mask, 0, "defeated combat dummy stops querying collision")
+	asserts.false_value(dummy.automatic_attacks, "defeated combat dummy stops attacking")
 
 	var desktop_runtime := _configured_runtime(catalog, RunState.new(), Vector2i.RIGHT)
 	asserts.true_value(desktop_runtime.result.ok, "desktop interaction fixture configures")
@@ -118,6 +143,10 @@ func run(asserts) -> void:
 	asserts.equal(restored_probe.reasons, ["drop_already_processed"], "round-tripped duplicate request remains rejected")
 	asserts.equal(probe.reasons, ["drop_already_processed"], "duplicate drop failure is observable without mutating inventory")
 	source.free()
+	render_runtime.main.world_visuals.free()
+	render_runtime.main.free()
+	dummy.free()
+	dummy_runtime.free()
 	runtime.main.free()
 	desktop_runtime.main.free()
 	mobile_button_runtime.main.free()
@@ -190,27 +219,34 @@ func _assert_snowfield_runtime_sources(asserts, runtime: Main) -> void:
 		if String(node.get("resource_id", "")) != "wood":
 			continue
 		var owner_id := String(node.get("id", ""))
-		asserts.equal(String(node.get("source_id", "")), "asset_assets_tiles_terrain_snow_snowy_pine_tree_01_32x32_png", "snowfield conifer wood carries manifest asset id")
-		asserts.equal(String(owner_sources.get(owner_id, "")), "asset_assets_tiles_terrain_snow_snowy_pine_tree_01_32x32_png", "main maps snowfield wood owner to its manifest asset id")
+		asserts.equal(String(node.get("source_id", "")), "terrain_tree_pine_32x32", "snowfield conifer wood carries terrain tree asset id")
+		asserts.equal(String(owner_sources.get(owner_id, "")), "terrain_tree_pine_32x32", "main maps snowfield wood owner to its terrain tree asset id")
 		has_conifer_source = true
 	asserts.true_value(has_conifer_source, "snowfield runtime generates sourced conifer wood resources")
 
 func _assert_rainforest_runtime_sources(asserts, runtime: Main) -> void:
 	var owner_sources: Dictionary = runtime._owner_sprite_sources(runtime.generated_world)
+	var renderer_source_ids := {}
+	for layer in runtime.generated_world.get("renderer_input", {}).get("layers", []):
+		for cell in layer.get("cells", []):
+			renderer_source_ids[String(cell.get("source_id", ""))] = true
+	asserts.false_value(renderer_source_ids.has("asset_assets_sprites_objects_natural_props_bamboo_reeds_32x32_png"), "rainforest renderer no longer uses bamboo for visible map terrain")
+	asserts.false_value(renderer_source_ids.has("asset_assets_sprites_objects_natural_props_broadleaf_tree_small_32x32_png"), "rainforest renderer no longer uses object-folder broadleaf trees for terrain")
+	asserts.true_value(renderer_source_ids.has("terrain_tree_broadleaf_32x32"), "rainforest renderer uses terrain-folder broadleaf tree terrain")
 	var has_agarwood_source := false
 	var has_incense_gatherable := false
 	for node in runtime.generated_world.get("resource_nodes", []):
 		if String(node.get("resource_id", "")) == "item_5":
 			var incense_owner_id := String(node.get("id", ""))
-			asserts.equal(String(node.get("source_id", "")), "asset_assets_sprites_objects_natural_props_round_tree_large_32x32_png", "rainforest 침향 carries agarwood manifest asset id")
-			asserts.equal(String(owner_sources.get(incense_owner_id, "")), "asset_assets_sprites_objects_natural_props_round_tree_large_32x32_png", "main maps rainforest 침향 owner to agarwood manifest asset id")
+			asserts.equal(String(node.get("source_id", "")), "terrain_tree_round_32x32", "rainforest 침향 carries terrain tree asset id")
+			asserts.equal(String(owner_sources.get(incense_owner_id, "")), "terrain_tree_round_32x32", "main maps rainforest 침향 owner to terrain tree asset id")
 			asserts.equal(runtime.acquisition_service.gatherable_for(incense_owner_id).definition_id, "item_5", "main registers rainforest 침향 as a gatherable")
 			has_incense_gatherable = true
 		if String(node.get("resource_id", "")) != "wood":
 			continue
 		var owner_id := String(node.get("id", ""))
-		asserts.equal(String(node.get("source_id", "")), "asset_assets_sprites_objects_natural_props_round_tree_large_32x32_png", "rainforest wood carries agarwood manifest asset id")
-		asserts.equal(String(owner_sources.get(owner_id, "")), "asset_assets_sprites_objects_natural_props_round_tree_large_32x32_png", "main maps rainforest wood owner to its manifest asset id")
+		asserts.equal(String(node.get("source_id", "")), "terrain_tree_round_32x32", "rainforest wood carries terrain tree asset id")
+		asserts.equal(String(owner_sources.get(owner_id, "")), "terrain_tree_round_32x32", "main maps rainforest wood owner to its terrain tree asset id")
 		has_agarwood_source = true
 	asserts.true_value(has_agarwood_source, "rainforest runtime generates sourced agarwood resources")
 	asserts.true_value(has_incense_gatherable, "rainforest runtime registers confirmed 침향 rare resources")
@@ -234,9 +270,11 @@ func _configured_runtime(catalog, state: RunState, resource_position := Vector2i
 		return {"main": runtime, "result": services}
 	var world := WorldData.new(3, 1, "grass", true)
 	world.reserve_entity("resource_0", resource_position, Vector2i.ONE, true, {"resource_id": "wood"})
+	var world_snapshot := world.to_dictionary()
 	runtime.generated_world = {
 		"ok": true,
-		"world_data": world.to_dictionary(),
+		"world_data": world_snapshot,
+		"renderer_input": WorldRendererProjection.new().project(world_snapshot),
 		"resource_nodes": [{"id": "resource_0", "resource_id": "wood", "position": {"x": resource_position.x, "y": resource_position.y}}]
 	}
 	return {"main": runtime, "result": runtime._configure_acquisition_for_generated_world()}

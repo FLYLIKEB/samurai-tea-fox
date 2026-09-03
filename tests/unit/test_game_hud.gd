@@ -160,6 +160,7 @@ func run(asserts) -> void:
 	_assert_mobile_controls_emit_shared_commands(asserts)
 	_assert_dodge_control_does_not_use_baked_dash_asset(asserts)
 	_assert_fast_menus_show_runtime_read_models(asserts)
+	_assert_safe_area_layout_uses_viewport_top(asserts)
 
 func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:
 	var hud := _configured_hud()
@@ -203,6 +204,10 @@ func _assert_dpad_emits_press_and_release_movement(asserts) -> void:
 	var hud := _configured_hud()
 	var received: Array[Vector2i] = []
 	hud.movement_button_changed.connect(func(direction: Vector2i): received.append(direction))
+	var dpad_panel := hud.get_node_or_null("Root/DPadPanel") as Control
+	asserts.true_value(dpad_panel != null, "HUD keeps the dpad command surface")
+	if dpad_panel != null:
+		asserts.false_value(dpad_panel.visible, "HUD does not display the directional pad")
 	var left_button := hud.get_node_or_null("Root/DPadPanel/DPadBoard/DPadLeft") as Button
 	asserts.true_value(left_button != null, "HUD owns a left dpad button")
 	if left_button != null:
@@ -273,13 +278,25 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	asserts.true_value(hud.show_crafting_menu(), "HUD opens the crafting menu")
 	asserts.true_value(_tree_has_text(hud, "제작법 1/1 · 가능 1 · 필터 전체"), "crafting menu shows recipe counts and active filter")
 	asserts.true_value(_tree_has_text(hud, "상세 wooden_workbench → 목재 작업대 x1 · 제작 가능 · 재료 목재 3/2 · 손제작 · 해금 common_region"), "crafting menu shows selected recipe detail")
-	var craft_button := _first_enabled_button_with_text(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuContent"), "제작")
+	var craft_button := _first_enabled_button_with_text(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent"), "제작")
 	if craft_button != null:
 		craft_button.pressed.emit()
 	asserts.equal(received.size(), 1, "crafting button emits one command")
 	if not received.is_empty():
 		asserts.equal(received[0].type, GameCommand.Type.CRAFT_RECIPE, "crafting button emits the shared craft command")
 		asserts.equal(received[0].payload.get("recipe_id", ""), "wooden_workbench", "crafting command preserves the stable recipe id")
+	hud.free()
+
+func _assert_safe_area_layout_uses_viewport_top(asserts) -> void:
+	var hud := _configured_hud()
+	var status_panel := hud.get_node_or_null("Root/StatusPanel") as Control
+	var quickslot_panel := hud.get_node_or_null("Root/QuickSlotPanel") as Control
+	asserts.true_value(status_panel != null, "HUD status panel exists for safe-area layout")
+	asserts.true_value(quickslot_panel != null, "HUD quickslot panel exists for safe-area layout")
+	if status_panel != null:
+		asserts.equal(int(round(status_panel.position.y)), 12, "status panel anchors to the viewport top margin")
+	if quickslot_panel != null:
+		asserts.equal(int(round(quickslot_panel.position.y)), 12, "quickslot panel anchors to the viewport top margin")
 	hud.free()
 
 func _configured_hud() -> GameHud:

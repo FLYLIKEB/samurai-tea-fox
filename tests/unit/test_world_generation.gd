@@ -532,7 +532,7 @@ func _assert_mountain_renderer_sources(asserts, renderer_input: Dictionary) -> v
 		"asset_assets_sprites_objects_natural_props_mossy_rock_32x32_png": true,
 		"asset_assets_sprites_objects_natural_props_mountain_rock_04_32x32_png": true,
 		"asset_assets_sprites_objects_natural_props_mountain_rock_01_32x32_png": true,
-		"asset_assets_sprites_objects_natural_props_pine_tree_small_32x32_png": true,
+		"terrain_tree_pine_32x32": true,
 		"asset_assets_sprites_objects_mining_rock_cave_entrance_1x2_64x32_png": true,
 		"asset_assets_sprites_objects_structures_shrine_torii_gate_2x2_64x64_png": true,
 		"asset_assets_sprites_objects_mining_timber_support_1x2_32x64_png": true,
@@ -578,7 +578,7 @@ func _assert_wasteland_renderer_sources(asserts, renderer_input: Dictionary) -> 
 		"asset_assets_tiles_terrain_desert_cracked_clay_32x32_png": true,
 		"asset_assets_tiles_terrain_desert_sand_ripple_01_32x32_png": true,
 		"asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png": true,
-		"asset_assets_sprites_objects_natural_props_dead_tree_small_32x32_png": true,
+		"terrain_tree_round_32x32": true,
 		"asset_assets_tiles_terrain_desert_dry_scrub_patch_32x32_png": true,
 		"asset_assets_tiles_terrain_desert_bone_scatter_32x32_png": true,
 		"asset_assets_sprites_objects_mining_iron_ore_32x32_png": true,
@@ -625,7 +625,7 @@ func _assert_snowfield_renderer_sources(asserts, renderer_input: Dictionary) -> 
 		"asset_assets_tiles_terrain_snow_snow_ground_03_32x32_png": true,
 		"asset_assets_tiles_terrain_snow_snow_ground_04_32x32_png": true,
 		"asset_assets_tiles_terrain_snow_snow_rock_edge_01_32x32_png": true,
-		"asset_assets_tiles_terrain_snow_snowy_pine_tree_01_32x32_png": true,
+		"terrain_tree_pine_32x32": true,
 		"asset_assets_tiles_terrain_snow_snow_rock_edge_02_32x32_png": true,
 		"asset_assets_tiles_terrain_snow_snow_mound_32x32_png": true,
 		"asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png": true,
@@ -669,13 +669,12 @@ func _assert_rainforest_terrain_profile(asserts, world_data: Dictionary) -> void
 
 func _assert_rainforest_renderer_sources(asserts, renderer_input: Dictionary) -> void:
 	var expected_sources := {
-		"asset_assets_sprites_objects_natural_props_dense_shrub_32x32_png": true,
+		"terrain_tree_broadleaf_32x32": true,
 		"asset_assets_sprites_objects_natural_props_reed_clump_32x32_png": true,
 		"terrain_river_water_01": true,
-		"asset_assets_sprites_objects_natural_props_bamboo_reeds_32x32_png": true,
-		"asset_assets_sprites_objects_crafting_tea_leaf_worktable_32x32_png": true,
-		"asset_assets_sprites_objects_natural_props_round_tree_large_32x32_png": true,
 		"asset_assets_tiles_terrain_plains_flower_grass_02_32x32_png": true,
+		"asset_assets_sprites_objects_crafting_tea_leaf_worktable_32x32_png": true,
+		"terrain_tree_round_32x32": true,
 		"asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png": true,
 		"asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png": true,
 		"asset_assets_sprites_objects_shrine_props_incense_burner_32x32_png": true
@@ -716,7 +715,7 @@ func _assert_rainforest_rare_resource_ids(asserts, resource_nodes: Array) -> voi
 	var has_incense := false
 	for node in resource_nodes:
 		if String(node.get("resource_id", "")) == "item_5":
-			asserts.equal(String(node.get("source_id", "")), "asset_assets_sprites_objects_natural_props_round_tree_large_32x32_png", "rainforest 침향 resource uses agarwood source")
+			asserts.equal(String(node.get("source_id", "")), "terrain_tree_round_32x32", "rainforest 침향 resource uses agarwood source")
 			has_incense = true
 	asserts.true_value(has_incense, "rainforest includes confirmed 침향 rare resource id")
 

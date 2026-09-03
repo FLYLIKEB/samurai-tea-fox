@@ -70,7 +70,11 @@ func _assert_commands_and_hud_open_full_map(asserts) -> void:
 	asserts.true_value(hud.press_mobile_button("open_map"), "HUD emits open map command")
 	asserts.true_value(hud.show_map_menu(), "HUD opens full map menu")
 	asserts.true_value(_tree_has_text(hud, "지도 8x6"), "full map menu displays map bounds")
-	asserts.true_value(_tree_has_text(hud, "@"), "full map menu renders map cell glyphs from the read model")
+	var map_grid := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/MapColorGrid") as GridContainer
+	asserts.true_value(map_grid != null, "full map menu renders map cells as a color grid")
+	if map_grid != null:
+		asserts.equal(map_grid.get_child_count(), 8 * 6, "full map color grid is clipped to the world bounds")
+		asserts.true_value(_color_rect_count(map_grid) == map_grid.get_child_count(), "full map grid uses color cells instead of text glyphs")
 	asserts.true_value(_tree_has_text(hud, "텔레포트 teleport_0"), "full map menu displays teleport marker")
 	hud.free()
 
@@ -120,6 +124,12 @@ func _tree_has_text(node: Node, text: String) -> bool:
 		if _tree_has_text(child, text):
 			return true
 	return false
+
+func _color_rect_count(node: Node) -> int:
+	var count := 1 if node is ColorRect else 0
+	for child in node.get_children():
+		count += _color_rect_count(child)
+	return count
 
 class FakeResources:
 	var hp := 10

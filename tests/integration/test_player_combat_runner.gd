@@ -85,8 +85,10 @@ func run() -> void:
 	player.resources.recover_ki(player.resources.ki_max)
 	player.resources.restore_kokoro(player.resources.kokoro_max)
 
-	player.position = Vector2.ZERO
-	dummy.position = Vector2(32.0, 0.0)
+	var combat_player_cell := Vector2i(5, 5)
+	player.position = main.world_position_for_cell_center(combat_player_cell)
+	dummy.position = main.world_position_for_cell_center(combat_player_cell + Vector2i.RIGHT)
+	await physics_frame
 	var dummy_hp_before: int = dummy.current_hp()
 	var dummy_hit_count_before: int = dummy.received_hit_count()
 	if not player.submit_command(GameCommand.new(GameCommand.Type.ATTACK, Vector2i.RIGHT)):
@@ -103,9 +105,9 @@ func run() -> void:
 	if dummy_sprite != null and dummy_sprite.modulate == Color.WHITE:
 		failures.append("monster hit flash tints the promoted sprite")
 	var directional_cases := [
-		[Vector2i.UP, Vector2(0.0, -32.0)],
-		[Vector2i.LEFT, Vector2(-32.0, 0.0)],
-		[Vector2i.DOWN, Vector2(0.0, 32.0)]
+		[Vector2i.UP, combat_player_cell + Vector2i.UP],
+		[Vector2i.LEFT, combat_player_cell + Vector2i.LEFT],
+		[Vector2i.DOWN, combat_player_cell + Vector2i.DOWN]
 	]
 	var knockback_wall := StaticBody2D.new()
 	var knockback_wall_shape := CollisionShape2D.new()
@@ -113,12 +115,12 @@ func run() -> void:
 	knockback_rectangle.size = Vector2(8.0, 64.0)
 	knockback_wall_shape.shape = knockback_rectangle
 	knockback_wall.add_child(knockback_wall_shape)
-	knockback_wall.position = Vector2(-52.0, 0.0)
+	knockback_wall.position = main.world_position_for_cell_center(combat_player_cell + Vector2i.LEFT * 2)
 	root.add_child(knockback_wall)
 	for directional_case in directional_cases:
 		player.combat_state.tick(1.0)
 		dummy.combatant.hp = dummy.combatant.hp_max
-		dummy.position = directional_case[1]
+		dummy.position = main.world_position_for_cell_center(directional_case[1])
 		var position_before: Vector2 = dummy.position
 		await physics_frame
 		var hit_count_before: int = dummy.received_hit_count()
@@ -128,30 +130,38 @@ func run() -> void:
 		await physics_frame
 		if dummy.received_hit_count() != hit_count_before + 1:
 			failures.append("attack collision resolves for direction %s" % directional_case[0])
-		if directional_case[0] == Vector2i.LEFT and dummy.position.x >= position_before.x:
-			failures.append("third combo hit applies collision-aware finisher knockback")
-		if directional_case[0] == Vector2i.LEFT and dummy.position.x < -41.1:
-			failures.append("finisher knockback does not pass through a wall")
+		if dummy.position != dummy._grid_position_for_cell_center(dummy._grid_cell_for_position(dummy.position)):
+			failures.append("monster remains snapped to a tile center after hit resolution")
 
 	var player_hp_before: int = player.resources.hp
 	if dummy.attack_target(player) != 10 or player.resources.hp != player_hp_before - 10:
 		failures.append("dummy attack applies exported monster damage to player HP")
 	player.resources.heal_hp(player.resources.hp_max)
 
-	dummy.automatic_attacks = true
-	dummy.position = Vector2(160.0, 0.0)
-	player.position = Vector2.ZERO
+	var monster_start_cell := combat_player_cell + Vector2i.RIGHT * 5
+	dummy.position = main.world_position_for_cell_center(monster_start_cell)
+	player.position = main.world_position_for_cell_center(combat_player_cell)
 	var monster_steps: Array = []
 	dummy.grid_step_started.connect(func(from_cell: Vector2i, to_cell: Vector2i): monster_steps.append([from_cell, to_cell]))
-	for _frame in 180:
-		await physics_frame
+	var turn_result: Dictionary = dummy.take_turn(player)
+	if not bool(turn_result.get("ok", false)) or String(turn_result.get("action", "")) != "move":
+		failures.append("monster turn moves when target is outside attack range")
 	if monster_steps.is_empty():
-		failures.append("automatic monster movement starts as cardinal grid steps")
-	elif monster_steps[0][0] != Vector2i(5, 0) or monster_steps[0][1] != Vector2i(4, 0):
-		failures.append("automatic monster movement targets one adjacent tile toward the player")
-	if absf(fmod(absf(dummy.position.x), 32.0)) > 0.6 and absf(fmod(absf(dummy.position.x), 32.0) - 32.0) > 0.6:
-		failures.append("automatic monster movement remains aligned to tile units")
-	dummy.automatic_attacks = false
+		failures.append("monster turn starts exactly one cardinal grid step")
+	elif monster_steps[0][0] != monster_start_cell or monster_steps[0][1] != monster_start_cell + Vector2i.LEFT:
+		failures.append("monster turn targets one adjacent tile toward the player")
+	var expected_monster_position: Vector2 = main.world_position_for_cell_center(monster_start_cell + Vector2i.LEFT)
+	if dummy.position != expected_monster_position:
+		failures.append("monster turn ends snapped to the destination tile center")
+	await physics_frame
+	if dummy.position != expected_monster_position:
+		failures.append("monster does not continue moving between turns")
+	player.position = main.world_position_for_cell_center(monster_start_cell + Vector2i.LEFT * 2)
+	var hp_before_turn_attack: int = player.resources.hp
+	var attack_turn: Dictionary = dummy.take_turn(player)
+	if String(attack_turn.get("action", "")) != "attack" or player.resources.hp >= hp_before_turn_attack:
+		failures.append("monster turn attacks instead of moving when adjacent")
+	player.resources.heal_hp(player.resources.hp_max)
 
 	if not player.submit_command(GameCommand.new(GameCommand.Type.DODGE, Vector2i.LEFT)):
 		failures.append("dodge command is accepted off cooldown")
@@ -169,23 +179,23 @@ func run() -> void:
 		failures.append("hit invulnerability blocks repeated damage events")
 
 	player.combat_state.tick(1.0)
-	player.position = Vector2.ZERO
-	dummy.position = Vector2(160.0, 0.0)
+	player.position = main.world_position_for_cell_center(combat_player_cell)
+	dummy.position = main.world_position_for_cell_center(monster_start_cell)
 	var wall := StaticBody2D.new()
 	var wall_shape := CollisionShape2D.new()
 	var rectangle := RectangleShape2D.new()
 	rectangle.size = Vector2(16.0, 64.0)
 	wall_shape.shape = rectangle
 	wall.add_child(wall_shape)
-	wall.position = Vector2(-30.0, 0.0)
+	wall.position = main.world_position_for_cell_center(combat_player_cell) + Vector2(-30.0, 0.0)
 	root.add_child(wall)
 	if not player.submit_command(GameCommand.new(GameCommand.Type.DODGE, Vector2i.LEFT)):
 		failures.append("dodge is ready after configured cooldown")
 	for _frame in 20:
 		await physics_frame
-	if player.position.x >= -1.0:
+	if player.position.x >= main.world_position_for_cell_center(combat_player_cell).x - 1.0:
 		failures.append("dodge moves in the requested direction")
-	if player.position.x < -16.1:
+	if player.position.x < main.world_position_for_cell_center(combat_player_cell).x - 16.1:
 		failures.append("dodge movement does not pass through a wall")
 
 	main.queue_free()

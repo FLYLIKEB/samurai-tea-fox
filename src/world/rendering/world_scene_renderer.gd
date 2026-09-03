@@ -14,6 +14,33 @@ const ADJACENT_NORTH := 1
 const ADJACENT_EAST := 2
 const ADJACENT_SOUTH := 4
 const ADJACENT_WEST := 8
+const RIVER_BASE_SOURCE_ID := "terrain_river_water_01"
+const TREE_UNDERLAY_SOURCE_ID := "terrain_plains_grass_ground_01"
+const TREE_OVERLAY_SOURCE_IDS := {
+	"terrain_tree_broadleaf_32x32": true,
+	"terrain_tree_pine_32x32": true,
+	"terrain_tree_round_32x32": true
+}
+# Indexed by N/E/S/W bitmask. The promoted river set does not include every
+# dead-end cap, so one-way masks intentionally fall back to matching straights.
+const RIVER_MASK_SOURCE_IDS := [
+	"asset_assets_tiles_terrain_river_3128fd1e_45b5_438e_a810_c6049fc50f77_crop_908_771_144x146_resize_32x32_png",
+	"asset_assets_tiles_terrain_river_3128fd1e_45b5_438e_a810_c6049fc50f77_crop_29_593_145x148_resize_32x32_png",
+	"asset_assets_tiles_terrain_river_3128fd1e_45b5_438e_a810_c6049fc50f77_crop_204_59_144x147_resize_32x32_png",
+	"asset_assets_tiles_terrain_river_3128fd1e_45b5_438e_a810_c6049fc50f77_crop_553_951_148x146_resize_32x32_png",
+	"asset_assets_tiles_terrain_river_3128fd1e_45b5_438e_a810_c6049fc50f77_crop_29_593_145x148_resize_32x32_png",
+	"asset_assets_tiles_terrain_river_3128fd1e_45b5_438e_a810_c6049fc50f77_crop_733_594_145x147_resize_32x32_png",
+	"asset_assets_tiles_terrain_river_3128fd1e_45b5_438e_a810_c6049fc50f77_crop_28_237_145x148_resize_32x32_png",
+	"asset_assets_tiles_terrain_river_3128fd1e_45b5_438e_a810_c6049fc50f77_crop_204_771_143x146_resize_32x32_png",
+	"asset_assets_tiles_terrain_river_3128fd1e_45b5_438e_a810_c6049fc50f77_crop_204_59_144x147_resize_32x32_png",
+	"asset_assets_tiles_terrain_river_3128fd1e_45b5_438e_a810_c6049fc50f77_crop_553_951_148x146_resize_32x32_png",
+	"asset_assets_tiles_terrain_river_3128fd1e_45b5_438e_a810_c6049fc50f77_crop_205_597_144x145_resize_32x32_png",
+	"asset_assets_tiles_terrain_river_3128fd1e_45b5_438e_a810_c6049fc50f77_crop_553_951_148x146_resize_32x32_png",
+	"asset_assets_tiles_terrain_river_3128fd1e_45b5_438e_a810_c6049fc50f77_crop_907_60_144x147_resize_32x32_png",
+	"asset_assets_tiles_terrain_river_3128fd1e_45b5_438e_a810_c6049fc50f77_crop_732_60_144x148_resize_32x32_png",
+	"asset_assets_tiles_terrain_river_3128fd1e_45b5_438e_a810_c6049fc50f77_crop_202_420_146x145_resize_32x32_png",
+	"asset_assets_tiles_terrain_river_3128fd1e_45b5_438e_a810_c6049fc50f77_crop_29_60_145x148_resize_32x32_png"
+]
 
 var _texture_cache: Dictionary = {}
 var asset_catalog := AssetCatalog.new()
@@ -76,11 +103,15 @@ func _render_tilemap_cells(tilemap_layer: TileMapLayer, footprint_layer: Node2D,
 
 	for cell in cells:
 		var source_id := String(cell.get("source_id", ""))
-		var path := _resource_path(source_id)
+		var position := _position_from_dictionary(cell.get("position", {}))
+		var mask := _adjacency_mask_for_cell(position, source_id, terrain_index)
+		var tree_overlay_source_id := _tree_overlay_source_id(source_id)
+		var render_source_id := TREE_UNDERLAY_SOURCE_ID if not tree_overlay_source_id.is_empty() else _terrain_source_for_adjacency(source_id, mask)
+		var path := _resource_path(render_source_id)
 		if path.is_empty():
 			continue
 		if _source_is_multicell_footprint(path, tile_size):
-			if _render_original_sprite(footprint_layer, path, _position_from_dictionary(cell.get("position", {})), tile_size):
+			if _render_original_sprite(footprint_layer, path, position, tile_size):
 				rendered += 1
 			continue
 		if not source_index_by_path.has(path):
@@ -89,11 +120,11 @@ func _render_tilemap_cells(tilemap_layer: TileMapLayer, footprint_layer: Node2D,
 				continue
 			source_index_by_path[path] = meta.source_index
 			source_meta_by_path[path] = meta
-		var position := _position_from_dictionary(cell.get("position", {}))
 		var source_meta: Dictionary = source_meta_by_path[path]
-		var mask := _adjacency_mask_for_cell(position, source_id, terrain_index)
-		var atlas_coords := _atlas_coords_for_adjacency(mask, int(source_meta.columns), int(source_meta.rows))
+		var atlas_coords := Vector2i.ZERO if render_source_id != source_id else _atlas_coords_for_adjacency(mask, int(source_meta.columns), int(source_meta.rows))
 		tilemap_layer.set_cell(position, int(source_index_by_path[path]), atlas_coords, 0)
+		if not tree_overlay_source_id.is_empty():
+			_render_original_sprite(footprint_layer, _resource_path(tree_overlay_source_id), position, tile_size)
 		rendered += 1
 
 	tilemap_layer.tile_set = tile_set
@@ -253,6 +284,14 @@ func _atlas_coords_for_adjacency(mask: int, columns: int, rows: int) -> Vector2i
 	var frame_count: int = max(1, columns * rows)
 	var frame_index: int = clampi(mask, 0, 15) % frame_count
 	return Vector2i(frame_index % columns, int(frame_index / columns))
+
+func _terrain_source_for_adjacency(source_id: String, mask: int) -> String:
+	if source_id == RIVER_BASE_SOURCE_ID:
+		return String(RIVER_MASK_SOURCE_IDS[clampi(mask, 0, RIVER_MASK_SOURCE_IDS.size() - 1)])
+	return source_id
+
+func _tree_overlay_source_id(source_id: String) -> String:
+	return source_id if TREE_OVERLAY_SOURCE_IDS.has(source_id) else ""
 
 func _terrain_cell_index(cells: Array) -> Dictionary:
 	var index := {}

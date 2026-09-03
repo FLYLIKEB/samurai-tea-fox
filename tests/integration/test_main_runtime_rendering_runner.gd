@@ -52,11 +52,50 @@ func run() -> void:
 	var sprite := player.get_node_or_null("Sprite2D") as Sprite2D if player != null else null
 	if sprite == null or sprite.texture == null:
 		failures.append("player sprite remains visible in main scene")
+	if player != null:
+		var expected_spawn_cell: Vector2i = main._entry_spawn_cell(main.generated_world)
+		var actual_spawn_cell: Vector2i = main.world_cell_from_world_position(player.global_position)
+		if actual_spawn_cell != expected_spawn_cell:
+			failures.append("player starts on the generated entry cell")
+		if not main.world_data.is_walkable(actual_spawn_cell):
+			failures.append("player starts on a walkable generated map cell")
+		var walkable_neighbor := _first_walkable_neighbor(main, actual_spawn_cell)
+		if walkable_neighbor == Vector2i.ZERO:
+			failures.append("player entry cell has an adjacent walkable movement target")
+		else:
+			if not main.submit_mobile_movement_direction(walkable_neighbor):
+				failures.append("player can submit movement from entry toward a walkable neighbor")
+			await physics_frame
+			if player.is_grid_step_active():
+				for _step_frame in 20:
+					await physics_frame
+					if not player.is_grid_step_active():
+						break
+			var moved_cell: Vector2i = main.world_cell_from_world_position(player.global_position)
+			var expected_cell: Vector2i = actual_spawn_cell + walkable_neighbor
+			if moved_cell != expected_cell:
+				failures.append("player movement grid matches generated world walkability: spawn=%s direction=%s expected=%s actual=%s position=%s" % [actual_spawn_cell, walkable_neighbor, expected_cell, moved_cell, player.global_position])
+			player.global_position = main.world_position_for_cell_center(actual_spawn_cell)
 
 	var dummy = main.get_node_or_null("CombatDummy")
 	var dummy_sprite := dummy.get_node_or_null("Sprite2D") as Sprite2D if dummy != null else null
 	if dummy_sprite == null or dummy_sprite.texture == null:
 		failures.append("combat dummy renders with a promoted enemy character sprite")
+	if dummy != null:
+		var dummy_cell: Vector2i = main.world_cell_from_world_position(dummy.global_position)
+		if dummy.global_position != main.world_position_for_cell_center(dummy_cell):
+			failures.append("combat dummy snaps to the center of its current terrain cell")
+	if player != null:
+		var camera := player.get_node_or_null("Camera2D") as Camera2D
+		if camera == null:
+			failures.append("player keeps a runtime camera")
+		else:
+			var origin: Vector2 = main._runtime_world_origin()
+			var tile_size: float = main._runtime_tile_size()
+			if camera.limit_left != int(floor(origin.x)) or camera.limit_top != int(floor(origin.y)):
+				failures.append("runtime camera follows generated world origin limits")
+			if camera.limit_right != int(ceil(origin.x + float(main.world_data.width) * tile_size)) or camera.limit_bottom != int(ceil(origin.y + float(main.world_data.height) * tile_size)):
+				failures.append("runtime camera follows generated world bottom-right limits")
 
 	_assert_runtime_death_replaces_run(main, player)
 	_assert_stale_full_death_retry_preserves_newer_run(main)
@@ -72,19 +111,19 @@ func run() -> void:
 		var action_panel := hud.get_node_or_null("Root/ActionPanel")
 		if status_panel == null or map_panel == null or quickslot_panel == null or dpad_panel == null or action_panel == null:
 			failures.append("runtime HUD shows status, map, quickslot, dpad, and action panels")
+		elif dpad_panel.visible:
+			failures.append("runtime HUD keeps the directional pad hidden")
 		elif _texture_rect_count(status_panel) < 3 or _label_count(status_panel) < 3:
 			failures.append("runtime HUD status panel renders icon-backed HP/ki/kokoro rows")
 		elif _texture_rect_count(quickslot_panel) < 4 or _label_count(quickslot_panel) < 4:
 			failures.append("runtime HUD quickslots render icon-backed rows")
 		else:
-			_assert_hud_layout_fits_viewport([status_panel, map_panel, quickslot_panel, dpad_panel, action_panel])
+			_assert_hud_layout_fits_viewport([status_panel, map_panel, quickslot_panel, action_panel])
 			if _button_count(action_panel) < 15:
 				failures.append("runtime HUD exposes attack, dodge, tea, consumable, ability, inventory, tea brewing, meta codex, map, crafting, facilities, sleep, dungeon, and teleport controls")
 			var time_label := hud.get("_labels").get("time") as Label
 			if time_label == null or not time_label.get_parent().visible:
 				failures.append("runtime HUD shows the canonical runtime time state")
-			if _button_count(dpad_panel) < 5:
-				failures.append("runtime HUD dpad exposes four directions and stop control")
 		if not _passive_controls_ignore_mouse(hud):
 			failures.append("runtime HUD passive controls do not block world click and touch input")
 
@@ -129,6 +168,12 @@ func _button_count(node: Node) -> int:
 	for child in node.get_children():
 		count += _button_count(child)
 	return count
+
+func _first_walkable_neighbor(main, origin: Vector2i) -> Vector2i:
+	for direction in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]:
+		if main.world_data.is_walkable(origin + direction):
+			return direction
+	return Vector2i.ZERO
 
 func _passive_controls_ignore_mouse(node: Node) -> bool:
 	if node is Control and not node is BaseButton and (node as Control).mouse_filter != Control.MOUSE_FILTER_IGNORE:

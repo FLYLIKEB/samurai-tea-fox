@@ -866,6 +866,75 @@
       "runtime_scale": 1
     },
     {
+      "id": "terrain_tree_broadleaf_32x32",
+      "name": "초원 활엽수 지형 오브젝트",
+      "status": "완료",
+      "kind": "terrain_tile",
+      "path": "res://assets/tiles/terrain/trees/terrain_tree_broadleaf_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:6b1603ba0191950fdc94f815a320be57decc199d0173569bb2284ef4e09a08fa",
+      "rgba_sha256": "sha256:6b1603ba0191950fdc94f815a320be57decc199d0173569bb2284ef4e09a08fa",
+      "runtime_scale": 1
+    },
+    {
+      "id": "terrain_tree_pine_32x32",
+      "name": "초원 침엽수 지형 오브젝트",
+      "status": "완료",
+      "kind": "terrain_tile",
+      "path": "res://assets/tiles/terrain/trees/terrain_tree_pine_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:407f877759c53326009e713334a8f8ed81f90cc7d0cab9b32abb561601e866dd",
+      "rgba_sha256": "sha256:407f877759c53326009e713334a8f8ed81f90cc7d0cab9b32abb561601e866dd",
+      "runtime_scale": 1
+    },
+    {
+      "id": "terrain_tree_round_32x32",
+      "name": "초원 둥근 나무 지형 오브젝트",
+      "status": "완료",
+      "kind": "terrain_tile",
+      "path": "res://assets/tiles/terrain/trees/terrain_tree_round_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:4687849e51dacdcd699842a84d6873c25d58d286fc239455ac16f753b8c67449",
+      "rgba_sha256": "sha256:4687849e51dacdcd699842a84d6873c25d58d286fc239455ac16f753b8c67449",
+      "runtime_scale": 1
+    },
+    {
       "id": "terrain_plains_flower_grass_01",
       "name": "초원 꽃풀 타일 01",
       "status": "완료",

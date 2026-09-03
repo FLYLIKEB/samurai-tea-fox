@@ -20,6 +20,16 @@ const ICON_MOON := "asset_assets_ui_icons_atlas_moon_png"
 const BUTTON_DPAD := "asset_assets_ui_controls_dpad_png"
 
 const BALANCE_ABILITY_SLOTS_ID := "ability_equip_slots"
+const STATUS_PANEL_SIZE := Vector2(150, 72)
+const MAP_PANEL_SIZE := Vector2(176, 86)
+const MAP_PANEL_TIME_HEIGHT := 108.0
+const QUICKSLOT_PANEL_SIZE := Vector2(248, 36)
+const DPAD_PANEL_SIZE := Vector2(108, 108)
+const DPAD_BOARD_SIZE := Vector2(96, 96)
+const ACTION_BUTTON_SIZE := Vector2(52, 34)
+const ACTION_PANEL_COLUMNS := 4
+const MENU_PANEL_SIZE := Vector2(232, 148)
+const MENU_CONTENT_SIZE := Vector2(216, 92)
 
 signal mobile_command_issued(command)
 
@@ -33,6 +43,7 @@ var inventory
 var inventory_command_runtime
 var map_read_model_builder
 var world_data
+var world_origin := Vector2.ZERO
 var run_state
 var tea_service
 var asset_catalog := AssetCatalog.new()
@@ -52,6 +63,7 @@ var _theme: Theme
 var _time_refresh_elapsed := 0.0
 var _action_grid: GridContainer
 var _menu_content: VBoxContainer
+var _minimap_grid: GridContainer
 var _open_menu_id := ""
 
 func _ready() -> void:
@@ -70,6 +82,7 @@ func configure(player_node, generated_world: Dictionary, generated_render_result
 		inventory_command_runtime = runtime_context.get("inventory_command_runtime", null)
 		map_read_model_builder = runtime_context.get("map_read_model_builder", null)
 		world_data = runtime_context.get("world_data", null)
+		world_origin = runtime_context.get("world_origin", Vector2.ZERO)
 		run_state = runtime_context.get("run_state", null)
 		tea_service = runtime_context.get("tea_service", null)
 		tea_brewing_command_runtime = runtime_context.get("tea_brewing_command_runtime", null)
@@ -188,7 +201,7 @@ func _build() -> void:
 	root.theme = _theme
 	add_child(root)
 
-	var status_panel := _panel(Vector2(166, 82))
+	var status_panel := _panel(STATUS_PANEL_SIZE)
 	status_panel.name = "StatusPanel"
 	root.add_child(status_panel)
 	_panels.status = status_panel
@@ -200,7 +213,7 @@ func _build() -> void:
 	_labels.ki = _add_icon_row(status_rows, ICON_KI, "기운")
 	_labels.kokoro = _add_icon_row(status_rows, ICON_KOKORO, "心")
 
-	var map_panel := _panel(Vector2(202, 78))
+	var map_panel := _panel(MAP_PANEL_SIZE)
 	map_panel.name = "MapPanel"
 	root.add_child(map_panel)
 	_panels.map = map_panel
@@ -212,10 +225,15 @@ func _build() -> void:
 	_labels.time = _add_icon_row(map_rows, ICON_MOON, "낮 0%")
 	_labels.map_stats = _label("타일 0 · 사물 0", 11)
 	map_rows.add_child(_labels.map_stats)
-	_labels.minimap = _label("", 9)
-	map_rows.add_child(_labels.minimap)
+	_minimap_grid = GridContainer.new()
+	_minimap_grid.name = "MinimapGrid"
+	_minimap_grid.columns = 11
+	_minimap_grid.add_theme_constant_override("h_separation", 1)
+	_minimap_grid.add_theme_constant_override("v_separation", 1)
+	_ignore_mouse(_minimap_grid)
+	map_rows.add_child(_minimap_grid)
 
-	var quickslot_panel := _panel(Vector2(304, 42))
+	var quickslot_panel := _panel(QUICKSLOT_PANEL_SIZE)
 	quickslot_panel.name = "QuickSlotPanel"
 	root.add_child(quickslot_panel)
 	_panels.quickslot = quickslot_panel
@@ -228,19 +246,20 @@ func _build() -> void:
 	_labels.consumable = _add_icon_row(quick_rows, ICON_CONSUMABLE, "소모")
 	_labels.abilities = _add_icon_row(quick_rows, ICON_ABILITY, "요술")
 
-	var dpad_panel := _panel(Vector2(132, 132))
+	var dpad_panel := _panel(DPAD_PANEL_SIZE)
 	dpad_panel.name = "DPadPanel"
+	dpad_panel.visible = false
 	root.add_child(dpad_panel)
 	_panels.dpad = dpad_panel
 	_build_dpad(dpad_panel)
 
-	var action_panel := _panel(Vector2(294, 108))
+	var action_panel := _panel(Vector2(220, 108))
 	action_panel.name = "ActionPanel"
 	root.add_child(action_panel)
 	_panels.action = action_panel
 	_build_actions(action_panel)
 
-	var menu_panel := _panel(Vector2(244, 184))
+	var menu_panel := _panel(MENU_PANEL_SIZE)
 	menu_panel.name = "MenuPanel"
 	menu_panel.visible = false
 	root.add_child(menu_panel)
@@ -265,13 +284,13 @@ func _update() -> void:
 	if time_label != null:
 		time_label.get_parent().visible = time_state != null
 	var map_panel := _panels.get("map") as Control
-	var map_height := 118.0 if time_state != null else 94.0
+	var map_height := MAP_PANEL_TIME_HEIGHT if time_state != null else MAP_PANEL_SIZE.y
 	if map_panel != null and not is_equal_approx(map_panel.custom_minimum_size.y, map_height):
 		map_panel.custom_minimum_size.y = map_height
 		_apply_safe_area_layout()
 	var minimap: Dictionary = model.get("minimap", {})
 	_set_label("map_stats", "발견 %d · 표식 %d" % [int(minimap.get("discovered_count", 0)), int(minimap.get("marker_count", 0))] if bool(minimap.get("ok", false)) else "타일 %d · 사물 %d" % [model.terrain_count, model.object_count])
-	_set_label("minimap", _minimap_text(minimap.get("minimap", {})) if bool(minimap.get("ok", false)) else "")
+	_render_minimap_grid(_minimap_grid, minimap.get("minimap", {}) if bool(minimap.get("ok", false)) else {}, Vector2(6, 6))
 	_set_label("inventory", "%d / %d" % [model.inventory_used_slots, model.inventory_slot_count])
 	_set_label("tea_slots", "%d / %d" % [model.tea_ready_slots, model.tea_quickslot_count])
 	_set_label("consumable", "준비" if model.consumable_ready else "없음")
@@ -323,7 +342,7 @@ func _on_phase_changed(_previous, _current) -> void:
 func _build_dpad(parent: PanelContainer) -> void:
 	var board := Control.new()
 	board.name = "DPadBoard"
-	board.custom_minimum_size = Vector2(120, 120)
+	board.custom_minimum_size = DPAD_BOARD_SIZE
 	_ignore_mouse(board)
 	parent.add_child(board)
 	var plate := TextureRect.new()
@@ -334,19 +353,20 @@ func _build_dpad(parent: PanelContainer) -> void:
 	plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board.add_child(plate)
-	_add_direction_button(board, "DPadUp", Rect2(40, 0, 40, 40), Vector2i.UP, "위")
-	_add_direction_button(board, "DPadDown", Rect2(40, 80, 40, 40), Vector2i.DOWN, "아래")
-	_add_direction_button(board, "DPadLeft", Rect2(0, 40, 40, 40), Vector2i.LEFT, "왼쪽")
-	_add_direction_button(board, "DPadRight", Rect2(80, 40, 40, 40), Vector2i.RIGHT, "오른쪽")
-	_add_direction_button(board, "DPadStop", Rect2(40, 40, 40, 40), Vector2i.ZERO, "정지")
+	var cell := DPAD_BOARD_SIZE.x / 3.0
+	_add_direction_button(board, "DPadUp", Rect2(cell, 0, cell, cell), Vector2i.UP, "위")
+	_add_direction_button(board, "DPadDown", Rect2(cell, cell * 2.0, cell, cell), Vector2i.DOWN, "아래")
+	_add_direction_button(board, "DPadLeft", Rect2(0, cell, cell, cell), Vector2i.LEFT, "왼쪽")
+	_add_direction_button(board, "DPadRight", Rect2(cell * 2.0, cell, cell, cell), Vector2i.RIGHT, "오른쪽")
+	_add_direction_button(board, "DPadStop", Rect2(cell, cell, cell, cell), Vector2i.ZERO, "정지")
 
 func _build_actions(parent: PanelContainer) -> void:
 	_action_grid = GridContainer.new()
 	_action_grid.name = "ActionGrid"
 	_ignore_mouse(_action_grid)
-	_action_grid.columns = 4
-	_action_grid.add_theme_constant_override("h_separation", 6)
-	_action_grid.add_theme_constant_override("v_separation", 6)
+	_action_grid.columns = ACTION_PANEL_COLUMNS
+	_action_grid.add_theme_constant_override("h_separation", 4)
+	_action_grid.add_theme_constant_override("v_separation", 4)
 	parent.add_child(_action_grid)
 	_rebuild_action_buttons()
 
@@ -372,7 +392,10 @@ func _rebuild_action_buttons() -> void:
 	_add_text_action(_action_grid, "DungeonButton", ICON_ATTACK, "던전", "complete_dungeon", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "TeleportRepairButton", ICON_MAP, "수리", "repair_teleport", Vector2i.ZERO, 0)
 	var row_count := maxi(1, int(ceil(float(_action_grid.get_child_count()) / float(_action_grid.columns))))
-	var action_size := Vector2(294, 12 + row_count * 44 + (row_count - 1) * 6)
+	var action_size := Vector2(
+		12 + ACTION_PANEL_COLUMNS * ACTION_BUTTON_SIZE.x + (ACTION_PANEL_COLUMNS - 1) * 4,
+		12 + row_count * ACTION_BUTTON_SIZE.y + (row_count - 1) * 4
+	)
 	var action_panel := _panels.get("action") as Control
 	if action_panel != null:
 		action_panel.custom_minimum_size = action_size
@@ -396,11 +419,11 @@ func _add_direction_button(parent: Control, name: String, rect: Rect2, direction
 func _add_text_action(parent: Container, name: String, icon_path: String, text: String, button_id: String, direction: Vector2i, slot: int) -> void:
 	var button := Button.new()
 	button.name = name
-	button.custom_minimum_size = Vector2(66, 44)
+	button.custom_minimum_size = ACTION_BUTTON_SIZE
 	button.text = text
 	button.icon = _load_texture(icon_path)
 	button.expand_icon = true
-	button.add_theme_constant_override("icon_max_width", 22)
+	button.add_theme_constant_override("icon_max_width", 16)
 	button.tooltip_text = text
 	button.focus_mode = Control.FOCUS_NONE
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -433,11 +456,20 @@ func _build_menu_panel(parent: PanelContainer) -> void:
 	close.mouse_filter = Control.MOUSE_FILTER_STOP
 	close.pressed.connect(func(): mobile_command_issued.emit(GameCommand.new(GameCommand.Type.HIDE_MENU)))
 	header.add_child(close)
+	var scroll := ScrollContainer.new()
+	scroll.name = "MenuScroll"
+	scroll.custom_minimum_size = MENU_CONTENT_SIZE
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.follow_focus = true
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_ignore_mouse(scroll)
+	rows.add_child(scroll)
 	_menu_content = VBoxContainer.new()
 	_menu_content.name = "MenuContent"
 	_ignore_mouse(_menu_content)
 	_menu_content.add_theme_constant_override("separation", 3)
-	rows.add_child(_menu_content)
+	scroll.add_child(_menu_content)
 	_labels.menu_feedback = _label("", 11)
 	rows.add_child(_labels.menu_feedback)
 
@@ -911,8 +943,7 @@ func _map_rows() -> Array:
 	var bounds: Dictionary = model.bounds
 	rows.append(_label("지도 %dx%d · 발견 %d · 안개 %d" % [int(bounds.width), int(bounds.height), int(model.discovered_count), int(model.fog_count)], 11))
 	rows.append(_label("플레이어 (%d,%d)" % [int(model.player.position.x), int(model.player.position.y)], 11))
-	for line in _minimap_text_lines(model.minimap):
-		rows.append(_label(line, 9))
+	rows.append(_map_color_grid(model.minimap, Vector2(8, 8)))
 	var markers: Array = model.markers
 	for index in range(mini(markers.size(), 8)):
 		var marker: Dictionary = markers[index]
@@ -951,7 +982,8 @@ func _player_cell() -> Vector2i:
 	var tile_size := 32
 	if world_data != null and world_data.has_method("get"):
 		tile_size = max(1, int(world_data.get("tile_size")))
-	return Vector2i(int(floor(position.x / float(tile_size))), int(floor(position.y / float(tile_size))))
+	var local_position := position - world_origin
+	return Vector2i(int(floor(local_position.x / float(tile_size))), int(floor(local_position.y / float(tile_size))))
 
 func _marker_label(marker_type: String) -> String:
 	match marker_type:
@@ -1003,6 +1035,73 @@ func _marker_glyph(marker_type: String) -> String:
 		_:
 			return "L"
 
+func _map_color_grid(minimap: Dictionary, cell_size: Vector2) -> GridContainer:
+	var grid := GridContainer.new()
+	grid.name = "MapColorGrid"
+	_ignore_mouse(grid)
+	var size: Dictionary = minimap.get("size", {})
+	grid.columns = maxi(1, int(size.get("width", 1)))
+	grid.add_theme_constant_override("h_separation", 1)
+	grid.add_theme_constant_override("v_separation", 1)
+	_render_minimap_grid(grid, minimap, cell_size)
+	return grid
+
+func _render_minimap_grid(grid: GridContainer, minimap: Dictionary, cell_size: Vector2) -> void:
+	if grid == null:
+		return
+	for child in grid.get_children():
+		child.free()
+	var size: Dictionary = minimap.get("size", {})
+	var width := int(size.get("width", 0))
+	var height := int(size.get("height", 0))
+	if width <= 0 or height <= 0:
+		return
+	grid.columns = width
+	var marker_by_position := {}
+	for marker in _array_value(minimap.get("markers", [])):
+		var marker_position: Dictionary = marker.get("position", {})
+		marker_by_position["%d,%d" % [int(marker_position.get("x", 0)), int(marker_position.get("y", 0))]] = String(marker.get("marker_type", ""))
+	var cell_by_position := {}
+	for cell in _array_value(minimap.get("cells", [])):
+		var cell_position: Dictionary = cell.get("position", {})
+		cell_by_position["%d,%d" % [int(cell_position.get("x", 0)), int(cell_position.get("y", 0))]] = cell
+	var origin: Dictionary = minimap.get("origin", {})
+	for y in range(int(origin.get("y", 0)), int(origin.get("y", 0)) + height):
+		for x in range(int(origin.get("x", 0)), int(origin.get("x", 0)) + width):
+			var key := "%d,%d" % [x, y]
+			var tile := ColorRect.new()
+			tile.custom_minimum_size = cell_size
+			tile.color = _minimap_marker_color(String(marker_by_position.get(key, ""))) if marker_by_position.has(key) else _minimap_cell_color(cell_by_position.get(key, {}))
+			_ignore_mouse(tile)
+			grid.add_child(tile)
+
+func _minimap_cell_color(cell: Dictionary) -> Color:
+	if cell.is_empty() or bool(cell.get("fog", true)):
+		return Color(0.05, 0.05, 0.05, 0.88)
+	var terrain_id := String(cell.get("terrain_id", ""))
+	if "water" in terrain_id or "river" in terrain_id or "ice" in terrain_id:
+		return Color(0.18, 0.43, 0.68, 0.95)
+	if "forest" in terrain_id or "tree" in terrain_id or "jungle" in terrain_id or "pine" in terrain_id:
+		return Color(0.16, 0.45, 0.22, 0.95)
+	if "mountain" in terrain_id or "rock" in terrain_id or "cliff" in terrain_id:
+		return Color(0.42, 0.42, 0.36, 0.95)
+	if "path" in terrain_id or "road" in terrain_id:
+		return Color(0.63, 0.53, 0.33, 0.95)
+	if "snow" in terrain_id:
+		return Color(0.78, 0.84, 0.88, 0.95)
+	return Color(0.43, 0.57, 0.28, 0.95)
+
+func _minimap_marker_color(marker_type: String) -> Color:
+	match marker_type:
+		"player":
+			return Color(1.0, 0.95, 0.48, 1.0)
+		"dungeon":
+			return Color(0.76, 0.28, 0.22, 1.0)
+		"teleport":
+			return Color(0.56, 0.38, 0.92, 1.0)
+		_:
+			return Color(0.95, 0.72, 0.32, 1.0)
+
 func _inventory_definition(item_id: String) -> Dictionary:
 	if inventory != null and inventory.has_method("definition_for"):
 		return inventory.definition_for(item_id)
@@ -1014,8 +1113,8 @@ func _apply_safe_area_layout() -> void:
 	var margin := _safe_margin()
 	_place_panel(_panels.status, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y))
 	_place_panel(_panels.map, Control.PRESET_TOP_RIGHT, Vector2(-margin.z, margin.y))
-	_place_panel(_panels.quickslot, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y + 90.0))
-	_place_panel(_panels.menu, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y + 140.0))
+	_place_panel(_panels.quickslot, Control.PRESET_CENTER_TOP, Vector2(0.0, margin.y))
+	_place_panel(_panels.menu, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y + STATUS_PANEL_SIZE.y + 8.0))
 	_place_panel(_panels.dpad, Control.PRESET_BOTTOM_LEFT, Vector2(margin.x, -margin.w))
 	_place_panel(_panels.action, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w))
 
@@ -1065,6 +1164,12 @@ func _safe_margin() -> Vector4:
 		return fallback
 	var safe := DisplayServer.get_display_safe_area()
 	if safe.size.x <= 0 or safe.size.y <= 0:
+		return fallback
+	if safe.position.x < 0 or safe.position.y < 0:
+		return fallback
+	if safe.position.x >= viewport_size.x or safe.position.y >= viewport_size.y:
+		return fallback
+	if safe.size.x > viewport_size.x or safe.size.y > viewport_size.y:
 		return fallback
 	return Vector4(
 		maxf(fallback.x, float(safe.position.x)),
