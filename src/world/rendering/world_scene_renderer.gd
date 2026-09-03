@@ -106,7 +106,9 @@ func render(root: Node2D, renderer_input: Dictionary, owner_sources := {}, origi
 
 	for layer in renderer_input.get("layers", []):
 		var layer_id := String(layer.get("id", ""))
-		if layer_id == WorldData.LAYER_TERRAIN:
+		if layer_id == "base_terrain":
+			rendered_counts[layer_id] = _render_tilemap_cells(terrain_underlay_layer, terrain_footprint_layer, layer.get("cells", []), tile_size)
+		elif layer_id == WorldData.LAYER_TERRAIN:
 			_render_path_grass_underlay(terrain_underlay_layer, layer.get("cells", []), tile_size)
 			_render_bridge_water_underlay(terrain_underlay_layer, layer.get("cells", []), tile_size)
 			rendered_counts[layer_id] = _render_tilemap_cells(

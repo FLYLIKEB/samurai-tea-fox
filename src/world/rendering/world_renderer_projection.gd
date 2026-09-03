@@ -9,10 +9,15 @@ func project(world_data: Dictionary, progression_projection := {}) -> Dictionary
 	var width := int(bounds.get("width", 0))
 	var height := int(bounds.get("height", 0))
 	var terrain_cells := []
+	var base_terrain_cells := []
 	var facility_cells := []
 	var entity_cells := []
 	var interactable_cells := []
 	var owner_source_ids := _owner_source_ids(world_data)
+	var base_source_id := String(world_data.get("base_terrain_id", world_data.get("default_terrain_id", "")))
+	for y in range(height):
+		for x in range(width):
+			base_terrain_cells.append({"position": {"x": x, "y": y}, "source_id": base_source_id})
 
 	for cell in world_data.get("cells", []):
 		var position: Dictionary = cell.get("position", {})
@@ -40,6 +45,7 @@ func project(world_data: Dictionary, progression_projection := {}) -> Dictionary
 		"tile_size": int(world_data.get("tile_size", RuntimeConstants.float_value("world.tile_size_pixels"))),
 		"bounds": bounds.duplicate(true),
 		"layers": [
+			{"id": "base_terrain", "kind": "tile", "cells": base_terrain_cells},
 			{"id": WorldData.LAYER_TERRAIN, "kind": "tile", "cells": terrain_cells},
 			{"id": WorldData.LAYER_FACILITIES, "kind": "footprint", "cells": facility_cells},
 			{"id": WorldData.LAYER_ENTITIES, "kind": "footprint", "cells": entity_cells},

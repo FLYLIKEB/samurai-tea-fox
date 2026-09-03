@@ -23,6 +23,7 @@ var width := 0
 var height := 0
 var tile_size := int(RuntimeConstants.float_value("world.tile_size_pixels"))
 var default_terrain_id := "ground"
+var base_terrain_id := "ground"
 
 var _cells: Dictionary = {}
 var _reservations: Dictionary = {}
@@ -36,6 +37,7 @@ func setup(map_width: int, map_height: int, terrain_id := "ground", default_walk
 	width = max(0, map_width)
 	height = max(0, map_height)
 	default_terrain_id = terrain_id
+	base_terrain_id = terrain_id
 	_cells.clear()
 	_reservations.clear()
 	_landmarks.clear()
@@ -182,6 +184,7 @@ func to_dictionary() -> Dictionary:
 		"schema_version": 1,
 		"bounds": {"width": width, "height": height},
 		"tile_size": tile_size,
+		"base_terrain_id": base_terrain_id,
 		"layers": [LAYER_TERRAIN, LAYER_FACILITIES, LAYER_ENTITIES, LAYER_INTERACTABLES],
 		"cells": _serialized_cells(),
 		"reservations": _serialized_reservations(),
@@ -193,6 +196,7 @@ static func from_dictionary(data: Dictionary):
 	var world_script = load("res://src/world/data/world_data.gd")
 	var world_data = world_script.new(int(bounds.get("width", 0)), int(bounds.get("height", 0)))
 	world_data.tile_size = int(data.get("tile_size", RuntimeConstants.float_value("world.tile_size_pixels")))
+	world_data.base_terrain_id = String(data.get("base_terrain_id", world_data.default_terrain_id))
 	world_data._landmarks = data.get("required_landmarks", []).duplicate(true)
 
 	for serialized_cell in data.get("cells", []):

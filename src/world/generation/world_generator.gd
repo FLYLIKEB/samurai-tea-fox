@@ -178,6 +178,7 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 
 func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, layout_rng: DeterministicRng, content_rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, progression_projection: Dictionary, profile: Dictionary) -> Dictionary:
 	var world_data := WorldData.new(MAP_WIDTH, MAP_HEIGHT, String(profile.default_terrain_id), bool(profile.default_walkable))
+	world_data.base_terrain_id = String(profile.default_terrain_id)
 	var chunks := _compose_chunks(layout_rng, world_data, profile)
 	_apply_map_boundary(world_data, profile, progression_projection.get("edge_exit_positions", []))
 	var templates := _apply_common_templates(world_data, layout_rng, chunks, profile)
