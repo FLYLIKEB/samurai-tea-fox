@@ -26,7 +26,7 @@ signal grid_step_finished(cell: Vector2i)
 signal turn_finished(result: Dictionary)
 
 @export var monster_id := "road_bandit"
-@export var sprite_asset_id := "monster_foxfire_front_idle"
+@export var sprite_asset_id := ""
 @export var automatic_attacks := true
 @export_range(1.0, 128.0, 1.0) var attack_range_pixels := 40.0
 
@@ -82,6 +82,41 @@ func configure_grid_navigation(world_data = null, world_origin := Vector2.ZERO, 
 	_grid_world_origin = world_origin
 	_grid_tile_size = maxf(tile_size, 1.0)
 	_snap_to_grid_center()
+
+func suspend_for_world_transition() -> Dictionary:
+	var state := {
+		"visible": visible,
+		"collision_layer": collision_layer,
+		"collision_mask": collision_mask,
+		"automatic_attacks": automatic_attacks,
+		"target": target
+	}
+	deactivate_runtime()
+	return state
+
+func restore_after_world_transition(state: Dictionary) -> void:
+	_stop_runtime_motion()
+	visible = bool(state.get("visible", true))
+	collision_layer = int(state.get("collision_layer", 2))
+	collision_mask = int(state.get("collision_mask", 1))
+	automatic_attacks = bool(state.get("automatic_attacks", true))
+	target = state.get("target", null)
+
+func deactivate_runtime() -> void:
+	_stop_runtime_motion()
+	target = null
+	automatic_attacks = false
+	visible = false
+	collision_layer = 0
+	collision_mask = 0
+
+func _stop_runtime_motion() -> void:
+	velocity = Vector2.ZERO
+	_pending_knockback = Vector2.ZERO
+	if _grid_step_tween != null and _grid_step_tween.is_valid():
+		_grid_step_tween.kill()
+	_grid_step_tween = null
+	_grid_step_active = false
 
 func has_runtime_sprite() -> bool:
 	return sprite != null and sprite.texture != null
@@ -212,24 +247,42 @@ func _update_health_bar() -> void:
 	health_fill.position.x = -7.0 + 7.0 * ratio
 
 func _apply_sprite() -> void:
-	if sprite == null or sprite_asset_id.is_empty():
+	if sprite == null:
 		return
 	var asset_catalog := AssetCatalog.new()
 	var manifest_result := asset_catalog.load_manifest()
 	if not manifest_result.ok:
 		push_warning("Combat dummy sprite manifest failed: %s" % manifest_result.get("error", "unknown error"))
 		return
-	var texture := asset_catalog.load_texture(sprite_asset_id)
+	var resolved_sprite_asset_id := _resolve_sprite_asset_id(asset_catalog)
+	if resolved_sprite_asset_id.is_empty():
+		push_warning("Combat dummy sprite missing: %s (monster=%s)" % [sprite_asset_id, monster_id])
+		return
+	var texture := asset_catalog.load_texture(resolved_sprite_asset_id)
 	if texture == null:
-		push_warning("Combat dummy sprite missing: %s" % sprite_asset_id)
+		push_warning("Combat dummy sprite missing: %s" % resolved_sprite_asset_id)
 		return
 	sprite.texture = texture
 	sprite.z_index = 1
-	# The initial overworld encounter uses the ordinary foxfire monster asset.
+	# Overworld enemies can override with explicit sprite ids; otherwise this uses
+	# the monster-specific "monster_<id>_front_idle" sprite if present.
 	# Do not configure the boss-character directional animator here: its fallback
 	# character mapping would replace the selected monster texture with a king NPC.
 	_walk_animator_ready = false
 	_hide_placeholder_shapes()
+
+func _resolve_sprite_asset_id(asset_catalog: AssetCatalog) -> String:
+	if not sprite_asset_id.is_empty():
+		if sprite_asset_id != "monster_foxfire_front_idle" and asset_catalog.has(sprite_asset_id):
+			return sprite_asset_id
+
+	var monster_sprite_asset_id := "monster_%s_front_idle" % monster_id
+	if asset_catalog.has(monster_sprite_asset_id):
+		return monster_sprite_asset_id
+
+	if not sprite_asset_id.is_empty() and asset_catalog.has(sprite_asset_id):
+		return sprite_asset_id
+	return ""
 
 func _hide_placeholder_shapes() -> void:
 	if body != null:

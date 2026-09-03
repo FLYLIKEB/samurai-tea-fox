@@ -22,6 +22,8 @@ const ADJACENT_EAST := 2
 const ADJACENT_SOUTH := 4
 const ADJACENT_WEST := 8
 const RIVER_BASE_SOURCE_ID := "terrain_river_water_01"
+const BRIDGE_VERTICAL_SOURCE_ID := "asset_assets_tiles_terrain_bridges_bridge_vertical_32x32_png"
+const BRIDGE_HORIZONTAL_SOURCE_ID := "asset_assets_tiles_terrain_bridges_bridge_horizontal_32x32_png"
 const TREE_UNDERLAY_SOURCE_ID := "terrain_plains_grass_ground_01"
 const GRASS_VARIANT_SOURCE_IDS := [
 	"terrain_plains_grass_ground_01",
@@ -103,6 +105,7 @@ func render(root: Node2D, renderer_input: Dictionary, owner_sources := {}, origi
 		var layer_id := String(layer.get("id", ""))
 		if layer_id == WorldData.LAYER_TERRAIN:
 			_render_path_grass_underlay(terrain_underlay_layer, layer.get("cells", []), tile_size)
+			_render_bridge_water_underlay(terrain_underlay_layer, layer.get("cells", []), tile_size)
 			rendered_counts[layer_id] = _render_tilemap_cells(
 				terrain_layer,
 				terrain_footprint_layer,
@@ -149,6 +152,28 @@ func _render_path_grass_underlay(tilemap_layer: TileMapLayer, cells: Array, tile
 	for position in path_positions:
 		tilemap_layer.set_cell(position, int(source_meta.source_index), Vector2i.ZERO, 0)
 
+func _render_bridge_water_underlay(tilemap_layer: TileMapLayer, cells: Array, tile_size: int) -> void:
+	if tilemap_layer == null:
+		return
+	var bridge_positions: Array[Vector2i] = []
+	for cell in cells:
+		var source_id := String(cell.get("source_id", ""))
+		if source_id == BRIDGE_VERTICAL_SOURCE_ID or source_id == BRIDGE_HORIZONTAL_SOURCE_ID:
+			bridge_positions.append(_position_from_dictionary(cell.get("position", {})))
+	if bridge_positions.is_empty():
+		return
+	var path := _resource_path(RIVER_BASE_SOURCE_ID)
+	if path.is_empty():
+		return
+	var tile_set := tilemap_layer.tile_set if tilemap_layer.tile_set != null else TileSet.new()
+	tile_set.tile_size = Vector2i(tile_size, tile_size)
+	var source_meta := _add_tileset_source(tile_set, path, tile_size)
+	if not source_meta.ok:
+		return
+	tilemap_layer.tile_set = tile_set
+	for position in bridge_positions:
+		tilemap_layer.set_cell(position, int(source_meta.source_index), Vector2i.ZERO, 0)
+
 func _render_tilemap_cells(tilemap_layer: TileMapLayer, footprint_layer: Node2D, cells: Array, tile_size: int) -> int:
 	var tile_set := TileSet.new()
 	tile_set.tile_size = Vector2i(tile_size, tile_size)
@@ -179,7 +204,9 @@ func _render_tilemap_cells(tilemap_layer: TileMapLayer, footprint_layer: Node2D,
 			source_index_by_path[path] = meta.source_index
 			source_meta_by_path[path] = meta
 		var source_meta: Dictionary = source_meta_by_path[path]
-		var atlas_coords := Vector2i.ZERO if render_source_id != source_id else _atlas_coords_for_adjacency(mask, int(source_meta.columns), int(source_meta.rows))
+		var atlas_coords := _explicit_atlas_coords(cell.get("atlas_coords", {}), int(source_meta.columns), int(source_meta.rows))
+		if atlas_coords == Vector2i(-1, -1):
+			atlas_coords = Vector2i.ZERO if render_source_id != source_id else _atlas_coords_for_adjacency(mask, int(source_meta.columns), int(source_meta.rows))
 		tilemap_layer.set_cell(position, int(source_index_by_path[path]), atlas_coords, 0)
 		if not tree_overlay_source_id.is_empty():
 			_render_original_sprite(footprint_layer, _resource_path(tree_overlay_source_id), position, tile_size)
@@ -413,6 +440,14 @@ func _atlas_coords_for_adjacency(mask: int, columns: int, rows: int) -> Vector2i
 	var frame_count: int = max(1, columns * rows)
 	var frame_index: int = clampi(mask, 0, 15) % frame_count
 	return Vector2i(frame_index % columns, int(frame_index / columns))
+
+func _explicit_atlas_coords(value, columns: int, rows: int) -> Vector2i:
+	if typeof(value) != TYPE_DICTIONARY:
+		return Vector2i(-1, -1)
+	var coords := _position_from_dictionary(value)
+	if coords.x < 0 or coords.y < 0 or coords.x >= columns or coords.y >= rows:
+		return Vector2i(-1, -1)
+	return coords
 
 func _terrain_source_for_adjacency(source_id: String, mask: int) -> String:
 	if source_id == RIVER_BASE_SOURCE_ID:

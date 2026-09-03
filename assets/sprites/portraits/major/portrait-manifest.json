@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "asset_type": "major_character_portrait",
+  "source": "assets/source/imagegen/major-portraits-20260903/portrait_sheet.png",
+  "portraits": [
+    {"id": "portrait_chr_1_kitsune_father", "character_id": "CHR-1", "path": "assets/sprites/portraits/major/chr_1_kitsune_father_96x96.png"},
+    {"id": "portrait_chr_2_wasteland_daimyo", "character_id": "CHR-2", "path": "assets/sprites/portraits/major/chr_2_wasteland_daimyo_96x96.png"},
+    {"id": "portrait_chr_3_furuta_oribe", "character_id": "CHR-3", "path": "assets/sprites/portraits/major/chr_3_furuta_oribe_96x96.png"},
+    {"id": "portrait_chr_4_snow_monk", "character_id": "CHR-4", "path": "assets/sprites/portraits/major/chr_4_snow_monk_96x96.png"},
+    {"id": "portrait_chr_5_sen_rikyu", "character_id": "CHR-5", "path": "assets/sprites/portraits/major/chr_5_sen_rikyu_96x96.png"},
+    {"id": "portrait_chr_6_yokai_tea_master", "character_id": "CHR-6", "path": "assets/sprites/portraits/major/chr_6_yokai_tea_master_96x96.png"},
+    {"id": "portrait_chr_7_mountain_potter", "character_id": "CHR-7", "path": "assets/sprites/portraits/major/chr_7_mountain_potter_96x96.png"},
+    {"id": "portrait_chr_8_muchau", "character_id": "CHR-8", "path": "assets/sprites/portraits/major/chr_8_muchau_96x96.png"},
+    {"id": "portrait_chr_9_wandering_tea_merchant", "character_id": "CHR-9", "path": "assets/sprites/portraits/major/chr_9_wandering_tea_merchant_96x96.png"}
+  ]
+}

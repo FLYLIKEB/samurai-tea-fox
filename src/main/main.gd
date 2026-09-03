@@ -56,6 +56,14 @@ const CHEAT_RESOURCE_ITEM_TYPE := "재료"
 const TREE_HARVEST_TOOL_ITEM_ID := "stone_axe"
 const TREE_HARVEST_DEFINITION_PREFIX := "terrain_tree_wood"
 const DUNGEON_DEBUG_LOGGING := true
+const DUNGEON_TILESET_SOURCE_ID := "terrain_dungeon_mossy_dojo_tileset"
+const DUNGEON_IRON_SOURCE_ID := "asset_assets_sprites_objects_mining_iron_ore_32x32_png"
+const DUNGEON_STONE_SOURCE_ID := "small_rock_resource"
+const DUNGEON_FLOOR_ATLAS_COORDS := [
+	Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)
+]
+const START_SCREEN_SCENE_PATH := "res://scenes/ui/start_screen.tscn"
+const THE_END_DURATION_SECONDS := 1.8
 const LARGE_HOUSE_DUNGEON_OWNER_IDS := [
 	"large_fenced_house",
 	"large_house_fence_nw",
@@ -106,8 +114,11 @@ var _overworld_generated_world: Dictionary = {}
 var _overworld_world_data_snapshot: Dictionary = {}
 var _overworld_player_cell := Vector2i.ZERO
 var _overworld_combat_dummy_cell := Vector2i.ZERO
+var _overworld_combat_dummy = null
+var _overworld_combat_dummy_state: Dictionary = {}
 var _in_dungeon_map := false
 var _dungeon_resources: Array = []
+var _dungeon_enemy_nodes: Array = []
 var _desktop_adapter := DesktopCommandAdapter.new()
 var _movement_selector := MovementCommandSelector.new()
 var _has_pointer_move_target := false
@@ -124,6 +135,7 @@ var _active_narrative_event_id := ""
 var _active_narrative_node_id := ""
 var _start_mode := START_MODE_RESUME
 var _force_first_run_prologue := false
+var _death_transition_active := false
 
 func _ready() -> void:
 	_configure_audio_feedback()
@@ -231,6 +243,9 @@ func _configure_world_for_current_run() -> Dictionary:
 	return {"ok": true}
 
 func _physics_process(_delta: float) -> void:
+	if _death_transition_active:
+		return
+	_update_dungeon_sign_visibility()
 	if player != null and player.ability_runtime != null:
 		player.ability_runtime.tick(_delta)
 	_record_current_map_discovery()
@@ -351,6 +366,10 @@ func submit_pointer_interaction(world_position: Vector2) -> bool:
 		_place_pending_facility_at(world_cell_from_world_position(world_position))
 		return true
 	_dungeon_debug("클릭 상호작용: world=%s cell=%s" % [world_position, world_cell_from_world_position(world_position)])
+	var ore_hit := _dungeon_ore_target_near_cell(world_cell_from_world_position(world_position), 2)
+	if not ore_hit.is_empty():
+		_dungeon_debug("클릭 광석 대상 발견: %s" % ore_hit)
+		return _queue_pointer_acquisition(ore_hit.target_id, ore_hit.cell)
 	var landmark_hit := _landmark_target_near_world_position(world_position)
 	if not landmark_hit.is_empty():
 		_dungeon_debug("클릭 대상: required dungeon landmark %s" % landmark_hit)
@@ -383,6 +402,17 @@ func _try_dungeon_interaction_from_input() -> bool:
 	if not dungeon_target.is_empty():
 		_dungeon_debug("E 대상 발견: %s" % dungeon_target)
 		return submit_interaction_at_world_cell(dungeon_target.cell)
+	var ore_target := _dungeon_ore_target_near_cell(origin_cell, 1)
+	if ore_target.is_empty():
+		ore_target = _acquisition_target_near_cell(origin_cell)
+	if not ore_target.is_empty():
+		_dungeon_debug("E 광석 대상 발견: %s" % ore_target)
+		return _gather_dungeon_ore(String(ore_target.target_id), ore_target.cell)
+	var enemy_cell := _dungeon_enemy_cell_near(origin_cell)
+	if enemy_cell != Vector2i(-1, -1):
+		_activate_dungeon_enemy(enemy_cell)
+		var direction := Vector2i(int(signf(float(enemy_cell.x - origin_cell.x))), int(signf(float(enemy_cell.y - origin_cell.y))))
+		return submit_action_command(GameCommand.new(GameCommand.Type.ATTACK, direction))
 	var landmark := _landmark_target_near_world_position(player.global_position, _runtime_tile_size() * 2.5)
 	if landmark.is_empty():
 		landmark = _large_house_target_near_world_position(player.global_position, _runtime_tile_size() * 3.5)
@@ -393,20 +423,86 @@ func _try_dungeon_interaction_from_input() -> bool:
 	return submit_interaction_at_world_cell(landmark.cell)
 
 func _pointer_enemy_clicked(world_position: Vector2) -> bool:
-	if combat_dummy == null \
-			or not combat_dummy.visible \
-			or not combat_dummy.has_method("current_hp") \
-			or int(combat_dummy.current_hp()) <= 0:
-		return false
 	var hit_radius := maxf(_runtime_tile_size() * 0.5, 16.0)
-	return combat_dummy.global_position.distance_to(world_position) <= hit_radius
+	for enemy in _combat_targets():
+		if enemy.global_position.distance_to(world_position) <= hit_radius:
+			combat_dummy = enemy
+			return true
+	return false
+
+func _is_dungeon_enemy_cell(cell: Vector2i) -> bool:
+	if not _in_dungeon_map or world_data == null:
+		return false
+	for owner_id in ["dungeon_enemy_0", "dungeon_enemy_1", "dungeon_enemy_2", "dungeon_boss"]:
+		if owner_id in world_data.get_occupants(cell):
+			return true
+	return false
+
+func _acquisition_target_near_cell(origin_cell: Vector2i) -> Dictionary:
+	for cell in _interaction_candidate_cells(origin_cell):
+		var target_id := _interaction_target_id_for_cell(cell)
+		if not target_id.is_empty() and _is_available_acquisition_target(target_id):
+			return {"target_id": target_id, "cell": cell}
+	return {}
+
+func _dungeon_ore_target_near_cell(origin_cell: Vector2i, radius: int) -> Dictionary:
+	if not _in_dungeon_map:
+		return {}
+	var best := {}
+	var best_distance := 1 << 30
+	for node in _dungeon_resources:
+		var target_id := String(node.get("id", ""))
+		var cell := _vector_from_dictionary(node.get("position", {}))
+		var distance := absi(cell.x - origin_cell.x) + absi(cell.y - origin_cell.y)
+		if distance > radius or distance >= best_distance:
+			continue
+		var gatherable: Dictionary = acquisition_service.gatherable_for(target_id) if acquisition_service != null else {}
+		if not gatherable.is_empty() and bool(gatherable.get("depleted", false)):
+			continue
+		best = {"target_id": target_id, "cell": cell}
+		best_distance = distance
+	return best
+
+func _gather_dungeon_ore(target_id: String, cell: Vector2i) -> bool:
+	if acquisition_service == null:
+		_dungeon_debug("광석 채집 실패: acquisition_service 없음")
+		return true
+	if acquisition_service.gatherable_for(target_id).is_empty():
+		var register_result: Dictionary = acquisition_service.register_gatherable(target_id, target_id, cell)
+		if not register_result.ok:
+			_dungeon_debug("광석 재등록 실패: %s" % register_result)
+			return true
+	var result: Dictionary = acquisition_service.gather(target_id)
+	_dungeon_debug("광석 채집 결과: target=%s ok=%s reason=%s" % [target_id, result.get("ok", false), result.get("reason", "")])
+	if result.ok:
+		_advance_time_for_turn()
+		_play_feedback_beep()
+		_queue_enemy_turn_after_player_action()
+	return true
+
+func _dungeon_enemy_cell_near(origin_cell: Vector2i) -> Vector2i:
+	for y in range(origin_cell.y - 1, origin_cell.y + 2):
+		for x in range(origin_cell.x - 1, origin_cell.x + 2):
+			var cell := Vector2i(x, y)
+			if _is_dungeon_enemy_cell(cell) and _cells_are_adjacent(origin_cell, cell):
+				return cell
+	return Vector2i(-1, -1)
+
+func _activate_dungeon_enemy(cell: Vector2i) -> void:
+	for enemy in _combat_targets():
+		if world_cell_from_world_position(enemy.global_position) == cell:
+			combat_dummy = enemy
+			return
+
+func _is_dungeon_boss_cell(cell: Vector2i) -> bool:
+	return "dungeon_boss" in world_data.get_occupants(cell) if world_data != null else false
 
 func _queue_pointer_acquisition(target_id: String, target_cell: Vector2i) -> bool:
 	if player == null:
-		return submit_interaction_at_world_cell(target_cell)
+		return _gather_dungeon_ore(target_id, target_cell) if _is_dungeon_resource_target(target_id) else submit_interaction_at_world_cell(target_cell)
 	var player_cell := world_cell_from_world_position(player.global_position)
 	if _cells_are_adjacent(player_cell, target_cell):
-		return submit_interaction_at_world_cell(target_cell)
+		return _gather_dungeon_ore(target_id, target_cell) if _is_dungeon_resource_target(target_id) else submit_interaction_at_world_cell(target_cell)
 	var approach_cell := _nearest_walkable_adjacent_cell(target_cell, player_cell)
 	if approach_cell == target_cell:
 		return false
@@ -787,6 +883,9 @@ func snapshot_run_state() -> Dictionary:
 		_sync_consumable_runtime_state()
 	if time_state != null:
 		run_state.time = time_state.to_snapshot()
+	if player != null and not _in_dungeon_map:
+		var cell := _player_world_cell()
+		run_state.player_cell = {"x": cell.x, "y": cell.y}
 	return run_state.to_dictionary()
 
 func load_or_create_run_state() -> Dictionary:
@@ -1137,12 +1236,21 @@ func can_use_ability(_ability_id: String, tail_requirement: int) -> bool:
 	return int(run_state.tails) >= int(tail_requirement)
 
 func targets_for_ability(source, definition, direction: Vector2) -> Array:
-	if combat_dummy != null \
-			and combat_dummy.has_method("current_hp") \
-			and int(combat_dummy.current_hp()) > 0 \
-			and _ability_target_is_in_range(source, definition, direction, combat_dummy):
-		return [combat_dummy]
-	return []
+	var targets := []
+	for enemy in _combat_targets():
+		if _ability_target_is_in_range(source, definition, direction, enemy):
+			targets.append(enemy)
+	return targets
+
+func _combat_targets() -> Array:
+	var targets := []
+	if _in_dungeon_map:
+		for enemy in _dungeon_enemy_nodes:
+			if is_instance_valid(enemy) and enemy.visible and enemy.has_method("current_hp") and int(enemy.current_hp()) > 0:
+				targets.append(enemy)
+	elif combat_dummy != null and is_instance_valid(combat_dummy) and combat_dummy.visible and combat_dummy.has_method("current_hp") and int(combat_dummy.current_hp()) > 0:
+		targets.append(combat_dummy)
+	return targets
 
 func _ability_target_is_in_range(source, definition, direction: Vector2, target) -> bool:
 	if source == null or target == null:
@@ -1182,7 +1290,7 @@ func _ensure_playable_dungeon_runtime() -> Dictionary:
 func _dungeon_completion_objective_met(payload: Dictionary) -> bool:
 	if bool(payload.get("objective_complete", false)):
 		return true
-	return combat_dummy != null and combat_dummy.has_method("current_hp") and int(combat_dummy.current_hp()) <= 0
+	return _in_dungeon_map and _combat_targets().is_empty()
 
 func _ensure_current_dungeon_entered() -> Dictionary:
 	var projection: Dictionary = dungeon_runtime.to_projection() if dungeon_runtime != null else {}
@@ -1202,15 +1310,40 @@ func _ensure_current_dungeon_entered() -> Dictionary:
 	_dungeon_resources.clear()
 	for y in range(layout.height):
 		for x in range(layout.width):
-			layout.set_terrain(Vector2i(x, y), "dungeon_grass", true, "terrain_plains_grass_ground_02")
-	for index in range(6):
-		var resource_cell := Vector2i(4 + (index % 3) * 2, 3 + (index / 3) * 3)
-		var resource_id := "dungeon_iron_ore_%d" % index
-		var reservation := layout.reserve_entity(resource_id, resource_cell, Vector2i.ONE, true, {"source_id": "asset_assets_sprites_objects_mining_iron_ore_32x32_png"})
+			var dungeon_cell := Vector2i(x, y)
+			var blocked := _dungeon_cell_is_blocked(dungeon_cell)
+			layout.set_terrain(
+				dungeon_cell,
+				"dungeon_wall" if blocked else "dungeon_floor",
+				not blocked,
+				DUNGEON_TILESET_SOURCE_ID,
+				_dungeon_atlas_coords_for_cell(dungeon_cell, Vector2i(layout.width, layout.height))
+			)
+	var reserved_enemy_cells := {Vector2i(7, 2): true, Vector2i(9, 5): true, Vector2i(5, 7): true, Vector2i(10, 7): true}
+	var resource_candidates: Array[Vector2i] = []
+	for y in range(1, layout.height - 1):
+		for x in range(1, layout.width - 1):
+			var candidate := Vector2i(x, y)
+			if candidate == Vector2i(1, 1) or reserved_enemy_cells.has(candidate) or not layout.is_walkable(candidate):
+				continue
+			resource_candidates.append(candidate)
+	resource_candidates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+			return absi(a.x * 37 + a.y * 19) < absi(b.x * 37 + b.y * 19)
+	)
+	var resource_index := 0
+	for resource_cell in resource_candidates:
+		if resource_index >= 44:
+			break
+		var is_stone := resource_index % 3 == 1
+		var resource_id := "dungeon_stone_%d" % resource_index if is_stone else "dungeon_iron_ore_%d" % resource_index
+		var item_id := "stone" if is_stone else "iron_ore"
+		var source_id := DUNGEON_STONE_SOURCE_ID if is_stone else DUNGEON_IRON_SOURCE_ID
+		var reservation := layout.reserve_entity(resource_id, resource_cell, Vector2i.ONE, true, {"source_id": source_id, "interaction_kind": AcquisitionService.GATHERABLE_KIND, "definition_id": resource_id})
 		if reservation.ok:
-			_dungeon_resources.append({"id": resource_id, "resource_id": "iron_ore", "position": {"x": resource_cell.x, "y": resource_cell.y}, "source_id": "asset_assets_sprites_objects_mining_iron_ore_32x32_png"})
+			_dungeon_resources.append({"id": resource_id, "resource_id": item_id, "position": {"x": resource_cell.x, "y": resource_cell.y}, "source_id": source_id})
+			resource_index += 1
 	for enemy in [{"id": "dungeon_enemy_0", "cell": Vector2i(7, 2)}, {"id": "dungeon_enemy_1", "cell": Vector2i(9, 5)}, {"id": "dungeon_enemy_2", "cell": Vector2i(5, 7)}, {"id": "dungeon_boss", "cell": Vector2i(10, 7)}]:
-		layout.reserve_entity(String(enemy.id), enemy.cell, Vector2i.ONE, false, {"source_id": "asset_assets_sprites_characters_bosses_chr_6_yokai_tea_master_yokai_tea_master_front_32x32_png" if enemy.id == "dungeon_boss" else "monster_foxfire_front_idle", "role": "boss" if enemy.id == "dungeon_boss" else "dungeon_enemy"})
+		layout.reserve_entity(String(enemy.id), enemy.cell, Vector2i.ONE, false, {"role": "boss" if enemy.id == "dungeon_boss" else "dungeon_enemy"})
 	var enter_result: Dictionary = dungeon_runtime.enter_dungeon(
 		"%s_%d" % [String(definition.id), run_state.seed],
 		definition,
@@ -1223,6 +1356,32 @@ func _ensure_current_dungeon_entered() -> Dictionary:
 		_dungeon_debug("dungeon_runtime.enter_dungeon 실패: %s" % enter_result)
 	return enter_result
 
+func _dungeon_atlas_coords_for_cell(cell: Vector2i, bounds: Vector2i) -> Vector2i:
+	if cell.y == 0:
+		return Vector2i(cell.x % 8, 1)
+	if cell.y == bounds.y - 1:
+		return Vector2i(cell.x % 8, 4)
+	if cell.x == 0:
+		return Vector2i(0, 2 + cell.y % 2)
+	if cell.x == bounds.x - 1:
+		return Vector2i(7, 2 + cell.y % 2)
+	var variant_index := absi(cell.x * 31 + cell.y * 17 + cell.x * cell.y * 7) % DUNGEON_FLOOR_ATLAS_COORDS.size()
+	return DUNGEON_FLOOR_ATLAS_COORDS[variant_index]
+
+func _dungeon_cell_is_blocked(cell: Vector2i) -> bool:
+	if cell.x == 0 or cell.y == 0 or cell.x == 11 or cell.y == 8:
+		return cell != Vector2i(1, 1)
+	if cell in [Vector2i(7, 2), Vector2i(9, 5), Vector2i(5, 7), Vector2i(10, 7)]:
+		return false
+	if cell.x in [3, 6, 9] and cell.y in [2, 3, 5, 6]:
+		return true
+	if cell.y == 4 and cell.x in [4, 5, 7, 8]:
+		return true
+	return false
+
+func _is_dungeon_resource_target(target_id: String) -> bool:
+	return target_id.begins_with("dungeon_iron_ore_") or target_id.begins_with("dungeon_stone_")
+
 func _dungeon_runtime_is_active() -> bool:
 	return dungeon_runtime != null and String(dungeon_runtime.to_projection().get("lifecycle_state", DungeonInstanceState.STATE_OUTSIDE)) == DungeonInstanceState.STATE_ACTIVE
 
@@ -1233,10 +1392,19 @@ func _dungeon_debug(message: String) -> void:
 func _enter_dungeon_map(layout: WorldData, definition: Dictionary) -> void:
 	if _in_dungeon_map:
 		return
+	_enemy_turn_queued = false
 	_overworld_generated_world = generated_world.duplicate(true)
 	_overworld_world_data_snapshot = world_data.to_dictionary() if world_data != null else {}
 	_overworld_player_cell = _player_world_cell()
 	_overworld_combat_dummy_cell = world_cell_from_world_position(combat_dummy.global_position) if combat_dummy != null else Vector2i.ZERO
+	_overworld_combat_dummy = combat_dummy
+	_overworld_combat_dummy_state = {}
+	if _overworld_combat_dummy != null:
+		if _overworld_combat_dummy.has_method("suspend_for_world_transition"):
+			_overworld_combat_dummy_state = _overworld_combat_dummy.suspend_for_world_transition()
+		else:
+			_overworld_combat_dummy_state = {"visible": _overworld_combat_dummy.visible}
+			_overworld_combat_dummy.visible = false
 	var dungeon_data := layout.to_dictionary()
 	var dungeon_projection := WorldRendererProjection.new().project(dungeon_data)
 	generated_world = {
@@ -1254,13 +1422,88 @@ func _enter_dungeon_map(layout: WorldData, definition: Dictionary) -> void:
 		acquisition_service = AcquisitionService.new()
 		var dungeon_definitions := []
 		for node in _dungeon_resources:
-			dungeon_definitions.append({"id": String(node.id), "item_id": "iron_ore", "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT})
-		acquisition_service.configure(inventory, world_data, dungeon_definitions, [])
+			dungeon_definitions.append({"id": String(node.id), "item_id": String(node.get("resource_id", "iron_ore")), "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT})
+		var dungeon_acquisition_result: Dictionary = acquisition_service.configure(inventory, world_data, dungeon_definitions, [])
+		if not dungeon_acquisition_result.ok:
+			_dungeon_debug("광석 상호작용 설정 실패: %s" % dungeon_acquisition_result)
+		else:
+			acquisition_service.changed.connect(_on_acquisition_changed)
+			acquisition_service.acquisition_completed.connect(_on_acquisition_completed)
+			for node in _dungeon_resources:
+				var register_result: Dictionary = acquisition_service.register_gatherable(String(node.id), String(node.id), _vector_from_dictionary(node.position))
+				if not register_result.ok:
+					_dungeon_debug("광석 노드 등록 실패: %s" % register_result)
 	_render_generated_world(generated_world)
 	player.global_position = world_position_for_cell_center(Vector2i(1, 1))
-	if combat_dummy != null:
-		combat_dummy.global_position = world_position_for_cell_center(Vector2i(3, 1))
+	_spawn_dungeon_combatants()
 	_configure_game_hud()
+
+func _spawn_dungeon_combatants() -> void:
+	_clear_dungeon_combatants(false)
+	if _overworld_combat_dummy == null or not _overworld_combat_dummy.has_method("configure_combat"):
+		return
+	var specs := [
+		{"id": "dungeon_enemy_0", "cell": Vector2i(7, 2), "monster_id": "road_bandit", "sprite_id": "monster_foxfire_front_idle"},
+		{"id": "dungeon_enemy_1", "cell": Vector2i(9, 5), "monster_id": "road_bandit", "sprite_id": "monster_foxfire_front_idle"},
+		{"id": "dungeon_enemy_2", "cell": Vector2i(5, 7), "monster_id": "road_bandit", "sprite_id": "monster_foxfire_front_idle"},
+		{"id": "dungeon_boss", "cell": Vector2i(10, 7), "monster_id": "road_bandit", "sprite_id": "asset_assets_sprites_characters_bosses_chr_6_yokai_tea_master_yokai_tea_master_front_32x32_png", "boss": true}
+	]
+	for index in range(specs.size()):
+		var spec: Dictionary = specs[index]
+		var enemy = _overworld_combat_dummy.duplicate()
+		add_child(enemy)
+		enemy.name = String(spec.id)
+		enemy.monster_id = String(spec.monster_id)
+		enemy.sprite_asset_id = String(spec.sprite_id)
+		enemy.collision_layer = 2
+		enemy.collision_mask = 1
+		enemy.visible = true
+		enemy.global_position = world_position_for_cell_center(spec.cell)
+		var configured: Dictionary = enemy.configure_combat(catalog, player, player.combat_config)
+		if configured.ok and bool(spec.get("boss", false)):
+			enemy.combatant.hp_max *= 3
+			enemy.combatant.hp = enemy.combatant.hp_max
+			enemy.combatant.attack *= 2
+		if enemy.has_method("_apply_sprite"):
+			enemy._apply_sprite()
+		if enemy.has_signal("defeat_event"):
+			var defeat_callback := Callable(self, "_on_dungeon_enemy_defeated").bind(enemy, String(spec.id))
+			if not enemy.is_connected("defeat_event", defeat_callback):
+				enemy.connect("defeat_event", defeat_callback)
+		_connect_acquisition_combat_source(enemy)
+		if enemy.has_method("configure_grid_navigation"):
+			enemy.configure_grid_navigation(world_data, _runtime_world_origin(), _runtime_tile_size())
+		_dungeon_enemy_nodes.append(enemy)
+		_dungeon_debug("실제 던전 몬스터 생성: id=%s ok=%s" % [spec.id, configured.get("ok", false)])
+	combat_dummy = _dungeon_enemy_nodes.back()
+
+func _clear_dungeon_combatants(restore_overworld := true) -> void:
+	for enemy in _dungeon_enemy_nodes:
+		if not is_instance_valid(enemy) or enemy == _overworld_combat_dummy:
+			continue
+		if enemy.has_method("deactivate_runtime"):
+			enemy.deactivate_runtime()
+		else:
+			enemy.visible = false
+		enemy.queue_free()
+	_dungeon_enemy_nodes.clear()
+	if restore_overworld and _overworld_combat_dummy != null:
+		combat_dummy = _overworld_combat_dummy
+		if combat_dummy.has_method("restore_after_world_transition"):
+			combat_dummy.restore_after_world_transition(_overworld_combat_dummy_state)
+		else:
+			combat_dummy.visible = bool(_overworld_combat_dummy_state.get("visible", true))
+		_overworld_combat_dummy_state.clear()
+
+func _on_dungeon_enemy_defeated(_event: Dictionary, enemy, owner_id: String) -> void:
+	if not is_instance_valid(enemy):
+		return
+	enemy.visible = false
+	enemy.collision_layer = 0
+	enemy.collision_mask = 0
+	if world_data != null:
+		world_data.release_footprint(owner_id)
+	_dungeon_debug("던전 몬스터 처치: %s, remaining=%d" % [owner_id, _combat_targets().size()])
 
 func _restore_dungeon_map_from_runtime() -> void:
 	var projection: Dictionary = dungeon_runtime.to_projection()
@@ -1276,14 +1519,18 @@ func _restore_dungeon_map_from_runtime() -> void:
 func _return_from_dungeon_map() -> void:
 	if not _in_dungeon_map:
 		return
+	_enemy_turn_queued = false
 	generated_world = _overworld_generated_world
 	world_data = WorldData.from_dictionary(_overworld_world_data_snapshot)
 	_in_dungeon_map = false
+	_clear_dungeon_combatants()
 	_configure_acquisition_for_generated_world()
 	_render_generated_world(generated_world)
 	player.global_position = world_position_for_cell_center(_overworld_player_cell)
 	if combat_dummy != null:
 		combat_dummy.global_position = world_position_for_cell_center(_overworld_combat_dummy_cell)
+		if combat_dummy.has_method("configure_grid_navigation"):
+			combat_dummy.configure_grid_navigation(world_data, _runtime_world_origin(), _runtime_tile_size())
 	_configure_game_hud()
 
 func _current_biome_dungeon_definition() -> Dictionary:
@@ -1462,7 +1709,7 @@ func _connect_acquisition_combat_source(source) -> Dictionary:
 	return {"ok": true}
 
 func _on_acquisition_changed(snapshot: Dictionary) -> void:
-	if run_state != null:
+	if run_state != null and not _in_dungeon_map:
 		run_state.acquisitions = snapshot.duplicate(true)
 	_sync_runtime_world_render()
 
@@ -1515,6 +1762,8 @@ func _queue_enemy_turn_after_player_action() -> void:
 	call_deferred("_run_enemy_turn_after_player_action")
 
 func _run_enemy_turn_after_player_action() -> void:
+	if not _enemy_turn_queued:
+		return
 	if player != null and player.has_method("is_grid_step_active") and player.is_grid_step_active():
 		var scene_tree := get_tree()
 		if scene_tree == null:
@@ -1522,16 +1771,18 @@ func _run_enemy_turn_after_player_action() -> void:
 			return
 		scene_tree.process_frame.connect(Callable(self, "_run_enemy_turn_after_player_action"), CONNECT_ONE_SHOT)
 		return
-	if combat_dummy != null and combat_dummy.has_method("is_grid_step_active") and combat_dummy.is_grid_step_active():
-		var scene_tree := get_tree()
-		if scene_tree != null:
-			scene_tree.process_frame.connect(Callable(self, "_run_enemy_turn_after_player_action"), CONNECT_ONE_SHOT)
-		return
+	for enemy in _combat_targets():
+		if enemy.has_method("is_grid_step_active") and enemy.is_grid_step_active():
+			var scene_tree := get_tree()
+			if scene_tree != null:
+				scene_tree.process_frame.connect(Callable(self, "_run_enemy_turn_after_player_action"), CONNECT_ONE_SHOT)
+			return
 	_enemy_turn_queued = false
-	if combat_dummy == null or player == null or not combat_dummy.visible:
+	if player == null:
 		return
-	if combat_dummy.has_method("take_turn"):
-		combat_dummy.take_turn(player)
+	for enemy in _combat_targets():
+		if enemy.has_method("take_turn"):
+			enemy.take_turn(player)
 
 func _is_turn_advancing_player_action(command) -> bool:
 	if not command is GameCommand:
@@ -1598,15 +1849,37 @@ func _replace_confirmed_dead_run() -> Dictionary:
 	var save_result: Dictionary = save_store.save_run(fresh_run)
 	if not save_result.ok:
 		return save_result
-	var activation_result := _activate_run_state(fresh_run)
-	if not activation_result.ok:
-		return activation_result
+	_show_the_end_and_return_to_start()
 	return {
 		"ok": true,
 		"state": "fresh_run",
 		"invalidated_lifecycle_epoch": int(confirmed.invalidated_lifecycle_epoch),
 		"lifecycle_epoch": fresh_run.lifecycle_epoch
 	}
+
+func _show_the_end_and_return_to_start() -> void:
+	if _death_transition_active:
+		return
+	_death_transition_active = true
+	var layer := CanvasLayer.new()
+	layer.name = "DeathTransition"
+	layer.layer = 1000
+	var background := ColorRect.new()
+	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.color = Color(0.02, 0.015, 0.012, 1.0)
+	background.mouse_filter = Control.MOUSE_FILTER_STOP
+	var label := Label.new()
+	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	label.text = "THE END"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 42)
+	label.add_theme_color_override("font_color", Color(0.88, 0.78, 0.55, 1.0))
+	layer.add_child(background)
+	layer.add_child(label)
+	add_child(layer)
+	await get_tree().create_timer(THE_END_DURATION_SECONDS).timeout
+	get_tree().change_scene_to_file(START_SCREEN_SCENE_PATH)
 
 func _activate_run_state(state: RunState) -> Dictionary:
 	run_state = state
@@ -1680,7 +1953,10 @@ func _complete_pending_pointer_interaction() -> void:
 		_dungeon_debug("이동 완료했지만 상호작용 거리 불충족: player_cell=%s target=%s target_cell=%s" % [world_cell_from_world_position(player.global_position) if player != null else "nil", target_id, target_cell])
 		return
 	_dungeon_debug("입구 도착, 상호작용 실행: target=%s cell=%s" % [target_id, target_cell])
-	submit_interaction_at_world_cell(target_cell)
+	if _is_dungeon_resource_target(target_id):
+		_gather_dungeon_ore(target_id, target_cell)
+	else:
+		submit_interaction_at_world_cell(target_cell)
 
 func _cells_are_adjacent(first: Vector2i, second: Vector2i) -> bool:
 	var offset := second - first
@@ -1848,6 +2124,8 @@ func _dungeon_interaction_target_id_for_cell(cell: Vector2i) -> String:
 		if _is_core_dungeon_target(target_id):
 			return target_id
 	var landmark_id := _landmark_target_id_for_cell(cell)
+	if _in_dungeon_map and landmark_id == WorldData.LANDMARK_ENTRY:
+		return "dungeon_entry"
 	if _is_core_dungeon_target(landmark_id):
 		return landmark_id
 	return ""
@@ -1875,7 +2153,8 @@ func _is_landmark_footprint_cell(cell: Vector2i) -> bool:
 	return not _landmark_target_id_for_cell(cell).is_empty()
 
 func _is_landmark_target(target_id: String) -> bool:
-	return _is_core_dungeon_target(target_id) \
+	return (_in_dungeon_map and target_id == "dungeon_entry") \
+		or _is_core_dungeon_target(target_id) \
 		or target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE)
 
 func _is_core_dungeon_target(target_id: String) -> bool:
@@ -1887,6 +2166,17 @@ func _is_large_house_dungeon_target(target_id: String) -> bool:
 		or target_id.begins_with("large_house_fence_")
 
 func _handle_landmark_interaction(target_id: String) -> bool:
+	if _in_dungeon_map and target_id == "dungeon_entry":
+		if dungeon_runtime == null or not _dungeon_runtime_is_active():
+			return false
+		dungeon_runtime.begin_return()
+		dungeon_runtime.finish_return()
+		_return_from_dungeon_map()
+		save_current_run()
+		_configure_game_hud()
+		if game_hud != null:
+			game_hud.show_command_feedback("던전에서 귀환")
+		return true
 	if _is_core_dungeon_target(target_id):
 		_dungeon_debug("던전 랜드마크 상호작용: %s" % target_id)
 		return _handle_complete_dungeon_command(GameCommand.new(GameCommand.Type.COMPLETE_DUNGEON, Vector2i.ZERO, -1, {"entry_only": true}))
@@ -2428,7 +2718,13 @@ func _render_generated_world(world: Dictionary) -> void:
 	if not world_render_result.ok:
 		push_error(world_render_result.error)
 	if player != null and player.has_method("configure_grid_navigation"):
-		player.global_position = world_position_for_cell_center(_entry_spawn_cell(world))
+		var saved_cell: Dictionary = run_state.player_cell if run_state != null else {}
+		var spawn_cell := _entry_spawn_cell(world)
+		if not saved_cell.is_empty():
+			var candidate := Vector2i(int(saved_cell.get("x", spawn_cell.x)), int(saved_cell.get("y", spawn_cell.y)))
+			if world_data != null and world_data.is_walkable(candidate):
+				spawn_cell = candidate
+		player.global_position = world_position_for_cell_center(spawn_cell)
 		player.configure_grid_navigation(world_data, _runtime_world_origin(), _runtime_tile_size())
 	_configure_runtime_camera()
 	if combat_dummy != null and combat_dummy.has_method("configure_grid_navigation"):
@@ -2472,6 +2768,16 @@ func _configure_runtime_camera() -> void:
 	camera.limit_right = int(ceil(origin.x + float(world_data.width) * tile_size))
 	camera.limit_bottom = int(ceil(origin.y + float(world_data.height) * tile_size))
 	camera.enabled = true
+	_update_dungeon_sign_visibility()
+
+func _update_dungeon_sign_visibility() -> void:
+	if world_visuals == null or player == null:
+		return
+	var player_cell := world_cell_from_world_position(player.global_position)
+	for sign in world_visuals.find_children("DungeonSign", "PanelContainer", true, false):
+		var sign_node := sign as Control
+		var local_cell := Vector2i(int(round(sign_node.position.x / _runtime_tile_size())), int(round((sign_node.position.y + 52.0) / _runtime_tile_size())))
+		sign_node.visible = player_cell.distance_to(local_cell) <= 4.0
 
 func _entry_spawn_cell(world: Dictionary) -> Vector2i:
 	var landmarks: Array = world.get("required_landmarks", [])
@@ -2508,7 +2814,7 @@ func _configure_game_hud() -> void:
 		"tea_brewing_command_runtime": tea_brewing_command_runtime,
 		"meta_codex_command_runtime": meta_codex_command_runtime,
 		"crafting_service": crafting_service,
-		"crafting_context": _tea_brewing_context(),
+		"crafting_context": _crafting_context(),
 		"time_state": time_state,
 		"world_origin": _runtime_world_origin()
 	})
@@ -2611,7 +2917,7 @@ func _owner_sprite_sources(world: Dictionary) -> Dictionary:
 	var sources := {
 		WorldData.LANDMARK_ENTRY: "small_signpost",
 		WorldData.LANDMARK_CORE_DUNGEON: "asset_assets_sprites_objects_structures_warehouse_2x2_64x64_png",
-		WorldData.LANDMARK_TELEPORT_ZONE: "stone_pagoda_lantern",
+		WorldData.LANDMARK_TELEPORT_ZONE: WorldGenerator.RENDER_TELEPORT_ZONE,
 		"wood": "log_resource",
 		"stone": "small_rock_resource",
 		"clay": "mud_patch_resource"

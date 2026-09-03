@@ -42,7 +42,7 @@ func setup(map_width: int, map_height: int, terrain_id := "ground", default_walk
 			var position := Vector2i(x, y)
 			_cells[_key(position)] = _new_cell(position, terrain_id, default_walkable)
 
-func set_terrain(position: Vector2i, terrain_id: String, walkable: bool, render_id := "") -> bool:
+func set_terrain(position: Vector2i, terrain_id: String, walkable: bool, render_id := "", atlas_coords := Vector2i(-1, -1)) -> bool:
 	if not contains(position):
 		return false
 	var cell := _cell(position)
@@ -51,10 +51,17 @@ func set_terrain(position: Vector2i, terrain_id: String, walkable: bool, render_
 		"render_id": render_id if render_id != "" else terrain_id,
 		"walkable": walkable
 	}
+	if atlas_coords.x >= 0 and atlas_coords.y >= 0:
+		cell.layers[LAYER_TERRAIN]["atlas_coords"] = _position_dictionary(atlas_coords)
 	return true
 
 func contains(position: Vector2i) -> bool:
 	return position.x >= 0 and position.y >= 0 and position.x < width and position.y < height
+
+func terrain_id_at(position: Vector2i) -> String:
+	if not contains(position):
+		return ""
+	return String(_cell(position).layers[LAYER_TERRAIN].get("id", ""))
 
 func is_walkable(position: Vector2i) -> bool:
 	if not contains(position):

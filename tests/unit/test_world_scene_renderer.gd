@@ -6,6 +6,7 @@ const WorldSceneRenderer = preload("res://src/world/rendering/world_scene_render
 func run(asserts) -> void:
 	_assert_sixteen_adjacency_masks(asserts)
 	_assert_tilemap_layer_uses_adjacency_variants(asserts)
+	_assert_explicit_atlas_coords_override_adjacency(asserts)
 	_assert_river_uses_connection_specific_sources(asserts)
 	_assert_path_uses_connection_specific_sources(asserts)
 	_assert_tree_footprints_overlay_base_terrain(asserts)
@@ -63,6 +64,34 @@ func _assert_tilemap_layer_uses_adjacency_variants(asserts) -> void:
 		asserts.equal(tilemap.get_cell_atlas_coords(Vector2i(1, 1)), Vector2i(7, 0), "four-way adjacency uses explicit N/E/S/W bitmask variant modulo available atlas frames")
 		asserts.equal(tilemap.get_cell_atlas_coords(Vector2i(1, 0)), Vector2i(4, 0), "south-only neighbor uses south bit variant")
 	asserts.true_value("terrain_plains_grass_ground_01" in result.asset_report.used_asset_ids, "renderer asset report resolves manifest ID terrain references")
+	root.queue_free()
+
+func _assert_explicit_atlas_coords_override_adjacency(asserts) -> void:
+	var renderer := WorldSceneRenderer.new()
+	var root := Node2D.new()
+	var dungeon_tileset := "terrain_dungeon_mossy_dojo_tileset"
+	var input := {
+		"schema_version": 1,
+		"read_only": true,
+		"tile_size": 32,
+		"bounds": {"width": 2, "height": 1},
+		"layers": [{
+			"id": WorldData.LAYER_TERRAIN,
+			"kind": "tile",
+			"cells": [
+				{"position": {"x": 0, "y": 0}, "source_id": dungeon_tileset, "atlas_coords": {"x": 3, "y": 5}},
+				{"position": {"x": 1, "y": 0}, "source_id": dungeon_tileset, "atlas_coords": {"x": 4, "y": 0}}
+			]
+		}],
+		"required_landmarks": []
+	}
+	var result: Dictionary = renderer.render(root, input)
+	asserts.true_value(result.ok, "renderer accepts explicit dungeon atlas coordinates")
+	var tilemap := root.get_node_or_null(WorldSceneRenderer.TERRAIN_LAYER) as TileMapLayer
+	asserts.true_value(tilemap != null, "explicit atlas projection creates terrain tilemap")
+	if tilemap != null:
+		asserts.equal(tilemap.get_cell_atlas_coords(Vector2i(0, 0)), Vector2i(3, 5), "explicit atlas coordinate wins over adjacency mask")
+		asserts.equal(tilemap.get_cell_atlas_coords(Vector2i(1, 0)), Vector2i(4, 0), "each dungeon cell keeps its selected visual variant")
 	root.queue_free()
 
 func _assert_river_uses_connection_specific_sources(asserts) -> void:

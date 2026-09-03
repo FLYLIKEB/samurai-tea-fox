@@ -28,9 +28,20 @@ const ICON_WORKBENCH := "asset_assets_sprites_objects_crafting_workbench_32x32_p
 const BUTTON_DPAD := "asset_assets_ui_controls_dpad_png"
 const FIRST_RUN_PROLOGUE_EVENT_ID := "first_run_prologue"
 const PROLOGUE_BACKGROUND := "prologue_first_run_father_muchau_teahouse"
-const PORTRAIT_FATHER := "asset_assets_sprites_characters_family_chr_1_kitsune_father_kitsune_father_front_64x64_png"
-const PORTRAIT_MUCHAU := "asset_assets_sprites_characters_player_chr_8_fox_samurai_fox_samurai_front_idle_64x64_png"
-const PORTRAIT_SEN_RIKYU := "asset_assets_sprites_characters_bosses_chr_5_sen_rikyu_sen_rikyu_front_64x64_png"
+const PORTRAIT_FATHER := "res://assets/sprites/portraits/major/chr_1_kitsune_father_96x96.png"
+const PORTRAIT_MUCHAU := "res://assets/sprites/portraits/major/chr_8_muchau_96x96.png"
+const PORTRAIT_SEN_RIKYU := "res://assets/sprites/portraits/major/chr_5_sen_rikyu_96x96.png"
+const PORTRAIT_BY_CHARACTER := {
+	"CHR-1": PORTRAIT_FATHER,
+	"CHR-2": "res://assets/sprites/portraits/major/chr_2_wasteland_daimyo_96x96.png",
+	"CHR-3": "res://assets/sprites/portraits/major/chr_3_furuta_oribe_96x96.png",
+	"CHR-4": "res://assets/sprites/portraits/major/chr_4_snow_monk_96x96.png",
+	"CHR-5": PORTRAIT_SEN_RIKYU,
+	"CHR-6": "res://assets/sprites/portraits/major/chr_6_yokai_tea_master_96x96.png",
+	"CHR-7": "res://assets/sprites/portraits/major/chr_7_mountain_potter_96x96.png",
+	"CHR-8": PORTRAIT_MUCHAU,
+	"CHR-9": "res://assets/sprites/portraits/major/chr_9_wandering_tea_merchant_96x96.png",
+}
 const PORTRAIT_PLAYER := PORTRAIT_MUCHAU
 
 const BALANCE_ABILITY_SLOTS_ID := "ability_equip_slots"
@@ -915,15 +926,7 @@ func _set_portrait(rect: TextureRect, asset_id: String, visible: bool) -> void:
 		frame.visible = rect.visible
 
 func _portrait_asset_id_for_speaker(speaker_id: String) -> String:
-	match speaker_id:
-		"CHR-1":
-			return PORTRAIT_FATHER
-		"CHR-5":
-			return PORTRAIT_SEN_RIKYU
-		"CHR-8":
-			return PORTRAIT_MUCHAU
-		_:
-			return ""
+	return String(PORTRAIT_BY_CHARACTER.get(speaker_id, ""))
 
 func _show_menu(title: String, rows: Array) -> void:
 	_build()
@@ -1366,18 +1369,19 @@ func _crafting_rows() -> Array:
 		filters.add_child(_crafting_filter_button(_crafting_filter_label(category_id), category_id))
 	rows.append(filters)
 	var model_rows: Array = model.get("rows", [])
-	var page_start := _crafting_page_start(model_rows, _selected_recipe_id, 6)
+	# Keep the full recipe list visible; the menu is scrollable and hiding
+	# craftable entries behind an implicit six-item page made facilities appear
+	# to be missing.
+	var page_start := _crafting_page_start(model_rows, _selected_recipe_id, model_rows.size())
 	var recipe_strip := GridContainer.new()
 	recipe_strip.name = "CraftingRecipeStrip"
 	recipe_strip.columns = 3
 	_ignore_mouse(recipe_strip)
 	recipe_strip.add_theme_constant_override("h_separation", 5)
 	recipe_strip.add_theme_constant_override("v_separation", 5)
-	for index in range(page_start, mini(model_rows.size(), page_start + 6)):
+	for index in range(page_start, model_rows.size()):
 		recipe_strip.add_child(_crafting_row(model_rows[index]))
 	rows.append(recipe_strip)
-	if model_rows.size() > 6:
-		rows.append(_label("항목 %d-%d / %d" % [page_start + 1, mini(model_rows.size(), page_start + 6), model_rows.size()], 10))
 	rows.append(_crafting_detail_row(model.get("detail", {})))
 	return rows
 

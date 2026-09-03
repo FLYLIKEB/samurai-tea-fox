@@ -7,6 +7,7 @@ var data_version := ""
 var lifecycle_epoch := 0
 var seed := 0
 var current_biome_id := ""
+var player_cell := {}
 var inventory := {}
 var equipment := {}
 var currency := 0
@@ -43,6 +44,7 @@ static func from_dictionary(data: Dictionary):
 	state.lifecycle_epoch = int(data.get("lifecycle_epoch", 0))
 	state.seed = int(data.get("seed", 0))
 	state.current_biome_id = String(data.get("current_biome_id", ""))
+	state.player_cell = _dictionary_value(data.get("player_cell", {}))
 	state.inventory = _dictionary_value(data.get("inventory", {}))
 	state.equipment = _dictionary_value(data.get("equipment", {}))
 	state.currency = int(data.get("currency", 0))
@@ -102,6 +104,7 @@ func to_dictionary() -> Dictionary:
 		"lifecycle_epoch": lifecycle_epoch,
 		"seed": seed,
 		"current_biome_id": current_biome_id,
+		"player_cell": player_cell.duplicate(true),
 		"inventory": inventory.duplicate(true),
 		"equipment": equipment.duplicate(true),
 		"currency": currency,

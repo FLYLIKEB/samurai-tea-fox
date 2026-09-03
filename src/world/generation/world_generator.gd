@@ -62,6 +62,11 @@ const RENDER_WATER := "terrain_river_water_01"
 const RENDER_MOUNTAIN_SLOPE := "asset_assets_sprites_objects_natural_props_flat_rock_32x32_png"
 const RENDER_MOUNTAIN_PATH := "asset_assets_sprites_objects_natural_props_mossy_rock_32x32_png"
 const RENDER_MOUNTAIN_CLIFF := "asset_assets_sprites_objects_natural_props_mountain_rock_04_32x32_png"
+const RENDER_BRIDGE_VERTICAL := "asset_assets_tiles_terrain_bridges_bridge_vertical_32x32_png"
+const RENDER_BRIDGE_HORIZONTAL := "asset_assets_tiles_terrain_bridges_bridge_horizontal_32x32_png"
+const RENDER_BRIDGE := RENDER_BRIDGE_VERTICAL
+const RENDER_TELEPORT_ZONE := "asset_assets_tiles_sheets_biome_atlases_biome_tile_map_light_object_biome_map_atlas_crop_1261_363_32x32_resize_32x32_png"
+const RENDER_MAP_EDGE_CLIFF := "asset_assets_tiles_sheets_biome_atlases_biome_tile_map_light_object_biome_map_atlas_crop_147_91_35x34_resize_32x32_png"
 const RENDER_MOUNTAIN_ROCK := "asset_assets_sprites_objects_natural_props_mountain_rock_01_32x32_png"
 const RENDER_MOUNTAIN_CONIFER := "terrain_tree_pine_32x32"
 const RENDER_MOUNTAIN_CAVE := "asset_assets_sprites_objects_mining_rock_cave_entrance_1x2_64x32_png"
@@ -319,7 +324,7 @@ func _apply_map_boundary(world_data: WorldData, profile: Dictionary, edge_exit_p
 		if position is Vector2i and (position.x == 0 or position.y == 0 or position.x == MAP_WIDTH - 1 or position.y == MAP_HEIGHT - 1):
 			preserved[_key(position)] = true
 	var cliff_terrain_id := String(profile.get("boundary_terrain_id", TERRAIN_MOUNTAIN_CLIFF))
-	var cliff_render_id := String(profile.get("boundary_render_id", RENDER_MOUNTAIN_CLIFF))
+	var cliff_render_id := String(profile.get("boundary_render_id", RENDER_MAP_EDGE_CLIFF))
 	for y in range(MAP_HEIGHT):
 		for x in range(MAP_WIDTH):
 			if x != 0 and y != 0 and x != MAP_WIDTH - 1 and y != MAP_HEIGHT - 1:
@@ -822,8 +827,17 @@ func _make_path_cell(world_data: WorldData, position: Vector2i, profile: Diction
 	if not world_data.contains(position):
 		return
 	_clear_generated_tree_obstacle(world_data, position)
-	var terrain_id := String(profile.bridge_terrain_id) if not world_data.is_walkable(position) else String(profile.path_terrain_id)
-	world_data.set_terrain(position, terrain_id, true, String(profile.path_render_id))
+	var is_bridge := not world_data.is_walkable(position)
+	var terrain_id := String(profile.bridge_terrain_id) if is_bridge else String(profile.path_terrain_id)
+	var render_id := String(profile.get("bridge_render_id", profile.path_render_id)) if is_bridge else String(profile.path_render_id)
+	if is_bridge:
+		var water_north_south := world_data.terrain_id_at(position + Vector2i.UP) == String(profile.water_terrain_id) or world_data.terrain_id_at(position + Vector2i.DOWN) == String(profile.water_terrain_id)
+		var water_east_west := world_data.terrain_id_at(position + Vector2i.LEFT) == String(profile.water_terrain_id) or world_data.terrain_id_at(position + Vector2i.RIGHT) == String(profile.water_terrain_id)
+		if water_north_south and not water_east_west:
+			render_id = RENDER_BRIDGE_VERTICAL
+		elif water_east_west:
+			render_id = RENDER_BRIDGE_HORIZONTAL
+	world_data.set_terrain(position, terrain_id, true, render_id)
 
 func _place_path_edge_fences(world_data: WorldData, rng: DeterministicRng, templates: Array, profile: Dictionary) -> void:
 	var path_template := {}
@@ -940,6 +954,10 @@ func _template_path_key_set(templates: Array) -> Dictionary:
 func _try_place_resource_node(world_data: WorldData, position: Vector2i, access_position: Vector2i, resource_ids: Array, source_by_resource_id: Dictionary, nodes: Array) -> bool:
 	var owner_id := "resource_%d" % nodes.size()
 	var resource_id: String = String(resource_ids[nodes.size() % resource_ids.size()])
+	# Stones are common roadside pickups: bias the deterministic rotation so
+	# roughly one out of every three generated nodes is a stone when available.
+	if resource_ids.has("stone") and nodes.size() % 3 == 0:
+		resource_id = "stone"
 	var source_id := String(source_by_resource_id.get(resource_id, ""))
 	var metadata := {"resource_id": resource_id}
 	if not source_id.is_empty():
@@ -1122,6 +1140,7 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 				"path_terrain_id": TERRAIN_PATH,
 				"bridge_terrain_id": TERRAIN_BRIDGE,
 				"path_render_id": RENDER_PATH,
+				"bridge_render_id": RENDER_BRIDGE,
 				"water_terrain_id": TERRAIN_WATER,
 				"water_render_id": RENDER_WATER,
 				"water_walkable": false,

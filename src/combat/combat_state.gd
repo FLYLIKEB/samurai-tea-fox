@@ -22,7 +22,10 @@ func _init(initial_config: CombatConfig) -> void:
 func start_basic_attack(attacker_id: String, current_ki: float) -> Dictionary:
 	if attack_cooldown_remaining > 0.0:
 		return {"ok": false, "reason": "attack_on_cooldown", "cooldown_remaining": attack_cooldown_remaining}
-	attack_cooldown_remaining = 1.0 / config.weapon_attack_speed
+	# Basic attacks are input-driven: every E press starts the next swing
+	# immediately. Weapon speed remains exposed for animation/balance data, but
+	# no longer throttles discrete player commands.
+	attack_cooldown_remaining = 0.0
 	combo_hit = (combo_hit % config.basic_attack_combo_hits) + 1
 	swing_sequence += 1
 	var swing_id := "basic_%d" % swing_sequence

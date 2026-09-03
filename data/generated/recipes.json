@@ -142,9 +142,7 @@
       "id": "wooden_workbench",
       "materials_note": "목재 6 + 돌 3",
       "name": "목재 작업대 제작",
-      "status": "초안",
-      "unlock_biome": "일반",
-      "unlock_biome_id": "common_region"
+      "status": "초안"
     }
   ],
   "profile": "confirmed-test",

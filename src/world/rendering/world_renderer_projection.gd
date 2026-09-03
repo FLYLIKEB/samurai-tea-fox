@@ -21,10 +21,14 @@ func project(world_data: Dictionary, progression_projection := {}) -> Dictionary
 
 		var layers: Dictionary = cell.get("layers", {})
 		var terrain: Dictionary = layers.get(WorldData.LAYER_TERRAIN, {})
-		terrain_cells.append({
+		var terrain_cell := {
 			"position": position.duplicate(true),
 			"source_id": terrain.get("render_id", terrain.get("id", ""))
-		})
+		}
+		var atlas_coords = terrain.get("atlas_coords", null)
+		if typeof(atlas_coords) == TYPE_DICTIONARY:
+			terrain_cell["atlas_coords"] = atlas_coords.duplicate(true)
+		terrain_cells.append(terrain_cell)
 		_add_owner_cells(facility_cells, position, layers.get(WorldData.LAYER_FACILITIES, []), owner_source_ids)
 		_add_owner_cells(entity_cells, position, layers.get(WorldData.LAYER_ENTITIES, []), owner_source_ids)
 		_add_owner_cells(interactable_cells, position, layers.get(WorldData.LAYER_INTERACTABLES, []), owner_source_ids)

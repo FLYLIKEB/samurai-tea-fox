@@ -63,6 +63,328 @@
       "runtime_scale": 1
     },
     {
+      "id": "monster_abandoned_mine_samurai_front_idle",
+      "name": "abandoned mine samurai 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/monsters/abandoned_mine_samurai/abandoned_mine_samurai_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:4bc69604f811a0e920f9c0eba28478676a3341ec2ca3c8f937d973f8676560d2",
+      "rgba_sha256": "sha256:092e19cda51bdef30971f9493d1a32f66019d2c8fb145c618e3d58ef7a915833",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_agarwood_thief_front_idle",
+      "name": "agarwood thief 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/monsters/agarwood_thief/agarwood_thief_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:ae5ea2ee7fbd7e8c40c11c484865547225fb4bbcb2b08c6b3844216a7eb7f8f0",
+      "rgba_sha256": "sha256:ed94785f041156160afbb1c00bc50d2a75059d13abd759bb290d7c32b776742c",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_ash_crow_flock_front_idle",
+      "name": "ash crow flock 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/monsters/ash_crow_flock/ash_crow_flock_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:b04d9c89f745aea2b4dd3c7558afc7227356362508147c1cec9e11d25580905c",
+      "rgba_sha256": "sha256:f2ab3ffac65a51fdc4b5e153cccd165804b39605551d48c58cd0fa8e024084f3",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_empty_armor_yokai_front_idle",
+      "name": "empty armor yokai 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/monsters/empty_armor_yokai/empty_armor_yokai_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:f4d0de98f8f548d6545dcd3a8768939aa7ee8dc0a4b16d29f198facc0bb0e991",
+      "rgba_sha256": "sha256:8c7e7a18d921c06a7338dc18ad05fab89892a3572ba51f040504531357becbc0",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_frost_lantern_yokai_front_idle",
+      "name": "frost lantern yokai 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/monsters/frost_lantern_yokai/frost_lantern_yokai_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:ac942acf97de133d075ee0915fd18b7076079e8bdbfd5a0593962544d7721130",
+      "rgba_sha256": "sha256:af60a32241b153e5aacc00c0133faf67957d7e2a0f85a3c99cc5d96c870dd00d",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_moss_tree_yokai_front_idle",
+      "name": "moss tree yokai 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/monsters/moss_tree_yokai/moss_tree_yokai_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:8fd67ea0f303b19024e0ca6e42bc8e4f974f7b4a0700a0c55e916b09f1805333",
+      "rgba_sha256": "sha256:478a340ac1fe1ada056a18d069f9d52c63cc00575261fe31be12147290c78e7b",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_mountain_boar_front_idle",
+      "name": "mountain boar 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/monsters/mountain_boar/mountain_boar_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:60ec5cc8b22983958b6002f11083462879d0a4ce6537c35a4614419c59e67c53",
+      "rgba_sha256": "sha256:65b15aea4d67694e73b2c7acd9a193e868a706449dd3c42383fa8b8889ae77b9",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_road_bandit_front_idle",
+      "name": "road bandit 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/monsters/road_bandit/road_bandit_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:8227f09a3cb0391bfe47d338ceed88f64319914c82062675a0631790a8521883",
+      "rgba_sha256": "sha256:923e6c70a5e286ec91967a77e6ee2b52d8c3fc46ab2c341fea67b417ca7ddaae",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_snow_path_assassin_front_idle",
+      "name": "snow path assassin 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/monsters/snow_path_assassin/snow_path_assassin_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:90580a468afcc2872e8c79b3a71ed0fccb3cd092d07ce814aa8d3ffbc771b877",
+      "rgba_sha256": "sha256:5057acd50b7c0aa4ab509617b0d988ae3679934caca064dc3d37a442e933b966",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_snow_wolf_front_idle",
+      "name": "snow wolf 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/monsters/snow_wolf/snow_wolf_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:c07d8c74a41ae4ec68032deecef515a4b5e8c2771420fec4f98429a016acb73c",
+      "rgba_sha256": "sha256:fd4c908451b20370cf3e757e93e3f816bc836bfe46cab0160e3c42549db2c28f",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_stonebound_yokai_front_idle",
+      "name": "stonebound yokai 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/monsters/stonebound_yokai/stonebound_yokai_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:29abafec9b89ab83b84d8d4bcca8e949593924b78e2af1ab17db324dd5615c11",
+      "rgba_sha256": "sha256:f48d0c74af909b8cbe6e07fca5b6d75a68f3e565a6ecbb94ab5bf8ecb7932d7c",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_swamp_snake_front_idle",
+      "name": "swamp snake 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/monsters/swamp_snake/swamp_snake_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:c7005c9a2c104b1dea98b07f33c9067311b10bd9ba8f457cdf03801d8d5dc2af",
+      "rgba_sha256": "sha256:df8c1e5f81c9d428c2a0c46b3a9e317cdad918d8684f43380ff5cbe05a468d90",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_wandering_ronin_front_idle",
+      "name": "wandering ronin 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/monsters/wandering_ronin/wandering_ronin_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:49defcd6feaed3dbc30bb1c49fcb3452582fbdb2d6aa6673281ceaa3f52a005a",
+      "rgba_sha256": "sha256:f45b1dbe1e8e82b013f4963f580b983a13db6ceb7cb8d7b579233e05b089ba94",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_wild_dog_front_idle",
+      "name": "wild dog 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/monsters/wild_dog/wild_dog_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:cec5db1fa3d18bf5ce56d49cd8c1f1bd9390e0136b711a43a1d28a69fe9eacc1",
+      "rgba_sha256": "sha256:aad32fdd50df3a4f89be34e3bac96ea07bce8d853b06cb6356e1287abf11358e",
+      "runtime_scale": 1
+    },
+    {
       "id": "fox_samurai_front_idle",
       "name": "여우 사무라이 정면 대기",
       "status": "완료",
@@ -894,8 +1216,8 @@
       "alpha_required": true,
       "texture_filter": "nearest",
       "placeholder": false,
-      "source_sha256": "sha256:d4237f21de8624c16ac712be877ab11c6b0953fbfe9c19b0d2e39b533844ecc0",
-      "rgba_sha256": "sha256:d397298b3aa0ff02de4d94da620859164bdc618c64067398fed96d3cc1632aff",
+      "source_sha256": "sha256:ca190e8afdce9ae40ae0cb3de850ade17269d8b3c07aac574f3133caaae3573f",
+      "rgba_sha256": "sha256:06d7cbe81a9c852c028416e85982aafb53faa67a1a2a76c32013229770e9237b",
       "runtime_scale": 1
     },
     {
@@ -986,8 +1308,8 @@
       "alpha_required": true,
       "texture_filter": "nearest",
       "placeholder": false,
-      "source_sha256": "sha256:992649c64f0462590a797eb392a4d60d4033b0cee4c54b08c4165abcc4839897",
-      "rgba_sha256": "sha256:4436b9eaacb99505ae1fae2764f555ce05277fdc1f862deaaf1ed7553ed56e36",
+      "source_sha256": "sha256:a04589062a975bd273c0a4189aeaf7c0c06d34484df395574bbb0e00df5152f9",
+      "rgba_sha256": "sha256:d97fcdd33c9c9150c67c75e7130b4038173ae23f2c1d438a443e015704935a5a",
       "runtime_scale": 1
     },
     {
@@ -1011,6 +1333,29 @@
       "placeholder": false,
       "source_sha256": "sha256:50f58b922e7de74b51a5faa786b98eacf3f54f40fd72ae31f76831788f4a5b61",
       "rgba_sha256": "sha256:a1ac8bf50fc8fced96ff51b875d800ef513b413fdd2f14d053589069fb29fb8c",
+      "runtime_scale": 1
+    },
+    {
+      "id": "terrain_dungeon_mossy_dojo_tileset",
+      "name": "이끼 낀 폐허 도장 던전 타일셋",
+      "status": "완료",
+      "kind": "terrain_tile",
+      "path": "res://assets/tiles/terrain/dungeon/mossy_dojo_dungeon_tileset_8x8_32x32.png",
+      "width": 256,
+      "height": 256,
+      "direction_count": 1,
+      "frame_count": 64,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 8,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:3f04b8cffbdada2390c71d36d7de7174523c2da0fe401d813001c750caa821d7",
+      "rgba_sha256": "sha256:82cd35c8969a417379d20f6dd7dd54625a7c5c5f05e2a1cd30af15f701cefade",
       "runtime_scale": 1
     },
     {
@@ -5449,8 +5794,8 @@
       "texture_filter": "nearest",
       "placeholder": false,
       "runtime_scale": 1,
-      "source_sha256": "sha256:28ebca990e6821e75cc18d6c273a52437af09919fbfed897a6a632f3f7145f23",
-      "rgba_sha256": "sha256:7ebbee5e9146a5b05dd3300412c4de717c29fde8b1e162be5f3d697665997fd0"
+      "source_sha256": "sha256:a8d31142e7f8dca545e24f1996378882ffbff427223c0d360fc7fff7641bb5f2",
+      "rgba_sha256": "sha256:a6552f1931be2107064cfa182d15627f66fedca002082c7404269ef6b1f69f78"
     },
     {
       "id": "asset_assets_tiles_terrain_plains_grass_ground_03_32x32_png",
@@ -5472,8 +5817,8 @@
       "texture_filter": "nearest",
       "placeholder": false,
       "runtime_scale": 1,
-      "source_sha256": "sha256:62eaa0b316fb9ddcec6caaeefc9e69cbb5df0011d74bedba382850d022f7bb73",
-      "rgba_sha256": "sha256:ab1d920740e5d239843f68ba5870f225f8c8b72c3b540c8e08075b0222921016"
+      "source_sha256": "sha256:75165e8a5a7de214a2b3905359d8f92de018efe243c82ec73ea26df424bb51ed",
+      "rgba_sha256": "sha256:5adf26e1c3bfc4633107ebe2444bc81b60bce820cbdfda4e82c123991a9ea590"
     },
     {
       "id": "asset_assets_tiles_terrain_paths_road_isolated_32x32_png",
@@ -10419,6 +10764,121 @@
       "runtime_scale": 1,
       "source_sha256": "sha256:5a61e176b219c6b71aa95825fbb67aec8efa208e52c2296c85b45090419d0a8e",
       "rgba_sha256": "sha256:de238668b7b5dea7c861dc0f7b9688409050cdb39363125d4392aa1ebeb1d799"
+    },
+    {
+      "id": "asset_assets_tiles_sheets_biome_atlases_biome_tile_map_light_object_biome_map_atlas_crop_1249_174_53x53_resize_32x32_png",
+      "name": "다리",
+      "status": "완료",
+      "kind": "terrain_tile",
+      "path": "res://assets/tiles/sheets/biome-atlases/biome-tile-map/light_object_biome_map_atlas_crop_1249_174_53x53_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "runtime_scale": 1,
+      "source_sha256": "sha256:18732e4a697d974cd3b2c247b4984ae655750e00d6fba8d4def6909123b9f44e",
+      "rgba_sha256": "sha256:d93147b2b28c250d29152388f7bd74cabbbb48779299d6f4a835086e23ed9ac3"
+    },
+    {
+      "id": "asset_assets_tiles_sheets_biome_atlases_biome_tile_map_light_object_biome_map_atlas_crop_1261_363_32x32_resize_32x32_png",
+      "name": "텔레포트존",
+      "status": "완료",
+      "kind": "terrain_tile",
+      "path": "res://assets/tiles/sheets/biome-atlases/biome-tile-map/light_object_biome_map_atlas_crop_1261_363_32x32_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "runtime_scale": 1,
+      "source_sha256": "sha256:ce07e71dfd9d1fa26c5076f647e9407223ef006de98388555b5709e74279eb2a",
+      "rgba_sha256": "sha256:ee2d24aadc833c8c89738a6ccd88c59ac1fa55e12b7681dbdad23272b746be3e"
+    },
+    {
+      "id": "asset_assets_tiles_sheets_biome_atlases_biome_tile_map_light_object_biome_map_atlas_crop_147_91_35x34_resize_32x32_png",
+      "name": "맵 가장자리 절벽",
+      "status": "완료",
+      "kind": "terrain_tile",
+      "path": "res://assets/tiles/sheets/biome-atlases/biome-tile-map/light_object_biome_map_atlas_crop_147_91_35x34_resize_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "runtime_scale": 1,
+      "source_sha256": "sha256:5b2f0fa9bf6dfc2cdb7c5ebff66340d846dc09b1fd6d49d1689b9d9cbe32115e",
+      "rgba_sha256": "sha256:4ff1aafde06b5331e187e34f2ad65659984ddf0bb38f6f8f92aad29358af8a5d"
+    },
+    {
+      "id": "asset_assets_tiles_terrain_bridges_bridge_horizontal_32x32_png",
+      "name": "bridge_horizontal_32x32",
+      "status": "완료",
+      "kind": "terrain_tile",
+      "path": "res://assets/tiles/terrain/bridges/bridge_horizontal_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "runtime_scale": 1,
+      "source_sha256": "sha256:18bdd75389cc4fc94df5bde431d7af883692d1e866036bb52caaefeace006285",
+      "rgba_sha256": "sha256:6ff83c7c624228a797940339dcc0475aa991fecf0b7daf4f294bf7f99251571a"
+    },
+    {
+      "id": "asset_assets_tiles_terrain_bridges_bridge_vertical_32x32_png",
+      "name": "bridge_vertical_32x32",
+      "status": "완료",
+      "kind": "terrain_tile",
+      "path": "res://assets/tiles/terrain/bridges/bridge_vertical_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "runtime_scale": 1,
+      "source_sha256": "sha256:18732e4a697d974cd3b2c247b4984ae655750e00d6fba8d4def6909123b9f44e",
+      "rgba_sha256": "sha256:d93147b2b28c250d29152388f7bd74cabbbb48779299d6f4a835086e23ed9ac3"
     }
   ]
 }
