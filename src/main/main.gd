@@ -44,7 +44,7 @@ const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
 class FacilityPlacementPreview extends Node2D:
 	var origin := Vector2i(-1, -1)
 	var footprint := Vector2i.ONE
-	var tile_size := 32.0
+	var tile_size := RuntimeConstants.float_value("world.tile_size_pixels")
 	var valid := false
 	var sprite: Sprite2D
 
@@ -235,9 +235,9 @@ func _ready() -> void:
 	run_state.data_version = catalog.data_version
 	if run_state.seed == 0:
 		run_state.seed = DEFAULT_RUN_SEED
-	_set_loading_status("월드 생성 중…")
+	_set_loading_status("%s 월드 생성 중…" % _loading_biome_label())
 	await get_tree().process_frame
-	_set_loading_status("지역 지도와 오브젝트 배치 중…")
+	_set_loading_status("%s 바이옴 지형·오브젝트 배치 중…" % _loading_biome_label())
 	await get_tree().process_frame
 	var world_result := _configure_world_for_current_run()
 	if not world_result.ok:
@@ -283,6 +283,14 @@ func _clear_loading_overlay() -> void:
 	var overlay := get_node_or_null("LoadingOverlay")
 	if overlay != null:
 		overlay.queue_free()
+
+func _loading_biome_label() -> String:
+	if catalog != null and run_state != null and catalog.has_method("find_by_id"):
+		var definition: Dictionary = catalog.find_by_id("biomes", String(run_state.current_biome_id))
+		var name := String(definition.get("name", ""))
+		if not name.is_empty():
+			return name
+	return String(run_state.current_biome_id) if run_state != null and not String(run_state.current_biome_id).is_empty() else "현재"
 
 func _configure_combat_lifecycle() -> Dictionary:
 	var player_combat_result: Dictionary = player.configure_combat(catalog)
@@ -2359,7 +2367,7 @@ func _runtime_tile_size() -> float:
 	if world_data != null:
 		return float(world_data.tile_size)
 	var renderer_input: Dictionary = generated_world.get("renderer_input", {})
-	return float(int(renderer_input.get("tile_size", 32)))
+	return float(int(renderer_input.get("tile_size", RuntimeConstants.float_value("world.tile_size_pixels"))))
 
 func _runtime_world_origin() -> Vector2:
 	if world_visuals != null:
@@ -3532,7 +3540,7 @@ func _play_feedback_beep() -> void:
 
 func _centered_world_origin(renderer_input: Dictionary) -> Vector2:
 	var bounds: Dictionary = renderer_input.get("bounds", {})
-	var tile_size := int(renderer_input.get("tile_size", 32))
+	var tile_size := int(renderer_input.get("tile_size", RuntimeConstants.float_value("world.tile_size_pixels")))
 	return Vector2(
 		-float(int(bounds.get("width", 0)) * tile_size) * 0.5,
 		-float(int(bounds.get("height", 0)) * tile_size) * 0.5
