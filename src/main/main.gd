@@ -302,11 +302,34 @@ func _is_hud_menu_open(menu_id: String) -> bool:
 	return game_hud != null and game_hud.has_method("active_menu_id") and String(game_hud.active_menu_id()) == menu_id
 
 func submit_pointer_interaction(world_position: Vector2) -> bool:
+	if _submit_pointer_enemy_attack(world_position):
+		return true
 	var clicked_cell := world_cell_from_world_position(world_position)
 	for cell in _pointer_candidate_cells(clicked_cell):
 		if submit_interaction_at_world_cell(cell):
 			return true
 	return false
+
+func _submit_pointer_enemy_attack(world_position: Vector2) -> bool:
+	if player == null \
+			or combat_dummy == null \
+			or not combat_dummy.visible \
+			or not combat_dummy.has_method("current_hp") \
+			or int(combat_dummy.current_hp()) <= 0:
+		return false
+	var hit_radius := maxf(_runtime_tile_size() * 0.5, 16.0)
+	if combat_dummy.global_position.distance_to(world_position) > hit_radius:
+		return false
+	var dummy_position := Vector2(combat_dummy.global_position)
+	var player_position := Vector2(player.global_position)
+	var delta := dummy_position - player_position
+	var direction := Vector2i(int(signf(delta.x)), int(signf(delta.y)))
+	if direction == Vector2i.ZERO:
+		direction = _resolved_grid_direction(Vector2i.ZERO)
+	var accepted := submit_action_command(GameCommand.new(GameCommand.Type.ATTACK, direction))
+	if accepted:
+		_clear_pointer_movement()
+	return accepted
 
 func submit_pointer_movement(world_position: Vector2) -> bool:
 	var target_cell := world_cell_from_world_position(world_position)

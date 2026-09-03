@@ -49,6 +49,7 @@ const TESTS := [
 	preload("res://tests/unit/test_acquisition_service.gd"),
 	preload("res://tests/unit/test_main_vertical_slice_runtime.gd"),
 	preload("res://tests/unit/test_main_acquisition_runtime.gd"),
+	preload("res://tests/unit/test_pointer_combat_input.gd"),
 	preload("res://tests/unit/test_world_generation.gd")
 ]
 
