@@ -232,6 +232,10 @@ func _configure_combat_lifecycle() -> Dictionary:
 	var player_combat_result: Dictionary = player.configure_combat(catalog)
 	if not player_combat_result.ok:
 		return player_combat_result
+	if run_state != null and not run_state.player_resources.is_empty():
+		var resource_restore: Dictionary = player.resources.load_snapshot(run_state.player_resources)
+		if not resource_restore.ok:
+			return resource_restore
 	_connect_player_feedback_signals()
 	var lifecycle_result: Dictionary = RunLifecycleService.from_catalog(catalog)
 	if not lifecycle_result.ok:
@@ -271,6 +275,11 @@ func _configure_world_for_current_run() -> Dictionary:
 	if not progression_result.ok:
 		return progression_result
 	biome_progression_state = progression_result.progression_state
+	# Rehydrate the dungeon lifecycle before deciding which map to render.
+	# Without this, a saved active dungeon is mistaken for an overworld run.
+	var dungeon_runtime_result := _ensure_playable_dungeon_runtime()
+	if not dungeon_runtime_result.ok:
+		return dungeon_runtime_result
 	var projection: Dictionary = biome_progression_state.to_projection()
 	var current_biome_id := String(projection.get("current_biome_id", ""))
 	var current_biome: Dictionary = catalog.find_by_id("biomes", current_biome_id)
@@ -282,6 +291,10 @@ func _configure_world_for_current_run() -> Dictionary:
 	var acquisition_result := _configure_acquisition_for_generated_world()
 	if not acquisition_result.ok:
 		return acquisition_result
+	if _ensure_saved_world_has_teleport_landmark():
+		var migration_save := save_current_run()
+		if not migration_save.ok:
+			push_error(String(migration_save.get("error", "Failed to save teleport landmark migration.")))
 	var drop_connection := _connect_acquisition_combat_source(combat_dummy)
 	if not drop_connection.ok:
 		return drop_connection
@@ -911,7 +924,7 @@ func restore_run_state(state) -> Dictionary:
 		_sync_consumable_runtime_state()
 	if time_state != null:
 		run_state.time = time_state.to_snapshot()
-	if acquisition_service != null:
+	if acquisition_service != null and not _in_dungeon_map:
 		run_state.acquisitions = acquisition_service.to_snapshot()
 	_configure_game_hud()
 	return {"ok": true}
@@ -931,8 +944,12 @@ func snapshot_run_state() -> Dictionary:
 		run_state = RunState.new()
 	if inventory != null:
 		run_state.inventory = inventory.to_snapshot()
-	if acquisition_service != null:
+	if player != null and player.resources != null:
+		run_state.player_resources = player.resources.to_dictionary()
+	if acquisition_service != null and not _in_dungeon_map:
 		run_state.acquisitions = acquisition_service.to_snapshot()
+	if not _in_dungeon_map and combat_dummy != null and is_instance_valid(combat_dummy):
+		run_state.overworld_enemy_state = _snapshot_overworld_enemy_state()
 	if memory_tea_cutscene_runtime != null:
 		run_state.memory_tea_cutscene = memory_tea_cutscene_runtime.to_snapshot()
 	if tea_service != null:
@@ -991,6 +1008,11 @@ func _apply_cheat_start_inventory() -> Dictionary:
 		return {"ok": true, "applied": false}
 	if inventory == null or catalog == null or not catalog.has_method("get_definitions"):
 		return {"ok": false, "reason": "cheat_inventory_unavailable", "error": "Cheat mode requires inventory and item definitions."}
+	var first_biome_id := _first_biome_id_for_cheat_start()
+	if not first_biome_id.is_empty():
+		if not run_state.completed_dungeon_ids.has(first_biome_id):
+			run_state.completed_dungeon_ids.append(first_biome_id)
+		run_state.teleport_states[first_biome_id] = BiomeProgressionState.TELEPORT_REPAIRABLE
 
 	var inventory_before: Dictionary = inventory.to_snapshot()
 	var capacity_result: Dictionary = inventory.expand_capacity(CHEAT_INVENTORY_SLOT_COUNT)
@@ -1012,18 +1034,40 @@ func _apply_cheat_start_inventory() -> Dictionary:
 		resource_item_ids.append(item_id)
 	resource_item_ids.sort()
 	_sync_inventory_runtime_state()
+	# Cheat-start setup mutates the freshly-created run after its initial save.
+	# Advance the lifecycle epoch so subsequent turn saves are newer than the
+	# invalidation marker created while starting the run.
+	run_state.lifecycle_epoch += 1
 	return {
 		"ok": true,
 		"applied": true,
 		"slot_count": inventory.slot_count,
 		"resource_quantity": CHEAT_RESOURCE_QUANTITY,
 		"resource_item_ids": resource_item_ids
-	}
+}
+
+func _first_biome_id_for_cheat_start() -> String:
+	var definitions: Array = catalog.get_definitions("biomes")
+	var first := {}
+	for definition in definitions:
+		var raw_order = definition.get("progression_order", 999999)
+		if raw_order == null:
+			continue
+		var order: int = int(raw_order)
+		if first.is_empty() or order < int(first.get("order", 999999)):
+			first = {"id": String(definition.get("id", "")), "order": order}
+	return String(first.get("id", ""))
 
 func save_current_run() -> Dictionary:
 	if save_store == null:
 		return {"ok": false, "reason": "missing_save_store", "error": "Save store is not configured."}
-	return save_store.save_run(snapshot_run_state())
+	var result: Dictionary = save_store.save_run(snapshot_run_state())
+	# A start/death transition can leave the in-memory run one epoch behind the
+	# invalidation high-water mark. Advance once and retry the active run save.
+	if not bool(result.get("ok", false)) and String(result.get("reason", "")) == "stale_run_save":
+		run_state.lifecycle_epoch += 1
+		result = save_store.save_run(snapshot_run_state())
+	return result
 
 func _catalog_declares_time_balance(loaded_catalog) -> bool:
 	if loaded_catalog == null or not loaded_catalog.has_method("find_by_id"):
@@ -1392,7 +1436,7 @@ func _ensure_current_dungeon_entered() -> Dictionary:
 	)
 	var resource_index := 0
 	for resource_cell in resource_candidates:
-		if resource_index >= 44:
+		if resource_index >= 18:
 			break
 		var is_stone := resource_index % 3 == 1
 		var resource_id := "dungeon_stone_%d" % resource_index if is_stone else "dungeon_iron_ore_%d" % resource_index
@@ -1411,7 +1455,7 @@ func _ensure_current_dungeon_entered() -> Dictionary:
 		{"biome_id": biome_id, "world_seed": run_state.seed}
 	)
 	if enter_result.ok:
-		_enter_dungeon_map(layout, definition)
+		_enter_dungeon_map(layout, definition, true)
 	else:
 		_dungeon_debug("dungeon_runtime.enter_dungeon 실패: %s" % enter_result)
 	return enter_result
@@ -1449,7 +1493,7 @@ func _dungeon_debug(message: String) -> void:
 	if DUNGEON_DEBUG_LOGGING:
 		print("[DungeonDebug] %s" % message)
 
-func _enter_dungeon_map(layout: WorldData, definition: Dictionary) -> void:
+func _enter_dungeon_map(layout: WorldData, definition: Dictionary, is_new_entry := false) -> void:
 	if _in_dungeon_map:
 		return
 	_enemy_turn_queued = false
@@ -1493,6 +1537,11 @@ func _enter_dungeon_map(layout: WorldData, definition: Dictionary) -> void:
 				var register_result: Dictionary = acquisition_service.register_gatherable(String(node.id), String(node.id), _vector_from_dictionary(node.position))
 				if not register_result.ok:
 					_dungeon_debug("광석 노드 등록 실패: %s" % register_result)
+			var saved_dungeon_acquisitions: Dictionary = run_state.dungeon_runtime_state.get("acquisitions", {}) if run_state != null else {}
+			if not saved_dungeon_acquisitions.is_empty():
+				var acquisition_restore: Dictionary = acquisition_service.load_snapshot(saved_dungeon_acquisitions)
+				if not acquisition_restore.ok:
+					_dungeon_debug("던전 채집 상태 복원 실패: %s" % acquisition_restore)
 	_render_generated_world(generated_world)
 	var spawn_cell := Vector2i(1, 1)
 	var saved_player_cell: Dictionary = run_state.dungeon_runtime_state.get("player_cell", {}) if run_state != null else {}
@@ -1500,11 +1549,11 @@ func _enter_dungeon_map(layout: WorldData, definition: Dictionary) -> void:
 	if not saved_player_cell.is_empty() and world_data.contains(saved_cell) and world_data.is_walkable(saved_cell):
 		spawn_cell = saved_cell
 	player.global_position = world_position_for_cell_center(spawn_cell)
-	_spawn_dungeon_combatants()
+	_spawn_dungeon_combatants(is_new_entry)
 	_configure_game_hud()
 	_save_progress_after_turn()
 
-func _spawn_dungeon_combatants() -> void:
+func _spawn_dungeon_combatants(allow_default_spawn := false) -> void:
 	_clear_dungeon_combatants(false)
 	if _overworld_combat_dummy == null or not _overworld_combat_dummy.has_method("configure_combat"):
 		return
@@ -1514,10 +1563,15 @@ func _spawn_dungeon_combatants() -> void:
 		{"id": "dungeon_enemy_2", "cell": Vector2i(5, 7), "monster_id": "road_bandit", "sprite_id": "monster_foxfire_front_idle"},
 		{"id": "dungeon_boss", "cell": Vector2i(10, 7), "monster_id": "road_bandit", "sprite_id": "asset_assets_sprites_characters_bosses_chr_6_yokai_tea_master_yokai_tea_master_front_32x32_png", "boss": true}
 	]
+	var saved_states: Dictionary = run_state.dungeon_runtime_state.get("enemy_states", {}) if run_state != null else {}
 	for index in range(specs.size()):
 		var spec: Dictionary = specs[index]
-		var saved_states: Dictionary = run_state.dungeon_runtime_state.get("enemy_states", {}) if run_state != null else {}
 		var saved_state: Dictionary = saved_states.get(String(spec.id), {})
+		if not allow_default_spawn and not saved_states.has(String(spec.id)):
+			# A resumed save is authoritative. Do not recreate enemies that were
+			# absent from its state, including legacy saves with no enemy snapshot.
+			world_data.release_footprint(String(spec.id))
+			continue
 		if not saved_state.is_empty() and not bool(saved_state.get("visible", true)):
 			continue
 		var enemy = _overworld_combat_dummy.duplicate()
@@ -1548,7 +1602,7 @@ func _spawn_dungeon_combatants() -> void:
 			enemy.configure_grid_navigation(world_data, _runtime_world_origin(), _runtime_tile_size())
 		_dungeon_enemy_nodes.append(enemy)
 		_dungeon_debug("실제 던전 몬스터 생성: id=%s ok=%s" % [spec.id, configured.get("ok", false)])
-	combat_dummy = _dungeon_enemy_nodes.back()
+	combat_dummy = _dungeon_enemy_nodes.back() if not _dungeon_enemy_nodes.is_empty() else _overworld_combat_dummy
 
 func _clear_dungeon_combatants(restore_overworld := true) -> void:
 	for enemy in _dungeon_enemy_nodes:
@@ -1576,9 +1630,11 @@ func _on_dungeon_enemy_defeated(_event: Dictionary, enemy, owner_id: String) -> 
 	enemy.collision_mask = 0
 	if world_data != null:
 		world_data.release_footprint(owner_id)
-	_dungeon_debug("던전 몬스터 처치: %s, remaining=%d" % [owner_id, _combat_targets().size()])
+	var remaining := _combat_targets().size()
+	_dungeon_debug("던전 몬스터 처치: %s, remaining=%d" % [owner_id, remaining])
 	if game_hud != null:
-		game_hud.show_status_toast("적을 처치했다!")
+		game_hud.show_status_toast("던전 클리어! 유적으로 돌아가세요." if remaining == 0 else "적을 처치했다!")
+	_save_progress_after_turn()
 
 func _restore_dungeon_map_from_runtime() -> void:
 	var projection: Dictionary = dungeon_runtime.to_projection()
@@ -1607,6 +1663,32 @@ func _return_from_dungeon_map() -> void:
 		if combat_dummy.has_method("configure_grid_navigation"):
 			combat_dummy.configure_grid_navigation(world_data, _runtime_world_origin(), _runtime_tile_size())
 	_configure_game_hud()
+
+func _ensure_saved_world_has_teleport_landmark() -> bool:
+	if _in_dungeon_map or world_data == null:
+		return false
+	for landmark in world_data.get_required_landmarks():
+		if String(landmark.get("kind", landmark.get("type", ""))) == WorldData.LANDMARK_TELEPORT_ZONE:
+			return false
+	var width: int = int(world_data.width)
+	var height: int = int(world_data.height)
+	var center_x: int = maxi(1, width / 2)
+	var center_y: int = maxi(1, height / 2)
+	var candidate: Vector2i = Vector2i(center_x, center_y)
+	for radius in range(maxi(width, height)):
+		for offset in [Vector2i.ZERO, Vector2i(radius, 0), Vector2i(-radius, 0), Vector2i(0, radius), Vector2i(0, -radius)]:
+			var cell: Vector2i = candidate + offset
+			if not world_data.contains(cell) or not world_data.is_walkable(cell):
+				continue
+			var id := "%s_0" % WorldData.LANDMARK_TELEPORT_ZONE
+			var metadata := {"teleport_biome_id": String(run_state.current_biome_id), "migrated": true}
+			world_data.add_required_landmark(WorldData.LANDMARK_TELEPORT_ZONE, id, cell, metadata)
+			generated_world["world_data"] = world_data.to_dictionary()
+			generated_world["landmarks"] = world_data.get_required_landmarks()
+			generated_world["renderer_input"] = WorldRendererProjection.new().project(generated_world["world_data"], biome_progression_state.to_projection())
+			_dungeon_debug("기존 세이브에 텔레포트 추가: id=%s cell=%s" % [id, cell])
+			return true
+	return false
 
 func _current_biome_dungeon_definition() -> Dictionary:
 	if catalog == null or run_state == null:
@@ -1671,6 +1753,12 @@ func _configure_acquisition_for_generated_world() -> Dictionary:
 		terrain_tree_result = _register_terrain_tree_gatherables(definition_ids)
 		if not terrain_tree_result.ok:
 			return terrain_tree_result
+	# Acquisition restore and player facilities mutate the runtime WorldData.
+	# Refresh the generated projection before the first render so a resumed run
+	# does not briefly show the pristine generated map.
+	generated_world["world_data"] = world_data.to_dictionary()
+	var restored_renderer_input: Dictionary = WorldRendererProjection.new().project(generated_world["world_data"])
+	generated_world["renderer_input"] = restored_renderer_input
 	acquisition_service.changed.connect(_on_acquisition_changed)
 	acquisition_service.acquisition_completed.connect(_on_acquisition_completed)
 	_on_acquisition_changed(acquisition_service.to_snapshot())
@@ -1794,6 +1882,11 @@ func _on_acquisition_completed(result: Dictionary) -> void:
 	var item_id := String(result.get("item_id", ""))
 	if item_id.is_empty():
 		return
+	var source_id := String(result.get("source_id", result.get("id", result.get("target_id", ""))))
+	if _in_dungeon_map and _is_dungeon_resource_target(source_id) and world_data != null:
+		# Direct dungeon gathering grants the item immediately, so clear the
+		# reservation as soon as the node is depleted to keep the tile walkable.
+		world_data.release_footprint(source_id)
 	var item_name := item_id
 	if catalog != null and catalog.has_method("find_by_id"):
 		var definition: Dictionary = catalog.find_by_id("items", item_id)
@@ -1836,6 +1929,39 @@ func _on_combat_dummy_defeated(_event: Dictionary) -> void:
 	combat_dummy.automatic_attacks = false
 	combat_dummy.collision_layer = 0
 	combat_dummy.collision_mask = 0
+	_save_progress_after_turn()
+
+func _snapshot_overworld_enemy_state() -> Dictionary:
+	if combat_dummy == null or not is_instance_valid(combat_dummy):
+		return {}
+	var cell := world_cell_from_world_position(combat_dummy.global_position)
+	return {
+		"cell": {"x": cell.x, "y": cell.y},
+		"monster_id": String(combat_dummy.monster_id),
+		"hp": int(combat_dummy.current_hp()) if combat_dummy.has_method("current_hp") else 0,
+		"visible": combat_dummy.visible,
+		"automatic_attacks": combat_dummy.automatic_attacks,
+		"collision_layer": combat_dummy.collision_layer,
+		"collision_mask": combat_dummy.collision_mask
+	}
+
+func _restore_overworld_enemy_state() -> void:
+	if _in_dungeon_map or combat_dummy == null or not is_instance_valid(combat_dummy) or run_state == null:
+		return
+	var saved: Dictionary = run_state.overworld_enemy_state
+	if saved.is_empty():
+		return
+	var saved_cell: Dictionary = saved.get("cell", {})
+	if not saved_cell.is_empty():
+		var cell := _vector_from_dictionary(saved_cell)
+		if world_data != null and world_data.contains(cell):
+			combat_dummy.global_position = world_position_for_cell_center(cell)
+	if combat_dummy.combatant != null:
+		combat_dummy.combatant.hp = clampi(int(saved.get("hp", combat_dummy.combatant.hp)), 0, combat_dummy.combatant.hp_max)
+	combat_dummy.visible = bool(saved.get("visible", true))
+	combat_dummy.automatic_attacks = bool(saved.get("automatic_attacks", true))
+	combat_dummy.collision_layer = int(saved.get("collision_layer", 2))
+	combat_dummy.collision_mask = int(saved.get("collision_mask", 1))
 
 func _queue_enemy_turn_after_player_action() -> void:
 	if _enemy_turn_queued:
@@ -2716,6 +2842,7 @@ func _handle_complete_dungeon_command(command: GameCommand) -> bool:
 		payload["reward_item_ids"] = []
 	if not payload.has("progression_unlock_ids"):
 		payload["progression_unlock_ids"] = [String(run_state.current_biome_id)]
+	_sync_dungeon_runtime_save_state()
 	var completed: Dictionary = dungeon_runtime.complete_dungeon(payload)
 	if not completed.ok:
 		return false
@@ -2740,7 +2867,7 @@ func _handle_biome_progression_command(command: GameCommand) -> bool:
 	var result: Dictionary = biome_progression_state.apply_command(command)
 	if not result.ok:
 		_dungeon_debug("바이옴 진행 명령 실패: type=%s biome=%s reason=%s" % [command.type, String(command.payload.get("biome_id", "")), String(result.get("reason", "unknown"))])
-		if game_hud != null:
+		if game_hud != null and game_hud.has_method("show_command_feedback"):
 			game_hud.show_command_feedback("수리 불가: %s" % String(result.get("reason", "unknown")))
 		return false
 	var world_result := _configure_world_for_current_run()
@@ -2962,6 +3089,12 @@ func skip_memory_tea_cutscene() -> Dictionary:
 
 func _render_generated_world(world: Dictionary) -> void:
 	_hide_prototype_visuals()
+	if not _in_dungeon_map and world_data != null:
+		var migrated := _ensure_saved_world_has_teleport_landmark()
+		world["world_data"] = world_data.to_dictionary()
+		world["renderer_input"] = WorldRendererProjection.new().project(world["world_data"], biome_progression_state.to_projection() if biome_progression_state != null else {})
+		if migrated:
+			save_current_run()
 	var renderer_input: Dictionary = world.get("renderer_input", {})
 	_apply_teleport_states_to_renderer_input(renderer_input)
 	var origin := _centered_world_origin(renderer_input)
@@ -2985,6 +3118,7 @@ func _render_generated_world(world: Dictionary) -> void:
 	_configure_runtime_camera()
 	if combat_dummy != null and combat_dummy.has_method("configure_grid_navigation"):
 		combat_dummy.configure_grid_navigation(world_data, _runtime_world_origin(), _runtime_tile_size())
+	_restore_overworld_enemy_state()
 
 func _sync_runtime_world_render() -> void:
 	if world_visuals == null or world_data == null or world_render_result.is_empty():
@@ -2992,9 +3126,6 @@ func _sync_runtime_world_render() -> void:
 	var world_snapshot: Dictionary = world_data.to_dictionary()
 	var renderer_input: Dictionary = WorldRendererProjection.new().project(world_snapshot)
 	_apply_teleport_states_to_renderer_input(renderer_input)
-	var previous_renderer_input: Dictionary = generated_world.get("renderer_input", {})
-	if previous_renderer_input.has("required_landmarks"):
-		renderer_input["required_landmarks"] = previous_renderer_input.required_landmarks.duplicate(true)
 	generated_world["world_data"] = world_snapshot
 	generated_world["renderer_input"] = renderer_input
 	var origin := _centered_world_origin(renderer_input)
@@ -3027,7 +3158,8 @@ func _sync_dungeon_runtime_save_state() -> void:
 			"visible": enemy.visible
 		}
 		_sync_dungeon_enemy_reservation(owner_id, cell, enemy.visible)
-	dungeon_runtime.sync_active_world_state(world_data, _player_world_cell(), enemy_states)
+	var acquisition_snapshot: Dictionary = acquisition_service.to_snapshot() if acquisition_service != null else {}
+	dungeon_runtime.sync_active_world_state(world_data, _player_world_cell(), enemy_states, acquisition_snapshot)
 
 func _sync_dungeon_enemy_reservation(owner_id: String, cell: Vector2i, active: bool) -> void:
 	var existing: Dictionary = world_data.get_reservation(owner_id)
