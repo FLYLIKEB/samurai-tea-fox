@@ -1737,7 +1737,13 @@ func _configure_runtime_camera() -> void:
 	camera.enabled = true
 
 func _entry_spawn_cell(world: Dictionary) -> Vector2i:
-	for landmark in world.get("required_landmarks", []):
+	var landmarks: Array = world.get("required_landmarks", [])
+	if landmarks.is_empty():
+		landmarks = world.get("landmarks", [])
+	if landmarks.is_empty():
+		var renderer_input: Dictionary = world.get("renderer_input", {})
+		landmarks = renderer_input.get("required_landmarks", [])
+	for landmark in landmarks:
 		if String(landmark.get("kind", landmark.get("type", ""))) != WorldData.LANDMARK_ENTRY:
 			continue
 		return _vector_from_dictionary(landmark.get("position", {}))
@@ -1759,6 +1765,7 @@ func _configure_game_hud() -> void:
 		"inventory_command_runtime": inventory_command_runtime,
 		"map_read_model_builder": map_read_model_builder,
 		"world_data": world_data,
+		"combat_target": combat_dummy,
 		"run_state": run_state,
 		"tea_service": tea_service,
 		"tea_brewing_command_runtime": tea_brewing_command_runtime,

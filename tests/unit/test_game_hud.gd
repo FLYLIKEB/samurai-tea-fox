@@ -77,6 +77,19 @@ class FakeTeaService:
 		{}
 	]
 
+class FakeCombatant:
+	var definition_id := "road_bandit"
+	var hp := 70
+	var hp_max := 70
+	var attack := 9
+
+class FakeCombatTarget:
+	signal damaged(event: Dictionary, applied_damage: int)
+	signal defeated()
+
+	var monster_id := "road_bandit"
+	var combatant := FakeCombatant.new()
+
 class FakeCraftingService:
 	var recipe_definitions := {
 		"wooden_workbench": {
@@ -143,6 +156,8 @@ class FakeCatalog:
 					{"id": "bandage", "status": "테스트"},
 					{"id": "iron_kettle", "status": "초안"}
 				]
+			"monsters":
+				return [{"id": "road_bandit", "name": "노상 도적", "hp": 70, "attack": 9}]
 			_:
 				return []
 
@@ -183,10 +198,36 @@ func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:
 	asserts.equal(read_model.tea_quickslot_count, 3, "HUD tea quick slots come from runtime tea service")
 	asserts.true_value(read_model.consumable_ready, "HUD derives the consumable quickslot from item definition data")
 	asserts.equal(read_model.ability_slot_count, 2, "HUD ability slots come from balance definitions")
-	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionGrid/TeaButton3") != null, "HUD creates tea controls from the runtime quickslot count")
-	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionGrid/AbilityButton2") != null, "HUD creates ability controls from the balance slot count")
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/AttackButton") != null, "HUD shows attack as a primary mobile action")
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/DodgeButton") != null, "HUD shows dodge as a primary mobile action")
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/InventoryButton") != null, "HUD shows inventory as a primary mobile action")
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/CraftingButton") != null, "HUD shows crafting as a primary mobile action")
+	var quick_tea := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickTeaButton") as Button
+	var quick_consumable := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickConsumableButton") as Button
+	var quick_ability := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickAbilityButton") as Button
+	asserts.true_value(quick_tea != null, "HUD shows tea as an icon-only secondary quick action")
+	asserts.true_value(quick_consumable != null, "HUD shows consumable as an icon-only secondary quick action")
+	asserts.true_value(quick_ability != null, "HUD shows ability as an icon-only secondary quick action")
+	if quick_tea != null:
+		asserts.equal(quick_tea.text, "", "tea secondary quick action does not render explanatory text")
+	if quick_consumable != null:
+		asserts.equal(quick_consumable.text, "", "consumable secondary quick action does not render explanatory text")
+	if quick_ability != null:
+		asserts.equal(quick_ability.text, "", "ability secondary quick action does not render explanatory text")
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/ActionMenuButton") != null, "HUD opens secondary actions from a hamburger-style button")
+	asserts.true_value(hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ActionMenuGrid/TeaButton3") != null, "HUD creates tea controls from the runtime quickslot count in the secondary action drawer")
+	asserts.true_value(hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ActionMenuGrid/AbilityButton2") != null, "HUD creates ability controls from the balance slot count in the secondary action drawer")
+	asserts.false_value((hud.get_node_or_null("Root/ActionMenuPanel") as Control).visible, "HUD keeps secondary actions hidden until the hamburger button is pressed")
+	var hamburger := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/ActionMenuButton") as Button
+	if hamburger != null:
+		hamburger.pressed.emit()
+	asserts.true_value((hud.get_node_or_null("Root/ActionMenuPanel") as Control).visible, "HUD shows the secondary action drawer after pressing the hamburger button")
+	asserts.equal((hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll") as Control).mouse_filter, Control.MOUSE_FILTER_STOP, "secondary action scroll consumes touch input instead of moving the player")
 	asserts.equal(read_model.time_phase, "night", "HUD reads current time phase")
 	asserts.equal(read_model.time_progress_percent, 25, "HUD calculates time progress from the time read model")
+	asserts.true_value(hud.get_node_or_null("Root/StatusPanel/StatusBody/PlayerPortrait") != null, "HUD renders the mockup-style player portrait block")
+	asserts.equal(read_model.combat_target.name, "노상 도적", "HUD reads combat target names from definition data")
+	asserts.true_value(hud.get_node_or_null("Root/EnemyPanel") != null, "HUD renders the mockup-style enemy status panel")
 	hud.free()
 
 func _assert_runtime_signals_refresh_labels(asserts) -> void:
@@ -194,7 +235,7 @@ func _assert_runtime_signals_refresh_labels(asserts) -> void:
 	var resources = hud.player.resources
 	resources.set_hp(61)
 	var hp_label := hud.get("_labels").get("hp") as Label
-	asserts.equal(hp_label.text, "HP 61 / 100", "resource signals refresh HUD labels without frame polling")
+	asserts.equal(hp_label.text, "체력        61/100", "resource signals refresh HUD labels without frame polling")
 	hud.time_state.phase = &"dusk"
 	hud.time_state.phase_changed.emit(&"night", &"dusk")
 	var time_label := hud.get("_labels").get("time") as Label
@@ -217,7 +258,7 @@ func _assert_dpad_emits_press_and_release_movement(asserts) -> void:
 	var dpad_panel := hud.get_node_or_null("Root/DPadPanel") as Control
 	asserts.true_value(dpad_panel != null, "HUD keeps the dpad command surface")
 	if dpad_panel != null:
-		asserts.false_value(dpad_panel.visible, "HUD does not display the directional pad")
+		asserts.true_value(dpad_panel.visible, "HUD displays the compact mockup-style directional pad")
 	var left_button := hud.get_node_or_null("Root/DPadPanel/DPadBoard/DPadLeft") as Button
 	asserts.true_value(left_button != null, "HUD owns a left dpad button")
 	if left_button != null:
@@ -280,14 +321,17 @@ func _assert_dodge_control_does_not_use_baked_dash_asset(asserts) -> void:
 func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	var hud := _configured_hud()
 	asserts.true_value(hud.show_inventory_menu(), "HUD opens the inventory menu")
-	asserts.true_value(_tree_has_text(hud, "▶ 01 wood x3 (3/20)"), "inventory menu lists occupied runtime slots")
+	asserts.equal((hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll") as Control).mouse_filter, Control.MOUSE_FILTER_STOP, "menu scroll consumes touch input instead of moving the player")
+	asserts.true_value(_tree_has_text(hud, "차 & 도구 (인벤토리) · 2/14 · all"), "inventory menu renders the mockup-style inventory header")
+	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip/InventorySlotCard0") != null, "inventory menu renders slot cards")
 	asserts.true_value(hud.show_facilities_menu(), "HUD opens the facilities menu")
 	asserts.true_value(_tree_has_text(hud, "우물 (4,5)"), "facilities menu lists generated facility nodes")
+	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/FacilityCardStrip") != null, "facilities menu renders facility cards")
 	var received: Array = []
 	hud.mobile_command_issued.connect(func(command): received.append(command))
 	asserts.true_value(hud.show_crafting_menu(), "HUD opens the crafting menu")
 	asserts.true_value(_tree_has_text(hud, "제작법 1/1 · 가능 1 · 필터 전체"), "crafting menu shows recipe counts and active filter")
-	asserts.true_value(_tree_has_text(hud, "상세 wooden_workbench → 목재 작업대 x1 · 제작 가능 · 재료 목재 3/2 · 손제작 · 해금 common_region"), "crafting menu shows selected recipe detail")
+	asserts.true_value(_tree_has_text(hud, "wooden_workbench → 목재 작업대 x1 · 제작 가능 · 재료 목재 3/2 · 손제작 · 해금 common_region"), "crafting menu shows selected recipe detail")
 	var craft_button := _first_enabled_button_with_text(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent"), "제작")
 	if craft_button != null:
 		craft_button.pressed.emit()
@@ -339,6 +383,7 @@ func _assert_narrative_dialogue_emits_option_commands(asserts) -> void:
 	asserts.false_value((hud.get_node_or_null("Root/MapPanel") as Control).visible, "prologue hides the normal map HUD")
 	asserts.false_value((hud.get_node_or_null("Root/QuickSlotPanel") as Control).visible, "prologue hides the normal quickslot HUD")
 	asserts.false_value((hud.get_node_or_null("Root/ActionPanel") as Control).visible, "prologue hides the normal action HUD")
+	asserts.false_value((hud.get_node_or_null("Root/EnemyPanel") as Control).visible, "prologue hides the normal enemy HUD")
 	asserts.false_value(_tree_has_text(hud.get_node_or_null("Root/NarrativeOverlay/NarrativePanel/NarrativeRows/NarrativeOptions"), "고개를 끄덕인다"), "prologue does not show choice prose as button text")
 	var button := _first_enabled_button_with_text(hud.get_node_or_null("Root/NarrativeOverlay/NarrativePanel/NarrativeRows/NarrativeOptions"), "넘어가기")
 	if button != null:
@@ -352,6 +397,7 @@ func _assert_narrative_dialogue_emits_option_commands(asserts) -> void:
 	asserts.true_value(hud.hide_narrative_dialogue(), "HUD hides narrative dialogue on request")
 	asserts.false_value(hud.narrative_dialogue_visible(), "HUD reports hidden narrative panel")
 	asserts.true_value((hud.get_node_or_null("Root/StatusPanel") as Control).visible, "normal status HUD is restored after prologue")
+	asserts.false_value((hud.get_node_or_null("Root/MenuPanel") as Control).visible, "prologue restore does not reopen a hidden fast menu")
 	hud.free()
 
 func _configured_hud() -> GameHud:
@@ -363,6 +409,7 @@ func _configured_hud() -> GameHud:
 		"catalog": FakeCatalog.new(),
 		"inventory": FakeInventory.new(),
 		"inventory_command_runtime": FakeInventoryCommandRuntime.new(),
+		"combat_target": FakeCombatTarget.new(),
 		"tea_service": FakeTeaService.new(),
 		"crafting_service": FakeCraftingService.new(),
 		"crafting_context": {"unlocked_biome_ids": ["common_region"]},

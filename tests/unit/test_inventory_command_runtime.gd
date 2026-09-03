@@ -78,10 +78,15 @@ func _assert_main_routes_inventory_commands_and_saves_equipment(asserts) -> void
 func _assert_hud_inventory_menu_uses_command_read_model(asserts) -> void:
 	var fixture := _fixture_runtime()
 	asserts.equal(fixture.size(), 4, "fixture exposes runtime inventory equipment consumable")
+	var runtime: InventoryCommandRuntime = fixture[0]
+	for slot in runtime.read_model().slots:
+		if bool(slot.get("can_equip", false)):
+			runtime.handle_command(GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, int(slot.slot_index), {"slot_index": int(slot.slot_index)}))
+			break
 	var hud := GameHud.new()
-	hud.configure(FakePlayer.new(), {"biome_id": "common_region"}, {"counts": {}}, {"inventory": fixture[1], "inventory_command_runtime": fixture[0], "catalog": FakeHudCatalog.new()})
+	hud.configure(FakePlayer.new(), {"biome_id": "common_region"}, {"counts": {}}, {"inventory": fixture[1], "inventory_command_runtime": runtime, "catalog": FakeHudCatalog.new()})
 	asserts.true_value(hud.show_inventory_menu(), "HUD opens command-backed inventory menu")
-	asserts.true_value(_tree_has_text(hud, "가방 6/24"), "HUD shows capacity from inventory command read model")
+	asserts.true_value(_tree_has_text(hud, "차 & 도구 (인벤토리) · 6/24"), "HUD shows capacity from inventory command read model")
 	asserts.true_value(_tree_has_text(hud, "이전"), "HUD exposes previous navigation without dragging")
 	asserts.true_value(_tree_has_text(hud, "다음"), "HUD exposes next navigation without dragging")
 	asserts.true_value(_tree_has_text(hud, "정렬"), "HUD exposes sort command without dragging")
