@@ -51,7 +51,12 @@
       "frame_size": "32x32",
       "directions": 4,
       "frames_per_direction": 8,
-      "row_order": ["south", "west", "east", "north"],
+      "row_order": [
+        "south",
+        "west",
+        "east",
+        "north"
+      ],
       "column_order": "animation frames 0 through 7"
     },
     "raw_candidates": "assets/source/imagegen/pixellab-character-walk-20260902/raw/",
@@ -196,7 +201,8 @@
         "fox_samurai_left_idle_64x64.png",
         "fox_samurai_right_idle_32x32.png",
         "fox_samurai_right_idle_64x64.png",
-        "fox_samurai_walk_4dir_8f_32x32.png"
+        "fox_samurai_walk_4dir_8f_32x32.png",
+        "fox_samurai_attack_4dir_8f_32x32.png"
       ],
       "legacy_prefix": "fox_samurai"
     },
@@ -232,5 +238,29 @@
       ],
       "legacy_prefix": "npc_robed_villager"
     }
-  ]
+  ],
+  "attack_animation_production": {
+    "task": "fox_samurai_attack_animation_20260903",
+    "generator": "PixelLab",
+    "endpoint": "/animate-with-text-v3",
+    "source_rule": "Each approved south, west, east, and north 32x32 idle PNG is an immutable first-frame and last-frame reference for its own eight-frame short attack animation.",
+    "sheet_contract": {
+      "canvas": "256x128",
+      "frame_size": "32x32",
+      "directions": 4,
+      "frames_per_direction": 8,
+      "row_order": [
+        "south",
+        "west",
+        "east",
+        "north"
+      ],
+      "column_order": "attack frames 0 through 7, non-looping"
+    },
+    "raw_candidates": "assets/source/imagegen/pixellab-character-attack-20260903/raw/",
+    "production_metadata": "assets/sprites/characters/attack-production-metadata.json",
+    "art_assets": {
+      "CHR-8": "ART-23"
+    }
+  }
 }

@@ -216,6 +216,9 @@ func _start_attack(direction: Vector2i) -> bool:
 		return false
 	_pending_swing["direction"] = attack_direction
 	_position_attack_area(attack_direction, float(_pending_swing.range_tiles))
+	if _walk_animator_ready:
+		walk_animator.play_attack(_animation_direction_for_vector(attack_direction))
+		_current_sprite_asset_id = walk_animator.current_asset_id()
 	_attack_query_pending = true
 	attack_started.emit(_pending_swing)
 	return true
@@ -396,6 +399,13 @@ func _animation_direction_for_facing() -> String:
 			return "east"
 		_:
 			return "south"
+
+func _animation_direction_for_vector(direction: Vector2) -> String:
+	if absf(direction.x) > absf(direction.y):
+		return "east" if direction.x > 0.0 else "west"
+	if direction.y < 0.0:
+		return "north"
+	return "south"
 
 func _sprite_asset_id_for_facing() -> String:
 	match movement_state.facing:
