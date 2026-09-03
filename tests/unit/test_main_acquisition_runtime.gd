@@ -176,7 +176,10 @@ func _assert_tree_terrain_requires_crafted_axe_and_disappears(asserts, catalog: 
 	asserts.true_value(main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.CRAFT_RECIPE, Vector2i.ZERO, -1, {"recipe_id": "stone_axe"})), "stone axe crafts from one stone through a stable recipe id")
 	asserts.equal(main.inventory.get_total_quantity("stone_axe"), 1, "crafted axe enters inventory")
 	asserts.equal(main.inventory.get_total_quantity("stone"), 0, "stone axe recipe consumes exactly one stone")
-	asserts.true_value(main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": tree_id})), "tree terrain harvest succeeds after crafting an axe")
+	var pointer_player := MovementPlayer.new()
+	main.player = pointer_player
+	pointer_player.global_position = main.world_position_for_cell_center(Vector2i.ZERO)
+	asserts.true_value(main.submit_pointer_interaction(main.world_position_for_cell_center(Vector2i(1, 0))), "clicking tree terrain harvests it after crafting an axe")
 	asserts.equal(main.inventory.get_total_quantity("wood"), 1, "tree terrain harvest grants wood")
 	asserts.true_value(main.acquisition_service.gatherable_for(tree_id).depleted, "harvested tree terrain is marked depleted")
 	asserts.true_value(main.world_data.is_walkable(Vector2i(1, 0)), "harvested tree no longer blocks the map cell")
@@ -320,7 +323,15 @@ func _configured_tree_runtime(catalog, state = null) -> Dictionary:
 	if not services.ok:
 		return {"main": runtime, "result": services}
 	var world := WorldData.new(3, 1, "common_grass", true)
-	world.set_terrain(Vector2i(1, 0), "common_forest", false, "terrain_tree_broadleaf_32x32")
+	world.set_terrain(Vector2i(1, 0), "common_forest", true, "common_grass")
+	world.reserve_entity("terrain_tree_wood_1_0", Vector2i(1, 0), Vector2i.ONE, true, {
+		"source_id": "terrain_tree_broadleaf_32x32",
+		"resource_id": "wood",
+		"terrain_id": "common_forest",
+		"base_terrain_id": "common_grass",
+		"base_render_id": "common_grass",
+		"terrain_overlay": "tree"
+	})
 	var world_snapshot := world.to_dictionary()
 	runtime.generated_world = {
 		"ok": true,

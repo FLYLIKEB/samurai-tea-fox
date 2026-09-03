@@ -691,8 +691,9 @@ func _make_path_cell(world_data: WorldData, position: Vector2i, profile: Diction
 func _set_tree_obstacle(world_data: WorldData, position: Vector2i, terrain_id: String, base_terrain_id: String, base_render_id: String, tree_source_id: String) -> bool:
 	_clear_generated_tree_obstacle(world_data, position)
 	world_data.set_terrain(position, terrain_id, true, base_render_id)
-	var reserved := world_data.reserve_entity(_tree_owner_id(position), position, Vector2i.ONE, false, {
+	var reserved := world_data.reserve_entity(_tree_owner_id(position), position, Vector2i.ONE, true, {
 		"source_id": tree_source_id,
+		"resource_id": "wood",
 		"terrain_id": terrain_id,
 		"base_terrain_id": base_terrain_id,
 		"base_render_id": base_render_id,
@@ -707,7 +708,7 @@ func _clear_generated_tree_obstacle(world_data: WorldData, position: Vector2i) -
 	world_data.release_footprint(_tree_owner_id(position))
 
 func _tree_owner_id(position: Vector2i) -> String:
-	return "terrain_tree_%d_%d" % [position.x, position.y]
+	return "terrain_tree_wood_%d_%d" % [position.x, position.y]
 
 func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, reachable_cells: Dictionary, source_by_resource_id: Dictionary, templates := [], landmarks := []) -> Array:
 	var nodes := []

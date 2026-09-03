@@ -1061,8 +1061,6 @@ func _register_terrain_tree_gatherables(definition_ids: Dictionary) -> Dictionar
 			continue
 		if not acquisition_service.gatherable_for(node_id).is_empty():
 			continue
-		if not world_data.get_occupants(position).is_empty():
-			continue
 		var registered: Dictionary = acquisition_service.register_gatherable(node_id, node_id, position)
 		if not registered.ok:
 			return registered
