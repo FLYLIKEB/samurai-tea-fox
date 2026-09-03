@@ -17,6 +17,10 @@ func run() -> void:
 	await process_frame
 	await process_frame
 	await physics_frame
+	var hud = main.get_node_or_null("GameHud")
+	if hud != null and hud.has_method("narrative_dialogue_visible") and hud.narrative_dialogue_visible():
+		hud.hide_narrative_dialogue()
+		await process_frame
 	var viewport_texture := root.get_texture()
 	if viewport_texture == null:
 		push_error("HUD capture requires a rendering display driver; headless dummy renderer has no viewport texture.")

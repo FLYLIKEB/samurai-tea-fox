@@ -126,8 +126,11 @@ func run() -> void:
 		else:
 			_assert_hud_layout_fits_viewport([status_panel, map_panel, enemy_panel, quickslot_panel, action_panel])
 			_assert_hud_layout_keeps_center_play_area_clear([status_panel, map_panel, enemy_panel, quickslot_panel, dpad_panel, action_panel])
-			if _button_count(action_panel) < 15:
-				failures.append("runtime HUD exposes attack, dodge, tea, consumable, ability, inventory, tea brewing, meta codex, map, crafting, facilities, sleep, dungeon, and teleport controls")
+			var visible_action_buttons := _button_count(action_panel)
+			if visible_action_buttons > 9:
+				failures.append("runtime HUD keeps secondary actions grouped instead of showing every command at once: %d buttons" % visible_action_buttons)
+			if action_panel.get_node_or_null("ActionScroll/ActionRows/ActionTabs/MenuTab") == null:
+				failures.append("runtime HUD exposes secondary action groups through category tabs")
 			var time_label := hud.get("_labels").get("time") as Label
 			if time_label == null or not time_label.get_parent().visible:
 				failures.append("runtime HUD shows the canonical runtime time state")

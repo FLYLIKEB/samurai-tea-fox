@@ -36,8 +36,9 @@ const QUICKSLOT_PANEL_SIZE := Vector2(218, 32)
 const DPAD_PANEL_SIZE := Vector2(66, 66)
 const DPAD_BOARD_SIZE := Vector2(56, 56)
 const ACTION_BUTTON_SIZE := Vector2(62, 26)
-const ACTION_PANEL_SIZE := Vector2(76, 194)
-const ACTION_PANEL_COLUMNS := 1
+const ACTION_TAB_BUTTON_SIZE := Vector2(56, 22)
+const ACTION_PANEL_SIZE := Vector2(142, 122)
+const ACTION_PANEL_COLUMNS := 2
 const MENU_PANEL_SIZE := Vector2(320, 142)
 const MENU_CONTENT_SIZE := Vector2(304, 90)
 
@@ -72,7 +73,9 @@ var _mobile_adapter := MobileCommandAdapter.new()
 var _built := false
 var _theme: Theme
 var _time_refresh_elapsed := 0.0
+var _action_category := "primary"
 var _action_grid: GridContainer
+var _action_tab_grid: GridContainer
 var _menu_content: VBoxContainer
 var _minimap_grid: GridContainer
 var _action_scroll: ScrollContainer
@@ -522,40 +525,98 @@ func _build_actions(parent: PanelContainer) -> void:
 	_ignore_mouse(_action_scroll.get_h_scroll_bar())
 	_ignore_mouse(_action_scroll.get_v_scroll_bar())
 	parent.add_child(_action_scroll)
+	var action_rows := VBoxContainer.new()
+	action_rows.name = "ActionRows"
+	_ignore_mouse(action_rows)
+	action_rows.add_theme_constant_override("separation", 4)
+	_action_scroll.add_child(action_rows)
+	_action_tab_grid = GridContainer.new()
+	_action_tab_grid.name = "ActionTabs"
+	_ignore_mouse(_action_tab_grid)
+	_action_tab_grid.columns = 2
+	_action_tab_grid.add_theme_constant_override("h_separation", 4)
+	_action_tab_grid.add_theme_constant_override("v_separation", 3)
+	action_rows.add_child(_action_tab_grid)
 	_action_grid = GridContainer.new()
 	_action_grid.name = "ActionGrid"
 	_ignore_mouse(_action_grid)
 	_action_grid.columns = ACTION_PANEL_COLUMNS
 	_action_grid.add_theme_constant_override("h_separation", 4)
 	_action_grid.add_theme_constant_override("v_separation", 4)
-	_action_scroll.add_child(_action_grid)
+	action_rows.add_child(_action_grid)
 	_rebuild_action_buttons()
 
 func _rebuild_action_buttons() -> void:
 	if _action_grid == null:
 		return
+	if _action_tab_grid != null:
+		if _action_tab_grid.get_child_count() == 0:
+			_add_action_category_button("PrimaryTab", "기본", "primary")
+			_add_action_category_button("TeaTab", "차", "tea")
+			_add_action_category_button("MenuTab", "메뉴", "menu")
+			_add_action_category_button("OtherTab", "기타", "other")
+		_refresh_action_category_tabs()
 	for child in _action_grid.get_children():
 		child.free()
 	_add_text_action(_action_grid, "AttackButton", ICON_ATTACK, "공격", "attack", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "DodgeButton", ICON_DODGE, "회피", "dodge", Vector2i.ZERO, 0)
-	for slot in range(_tea_quickslot_count()):
-		_add_text_action(_action_grid, "TeaButton%d" % (slot + 1), ICON_TEA, "차%d" % (slot + 1), "drink_tea", Vector2i.ZERO, slot)
-	_add_text_action(_action_grid, "ConsumableButton", ICON_CONSUMABLE, "소모", "use_consumable", Vector2i.ZERO, 0)
-	for slot in range(_balance_integer(BALANCE_ABILITY_SLOTS_ID)):
-		_add_text_action(_action_grid, "AbilityButton%d" % (slot + 1), ICON_ABILITY, "요술%d" % (slot + 1), "cast_ability", Vector2i.ZERO, slot)
-	_add_text_action(_action_grid, "InventoryButton", ICON_BAG, "가방", "open_inventory", Vector2i.ZERO, 0)
-	_add_text_action(_action_grid, "TeaBrewingButton", ICON_TEA, "우리기", "open_tea_brewing", Vector2i.ZERO, 0)
-	_add_text_action(_action_grid, "MetaCodexButton", ICON_BAG, "도감", "open_meta_codex", Vector2i.ZERO, 0)
-	_add_text_action(_action_grid, "MapButton", ICON_MAP, "지도", "open_map", Vector2i.ZERO, 0)
-	_add_text_action(_action_grid, "CraftingButton", ICON_CONSUMABLE, "제작", "open_crafting", Vector2i.ZERO, 0)
-	_add_text_action(_action_grid, "FacilitiesButton", ICON_MAP, "시설", "open_facilities", Vector2i.ZERO, 0)
-	_add_text_action(_action_grid, "SleepButton", ICON_TEA, "수면", "sleep", Vector2i.ZERO, 0)
-	_add_text_action(_action_grid, "DungeonButton", ICON_ATTACK, "던전", "complete_dungeon", Vector2i.ZERO, 0)
-	_add_text_action(_action_grid, "TeleportRepairButton", ICON_MAP, "수리", "repair_teleport", Vector2i.ZERO, 0)
+	match _action_category:
+		"tea":
+			for slot in range(_tea_quickslot_count()):
+				_add_text_action(_action_grid, "TeaButton%d" % (slot + 1), ICON_TEA, "차%d" % (slot + 1), "drink_tea", Vector2i.ZERO, slot)
+			_add_text_action(_action_grid, "TeaBrewingButton", ICON_TEA, "우리기", "open_tea_brewing", Vector2i.ZERO, 0)
+		"menu":
+			_add_text_action(_action_grid, "InventoryButton", ICON_BAG, "가방", "open_inventory", Vector2i.ZERO, 0)
+			_add_text_action(_action_grid, "MetaCodexButton", ICON_BAG, "도감", "open_meta_codex", Vector2i.ZERO, 0)
+			_add_text_action(_action_grid, "MapButton", ICON_MAP, "지도", "open_map", Vector2i.ZERO, 0)
+			_add_text_action(_action_grid, "CraftingButton", ICON_CONSUMABLE, "제작", "open_crafting", Vector2i.ZERO, 0)
+			_add_text_action(_action_grid, "FacilitiesButton", ICON_MAP, "시설", "open_facilities", Vector2i.ZERO, 0)
+		"other":
+			_add_text_action(_action_grid, "ConsumableButton", ICON_CONSUMABLE, "소모", "use_consumable", Vector2i.ZERO, 0)
+			for slot in range(_balance_integer(BALANCE_ABILITY_SLOTS_ID)):
+				_add_text_action(_action_grid, "AbilityButton%d" % (slot + 1), ICON_ABILITY, "요술%d" % (slot + 1), "cast_ability", Vector2i.ZERO, slot)
+			_add_text_action(_action_grid, "SleepButton", ICON_TEA, "수면", "sleep", Vector2i.ZERO, 0)
+			_add_text_action(_action_grid, "DungeonButton", ICON_ATTACK, "던전", "complete_dungeon", Vector2i.ZERO, 0)
+			_add_text_action(_action_grid, "TeleportRepairButton", ICON_MAP, "수리", "repair_teleport", Vector2i.ZERO, 0)
+		_:
+			_add_text_action(_action_grid, "TeaButton1", ICON_TEA, "차1", "drink_tea", Vector2i.ZERO, 0)
+			_add_text_action(_action_grid, "AbilityButton1", ICON_ABILITY, "요술1", "cast_ability", Vector2i.ZERO, 0)
 	var action_panel := _panels.get("action") as Control
 	if action_panel != null:
 		action_panel.custom_minimum_size = ACTION_PANEL_SIZE
 		action_panel.size = ACTION_PANEL_SIZE
+
+func _add_action_category_button(name: String, text: String, category: String) -> void:
+	if _action_tab_grid == null:
+		return
+	var button := Button.new()
+	button.name = name
+	button.text = text
+	button.tooltip_text = text
+	button.set_meta("action_category", category)
+	button.custom_minimum_size = ACTION_TAB_BUTTON_SIZE
+	button.disabled = _action_category == category
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.add_theme_font_size_override("font_size", 9)
+	button.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.08, 0.06, 0.76), true))
+	button.add_theme_stylebox_override("hover", _button_style(Color(0.16, 0.12, 0.08, 0.90), true))
+	button.add_theme_stylebox_override("disabled", _button_style(Color(0.72, 0.54, 0.30, 0.92), true))
+	button.pressed.connect(func():
+		_action_category = category
+		_rebuild_action_buttons()
+	)
+	_action_tab_grid.add_child(button)
+
+func _refresh_action_category_tabs() -> void:
+	if _action_tab_grid == null:
+		return
+	for child in _action_tab_grid.get_children():
+		var button := child as Button
+		if button == null:
+			continue
+		var category := String(button.get_meta("action_category", ""))
+		button.disabled = _action_category == category
 
 func _add_direction_button(parent: Control, name: String, rect: Rect2, direction: Vector2i, tooltip: String) -> void:
 	var button := Button.new()

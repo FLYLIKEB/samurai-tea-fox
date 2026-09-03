@@ -198,8 +198,17 @@ func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:
 	asserts.equal(read_model.tea_quickslot_count, 3, "HUD tea quick slots come from runtime tea service")
 	asserts.true_value(read_model.consumable_ready, "HUD derives the consumable quickslot from item definition data")
 	asserts.equal(read_model.ability_slot_count, 2, "HUD ability slots come from balance definitions")
-	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionScroll/ActionGrid/TeaButton3") != null, "HUD creates tea controls from the runtime quickslot count")
-	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionScroll/ActionGrid/AbilityButton2") != null, "HUD creates ability controls from the balance slot count")
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionScroll/ActionRows/ActionTabs/TeaTab") != null, "HUD groups non-primary tea controls behind an action tab")
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionScroll/ActionRows/ActionGrid/AttackButton") != null, "HUD shows primary combat controls by default")
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionScroll/ActionRows/ActionGrid/TeaButton3") == null, "HUD hides secondary tea slots until the tea tab is selected")
+	var tea_tab := hud.get_node_or_null("Root/ActionPanel/ActionScroll/ActionRows/ActionTabs/TeaTab") as Button
+	if tea_tab != null:
+		tea_tab.pressed.emit()
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionScroll/ActionRows/ActionGrid/TeaButton3") != null, "HUD creates tea controls from the runtime quickslot count after selecting the tea tab")
+	var other_tab := hud.get_node_or_null("Root/ActionPanel/ActionScroll/ActionRows/ActionTabs/OtherTab") as Button
+	if other_tab != null:
+		other_tab.pressed.emit()
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionScroll/ActionRows/ActionGrid/AbilityButton2") != null, "HUD creates ability controls from the balance slot count after selecting the other tab")
 	asserts.equal(read_model.time_phase, "night", "HUD reads current time phase")
 	asserts.equal(read_model.time_progress_percent, 25, "HUD calculates time progress from the time read model")
 	asserts.true_value(hud.get_node_or_null("Root/StatusPanel/StatusBody/PlayerPortrait") != null, "HUD renders the mockup-style player portrait block")
