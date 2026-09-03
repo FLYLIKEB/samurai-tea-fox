@@ -145,6 +145,7 @@ var meta_codex_command_runtime
 var crafting_service
 var crafting_context: Dictionary = {}
 var biome_progression_state
+var cheat_mode := false
 var _selected_map_biome_id := ""
 var time_state
 var _labels: Dictionary = {}
@@ -200,6 +201,7 @@ func configure(player_node, generated_world: Dictionary, generated_render_result
 		crafting_service = runtime_context.get("crafting_service", null)
 		crafting_context = runtime_context.get("crafting_context", {}).duplicate(true)
 		biome_progression_state = runtime_context.get("biome_progression_state", null)
+		cheat_mode = bool(runtime_context.get("cheat_mode", false))
 		time_state = runtime_context.get("time_state", null)
 	_build()
 	_rebuild_action_buttons()
@@ -288,6 +290,16 @@ func show_map_menu() -> bool:
 	_open_menu_id = "map"
 	_selected_map_biome_id = String(world.get("biome_id", ""))
 	_show_menu("지도", _map_rows())
+	return true
+
+func show_ruin_travel_menu() -> bool:
+	_open_menu_id = "ruin_travel"
+	_show_menu("유적 연결지", _ruin_travel_rows())
+	return true
+
+func show_teleport_travel_menu() -> bool:
+	_open_menu_id = "teleport_travel"
+	_show_menu("텔레포트 연결지", _teleport_travel_rows())
 	return true
 
 func hide_menu() -> bool:
@@ -1048,6 +1060,10 @@ func _refresh_open_menu() -> void:
 			_show_menu("도감", _meta_codex_rows())
 		"map":
 			_show_menu("지도", _map_rows())
+		"ruin_travel":
+			_show_menu("유적 연결지", _ruin_travel_rows())
+		"teleport_travel":
+			_show_menu("텔레포트 연결지", _teleport_travel_rows())
 
 func _inventory_rows() -> Array:
 	var rows: Array = []
@@ -1672,7 +1688,7 @@ func _facility_rows() -> Array:
 
 func _map_rows() -> Array:
 	var rows: Array = []
-	var model := _map_read_model({"minimap_width": 21, "minimap_height": 13})
+	var model := _map_read_model({"minimap_width": 48, "minimap_height": 28, "reveal_all": true})
 	if not bool(model.get("ok", false)):
 		rows.append(_label("지도 read model 없음", 11))
 		return rows
@@ -1681,36 +1697,115 @@ func _map_rows() -> Array:
 	var selected_id := _selected_map_biome_id if not _selected_map_biome_id.is_empty() else String(world.get("biome_id", ""))
 	var selected := _biome_definition(selected_id)
 	rows.append(_label("현재 보기: %s%s" % [String(selected.get("name", selected_id)), " · 현재 위치" if selected_id == String(world.get("biome_id", "")) else ""], 12))
-	if selected_id != String(world.get("biome_id", "")):
-		rows.append(_label("이 지역은 접근 가능 상태입니다. 실제 이동 후 지역 지도가 표시됩니다.", 10))
+	if selected_id != String(world.get("biome_id", "")) and not _is_biome_map_accessible(selected_id):
+		rows.append(_label("이 지역은 아직 잠겨 있습니다. 해금 후 상세 지도가 표시됩니다.", 10))
 		return rows
 	var bounds: Dictionary = model.bounds
 	rows.append(_label("지도 %dx%d · 발견 %d · 안개 %d" % [int(bounds.width), int(bounds.height), int(model.discovered_count), int(model.fog_count)], 11))
 	rows.append(_label("플레이어 (%d,%d)" % [int(model.player.position.x), int(model.player.position.y)], 11))
+	var dungeon_progress: Dictionary = model.get("dungeon_progress", {})
+	rows.append(_label("현재 던전: %s" % String(dungeon_progress.get("label", "미확인")), 11))
 	rows.append(_map_color_grid(model.minimap, Vector2(8, 8)))
 	var markers: Array = model.markers
-	for index in range(mini(markers.size(), 8)):
-		var marker: Dictionary = markers[index]
-		var position: Dictionary = marker.position
-		rows.append(_label("%s %s (%d,%d)%s" % [
-			_marker_label(String(marker.marker_type)),
-			String(marker.id),
-			int(position.x),
-			int(position.y),
-			"" if bool(marker.get("discovered", true)) else " · 미발견"
-		], 10))
-	if markers.size() > 8:
-		rows.append(_label("… 표식 %d개 더 있음" % (markers.size() - 8), 10))
+	rows.append(_label("중요 오브젝트", 11))
+	for marker in markers:
+		rows.append(_map_marker_button(marker))
+	return rows
+
+func _map_marker_button(marker: Dictionary) -> Button:
+	var position: Dictionary = marker.get("position", {})
+	var button := Button.new()
+	button.text = "%s · %s  (%d,%d)%s" % [
+		_marker_label(String(marker.get("marker_type", ""))),
+		String(marker.get("id", "")),
+		int(position.get("x", 0)),
+		int(position.get("y", 0)),
+		"" if bool(marker.get("discovered", true)) else " · 미발견"
+	]
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.custom_minimum_size = Vector2(270, 28)
+	button.pressed.connect(func(): _show_map_marker_info(marker))
+	return button
+
+func _show_map_marker_info(marker: Dictionary) -> void:
+	var position: Dictionary = marker.get("position", {})
+	var marker_type := String(marker.get("marker_type", ""))
+	var status := "확인됨" if bool(marker.get("discovered", true)) else "미발견"
+	var info := "%s\n종류: %s\n좌표: (%d, %d)\n상태: %s" % [
+		String(marker.get("id", "중요 오브젝트")),
+		_marker_label(marker_type),
+		int(position.get("x", 0)),
+		int(position.get("y", 0)),
+		status
+	]
+	_show_menu("지도 정보", [_label(info, 12), _map_back_button()])
+
+func _map_back_button() -> Button:
+	var button := Button.new()
+	button.text = "지도 돌아가기"
+	button.custom_minimum_size = Vector2(180, 30)
+	button.pressed.connect(func(): _show_menu("지도", _map_rows()))
+	return button
+
+func _ruin_travel_rows() -> Array:
+	var rows: Array = [_label("유적 수리 완료 · 연결된 다음 지역을 선택하세요", 11)]
+	var current_id := String(world.get("biome_id", ""))
+	var next_id := ""
+	if biome_progression_state != null and biome_progression_state.has_method("next_biome_id"):
+		next_id = String(biome_progression_state.next_biome_id())
+	if next_id.is_empty():
+		rows.append(_label("연결된 다음 지역이 없습니다", 11))
+		return rows
+	var definition := _biome_definition(next_id)
+	var button := Button.new()
+	button.text = "이동 · %s" % String(definition.get("name", next_id))
+	button.custom_minimum_size = Vector2(220, 34)
+	button.pressed.connect(func():
+		mobile_command_issued.emit(GameCommand.new(GameCommand.Type.TRAVEL_TO_BIOME, Vector2i.ZERO, -1, {"biome_id": next_id}))
+	)
+	rows.append(button)
+	rows.append(_label("텔레포트는 별도로 수리·관리됩니다", 10))
+	return rows
+
+func _teleport_travel_rows() -> Array:
+	var rows: Array = [_label("수리된 텔레포트 · 연결된 일반 지역을 선택하세요", 11)]
+	if biome_progression_state == null:
+		rows.append(_label("바이옴 연결 정보 없음", 11))
+		return rows
+	var projection: Dictionary = biome_progression_state.to_projection()
+	var order: Array = projection.get("biome_order", [])
+	var current_id := String(world.get("biome_id", ""))
+	var current_index := order.find(current_id)
+	var destinations: Array = []
+	for index in [current_index - 1, current_index + 1]:
+		if index < 0 or index >= order.size():
+			continue
+		var destination_id := String(order[index])
+		if index > current_index and String(projection.get("next_biome_id", "")) != destination_id:
+			continue
+		if index > current_index and not bool(projection.get("can_advance_biome", false)):
+			continue
+		destinations.append(destination_id)
+	for destination_id in destinations:
+		var definition := _biome_definition(destination_id)
+		var button := Button.new()
+		button.text = "이동 · %s" % String(definition.get("name", destination_id))
+		button.custom_minimum_size = Vector2(220, 34)
+		button.pressed.connect(func():
+			mobile_command_issued.emit(GameCommand.new(GameCommand.Type.TRAVEL_TO_BIOME, Vector2i.ZERO, -1, {"biome_id": destination_id}))
+		)
+		rows.append(button)
+	if destinations.is_empty():
+		rows.append(_label("현재 연결된 다른 일반 지역이 없습니다", 11))
 	return rows
 
 func _biome_map_selector() -> Control:
-	var strip := HBoxContainer.new()
+	var strip := GridContainer.new()
 	strip.name = "BiomeMapSelector"
+	strip.columns = 2
 	strip.add_theme_constant_override("separation", 4)
 	for definition in _ordered_biome_definitions():
 		var biome_id := String(definition.get("id", ""))
-		if not _is_biome_map_accessible(biome_id):
-			continue
 		var button := Button.new()
 		button.name = "BiomeMap_%s" % biome_id
 		button.text = String(definition.get("name", biome_id))
@@ -1723,7 +1818,7 @@ func _biome_map_selector() -> Control:
 		)
 		strip.add_child(button)
 	if strip.get_child_count() == 0:
-		strip.add_child(_label("접근 가능한 지역 없음", 10))
+		strip.add_child(_label("지역 데이터 없음", 10))
 	return strip
 
 func _ordered_biome_definitions() -> Array:
@@ -1746,6 +1841,8 @@ func _biome_definition(biome_id: String) -> Dictionary:
 	return {}
 
 func _is_biome_map_accessible(biome_id: String) -> bool:
+	if cheat_mode:
+		return true
 	var current_id := String(world.get("biome_id", ""))
 	if biome_id == current_id:
 		return true
@@ -1874,9 +1971,12 @@ func _render_minimap_grid(grid: GridContainer, minimap: Dictionary, cell_size: V
 		return
 	grid.columns = width
 	var marker_by_position := {}
+	var marker_data_by_position := {}
 	for marker in _array_value(minimap.get("markers", [])):
 		var marker_position: Dictionary = marker.get("position", {})
-		marker_by_position["%d,%d" % [int(marker_position.get("x", 0)), int(marker_position.get("y", 0))]] = String(marker.get("marker_type", ""))
+		var marker_key := "%d,%d" % [int(marker_position.get("x", 0)), int(marker_position.get("y", 0))]
+		marker_by_position[marker_key] = String(marker.get("marker_type", ""))
+		marker_data_by_position[marker_key] = marker
 	var cell_by_position := {}
 	for cell in _array_value(minimap.get("cells", [])):
 		var cell_position: Dictionary = cell.get("position", {})
@@ -1885,10 +1985,21 @@ func _render_minimap_grid(grid: GridContainer, minimap: Dictionary, cell_size: V
 	for y in range(int(origin.get("y", 0)), int(origin.get("y", 0)) + height):
 		for x in range(int(origin.get("x", 0)), int(origin.get("x", 0)) + width):
 			var key := "%d,%d" % [x, y]
-			var tile := ColorRect.new()
-			tile.custom_minimum_size = cell_size
-			tile.color = _minimap_marker_color(String(marker_by_position.get(key, ""))) if marker_by_position.has(key) else _minimap_cell_color(cell_by_position.get(key, {}))
-			_ignore_mouse(tile)
+			var tile: Control
+			if marker_data_by_position.has(key):
+				var marker_button := Button.new()
+				marker_button.text = _marker_glyph(String(marker_by_position.get(key, "")))
+				marker_button.custom_minimum_size = cell_size
+				marker_button.tooltip_text = String(marker_data_by_position[key].get("id", "중요 오브젝트"))
+				var marker: Dictionary = marker_data_by_position[key]
+				marker_button.pressed.connect(func(): _show_map_marker_info(marker))
+				tile = marker_button
+			else:
+				var color_tile := ColorRect.new()
+				color_tile.custom_minimum_size = cell_size
+				color_tile.color = _minimap_cell_color(cell_by_position.get(key, {}))
+				tile = color_tile
+				_ignore_mouse(tile)
 			grid.add_child(tile)
 
 func _minimap_cell_color(cell: Dictionary) -> Color:

@@ -3361,6 +3361,7 @@ func _configure_game_hud() -> void:
 		"crafting_service": crafting_service,
 		"crafting_context": _crafting_context(),
 		"biome_progression_state": biome_progression_state,
+		"cheat_mode": _start_mode == START_MODE_CHEAT,
 		"time_state": time_state,
 		"world_origin": _runtime_world_origin()
 	})
