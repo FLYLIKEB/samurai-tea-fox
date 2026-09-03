@@ -43,6 +43,11 @@ const FEEDBACK_BEEP_MIX_RATE := 22050.0
 const FEEDBACK_BEEP_SECONDS := 0.045
 const FEEDBACK_BEEP_FREQUENCY := 880.0
 const FIRST_RUN_PROLOGUE_EVENT_ID := "first_run_prologue"
+const START_MODE_META := "muchau_start_mode"
+const START_MODE_NEW := "new"
+const START_MODE_RESUME := "resume"
+const TREE_HARVEST_TOOL_ITEM_ID := "stone_axe"
+const TREE_HARVEST_DEFINITION_PREFIX := "terrain_tree_wood"
 
 @onready var player = $Player
 @onready var combat_dummy = $CombatDummy
@@ -87,9 +92,12 @@ var feedback_beep_count := 0
 var _enemy_turn_queued := false
 var _active_narrative_event_id := ""
 var _active_narrative_node_id := ""
+var _start_mode := START_MODE_RESUME
+var _force_first_run_prologue := false
 
 func _ready() -> void:
 	_configure_audio_feedback()
+	_consume_start_mode()
 	catalog = DataCatalog.new()
 	var result: Dictionary = catalog.load_from_directory("res://data/generated")
 	if not result.ok:
@@ -549,6 +557,8 @@ func snapshot_run_state() -> Dictionary:
 func load_or_create_run_state() -> Dictionary:
 	if run_state != null:
 		return {"ok": true, "state": "provided", "run_state": run_state}
+	if _start_mode == START_MODE_NEW:
+		return _create_new_run_state_from_start_request()
 	if save_store != null and FileAccess.file_exists(save_store.run_path):
 		var loaded: Dictionary = save_store.load_run()
 		if not loaded.ok:
@@ -557,6 +567,30 @@ func load_or_create_run_state() -> Dictionary:
 		return {"ok": true, "state": "loaded", "run_state": run_state}
 	run_state = RunState.new()
 	return {"ok": true, "state": "created", "run_state": run_state}
+
+func _consume_start_mode() -> void:
+	var root := get_tree().root if get_tree() != null else null
+	if root == null or not root.has_meta(START_MODE_META):
+		return
+	_start_mode = String(root.get_meta(START_MODE_META, START_MODE_RESUME))
+	root.remove_meta(START_MODE_META)
+	_force_first_run_prologue = _start_mode == START_MODE_NEW
+
+func _create_new_run_state_from_start_request() -> Dictionary:
+	run_state = RunState.new()
+	if catalog != null:
+		run_state.data_version = catalog.data_version
+	run_state.seed = DEFAULT_RUN_SEED
+	if save_store == null:
+		return {"ok": true, "state": "created_new_start", "run_state": run_state}
+	var invalidation := save_store.invalidate_run()
+	if not invalidation.ok and String(invalidation.get("reason", "")) != "missing_invalidation":
+		return invalidation
+	run_state.lifecycle_epoch = int(invalidation.get("invalidated_lifecycle_epoch", 0)) + 1
+	var saved := save_store.save_run(run_state)
+	if not saved.ok:
+		return saved
+	return {"ok": true, "state": "created_new_start", "run_state": run_state}
 
 func save_current_run() -> Dictionary:
 	if save_store == null:
@@ -920,6 +954,7 @@ func _configure_acquisition_for_generated_world() -> Dictionary:
 	world_data = WorldData.from_dictionary(generated_world.world_data)
 	acquisition_service = AcquisitionService.new()
 	var definitions := _confirmed_generated_resource_definitions(generated_world.get("resource_nodes", []))
+	definitions.append_array(_terrain_tree_gatherable_definitions())
 	var configured: Dictionary = acquisition_service.configure(inventory, world_data, definitions, _generated_drop_definitions())
 	if not configured.ok:
 		return configured
@@ -937,10 +972,16 @@ func _configure_acquisition_for_generated_world() -> Dictionary:
 		)
 		if not registered.ok:
 			return registered
+	var terrain_tree_result := _register_terrain_tree_gatherables(definition_ids)
+	if not terrain_tree_result.ok:
+		return terrain_tree_result
 	if not saved_acquisitions.is_empty():
 		var loaded: Dictionary = acquisition_service.load_snapshot(saved_acquisitions)
 		if not loaded.ok:
 			return loaded
+		terrain_tree_result = _register_terrain_tree_gatherables(definition_ids)
+		if not terrain_tree_result.ok:
+			return terrain_tree_result
 	acquisition_service.changed.connect(_on_acquisition_changed)
 	_on_acquisition_changed(acquisition_service.to_snapshot())
 	return {"ok": true}
@@ -961,6 +1002,67 @@ func _confirmed_generated_resource_definitions(resource_nodes: Array) -> Array:
 
 func _is_generated_resource_item_type(item_type: String) -> bool:
 	return item_type == "재료" or item_type == "향"
+
+func _terrain_tree_gatherable_definitions() -> Array:
+	var definitions: Array = []
+	if world_data == null:
+		return definitions
+	var snapshot: Dictionary = world_data.to_dictionary()
+	for cell in snapshot.get("cells", []):
+		var tree_profile := _tree_harvest_profile_for_cell(cell)
+		if tree_profile.is_empty():
+			continue
+		var position := _vector_from_dictionary(cell.get("position", {}))
+		definitions.append({
+			"id": _terrain_tree_gatherable_id(position),
+			"item_id": "wood",
+			"quantity": 1,
+			"policy": AcquisitionService.POLICY_DIRECT,
+			"required_tool_item_id": TREE_HARVEST_TOOL_ITEM_ID,
+			"depleted_terrain": tree_profile
+		})
+	return definitions
+
+func _register_terrain_tree_gatherables(definition_ids: Dictionary) -> Dictionary:
+	if world_data == null or acquisition_service == null:
+		return {"ok": true}
+	var snapshot: Dictionary = world_data.to_dictionary()
+	for cell in snapshot.get("cells", []):
+		if _tree_harvest_profile_for_cell(cell).is_empty():
+			continue
+		var position := _vector_from_dictionary(cell.get("position", {}))
+		var node_id := _terrain_tree_gatherable_id(position)
+		if not definition_ids.has(node_id):
+			continue
+		if not acquisition_service.gatherable_for(node_id).is_empty():
+			continue
+		if not world_data.get_occupants(position).is_empty():
+			continue
+		var registered: Dictionary = acquisition_service.register_gatherable(node_id, node_id, position)
+		if not registered.ok:
+			return registered
+	return {"ok": true}
+
+func _terrain_tree_gatherable_id(position: Vector2i) -> String:
+	return "%s_%d_%d" % [TREE_HARVEST_DEFINITION_PREFIX, position.x, position.y]
+
+func _tree_harvest_profile_for_cell(cell: Dictionary) -> Dictionary:
+	var layers: Dictionary = cell.get("layers", {})
+	var terrain: Dictionary = layers.get(WorldData.LAYER_TERRAIN, {})
+	var terrain_id := String(terrain.get("id", ""))
+	match terrain_id:
+		WorldGenerator.TERRAIN_FOREST:
+			return {"id": WorldGenerator.TERRAIN_GRASS, "render_id": WorldGenerator.RENDER_GRASS, "walkable": true}
+		WorldGenerator.TERRAIN_MOUNTAIN_CONIFER:
+			return {"id": WorldGenerator.TERRAIN_GRASS, "render_id": WorldGenerator.RENDER_GRASS, "walkable": true}
+		WorldGenerator.TERRAIN_WASTELAND_DEAD_TREE:
+			return {"id": WorldGenerator.TERRAIN_GRASS, "render_id": WorldGenerator.RENDER_GRASS, "walkable": true}
+		WorldGenerator.TERRAIN_SNOWFIELD_PINE:
+			return {"id": WorldGenerator.TERRAIN_GRASS, "render_id": WorldGenerator.RENDER_GRASS, "walkable": true}
+		WorldGenerator.TERRAIN_RAINFOREST_JUNGLE, WorldGenerator.TERRAIN_RAINFOREST_AGARWOOD:
+			return {"id": WorldGenerator.TERRAIN_GRASS, "render_id": WorldGenerator.RENDER_GRASS, "walkable": true}
+		_:
+			return {}
 
 func _generated_drop_definitions() -> Array:
 	var grants_by_monster := {}
@@ -1674,7 +1776,7 @@ func first_run_prologue_read_model(meta_state = null) -> Dictionary:
 	if run_state == null:
 		run_state = RunState.new()
 	var meta = meta_state if meta_state != null else _current_meta_state_snapshot()
-	if int(meta.get("run_count", 0)) != 0:
+	if not _force_first_run_prologue and int(meta.get("run_count", 0)) != 0:
 		return {"ok": false, "reason": "not_first_run", "error": "First-run prologue only opens before any completed run."}
 	return narrative_runtime.read_model_for_event(FIRST_RUN_PROLOGUE_EVENT_ID, run_state, meta)
 

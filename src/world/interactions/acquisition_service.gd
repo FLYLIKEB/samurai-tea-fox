@@ -29,7 +29,7 @@ func configure(
 	new_gatherable_definitions: Array,
 	new_drop_definitions: Array
 ) -> Dictionary:
-	if new_inventory == null or not new_inventory.has_method("has_definition") or not new_inventory.has_method("add_item") or not new_inventory.has_method("to_snapshot") or not new_inventory.has_method("load_snapshot"):
+	if new_inventory == null or not new_inventory.has_method("has_definition") or not new_inventory.has_method("add_item") or not new_inventory.has_method("get_total_quantity") or not new_inventory.has_method("to_snapshot") or not new_inventory.has_method("load_snapshot"):
 		return _fail("invalid_inventory", "Acquisition requires the Inventory public API.")
 	if new_world_data == null or not new_world_data.has_method("reserve_entity") or not new_world_data.has_method("release_footprint"):
 		return _fail("invalid_world_data", "Acquisition requires the WorldData occupancy API.")
@@ -100,6 +100,9 @@ func gather(node_id: String) -> Dictionary:
 		return _fail_and_emit(_fail("depleted", "Gatherable node is depleted: %s" % node_id))
 
 	var definition: Dictionary = gatherable_definitions[node.definition_id]
+	var tool_result := _validate_required_tool(definition)
+	if not tool_result.ok:
+		return _fail_and_emit(tool_result)
 	var position := _vector_from_dictionary(node.position)
 	var result: Dictionary
 	if definition.policy == POLICY_PICKUP:
@@ -121,6 +124,7 @@ func gather(node_id: String) -> Dictionary:
 		else:
 			world_data.release_footprint(node_id)
 
+	_apply_depleted_terrain(definition, position)
 	node.depleted = true
 	gatherables[node_id] = node
 	var completed := {
@@ -129,6 +133,7 @@ func gather(node_id: String) -> Dictionary:
 		"node_id": node_id,
 		"item_id": definition.item_id,
 		"quantity": definition.quantity,
+		"required_tool_item_id": String(definition.get("required_tool_item_id", "")),
 		"delivery": result.get("delivery", POLICY_DIRECT),
 		"pickup_id": result.get("pickup_id", "")
 	}
@@ -242,10 +247,37 @@ func load_snapshot(snapshot: Dictionary) -> Dictionary:
 		pickups = previous_pickups
 		_restore_snapshot_reservations(world_data, gatherables, pickups)
 		return live_restore
+	_apply_depleted_terrains_from_snapshot()
 	processed_drop_request_ids = request_ids.duplicate()
 	next_pickup_id = max(1, int(snapshot.get("next_pickup_id", 1)))
 	_emit_changed()
 	return {"ok": true}
+
+func _validate_required_tool(definition: Dictionary) -> Dictionary:
+	var required_tool_item_id := String(definition.get("required_tool_item_id", ""))
+	if required_tool_item_id.is_empty():
+		return {"ok": true}
+	if int(inventory.get_total_quantity(required_tool_item_id)) <= 0:
+		return _fail("missing_required_tool", "Gatherable requires tool item: %s" % required_tool_item_id)
+	return {"ok": true}
+
+func _apply_depleted_terrains_from_snapshot() -> void:
+	for node in gatherables.values():
+		if bool(node.get("depleted", false)):
+			var definition: Dictionary = gatherable_definitions.get(String(node.get("definition_id", "")), {})
+			if not definition.is_empty():
+				_apply_depleted_terrain(definition, _vector_from_dictionary(node.get("position", {})))
+
+func _apply_depleted_terrain(definition: Dictionary, position: Vector2i) -> void:
+	var terrain: Dictionary = definition.get("depleted_terrain", {})
+	if terrain.is_empty() or world_data == null or not world_data.has_method("set_terrain"):
+		return
+	world_data.set_terrain(
+		position,
+		String(terrain.get("id", "ground")),
+		bool(terrain.get("walkable", true)),
+		String(terrain.get("render_id", terrain.get("id", "ground")))
+	)
 
 func _deliver_grant(grant: Dictionary, position: Vector2i, source: Dictionary) -> Dictionary:
 	if grant.policy == POLICY_DIRECT:
@@ -369,7 +401,17 @@ func _index_gatherable_definitions(rows: Array, target_inventory) -> Dictionary:
 		var grant_result := _normalize_grant(row, target_inventory)
 		if id.is_empty() or definitions.has(id) or not grant_result.ok:
 			return grant_result if not grant_result.ok else _fail("invalid_gatherable_definition", "Gatherable definition id must be unique and non-empty.")
-		definitions[id] = {"id": id, "item_id": grant_result.grant.item_id, "quantity": grant_result.grant.quantity, "policy": grant_result.grant.policy}
+		var required_tool_item_id := String(row.get("required_tool_item_id", ""))
+		if not required_tool_item_id.is_empty() and not target_inventory.has_definition(required_tool_item_id):
+			return _fail("unknown_required_tool", "Gatherable definition references unknown tool item: %s" % required_tool_item_id)
+		definitions[id] = {
+			"id": id,
+			"item_id": grant_result.grant.item_id,
+			"quantity": grant_result.grant.quantity,
+			"policy": grant_result.grant.policy,
+			"required_tool_item_id": required_tool_item_id,
+			"depleted_terrain": row.get("depleted_terrain", {}).duplicate(true) if row.get("depleted_terrain", {}) is Dictionary else {}
+		}
 	return {"ok": true, "definitions": definitions}
 
 func _index_drop_definitions(rows: Array, target_inventory) -> Dictionary:

@@ -41,6 +41,7 @@ func run(asserts) -> void:
 	asserts.true_value(runtime.main.submit_mobile_action_command(command), "main routes target INTERACT into acquisition")
 	asserts.equal(runtime.main.inventory.get_total_quantity("wood"), 1, "live interaction grants the confirmed resource")
 	asserts.true_value(runtime.main.run_state.acquisitions.gatherables[0].depleted, "live acquisition changes persist into RunState")
+	_assert_tree_terrain_requires_crafted_axe_and_disappears(asserts, catalog)
 
 	var render_runtime := _configured_runtime(catalog, RunState.new())
 	asserts.true_value(render_runtime.result.ok, "visual acquisition fixture configures")
@@ -159,6 +160,36 @@ func run(asserts) -> void:
 	restored.main.free()
 	drop_restored.main.free()
 
+func _assert_tree_terrain_requires_crafted_axe_and_disappears(asserts, catalog: DataCatalog) -> void:
+	var runtime := _configured_tree_runtime(catalog)
+	asserts.true_value(runtime.result.ok, "tree terrain fixture configures")
+	if not runtime.result.ok:
+		runtime.main.free()
+		return
+	var main: Main = runtime.main
+	var tree_id := "terrain_tree_wood_1_0"
+	asserts.equal(main.acquisition_service.gatherable_for(tree_id).definition_id, tree_id, "main registers blocking tree terrain as a stable gatherable")
+	asserts.false_value(main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": tree_id})), "tree terrain cannot be harvested without an axe")
+	asserts.equal(main.inventory.get_total_quantity("wood"), 0, "failed tree harvest grants no wood")
+	asserts.false_value(main.world_data.is_walkable(Vector2i(1, 0)), "failed tree harvest keeps the tree blocking terrain")
+	asserts.true_value(main.inventory.add_item("stone", 1).ok, "stone resource can be stocked before crafting an axe")
+	asserts.true_value(main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.CRAFT_RECIPE, Vector2i.ZERO, -1, {"recipe_id": "stone_axe"})), "stone axe crafts from one stone through a stable recipe id")
+	asserts.equal(main.inventory.get_total_quantity("stone_axe"), 1, "crafted axe enters inventory")
+	asserts.equal(main.inventory.get_total_quantity("stone"), 0, "stone axe recipe consumes exactly one stone")
+	asserts.true_value(main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": tree_id})), "tree terrain harvest succeeds after crafting an axe")
+	asserts.equal(main.inventory.get_total_quantity("wood"), 1, "tree terrain harvest grants wood")
+	asserts.true_value(main.acquisition_service.gatherable_for(tree_id).depleted, "harvested tree terrain is marked depleted")
+	asserts.true_value(main.world_data.is_walkable(Vector2i(1, 0)), "harvested tree no longer blocks the map cell")
+	var tree_cell: Dictionary = main.world_data.to_dictionary().cells[1]
+	asserts.equal(tree_cell.layers.terrain.id, "common_grass", "harvested tree terrain is replaced by passable ground")
+	var saved_state: RunState = RunState.from_dictionary(main.snapshot_run_state())
+	var restored := _configured_tree_runtime(catalog, saved_state)
+	asserts.true_value(restored.result.ok, "tree terrain depletion restores")
+	asserts.true_value(restored.main.acquisition_service.gatherable_for(tree_id).depleted, "restored tree terrain remains depleted")
+	asserts.true_value(restored.main.world_data.is_walkable(Vector2i(1, 0)), "restored harvested tree stays passable")
+	restored.main.free()
+	main.free()
+
 func _assert_main_generates_current_biome(asserts, catalog: DataCatalog, biome_id: String) -> void:
 	var state := RunState.new()
 	state.current_biome_id = biome_id
@@ -276,6 +307,27 @@ func _configured_runtime(catalog, state: RunState, resource_position := Vector2i
 		"world_data": world_snapshot,
 		"renderer_input": WorldRendererProjection.new().project(world_snapshot),
 		"resource_nodes": [{"id": "resource_0", "resource_id": "wood", "position": {"x": resource_position.x, "y": resource_position.y}}]
+	}
+	return {"main": runtime, "result": runtime._configure_acquisition_for_generated_world()}
+
+func _configured_tree_runtime(catalog, state = null) -> Dictionary:
+	var runtime := Main.new()
+	runtime.catalog = catalog
+	if state == null:
+		state = RunState.new()
+	runtime.run_state = state
+	var services: Dictionary = runtime._configure_run_services(catalog)
+	if not services.ok:
+		return {"main": runtime, "result": services}
+	var world := WorldData.new(3, 1, "common_grass", true)
+	world.set_terrain(Vector2i(1, 0), "common_forest", false, "terrain_tree_broadleaf_32x32")
+	var world_snapshot := world.to_dictionary()
+	runtime.generated_world = {
+		"ok": true,
+		"biome_id": "common_region",
+		"world_data": world_snapshot,
+		"renderer_input": WorldRendererProjection.new().project(world_snapshot),
+		"resource_nodes": []
 	}
 	return {"main": runtime, "result": runtime._configure_acquisition_for_generated_world()}
 

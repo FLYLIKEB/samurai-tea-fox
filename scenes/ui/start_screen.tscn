@@ -106,6 +106,27 @@ custom_minimum_size = Vector2(216, 44)
 layout_mode = 2
 size_flags_horizontal = 4
 focus_neighbor_top = NodePath(".")
+focus_neighbor_bottom = NodePath("../ContinueButton")
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.929412, 0.823529, 0.611765, 1)
+theme_override_colors/font_hover_color = Color(1, 0.94902, 0.788235, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.94902, 0.788235, 1)
+theme_override_colors/font_focus_color = Color(1, 0.94902, 0.788235, 1)
+theme_override_colors/font_disabled_color = Color(0.537255, 0.501961, 0.419608, 1)
+theme_override_font_sizes/font_size = 19
+theme_override_styles/normal = SubResource("StyleBoxFlat_button")
+theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
+theme_override_styles/focus = SubResource("StyleBoxFlat_button_hover")
+theme_override_styles/disabled = SubResource("StyleBoxEmpty_button")
+text = "처음부터 시작하기"
+
+[node name="ContinueButton" type="Button" parent="Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(216, 44)
+layout_mode = 2
+size_flags_horizontal = 4
+focus_neighbor_top = NodePath("../StartButton")
 focus_neighbor_bottom = NodePath(".")
 mouse_default_cursor_shape = 2
 theme_override_colors/font_color = Color(0.929412, 0.823529, 0.611765, 1)
@@ -119,7 +140,7 @@ theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
 theme_override_styles/focus = SubResource("StyleBoxFlat_button_hover")
 theme_override_styles/disabled = SubResource("StyleBoxEmpty_button")
-text = "시작하기"
+text = "이어하기"
 
 [node name="InputHint" type="Label" parent="Content"]
 layout_mode = 2
@@ -132,3 +153,4 @@ text = "ENTER / SPACE"
 horizontal_alignment = 1
 
 [connection signal="pressed" from="Content/StartButton" to="." method="_on_start_button_pressed"]
+[connection signal="pressed" from="Content/ContinueButton" to="." method="_on_continue_button_pressed"]

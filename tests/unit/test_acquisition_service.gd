@@ -19,6 +19,7 @@ class FakeCatalog:
 				{"id": "wood", "name": "목재", "type": "재료", "max_stack": 10},
 				{"id": "clay", "name": "점토", "type": "재료", "max_stack": 10},
 				{"id": "fixture_ore_item", "name": "테스트 광물", "type": "재료", "max_stack": 10},
+				{"id": "stone_axe", "name": "돌도끼", "type": "도구", "max_stack": 1},
 				{"id": "filler", "name": "테스트 채움재", "type": "재료", "max_stack": 1}
 			],
 			"teas": [
@@ -42,6 +43,7 @@ func run(asserts) -> void:
 	_assert_run_save_round_trip_preserves_world_state(asserts)
 	_assert_invalid_definitions_are_atomic(asserts)
 	_assert_generated_resource_reservation_can_be_adopted(asserts)
+	_assert_gatherable_can_require_a_tool_and_clear_terrain(asserts)
 	_assert_interaction_kind_alone_cannot_be_adopted(asserts)
 	_assert_failed_snapshot_restore_is_atomic(asserts)
 	_assert_multi_grant_drop_rolls_back_on_world_failure(asserts)
@@ -152,6 +154,21 @@ func _assert_generated_resource_reservation_can_be_adopted(asserts) -> void:
 	asserts.true_value(runtime.service.gather("resource_0").ok, "adopted generated resource gathers normally")
 	asserts.equal(runtime.inventory.get_total_quantity("wood"), 1, "adopted resource grants stable item id")
 
+func _assert_gatherable_can_require_a_tool_and_clear_terrain(asserts) -> void:
+	var runtime := _runtime(3, Vector2i(2, 1))
+	runtime.world.set_terrain(Vector2i.ZERO, "common_forest", false, "terrain_tree_broadleaf_32x32")
+	asserts.true_value(runtime.service.register_gatherable("terrain_tree_0_0", "fixture_tree_requires_axe", Vector2i.ZERO).ok, "tool-gated tree registers")
+	var missing_tool: Dictionary = runtime.service.gather("terrain_tree_0_0")
+	asserts.false_value(missing_tool.ok, "tree harvest is rejected without the required axe")
+	asserts.equal(missing_tool.reason, "missing_required_tool", "missing axe reports a stable reason")
+	asserts.false_value(runtime.world.is_walkable(Vector2i.ZERO), "failed tree harvest keeps the blocking tree terrain")
+	asserts.true_value(runtime.inventory.add_item("stone_axe", 1).ok, "fixture creates required axe")
+	var harvested: Dictionary = runtime.service.gather("terrain_tree_0_0")
+	asserts.true_value(harvested.ok, "tree harvest succeeds once the axe exists")
+	asserts.equal(harvested.required_tool_item_id, "stone_axe", "harvest result records the required tool")
+	asserts.equal(runtime.inventory.get_total_quantity("wood"), 1, "tree harvest grants wood")
+	asserts.true_value(runtime.world.is_walkable(Vector2i.ZERO), "successful tree harvest clears the blocking tree terrain")
+
 func _assert_interaction_kind_alone_cannot_be_adopted(asserts) -> void:
 	var runtime := _runtime(2, Vector2i(2, 1))
 	asserts.true_value(runtime.world.reserve_entity("resource_kind_only", Vector2i.ZERO, Vector2i.ONE, true, {"interaction_kind": "gatherable"}).ok, "kind-only fixture reserves the cell")
@@ -212,6 +229,7 @@ func _inventory(slot_count: int) -> InventoryModel:
 func _gatherable_definitions() -> Array:
 	return [
 		{"id": "fixture_tree_common", "item_id": "wood", "quantity": 1, "policy": "direct"},
+		{"id": "fixture_tree_requires_axe", "item_id": "wood", "quantity": 1, "policy": "direct", "required_tool_item_id": "stone_axe", "depleted_terrain": {"id": "common_grass", "render_id": "terrain_plains_grass_ground_01", "walkable": true}},
 		{"id": "fixture_ore_mountain", "item_id": "fixture_ore_item", "quantity": 1, "policy": "direct"},
 		{"id": "fixture_clay_common", "item_id": "clay", "quantity": 1, "policy": "pickup"},
 		{"id": "fixture_tea_leaf_common", "item_id": "fixture_tea_leaf_item", "quantity": 1, "policy": "direct"}

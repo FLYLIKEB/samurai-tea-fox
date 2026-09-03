@@ -1,5 +1,5 @@
 {
-  "content_hash": "357945b0d2e3e72a6318b1eaf4808d95e250e3b5ea2dd46a3768a91a34733350",
+  "content_hash": "e463263071137d4bdba6d47b6030bb4da20724d913403862060c55e9736cdaf5",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -99,6 +99,22 @@
       "status": "초안",
       "unlock_biome": "황무지",
       "unlock_biome_id": "wasteland"
+    },
+    {
+      "category": "도구",
+      "facility": "손제작",
+      "id": "stone_axe",
+      "materials": [
+        {
+          "item_id": "stone",
+          "quantity": 1
+        }
+      ],
+      "materials_note": "돌 1",
+      "name": "돌도끼 제작",
+      "result_item_id": "stone_axe",
+      "result_quantity": 1,
+      "status": "확정"
     },
     {
       "category": "다구",
