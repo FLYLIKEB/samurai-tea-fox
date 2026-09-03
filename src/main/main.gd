@@ -204,15 +204,15 @@ func _ready() -> void:
 	if not result.ok:
 		push_error(result.error)
 		return
-	var loaded_run := load_or_create_run_state()
 	_set_loading_status("저장 데이터 확인 중…")
 	await get_tree().process_frame
+	var loaded_run := load_or_create_run_state()
 	if not loaded_run.ok:
 		push_error(loaded_run.error)
 		return
-	var runtime_result := _configure_run_services(catalog)
 	_set_loading_status("게임 시스템 준비 중…")
 	await get_tree().process_frame
+	var runtime_result := _configure_run_services(catalog)
 	if not runtime_result.ok:
 		push_error(runtime_result.error)
 		return
@@ -230,9 +230,9 @@ func _ready() -> void:
 	run_state.data_version = catalog.data_version
 	if run_state.seed == 0:
 		run_state.seed = DEFAULT_RUN_SEED
-	var world_result := _configure_world_for_current_run()
 	_set_loading_status("월드 생성 중…")
 	await get_tree().process_frame
+	var world_result := _configure_world_for_current_run()
 	if not world_result.ok:
 		push_error(world_result.error)
 	else:
@@ -1069,11 +1069,17 @@ func _apply_cheat_start_inventory() -> Dictionary:
 		return {"ok": true, "applied": false}
 	if inventory == null or catalog == null or not catalog.has_method("get_definitions"):
 		return {"ok": false, "reason": "cheat_inventory_unavailable", "error": "Cheat mode requires inventory and item definitions."}
-	var first_biome_id := _first_biome_id_for_cheat_start()
-	if not first_biome_id.is_empty():
-		if not run_state.completed_dungeon_ids.has(first_biome_id):
-			run_state.completed_dungeon_ids.append(first_biome_id)
-		run_state.teleport_states[first_biome_id] = BiomeProgressionState.TELEPORT_REPAIRABLE
+	for definition in catalog.get_definitions("biomes"):
+		if String(definition.get("type", "")) != "바이옴":
+			continue
+		var biome_id := String(definition.get("id", ""))
+		if biome_id.is_empty():
+			continue
+		if not run_state.completed_dungeon_ids.has(biome_id):
+			run_state.completed_dungeon_ids.append(biome_id)
+		run_state.teleport_states[biome_id] = BiomeProgressionState.TELEPORT_REPAIRED
+		if not run_state.repaired_teleports.has(biome_id):
+			run_state.repaired_teleports.append(biome_id)
 
 	var inventory_before: Dictionary = inventory.to_snapshot()
 	var capacity_result: Dictionary = inventory.expand_capacity(CHEAT_INVENTORY_SLOT_COUNT)
@@ -1119,6 +1125,7 @@ func _apply_cheat_start_inventory() -> Dictionary:
 		"slot_count": inventory.slot_count,
 		"resource_quantity": CHEAT_RESOURCE_QUANTITY,
 		"bandage_quantity": CHEAT_BANDAGE_QUANTITY,
+		"all_biomes_cleared": true,
 		"weapon_id": weapon_id,
 		"resource_item_ids": resource_item_ids
 }
