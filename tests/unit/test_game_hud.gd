@@ -312,7 +312,16 @@ func _assert_safe_area_layout_uses_viewport_top(asserts) -> void:
 func _assert_narrative_dialogue_emits_option_commands(asserts) -> void:
 	var hud := _configured_hud()
 	var received: Array = []
-	hud.mobile_command_issued.connect(func(command): received.append(command))
+	hud.mobile_command_issued.connect(func(command):
+		received.append(command)
+		hud.show_narrative_dialogue({
+			"event_id": "first_run_prologue",
+			"node_id": "muchau_question",
+			"speaker_id": "CHR-8",
+			"text": "바다를 건너야 하나요?",
+			"options": [{"id": "cross_sea", "display_text": "찻잔을 챙긴다"}]
+		})
+	)
 	asserts.true_value(hud.show_narrative_dialogue({
 		"event_id": "first_run_prologue",
 		"node_id": "father_farewell",

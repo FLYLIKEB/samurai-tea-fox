@@ -192,8 +192,7 @@ func show_narrative_dialogue(read_model: Dictionary) -> bool:
 	_configure_narrative_portraits(event_id, speaker_id)
 	_set_label("narrative_speaker", _speaker_label(String(read_model.get("speaker_id", ""))))
 	_set_label("narrative_text", String(read_model.get("text", "")))
-	for child in _narrative_options.get_children():
-		child.free()
+	_clear_narrative_options()
 	for option in _array_value(read_model.get("options", [])):
 		if typeof(option) != TYPE_DICTIONARY:
 			continue
@@ -607,6 +606,16 @@ func _set_gameplay_hud_visible(visible: bool) -> void:
 			panel.visible = visible and panel_id != "dpad"
 	if not visible:
 		_open_menu_id = ""
+
+func _clear_narrative_options() -> void:
+	for child in _narrative_options.get_children():
+		if child is Control:
+			var control := child as Control
+			control.visible = false
+			control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if child is BaseButton:
+			(child as BaseButton).disabled = true
+		child.queue_free()
 
 func _configure_narrative_portraits(event_id: String, speaker_id: String) -> void:
 	if _narrative_left_portrait == null or _narrative_right_portrait == null:
