@@ -37,7 +37,11 @@ class FakeInventory:
 	]
 
 	func definition_for(item_id: String) -> Dictionary:
-		return {"id": item_id, "type": "소모품"} if item_id == "bandage" else {"id": item_id, "type": "재료"}
+		if item_id == "bandage":
+			return {"id": item_id, "type": "소모품", "icon_asset_id": "asset_assets_ui_icons_atlas_gourd_png"}
+		if item_id == "wooden_workbench":
+			return {"id": item_id, "type": "도구", "icon_asset_id": "asset_assets_sprites_objects_crafting_workbench_32x32_png"}
+		return {"id": item_id, "type": "재료", "icon_asset_id": "asset_assets_sprites_objects_village_props_firewood_pile_1x2_64x32_png"}
 
 	func get_total_quantity(item_id: String) -> int:
 		var total := 0
@@ -120,7 +124,7 @@ class FakeCraftingService:
 			"craftable": bool(availability.craftable),
 			"reason": String(availability.get("reason", "")),
 			"reason_label": "제작 가능" if bool(availability.craftable) else "재료 부족",
-			"result": {"item_id": "wooden_workbench", "name": "목재 작업대", "quantity": 1},
+			"result": {"item_id": "wooden_workbench", "name": "목재 작업대", "quantity": 1, "icon_asset_id": "asset_assets_sprites_objects_crafting_workbench_32x32_png"},
 			"materials": [{"item_id": "wood", "name": "목재", "available": inventory.get_total_quantity("wood"), "required": 2}],
 			"facilities": [],
 			"unlock_biome_id": "common_region"
@@ -332,6 +336,8 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	asserts.equal((hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll") as Control).mouse_filter, Control.MOUSE_FILTER_STOP, "menu scroll consumes touch input instead of moving the player")
 	asserts.true_value(_tree_has_text(hud, "차 & 도구 (인벤토리) · 2/14 · all"), "inventory menu renders the mockup-style inventory header")
 	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip/InventorySlotCard0") != null, "inventory menu renders slot cards")
+	asserts.true_value(_button_has_icon(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip/InventorySlotCard0")), "inventory slot cards render item images")
+	asserts.true_value(_panel_uses_dark_background(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/DetailCard") as Control), "inventory detail card uses the shared dark inner background")
 	asserts.true_value(hud.show_facilities_menu(), "HUD opens the facilities menu")
 	asserts.true_value(_tree_has_text(hud, "우물 (4,5)"), "facilities menu lists generated facility nodes")
 	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/FacilityCardStrip") != null, "facilities menu renders facility cards")
@@ -340,6 +346,8 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	asserts.true_value(hud.show_crafting_menu(), "HUD opens the crafting menu")
 	asserts.true_value(_tree_has_text(hud, "제작법 1/1 · 가능 1 · 필터 전체"), "crafting menu shows recipe counts and active filter")
 	asserts.true_value(_tree_has_text(hud, "wooden_workbench → 목재 작업대 x1 · 제작 가능 · 재료 목재 3/2 · 손제작 · 해금 common_region"), "crafting menu shows selected recipe detail")
+	asserts.true_value(_tree_has_textured_item_icon(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip")), "crafting recipe cards render result item images")
+	asserts.true_value(_panel_uses_dark_background(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/DetailCard") as Control), "crafting detail card uses the shared dark inner background")
 	var craft_button := _first_enabled_button_with_text(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent"), "제작")
 	if craft_button != null:
 		craft_button.pressed.emit()
@@ -442,10 +450,25 @@ func _texture_rect_has_texture(node: Node) -> bool:
 	return node is TextureRect and (node as TextureRect).texture != null
 
 func _panel_uses_dark_background(panel: Control) -> bool:
+	if panel == null:
+		return false
 	var style := panel.get_theme_stylebox("panel") as StyleBoxFlat
 	if style == null:
 		return false
 	return style.bg_color.r < 0.12 and style.bg_color.g < 0.12 and style.bg_color.b < 0.12 and style.bg_color.a >= 0.80
+
+func _button_has_icon(node: Node) -> bool:
+	return node is Button and (node as Button).icon != null
+
+func _tree_has_textured_item_icon(node: Node) -> bool:
+	if node == null:
+		return false
+	if node is TextureRect and node.name == "ItemIcon" and (node as TextureRect).texture != null:
+		return true
+	for child in node.get_children():
+		if _tree_has_textured_item_icon(child):
+			return true
+	return false
 
 func _tree_has_text(node: Node, text: String) -> bool:
 	if node is Label and (node as Label).text == text:

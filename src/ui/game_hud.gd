@@ -5,7 +5,7 @@ const GameCommand = preload("res://src/core/commands/game_command.gd")
 const MobileCommandAdapter = preload("res://src/core/commands/mobile_command_adapter.gd")
 const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
 
-const FONT_GALMURI := "res://assets/fonts/galmuri/Galmuri11.ttf"
+const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
 const ICON_HP := "ui_hp_heart_icon"
 const ICON_KI := "ui_tea_cup_icon"
 const ICON_KOKORO := "ui_tea_leaf_icon"
@@ -17,6 +17,12 @@ const ICON_ATTACK := "asset_assets_ui_icons_atlas_attack_sword_png"
 const ICON_TEA := "asset_assets_ui_icons_atlas_tea_action_cup_png"
 const ICON_CONSUMABLE := "asset_assets_ui_icons_atlas_gourd_png"
 const ICON_MOON := "asset_assets_ui_icons_atlas_moon_png"
+const ICON_MATERIAL := "asset_assets_ui_icons_atlas_crate_png"
+const ICON_TOOL := "asset_assets_ui_icons_atlas_low_table_png"
+const ICON_TEA_WARE := "asset_assets_ui_icons_atlas_bowl_png"
+const ICON_WOOD := "asset_assets_sprites_objects_village_props_firewood_pile_1x2_64x32_png"
+const ICON_STONE := "asset_assets_sprites_objects_crafting_mortar_pestle_stone_32x32_png"
+const ICON_WORKBENCH := "asset_assets_sprites_objects_crafting_workbench_32x32_png"
 const BUTTON_DPAD := "asset_assets_ui_controls_dpad_png"
 const FIRST_RUN_PROLOGUE_EVENT_ID := "first_run_prologue"
 const PROLOGUE_BACKGROUND := "prologue_first_run_father_muchau_teahouse"
@@ -886,10 +892,13 @@ func _inventory_slot_card(row: Dictionary) -> Button:
 	)
 	button.name = "InventorySlotCard%d" % int(row.get("slot_index", -1))
 	button.custom_minimum_size = Vector2(44, 48)
+	button.icon = _load_texture(_inventory_item_icon_reference(row))
+	button.expand_icon = true
+	button.add_theme_constant_override("icon_max_width", 18)
 	button.add_theme_font_size_override("font_size", 9)
-	button.add_theme_stylebox_override("normal", _button_style(Color(0.72, 0.59, 0.38, 0.92)))
+	button.add_theme_stylebox_override("normal", _menu_card_style(false))
 	if bool(row.get("selected", false)):
-		button.add_theme_stylebox_override("normal", _button_style(Color(0.90, 0.72, 0.42, 0.96)))
+		button.add_theme_stylebox_override("normal", _menu_card_style(true))
 	button.disabled = bool(row.get("empty", false))
 	return button
 
@@ -909,7 +918,8 @@ func _inventory_detail_card(row: Dictionary) -> Control:
 			int(row.get("quantity", 0)),
 			String(row.get("stack_label", ""))
 		]
-	(card.get_node("Rows") as VBoxContainer).add_child(_label(text, 11))
+	var detail_row := _icon_text_row(_inventory_item_icon_reference(row), text, 11)
+	(card.get_node("Rows") as VBoxContainer).add_child(detail_row)
 	var actions := HBoxContainer.new()
 	_ignore_mouse(actions)
 	actions.add_theme_constant_override("separation", 4)
@@ -1199,12 +1209,18 @@ func _crafting_row(row_model: Dictionary) -> Control:
 	_ignore_mouse(card)
 	card.custom_minimum_size = Vector2(78, 54)
 	card.add_theme_constant_override("separation", 3)
+	var summary := HBoxContainer.new()
+	summary.name = "CraftingRecipeSummary"
+	_ignore_mouse(summary)
+	summary.add_theme_constant_override("separation", 4)
+	summary.add_child(_item_icon_rect(_crafting_result_icon_reference(row_model), Vector2(20, 20)))
 	var label := _label("%s\n%s" % [
 		String(row_model.get("name", row_model.get("recipe_id", ""))),
 		String(row_model.get("reason_label", ""))
 	], 9)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.add_child(label)
+	summary.add_child(label)
+	card.add_child(summary)
 	var actions := HBoxContainer.new()
 	_ignore_mouse(actions)
 	actions.add_theme_constant_override("separation", 3)
@@ -1280,7 +1296,10 @@ func _crafting_detail_row(detail: Dictionary) -> Control:
 	var unlock_biome_id := String(detail.get("unlock_biome_id", ""))
 	if not unlock_biome_id.is_empty():
 		parts.append("해금 %s" % unlock_biome_id)
-	return _detail_card_with_text("제작 상세", " · ".join(parts))
+	var card := _detail_card("제작 상세")
+	var rows := card.get_node("Rows") as VBoxContainer
+	rows.add_child(_icon_text_row(_crafting_result_icon_reference(detail), " · ".join(parts), 11))
+	return card
 
 func _crafting_page_start(rows: Array, selected: String, page_size: int) -> int:
 	if rows.size() <= page_size:
@@ -1529,6 +1548,46 @@ func _inventory_definition(item_id: String) -> Dictionary:
 		return catalog.find_by_id("items", item_id)
 	return {"id": item_id, "name": item_id}
 
+func _inventory_item_icon_reference(row: Dictionary) -> String:
+	if row.is_empty() or bool(row.get("empty", false)):
+		return ""
+	var item_id := String(row.get("item_id", ""))
+	var definition := _inventory_definition(item_id)
+	return _item_icon_reference(item_id, String(row.get("kind", definition.get("type", ""))), definition)
+
+func _crafting_result_icon_reference(row_model: Dictionary) -> String:
+	var result: Dictionary = row_model.get("result", {})
+	var item_id := String(result.get("item_id", row_model.get("result_item_id", row_model.get("recipe_id", ""))))
+	var definition := _inventory_definition(item_id)
+	var kind := String(result.get("kind", result.get("type", definition.get("type", row_model.get("category", "")))))
+	return _item_icon_reference(item_id, kind, result.merged(definition, false))
+
+func _item_icon_reference(item_id: String, kind: String, definition: Dictionary) -> String:
+	for key in ["icon_asset_id", "icon", "asset_id", "sprite_asset_id", "source_id"]:
+		var reference := String(definition.get(key, ""))
+		if not reference.is_empty():
+			return reference
+	match item_id:
+		"wood", "old_wood", "rare_wood":
+			return ICON_WOOD
+		"stone", "hard_stone":
+			return ICON_STONE
+		"wooden_workbench":
+			return ICON_WORKBENCH
+	var normalized_kind := kind.strip_edges()
+	match normalized_kind:
+		"소모품":
+			return ICON_CONSUMABLE
+		"다구":
+			return ICON_TEA_WARE
+		"차", "찻잎":
+			return ICON_TEA
+		"도구", "시설":
+			return ICON_TOOL
+		"재료":
+			return ICON_MATERIAL
+	return ICON_BAG
+
 func _apply_safe_area_layout() -> void:
 	var margin := _safe_margin()
 	var viewport_size := get_viewport().get_visible_rect().size if get_viewport() != null else Vector2(640, 360)
@@ -1734,17 +1793,14 @@ func _label(text: String, font_size := 12) -> Label:
 
 func _section_label(text: String) -> Label:
 	var label := _label(text, 11)
-	label.add_theme_color_override("font_color", Color(0.12, 0.08, 0.04, 1.0))
+	label.add_theme_color_override("font_color", Color(0.93, 0.83, 0.63, 1.0))
 	return label
 
 func _card_frame(content: Control, selected := false) -> PanelContainer:
 	var frame := PanelContainer.new()
 	frame.custom_minimum_size = content.custom_minimum_size + Vector2(6, 6)
 	_ignore_mouse(frame)
-	var color := Color(0.69, 0.56, 0.36, 0.93)
-	if selected:
-		color = Color(0.86, 0.66, 0.36, 0.96)
-	frame.add_theme_stylebox_override("panel", _button_style(color))
+	frame.add_theme_stylebox_override("panel", _menu_card_style(selected))
 	frame.add_child(content)
 	return frame
 
@@ -1753,7 +1809,7 @@ func _detail_card(title: String) -> PanelContainer:
 	card.name = "DetailCard"
 	card.custom_minimum_size = Vector2(288, 42)
 	_ignore_mouse(card)
-	card.add_theme_stylebox_override("panel", _button_style(Color(0.69, 0.56, 0.36, 0.94)))
+	card.add_theme_stylebox_override("panel", _menu_card_style(false))
 	var rows := VBoxContainer.new()
 	rows.name = "Rows"
 	_ignore_mouse(rows)
@@ -1769,6 +1825,27 @@ func _detail_card_with_text(title: String, text: String) -> PanelContainer:
 	rows.add_child(_section_label(text))
 	return card
 
+func _icon_text_row(icon_reference: String, text: String, font_size := 11) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.name = "IconTextRow"
+	_ignore_mouse(row)
+	row.add_theme_constant_override("separation", 6)
+	row.add_child(_item_icon_rect(icon_reference, Vector2(24, 24)))
+	var label := _label(text, font_size)
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(label)
+	return row
+
+func _item_icon_rect(icon_reference: String, size: Vector2) -> TextureRect:
+	var icon := TextureRect.new()
+	icon.name = "ItemIcon"
+	icon.custom_minimum_size = size
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.texture = _load_texture(icon_reference)
+	_ignore_mouse(icon)
+	return icon
+
 func _set_label(id: String, text: String) -> void:
 	var label := _labels.get(id) as Label
 	if label != null:
@@ -1782,22 +1859,7 @@ func _speaker_label(speaker_id: String) -> String:
 	return speaker_id
 
 func _pixel_theme() -> Theme:
-	var theme := Theme.new()
-	var font := _load_font(FONT_GALMURI)
-	if font != null:
-		theme.default_font = font
-	theme.default_font_size = 12
-	return theme
-
-func _load_font(path: String) -> Font:
-	if not ResourceLoader.exists(path):
-		return null
-	var font := ResourceLoader.load(path) as Font
-	if font is FontFile:
-		var font_file := font as FontFile
-		font_file.antialiasing = TextServer.FONT_ANTIALIASING_NONE
-		font_file.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
-	return font
+	return PixelUiTheme.create()
 
 func _panel_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
@@ -1814,22 +1876,13 @@ func _panel_style() -> StyleBoxFlat:
 	return style
 
 func _button_style(color: Color, rounded := false) -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = color
-	style.border_color = Color(0.73, 0.55, 0.31, 0.95)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.content_margin_left = 3
-	style.content_margin_top = 3
-	style.content_margin_right = 3
-	style.content_margin_bottom = 3
-	if rounded:
-		style.corner_radius_top_left = 12
-		style.corner_radius_top_right = 12
-		style.corner_radius_bottom_right = 12
-		style.corner_radius_bottom_left = 12
+	return PixelUiTheme.button_style(color, rounded)
+
+func _menu_card_style(selected := false) -> StyleBoxFlat:
+	var style := _button_style(Color(0.07, 0.06, 0.045, 0.92))
+	if selected:
+		style.bg_color = Color(0.10, 0.08, 0.055, 0.96)
+		style.border_color = Color(0.92, 0.68, 0.32, 1.0)
 	return style
 
 func _parchment_style() -> StyleBoxFlat:
@@ -1957,6 +2010,8 @@ func _dictionary_value(value) -> Dictionary:
 	return value.duplicate(true)
 
 func _load_texture(reference: String) -> Texture2D:
+	if reference.is_empty():
+		return null
 	var path := reference
 	if _ensure_asset_catalog():
 		path = asset_catalog.path_for_reference(reference)
