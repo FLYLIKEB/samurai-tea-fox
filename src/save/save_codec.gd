@@ -41,7 +41,8 @@ const RUN_FIELD_TYPES := {
 	"philosophy_marks": TYPE_ARRAY,
 	"final_room_effects": TYPE_ARRAY,
 	"core_tea_ware_collection": TYPE_DICTIONARY,
-	"acquisitions": TYPE_DICTIONARY
+	"acquisitions": TYPE_DICTIONARY,
+	"placed_facilities": TYPE_ARRAY
 }
 
 const META_FIELD_TYPES := {

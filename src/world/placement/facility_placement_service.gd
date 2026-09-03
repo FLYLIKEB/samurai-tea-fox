@@ -6,6 +6,8 @@ const WorldData = preload("res://src/world/data/world_data.gd")
 
 const ITEM_SOURCE := "items"
 const DEFAULT_FOOTPRINT := Vector2i.ONE
+const DEFAULT_PLACEMENT_SEARCH_RADIUS := 2
+const DEFAULT_USE_DISTANCE := 1
 
 signal operation_failed(error: Dictionary)
 signal facility_placed(result: Dictionary)
@@ -80,6 +82,41 @@ func place_facility(facility_item_id: String, world_data, origin: Vector2i, cont
 	result["reservation"] = reserved.reservation
 	facility_placed.emit(_duplicate_dictionary(result))
 	return result
+
+func find_placement_near(facility_item_id: String, world_data, anchor: Vector2i, context := {}) -> Dictionary:
+	var search_radius := maxi(1, int(_context_value(context, "search_radius", DEFAULT_PLACEMENT_SEARCH_RADIUS)))
+	for offset in _placement_offsets(search_radius):
+		var origin: Vector2i = anchor + Vector2i(offset)
+		var validation: Dictionary = can_place_facility(facility_item_id, world_data, origin, context)
+		if validation.ok:
+			return validation
+	return {
+		"ok": false,
+		"reason": "no_nearby_placement",
+		"error": "No valid facility placement was found near the player.",
+		"facility_item_id": facility_item_id,
+		"anchor": _position_dictionary(anchor)
+	}
+
+func facility_item_ids_near(world_data, position: Vector2i, max_distance := DEFAULT_USE_DISTANCE) -> Array:
+	var ids: Array = []
+	if world_data == null or not world_data.has_method("to_dictionary"):
+		return ids
+	var distance_limit := maxi(0, int(max_distance))
+	for reservation in world_data.to_dictionary().get("reservations", []):
+		if String(reservation.get("kind", "")) != "facility":
+			continue
+		var metadata: Dictionary = reservation.get("metadata", {})
+		var facility_item_id := String(metadata.get("facility_item_id", ""))
+		if facility_item_id.is_empty() or ids.has(facility_item_id):
+			continue
+		for cell_value in reservation.get("cells", []):
+			var cell := _vector_from_value(cell_value)
+			if _manhattan_distance(position, cell) <= distance_limit:
+				ids.append(facility_item_id)
+				break
+	ids.sort()
+	return ids
 
 func facility_for(facility_item_id: String) -> Dictionary:
 	return _duplicate_dictionary(facility_definitions.get(facility_item_id, {}))
@@ -157,6 +194,18 @@ func _adjacent_cells(origin: Vector2i, size: Vector2i) -> Array:
 		cells.append(Vector2i(origin.x - 1, y))
 		cells.append(Vector2i(origin.x + size.x, y))
 	return cells
+
+func _placement_offsets(radius: int) -> Array:
+	var offsets: Array = []
+	for distance in range(1, radius + 1):
+		for y in range(-distance, distance + 1):
+			for x in range(-distance, distance + 1):
+				if absi(x) + absi(y) == distance:
+					offsets.append(Vector2i(x, y))
+	return offsets
+
+static func _manhattan_distance(left: Vector2i, right: Vector2i) -> int:
+	return absi(left.x - right.x) + absi(left.y - right.y)
 
 static func _facility_definition_from_row(row: Dictionary) -> Dictionary:
 	var id := String(row.get("id", ""))

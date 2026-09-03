@@ -117,6 +117,13 @@ func run(asserts) -> void:
 		"pickups": [{"pickup_id": "pickup_000001", "item_id": "wood", "quantity": 1, "position": {"x": 1, "y": 2}, "source": {"source_kind": "gatherable"}}],
 		"processed_drop_request_ids": []
 	}
+	state.placed_facilities = [{
+		"biome_id": "common_region",
+		"facility_item_id": "wooden_workbench",
+		"owner_id": "wooden_workbench@4,5",
+		"origin": {"x": 4, "y": 5},
+		"metadata": {"installed_by_player": true}
+	}]
 	state.trade_stock = {"shop_1": 2}
 	state.tail_state = _tail_snapshot(3, ["yokai_nature"])
 	state.tails = 3
@@ -139,6 +146,7 @@ func run(asserts) -> void:
 	asserts.equal(decoded.run_state.consumables.active_action.elapsed_seconds, 0.5, "hydrated run state preserves active consumable progress")
 	asserts.equal(decoded.run_state.time.phase, "night", "hydrated run state preserves time phase")
 	asserts.true_value(decoded.run_state.acquisitions.gatherables[0].depleted, "hydrated run state preserves gatherable depletion")
+	asserts.equal(decoded.run_state.placed_facilities[0].facility_item_id, "wooden_workbench", "run save preserves player-installed facilities")
 	asserts.equal(decoded.run_state.acquisitions.pickups[0].item_id, "wood", "hydrated run state preserves world pickups")
 	asserts.equal(decoded.run_state.trade_stock.shop_1, 2, "hydrated run state preserves trade stock")
 	asserts.equal(decoded.run_state.tail_state.stage, 3, "hydrated run state preserves tail stage")
@@ -162,6 +170,7 @@ func run(asserts) -> void:
 	asserts.equal(state.dungeon_runtime_state, {}, "run state reset clears active dungeon runtime")
 	asserts.equal(state.teleport_states, {}, "run state reset clears teleport states")
 	asserts.equal(state.crafting_unlocks, [], "run state reset clears crafting unlocks")
+	asserts.equal(state.placed_facilities, [], "biome progression reset clears installed facilities")
 	state.reset_run_growth()
 	asserts.equal(state.tails, 1, "run growth reset returns tails to one")
 	asserts.equal(state.tail_state, TailState.default_dictionary(), "run growth reset returns tail state to default")

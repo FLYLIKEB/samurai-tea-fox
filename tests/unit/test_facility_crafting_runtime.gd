@@ -1,0 +1,97 @@
+extends RefCounted
+
+const CraftingService = preload("res://src/crafting/crafting_service.gd")
+const FacilityPlacementService = preload("res://src/world/placement/facility_placement_service.gd")
+const GameCommand = preload("res://src/core/commands/game_command.gd")
+const InventoryModel = preload("res://src/inventory/inventory_model.gd")
+const Main = preload("res://src/main/main.gd")
+const RunState = preload("res://src/save/run_state.gd")
+const WorldData = preload("res://src/world/data/world_data.gd")
+
+class TestPlayer:
+	extends Node2D
+
+func run(asserts) -> void:
+	var runtime := Main.new()
+	var player := TestPlayer.new()
+	var world := WorldData.new(7, 7, "grass", true)
+	var item_definitions := _item_definitions()
+	var inventory := InventoryModel.new()
+	asserts.true_value(inventory.configure(6, item_definitions).ok, "facility runtime inventory configures")
+	asserts.true_value(inventory.add_item("wood", 6).ok, "facility runtime stocks wood")
+	asserts.true_value(inventory.add_item("stone", 3).ok, "facility runtime stocks stone")
+	asserts.true_value(inventory.add_item("clay", 6).ok, "facility runtime stocks clay")
+
+	var crafting := CraftingService.new()
+	asserts.true_value(crafting.configure(_recipe_definitions(), item_definitions, {"목재 작업대": "wooden_workbench"}).ok, "facility runtime crafting configures")
+	var placement := FacilityPlacementService.new()
+	asserts.true_value(placement.configure(item_definitions).ok, "facility runtime placement configures")
+
+	runtime.player = player
+	runtime.inventory = inventory
+	runtime.crafting_service = crafting
+	runtime.facility_placement_service = placement
+	runtime.world_data = world
+	runtime.run_state = RunState.new()
+	runtime.run_state.current_biome_id = "common_region"
+	runtime.generated_world = {
+		"biome_id": "common_region",
+		"facility_nodes": [],
+		"renderer_input": {"bounds": {"width": 7, "height": 7}, "tile_size": 32}
+	}
+	player.global_position = runtime.world_position_for_cell_center(Vector2i(3, 3))
+
+	var workbench_command := GameCommand.new(GameCommand.Type.CRAFT_RECIPE, Vector2i.ZERO, -1, {"recipe_id": "wooden_workbench"})
+	asserts.true_value(runtime._handle_craft_recipe_command(workbench_command), "crafting a facility installs it on the current map")
+	asserts.equal(inventory.get_total_quantity("wooden_workbench"), 0, "installed facility is not stored in inventory")
+	asserts.equal(runtime.run_state.placed_facilities.size(), 1, "installed facility is recorded in run state")
+	var installed_owner_id := String(runtime.run_state.placed_facilities[0].owner_id)
+	asserts.false_value(world.get_reservation(installed_owner_id).is_empty(), "installed facility occupies the live map")
+	asserts.equal(runtime._available_facility_item_ids(), ["wooden_workbench"], "installed facility unlocks recipes while the player is adjacent")
+
+	var bowl_command := GameCommand.new(GameCommand.Type.CRAFT_RECIPE, Vector2i.ZERO, -1, {"recipe_id": "humble_clay_bowl"})
+	asserts.true_value(runtime._handle_craft_recipe_command(bowl_command), "facility recipe crafts beside the installed workbench")
+	asserts.equal(inventory.get_total_quantity("humble_clay_bowl"), 1, "nearby facility craft grants its result")
+
+	player.global_position = runtime.world_position_for_cell_center(Vector2i(6, 6))
+	asserts.equal(runtime._available_facility_item_ids(), [], "installed facility no longer unlocks recipes when the player moves away")
+	var clay_before := inventory.get_total_quantity("clay")
+	asserts.false_value(runtime._handle_craft_recipe_command(bowl_command), "facility recipe is rejected away from the installed workbench")
+	asserts.equal(inventory.get_total_quantity("clay"), clay_before, "rejected distant craft does not consume materials")
+
+	var restored_world := WorldData.new(7, 7, "grass", true)
+	runtime.world_data = restored_world
+	asserts.true_value(runtime._restore_placed_facilities_for_current_biome().ok, "saved facility restores into a regenerated biome map")
+	asserts.equal(placement.facility_item_ids_near(restored_world, Vector2i(3, 3)), ["wooden_workbench"], "restored facility keeps its proximity behavior")
+
+	player.free()
+	runtime.free()
+
+func _item_definitions() -> Dictionary:
+	return {
+		"wood": {"id": "wood", "name": "목재", "type": "재료", "max_stack": 10},
+		"stone": {"id": "stone", "name": "돌", "type": "재료", "max_stack": 10},
+		"clay": {"id": "clay", "name": "점토", "type": "재료", "max_stack": 10},
+		"wooden_workbench": {"id": "wooden_workbench", "name": "목재 작업대", "type": "도구", "max_stack": 1, "footprint_size": Vector2i.ONE},
+		"humble_clay_bowl": {"id": "humble_clay_bowl", "name": "소박한 흙사발", "type": "다구", "max_stack": 1}
+	}
+
+func _recipe_definitions() -> Dictionary:
+	return {
+		"wooden_workbench": {
+			"id": "wooden_workbench",
+			"materials": [{"item_id": "wood", "quantity": 6}, {"item_id": "stone", "quantity": 3}],
+			"facility_item_ids": [],
+			"result_item_id": "wooden_workbench",
+			"result_quantity": 1,
+			"definition_errors": []
+		},
+		"humble_clay_bowl": {
+			"id": "humble_clay_bowl",
+			"materials": [{"item_id": "clay", "quantity": 3}],
+			"facility_item_ids": ["wooden_workbench"],
+			"result_item_id": "humble_clay_bowl",
+			"result_quantity": 1,
+			"definition_errors": []
+		}
+	}

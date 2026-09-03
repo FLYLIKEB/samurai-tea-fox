@@ -118,7 +118,7 @@ func _craftable_rows_first(left: Dictionary, right: Dictionary) -> bool:
 		return left_craftable
 	return String(left.get("recipe_id", "")) < String(right.get("recipe_id", ""))
 
-func craft(recipe_id: String, inventory, context := {}) -> Dictionary:
+func craft(recipe_id: String, inventory, context := {}, options := {}) -> Dictionary:
 	var validation := can_craft(recipe_id, inventory, context)
 	if not validation.ok:
 		return _fail_and_emit(validation)
@@ -133,10 +133,12 @@ func craft(recipe_id: String, inventory, context := {}) -> Dictionary:
 			inventory.load_snapshot(snapshot)
 			return _fail_and_emit(remove_result)
 
-	var add_result: Dictionary = inventory.add_item(String(recipe.result_item_id), int(recipe.result_quantity))
-	if not add_result.ok:
-		inventory.load_snapshot(snapshot)
-		return _fail_and_emit(add_result)
+	var store_result := bool(options.get("store_result", true)) if typeof(options) == TYPE_DICTIONARY else true
+	if store_result:
+		var add_result: Dictionary = inventory.add_item(String(recipe.result_item_id), int(recipe.result_quantity))
+		if not add_result.ok:
+			inventory.load_snapshot(snapshot)
+			return _fail_and_emit(add_result)
 
 	var result := {
 		"ok": true,
@@ -144,7 +146,8 @@ func craft(recipe_id: String, inventory, context := {}) -> Dictionary:
 		"result_item_id": String(recipe.result_item_id),
 		"result_quantity": int(recipe.result_quantity),
 		"materials": _duplicate_array(recipe.materials),
-		"facility_item_ids": _duplicate_array(recipe.facility_item_ids)
+		"facility_item_ids": _duplicate_array(recipe.facility_item_ids),
+		"stored_result": store_result
 	}
 	craft_completed.emit(_duplicate_dictionary(result))
 	return result
@@ -159,6 +162,15 @@ func item_name(item_id: String) -> String:
 
 func is_handcraft(recipe_id: String) -> bool:
 	return required_facility_item_ids(recipe_id).is_empty()
+
+func is_facility_item(item_id: String) -> bool:
+	if item_id.is_empty():
+		return false
+	for recipe in recipe_definitions.values():
+		for facility_item_id in recipe.get("facility_item_ids", []):
+			if String(facility_item_id) == item_id:
+				return true
+	return false
 
 func _validate_craft(recipe_id: String, inventory, context) -> Dictionary:
 	if not recipe_definitions.has(recipe_id):

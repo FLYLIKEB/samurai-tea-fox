@@ -34,6 +34,7 @@ const WorldSceneRenderer = preload("res://src/world/rendering/world_scene_render
 const RunLifecycleService = preload("res://src/save/run_lifecycle_service.gd")
 const SaveStore = preload("res://src/save/save_store.gd")
 const CraftingService = preload("res://src/crafting/crafting_service.gd")
+const FacilityPlacementService = preload("res://src/world/placement/facility_placement_service.gd")
 const ConsumableService = preload("res://src/consumable/consumable_service.gd")
 const AcquisitionEffect = preload("res://src/presentation/acquisition_effect.gd")
 
@@ -77,6 +78,7 @@ var tea_service
 var tea_brewing_command_runtime
 var meta_codex_command_runtime
 var crafting_service
+var facility_placement_service
 var consumable_service
 var time_state
 var core_tea_ware_collection
@@ -618,11 +620,13 @@ func submit_action_command(command) -> bool:
 				_play_feedback_beep()
 			return accepted
 		GameCommand.Type.OPEN_CRAFTING:
+			_configure_game_hud()
 			var accepted: bool = game_hud != null and game_hud.show_crafting_menu()
 			if accepted:
 				_play_feedback_beep()
 			return accepted
 		GameCommand.Type.OPEN_FACILITIES:
+			_configure_game_hud()
 			var accepted: bool = game_hud != null and game_hud.show_facilities_menu()
 			if accepted:
 				_play_feedback_beep()
@@ -844,6 +848,9 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	var crafting_result: Dictionary = CraftingService.from_catalog(loaded_catalog)
 	if not crafting_result.ok:
 		return crafting_result
+	var facility_placement_result: Dictionary = FacilityPlacementService.from_catalog(loaded_catalog)
+	if not facility_placement_result.ok:
+		return facility_placement_result
 	var consumable_result: Dictionary = ConsumableService.from_catalog(loaded_catalog)
 	if not consumable_result.ok and String(consumable_result.get("reason", "")) not in ["missing_balance", "missing_consumable_definitions"]:
 		return consumable_result
@@ -874,6 +881,7 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 		if not tea_load_result.ok:
 			return tea_load_result
 	crafting_service = crafting_result.crafting_service
+	facility_placement_service = facility_placement_result.facility_placement_service
 	consumable_service = consumable_result.consumable_service if consumable_result.ok else null
 	if consumable_service != null and run_state != null and not run_state.consumables.is_empty():
 		var consumable_load_result: Dictionary = consumable_service.load_snapshot(run_state.consumables)
@@ -1256,6 +1264,9 @@ func _configure_acquisition_for_generated_world() -> Dictionary:
 		return {"ok": false, "reason": "invalid_generated_world", "error": "Acquisition requires a generated world snapshot."}
 	var saved_acquisitions := run_state.acquisitions.duplicate(true) if run_state != null else {}
 	world_data = WorldData.from_dictionary(generated_world.world_data)
+	var facility_restore_result := _restore_placed_facilities_for_current_biome()
+	if not facility_restore_result.ok:
+		return facility_restore_result
 	acquisition_service = AcquisitionService.new()
 	var definitions := _confirmed_generated_resource_definitions(generated_world.get("resource_nodes", []))
 	definitions.append_array(_terrain_tree_gatherable_definitions())
@@ -1948,17 +1959,95 @@ func _handle_craft_recipe_command(command: GameCommand) -> bool:
 	var recipe_id := String(command.payload.get("recipe_id", ""))
 	if recipe_id.is_empty():
 		return false
-	var result: Dictionary = crafting_service.craft(recipe_id, inventory, _crafting_context())
+	var result: Dictionary = _craft_recipe_with_world_install(recipe_id)
 	if game_hud != null:
 		game_hud.show_command_feedback(
-			"제작 완료: %s" % result.get("result_item_id", recipe_id)
+			("제작·설치 완료: %s" if bool(result.get("installed", false)) else "제작 완료: %s") % result.get("result_item_id", recipe_id)
 			if result.ok
 			else "제작 불가: %s" % String(result.get("reason", "unknown"))
 		)
 	if result.ok:
 		_sync_inventory_runtime_state()
 		save_current_run()
+		_configure_game_hud()
 	return bool(result.ok)
+
+func _craft_recipe_with_world_install(recipe_id: String) -> Dictionary:
+	var recipe: Dictionary = crafting_service.recipe_for(recipe_id)
+	var result_item_id := String(recipe.get("result_item_id", ""))
+	if not crafting_service.is_facility_item(result_item_id):
+		return crafting_service.craft(recipe_id, inventory, _crafting_context())
+	if _in_dungeon_map:
+		return {"ok": false, "reason": "facility_installation_requires_overworld"}
+	if facility_placement_service == null or world_data == null or player == null:
+		return {"ok": false, "reason": "facility_placement_unavailable"}
+
+	var crafting_context := _crafting_context()
+	var availability: Dictionary = crafting_service.can_craft(recipe_id, inventory, crafting_context)
+	if not availability.ok:
+		return availability
+	var placement_context := {
+		"metadata": _player_facility_metadata(result_item_id),
+		"search_radius": FacilityPlacementService.DEFAULT_PLACEMENT_SEARCH_RADIUS
+	}
+	var candidate: Dictionary = facility_placement_service.find_placement_near(
+		result_item_id,
+		world_data,
+		_player_world_cell(),
+		placement_context
+	)
+	if not candidate.ok:
+		return candidate
+	placement_context["owner_id"] = String(candidate.owner_id)
+	var placed: Dictionary = facility_placement_service.place_facility(
+		result_item_id,
+		world_data,
+		_vector_from_dictionary(candidate.origin),
+		placement_context
+	)
+	if not placed.ok:
+		return placed
+
+	var crafted: Dictionary = crafting_service.craft(recipe_id, inventory, crafting_context, {"store_result": false})
+	if not crafted.ok:
+		world_data.release_footprint(String(placed.owner_id))
+		return crafted
+	_record_placed_facility(placed)
+	_sync_runtime_world_render()
+	crafted["installed"] = true
+	crafted["placement"] = placed.duplicate(true)
+	return crafted
+
+func _player_facility_metadata(facility_item_id: String) -> Dictionary:
+	var definition: Dictionary = facility_placement_service.facility_for(facility_item_id)
+	var source_id := ""
+	for key in ["source_id", "sprite_asset_id", "asset_id", "icon_asset_id", "icon"]:
+		source_id = String(definition.get(key, ""))
+		if not source_id.is_empty():
+			break
+	if source_id.is_empty():
+		source_id = "asset_assets_sprites_objects_crafting_workbench_32x32_png"
+	return {
+		"facility_item_id": facility_item_id,
+		"installed_by_player": true,
+		"source_id": source_id
+	}
+
+func _record_placed_facility(placed: Dictionary) -> void:
+	if run_state == null:
+		run_state = RunState.new()
+	var reservation: Dictionary = placed.get("reservation", {})
+	var record := {
+		"biome_id": String(generated_world.get("biome_id", run_state.current_biome_id)),
+		"facility_item_id": String(placed.get("facility_item_id", "")),
+		"owner_id": String(placed.get("owner_id", "")),
+		"origin": placed.get("origin", {}).duplicate(true),
+		"metadata": reservation.get("metadata", {}).duplicate(true)
+	}
+	for existing in run_state.placed_facilities:
+		if String(existing.get("owner_id", "")) == String(record.owner_id):
+			return
+	run_state.placed_facilities.append(record)
 
 func _handle_inventory_command(command: GameCommand) -> bool:
 	if inventory_command_runtime == null:
@@ -2140,16 +2229,56 @@ func _crafting_context() -> Dictionary:
 
 func _available_facility_item_ids() -> Array:
 	var ids: Array = []
-	if crafting_service == null:
+	if crafting_service == null or player == null:
 		return ids
+	var player_cell := _player_world_cell()
+	if facility_placement_service != null:
+		for facility_item_id in facility_placement_service.facility_item_ids_near(world_data, player_cell):
+			if not ids.has(String(facility_item_id)):
+				ids.append(String(facility_item_id))
 	var name_to_id = crafting_service.get("item_name_to_id")
 	if typeof(name_to_id) != TYPE_DICTIONARY:
 		return ids
 	for node in generated_world.get("facility_nodes", []):
+		var position := _vector_from_dictionary(node.get("position", {}))
+		if absi(player_cell.x - position.x) + absi(player_cell.y - position.y) > FacilityPlacementService.DEFAULT_USE_DISTANCE:
+			continue
 		var term := String(node.get("facility_term", ""))
 		if name_to_id.has(term) and not ids.has(String(name_to_id[term])):
 			ids.append(String(name_to_id[term]))
+	ids.sort()
 	return ids
+
+func _restore_placed_facilities_for_current_biome() -> Dictionary:
+	if facility_placement_service == null or world_data == null or run_state == null:
+		return {"ok": true, "restored": 0}
+	var current_biome_id := String(generated_world.get("biome_id", run_state.current_biome_id))
+	var restored := 0
+	for record_value in run_state.placed_facilities:
+		if typeof(record_value) != TYPE_DICTIONARY:
+			continue
+		var record: Dictionary = record_value
+		if String(record.get("biome_id", "")) != current_biome_id:
+			continue
+		var owner_id := String(record.get("owner_id", ""))
+		if not owner_id.is_empty() and not world_data.get_reservation(owner_id).is_empty():
+			continue
+		var facility_item_id := String(record.get("facility_item_id", ""))
+		var origin := _vector_from_dictionary(record.get("origin", {}))
+		var placement: Dictionary = facility_placement_service.place_facility(facility_item_id, world_data, origin, {
+			"owner_id": owner_id,
+			"metadata": record.get("metadata", {}).duplicate(true)
+		})
+		if not placement.ok:
+			return {
+				"ok": false,
+				"reason": "placed_facility_restore_failed",
+				"facility_item_id": facility_item_id,
+				"owner_id": owner_id,
+				"cause": placement
+			}
+		restored += 1
+	return {"ok": true, "restored": restored}
 
 func _unlocked_biome_ids() -> Array:
 	var ids: Array = []

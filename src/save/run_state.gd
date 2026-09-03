@@ -35,6 +35,7 @@ var philosophy_marks := []
 var final_room_effects := []
 var core_tea_ware_collection := {}
 var acquisitions := {}
+var placed_facilities := []
 
 static func from_dictionary(data: Dictionary):
 	var state: RunState = load("res://src/save/run_state.gd").new()
@@ -74,6 +75,7 @@ static func from_dictionary(data: Dictionary):
 	state.final_room_effects = _array_value(data.get("final_room_effects", []))
 	state.core_tea_ware_collection = _dictionary_value(data.get("core_tea_ware_collection", {}))
 	state.acquisitions = _dictionary_value(data.get("acquisitions", {}))
+	state.placed_facilities = _array_value(data.get("placed_facilities", []))
 	return state
 
 func reset_biome_progression() -> void:
@@ -85,6 +87,7 @@ func reset_biome_progression() -> void:
 	repaired_teleports.clear()
 	map_discovery.clear()
 	crafting_unlocks.clear()
+	placed_facilities.clear()
 
 func reset_run_growth() -> void:
 	tails = 1
@@ -126,7 +129,8 @@ func to_dictionary() -> Dictionary:
 		"philosophy_marks": philosophy_marks.duplicate(true),
 		"final_room_effects": final_room_effects.duplicate(true),
 		"core_tea_ware_collection": core_tea_ware_collection.duplicate(true),
-		"acquisitions": acquisitions.duplicate(true)
+		"acquisitions": acquisitions.duplicate(true),
+		"placed_facilities": placed_facilities.duplicate(true)
 	}
 
 static func _dictionary_value(value) -> Dictionary:

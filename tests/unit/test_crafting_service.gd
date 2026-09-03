@@ -26,6 +26,7 @@ class FakeCatalog:
 func run(asserts) -> void:
 	_assert_generated_catalog_configures_crafting(asserts)
 	_assert_handcraft_consumes_materials_and_grants_result(asserts)
+	_assert_world_install_crafting_skips_inventory_result(asserts)
 	_assert_material_and_facility_requirements_are_reported(asserts)
 	_assert_crafting_read_model_reports_filters_detail_and_reasons(asserts)
 	_assert_current_run_biome_unlock_allows_recipe(asserts)
@@ -33,6 +34,7 @@ func run(asserts) -> void:
 	_assert_facility_placement_reserves_valid_footprint(asserts)
 	_assert_facility_placement_rejects_blocked_or_missing_workspace(asserts)
 	_assert_facility_placement_preserves_required_paths(asserts)
+	_assert_facility_availability_requires_proximity(asserts)
 
 func _assert_generated_catalog_configures_crafting(asserts) -> void:
 	var catalog := DataCatalog.new()
@@ -50,6 +52,8 @@ func _assert_generated_catalog_configures_crafting(asserts) -> void:
 	asserts.true_value(service.is_handcraft("wooden_workbench"), "손제작 recipe has no facility requirement")
 	asserts.equal(service.recipe_for("wooden_workbench").unlock_biome_id, "common_region", "generated recipe carries stable unlock biome id")
 	asserts.equal(service.required_facility_item_ids("humble_clay_bowl"), ["wooden_workbench"], "facility name maps through item data")
+	asserts.true_value(service.is_facility_item("wooden_workbench"), "recipe requirements identify crafting facility items")
+	asserts.false_value(service.is_facility_item("humble_clay_bowl"), "ordinary result items are not treated as facilities")
 
 	var inventory_result: Dictionary = InventoryModel.from_catalog(catalog)
 	asserts.true_value(inventory_result.ok, "inventory initializes for generated crafting")
@@ -87,6 +91,19 @@ func _assert_handcraft_consumes_materials_and_grants_result(asserts) -> void:
 	asserts.equal(inventory.get_total_quantity("wood"), 0, "crafting consumes wood")
 	asserts.equal(inventory.get_total_quantity("stone"), 0, "crafting consumes stone")
 	asserts.equal(inventory.get_total_quantity("wooden_workbench"), 1, "crafting grants result")
+
+func _assert_world_install_crafting_skips_inventory_result(asserts) -> void:
+	var service := _fixture_crafting_service()
+	var inventory := _fixture_inventory(2)
+	asserts.true_value(inventory.add_item("wood", 6).ok, "installation craft wood add succeeds")
+	asserts.true_value(inventory.add_item("stone", 3).ok, "installation craft stone add succeeds")
+
+	var crafted: Dictionary = service.craft("wooden_workbench", inventory, {}, {"store_result": false})
+	asserts.true_value(crafted.ok, "world installation craft consumes its materials")
+	asserts.false_value(bool(crafted.stored_result), "world installation craft reports that its result was not stored")
+	asserts.equal(inventory.get_total_quantity("wooden_workbench"), 0, "installed facility does not remain in inventory")
+	asserts.equal(inventory.get_total_quantity("wood"), 0, "world installation consumes wood")
+	asserts.equal(inventory.get_total_quantity("stone"), 0, "world installation consumes stone")
 
 func _assert_material_and_facility_requirements_are_reported(asserts) -> void:
 	var service := _fixture_crafting_service()
@@ -205,6 +222,16 @@ func _assert_facility_placement_preserves_required_paths(asserts) -> void:
 
 	var without_path_check: Dictionary = service.can_place_facility("small_stool", world, Vector2i(1, 0), {"preserve_required_paths": false})
 	asserts.true_value(without_path_check.ok, "path preservation can be disabled for isolated tests")
+
+func _assert_facility_availability_requires_proximity(asserts) -> void:
+	var service := _fixture_placement_service()
+	var world := WorldData.new(7, 7, "grass", true)
+	var candidate: Dictionary = service.find_placement_near("wooden_workbench", world, Vector2i(3, 3))
+	asserts.true_value(candidate.ok, "facility placement finds a valid nearby footprint")
+	var placed: Dictionary = service.place_facility("wooden_workbench", world, Vector2i(int(candidate.origin.x), int(candidate.origin.y)))
+	asserts.true_value(placed.ok, "nearby facility placement succeeds")
+	asserts.equal(service.facility_item_ids_near(world, Vector2i(3, 3)), ["wooden_workbench"], "adjacent player can use installed facility")
+	asserts.equal(service.facility_item_ids_near(world, Vector2i(6, 6)), [], "distant player cannot use installed facility")
 
 func _fixture_crafting_service() -> CraftingService:
 	var result: Dictionary = CraftingService.from_catalog(FakeCatalog.new({
