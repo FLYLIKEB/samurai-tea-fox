@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "values": {
+    "world.overworld_width": 48,
+    "world.overworld_height": 28,
+    "world.chunk_width": 8,
+    "world.chunk_height": 6,
+    "world.generation_retry_limit": 8,
+    "world.tile_size_pixels": 32.0,
+    "world.default_seed": 11037,
+    "game.turn_seconds": 1.0,
+    "input.pointer_stop_distance_pixels": 4.0,
+    "camera.discovery_radius": 6,
+    "camera.minimap_width": 11,
+    "camera.minimap_height": 7,
+    "camera.zoom": 2.0,
+    "placement.search_radius": 2,
+    "placement.use_distance": 1,
+    "player.movement_speed_pixels_per_second": 96.0,
+    "combat.attack_range_pixels": 40.0,
+    "combat.hit_flash_seconds": 0.16,
+    "combat.damage_popup_seconds": 0.7,
+    "combat.damage_popup_rise_pixels": 8.0,
+    "combat.grid_step_tween_seconds": 0.18,
+    "audio.feedback_mix_rate": 22050.0,
+    "audio.feedback_beep_seconds": 0.045,
+    "audio.feedback_beep_frequency": 880.0,
+    "narrative.the_end_duration_seconds": 1.8
+  }
+}
