@@ -886,7 +886,7 @@ func _inventory_rows() -> Array:
 		for kind in model.available_filters:
 			toolbar.add_child(_inventory_command_button(String(kind), GameCommand.new(GameCommand.Type.INVENTORY_SET_FILTER, Vector2i.ZERO, -1, {"kind": kind})))
 		rows.append(toolbar)
-		var visible_rows: Array = model.slots
+		var visible_rows: Array = _inventory_display_rows(model.slots, int(model.get("selected_slot_index", -1)))
 		var page_start := _inventory_page_start(visible_rows, int(model.get("selected_slot_index", -1)), 6)
 		var page_end := mini(visible_rows.size(), page_start + 6)
 		var slot_strip := HBoxContainer.new()
@@ -907,7 +907,7 @@ func _inventory_rows() -> Array:
 
 func _inventory_slot_card(row: Dictionary) -> Button:
 	var button := _inventory_command_button(
-		"빈칸" if bool(row.get("empty", false)) else "%s\nx%d" % [String(row.get("name", row.get("item_id", ""))), int(row.get("quantity", 0))],
+		"빈칸" if bool(row.get("empty", false)) else "%s\n* %d" % [String(row.get("name", row.get("item_id", ""))), int(row.get("quantity", 0))],
 		GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, int(row.slot_index), {"slot_index": int(row.slot_index)})
 	)
 	button.name = "InventorySlotCard%d" % int(row.get("slot_index", -1))
@@ -922,9 +922,46 @@ func _inventory_slot_card(row: Dictionary) -> Button:
 	button.disabled = bool(row.get("empty", false))
 	return button
 
+func _inventory_display_rows(slot_rows: Array, selected_slot_index: int) -> Array:
+	var display_rows := []
+	var group_indexes := {}
+	for row in slot_rows:
+		if typeof(row) != TYPE_DICTIONARY:
+			continue
+		if bool(row.get("empty", false)) or bool(row.get("can_equip", false)):
+			display_rows.append(row)
+			continue
+		var item_id := String(row.get("item_id", ""))
+		if item_id.is_empty():
+			display_rows.append(row)
+			continue
+		if not group_indexes.has(item_id):
+			var group: Dictionary = row.duplicate(true)
+			group["slot_indexes"] = [int(row.get("slot_index", -1))]
+			group["quantity"] = int(row.get("quantity", 0))
+			group["stack_label"] = "%d total" % int(group.quantity)
+			group["selected"] = int(row.get("slot_index", -1)) == selected_slot_index
+			group_indexes[item_id] = display_rows.size()
+			display_rows.append(group)
+			continue
+		var group_index := int(group_indexes[item_id])
+		var existing: Dictionary = display_rows[group_index]
+		existing["quantity"] = int(existing.get("quantity", 0)) + int(row.get("quantity", 0))
+		existing["stack_label"] = "%d total" % int(existing.quantity)
+		existing["slot_indexes"].append(int(row.get("slot_index", -1)))
+		if int(row.get("slot_index", -1)) == selected_slot_index:
+			existing["slot_index"] = selected_slot_index
+			existing["selected"] = true
+		display_rows[group_index] = existing
+	return display_rows
+
 func _selected_inventory_row(rows: Array, selected_slot_index: int) -> Dictionary:
 	for row in rows:
-		if typeof(row) == TYPE_DICTIONARY and int(row.get("slot_index", -1)) == selected_slot_index:
+		if typeof(row) != TYPE_DICTIONARY:
+			continue
+		if int(row.get("slot_index", -1)) == selected_slot_index:
+			return row
+		if row.has("slot_indexes") and row.slot_indexes.has(selected_slot_index):
 			return row
 	return rows[0] if not rows.is_empty() and typeof(rows[0]) == TYPE_DICTIONARY else {}
 

@@ -61,13 +61,14 @@ class FakeInventoryCommandRuntime:
 			"filter_kind": "all",
 			"sort_mode": "kind_name",
 			"selected_slot_index": 0,
-			"capacity": {"used": 2, "total": 14, "empty": 12, "full": false},
+			"capacity": {"used": 3, "total": 14, "empty": 11, "full": false},
 			"available_filters": ["all", "재료", "소모품"],
 			"equipment": {},
 			"slots": [
 				{"slot_index": 0, "empty": false, "selected": true, "item_id": "wood", "name": "wood", "kind": "재료", "quantity": 3, "max_stack": 20, "stack_label": "3/20", "can_use": false, "can_equip": false, "label": "01 wood x3 (3/20)", "commands": {}},
 				{"slot_index": 1, "empty": true, "selected": false, "item_id": "", "name": "", "kind": "", "quantity": 0, "max_stack": 0, "stack_label": "0/0", "can_use": false, "can_equip": false, "label": "02 빈 슬롯", "commands": {}},
-				{"slot_index": 2, "empty": false, "selected": false, "item_id": "bandage", "name": "bandage", "kind": "소모품", "quantity": 1, "max_stack": 5, "stack_label": "1/5", "can_use": true, "can_equip": false, "label": "03 bandage x1 (1/5)", "commands": {}}
+				{"slot_index": 2, "empty": false, "selected": false, "item_id": "bandage", "name": "bandage", "kind": "소모품", "quantity": 1, "max_stack": 5, "stack_label": "1/5", "can_use": true, "can_equip": false, "label": "03 bandage x1 (1/5)", "commands": {}},
+				{"slot_index": 3, "empty": false, "selected": false, "item_id": "wood", "name": "wood", "kind": "재료", "quantity": 7, "max_stack": 20, "stack_label": "7/20", "can_use": false, "can_equip": false, "label": "04 wood x7 (7/20)", "commands": {}}
 			]
 		}
 
@@ -347,9 +348,11 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 		asserts.equal(int(round(menu_panel.anchor_top * 100.0)), 50, "fast menu anchors from the vertical center")
 		asserts.true_value(_panel_uses_dark_background(menu_panel), "fast menu uses the shared dark HUD panel background")
 	asserts.equal((hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll") as Control).mouse_filter, Control.MOUSE_FILTER_STOP, "menu scroll consumes touch input instead of moving the player")
-	asserts.true_value(_tree_has_text(hud, "차 & 도구 (인벤토리) · 2/14 · all"), "inventory menu renders the mockup-style inventory header")
+	asserts.true_value(_tree_has_text(hud, "차 & 도구 (인벤토리) · 3/14 · all"), "inventory menu renders the mockup-style inventory header")
 	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip/InventorySlotCard0") != null, "inventory menu renders slot cards")
 	asserts.true_value(_button_has_icon(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip/InventorySlotCard0")), "inventory slot cards render item images")
+	asserts.true_value(_tree_has_text(hud, "wood\n* 10"), "inventory menu groups duplicate item slots into one total")
+	asserts.false_value(_tree_has_text(hud, "wood\n* 7"), "inventory menu does not render duplicate item stacks as separate cards")
 	asserts.true_value(_panel_uses_dark_background(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/DetailCard") as Control), "inventory detail card uses the shared dark inner background")
 	asserts.true_value(hud.show_facilities_menu(), "HUD opens the facilities menu")
 	asserts.true_value(_tree_has_text(hud, "우물 (4,5)"), "facilities menu lists generated facility nodes")
