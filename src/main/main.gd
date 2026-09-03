@@ -39,6 +39,7 @@ const CraftingService = preload("res://src/crafting/crafting_service.gd")
 const FacilityPlacementService = preload("res://src/world/placement/facility_placement_service.gd")
 const ConsumableService = preload("res://src/consumable/consumable_service.gd")
 const AcquisitionEffect = preload("res://src/presentation/acquisition_effect.gd")
+const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
 
 class FacilityPlacementPreview extends Node2D:
 	var origin := Vector2i(-1, -1)
@@ -197,6 +198,8 @@ func _ready() -> void:
 	await get_tree().process_frame
 	_configure_audio_feedback()
 	_consume_start_mode()
+	_set_loading_status("입력 장치 연결 중…")
+	await get_tree().process_frame
 	catalog = DataCatalog.new()
 	_set_loading_status("콘텐츠 카탈로그 준비 중…")
 	await get_tree().process_frame
@@ -217,6 +220,8 @@ func _ready() -> void:
 		push_error(runtime_result.error)
 		return
 	var cheat_result := _apply_cheat_start_inventory()
+	_set_loading_status("플레이어와 전투 준비 중…")
+	await get_tree().process_frame
 	if not cheat_result.ok:
 		push_error(cheat_result.error)
 		return
@@ -232,11 +237,13 @@ func _ready() -> void:
 		run_state.seed = DEFAULT_RUN_SEED
 	_set_loading_status("월드 생성 중…")
 	await get_tree().process_frame
+	_set_loading_status("지역 지도와 오브젝트 배치 중…")
+	await get_tree().process_frame
 	var world_result := _configure_world_for_current_run()
 	if not world_result.ok:
 		push_error(world_result.error)
 	else:
-		_set_loading_status("플레이 화면 준비 중…")
+		_set_loading_status("카메라와 HUD 준비 중…")
 		await get_tree().process_frame
 		if bool(cheat_result.get("applied", false)):
 			var cheat_save_result := save_current_run()
@@ -251,16 +258,22 @@ func _create_loading_overlay() -> void:
 	layer.name = "LoadingOverlay"
 	layer.layer = 200
 	add_child(layer)
+	var panel := PanelContainer.new()
+	panel.name = "LoadingStatusPanel"
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.position = Vector2(-190.0, 92.0)
+	panel.size = Vector2(380.0, 48.0)
+	panel.theme = PixelUiTheme.create()
+	panel.add_theme_stylebox_override("panel", PixelUiTheme.panel_style())
+	layer.add_child(panel)
 	_loading_label = Label.new()
 	_loading_label.name = "LoadingStatus"
 	_loading_label.text = "준비 중…"
 	_loading_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_loading_label.add_theme_font_size_override("font_size", 14)
-	_loading_label.set_anchors_preset(Control.PRESET_CENTER)
-	_loading_label.position = Vector2(-180.0, 110.0)
-	_loading_label.size = Vector2(360.0, 28.0)
+	_loading_label.custom_minimum_size = Vector2(360.0, 28.0)
 	_loading_label.modulate = Color(1.0, 0.91, 0.68, 1.0)
-	layer.add_child(_loading_label)
+	panel.add_child(_loading_label)
 
 func _set_loading_status(message: String) -> void:
 	if _loading_label != null:
