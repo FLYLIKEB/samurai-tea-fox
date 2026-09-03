@@ -56,7 +56,7 @@ const TERRAIN_RAINFOREST_RIVER_BANK := "rainforest_river_bank"
 const RENDER_GROUND := "terrain_plains_grass_ground_01"
 const RENDER_GRASS := "terrain_plains_grass_ground_01"
 const RENDER_FIELD := "terrain_plains_flower_grass_01"
-const RENDER_FOREST := "terrain_tree_broadleaf_32x32"
+const RENDER_FOREST_TREE := "asset_assets_sprites_objects_natural_props_broadleaf_tree_small_32x32_png"
 const RENDER_WATER := "terrain_river_water_01"
 const RENDER_MOUNTAIN_SLOPE := "asset_assets_sprites_objects_natural_props_flat_rock_32x32_png"
 const RENDER_MOUNTAIN_PATH := "asset_assets_sprites_objects_natural_props_mossy_rock_32x32_png"
@@ -251,7 +251,7 @@ func _apply_common_chunk(world_data: WorldData, chunk: Dictionary, rng: Determin
 					world_data.set_terrain(position, TERRAIN_FIELD, true, RENDER_FIELD)
 				2:
 					if rng.next_range(0, 99) < 32:
-						world_data.set_terrain(position, TERRAIN_FOREST, false, RENDER_FOREST)
+						_set_tree_obstacle(world_data, position, TERRAIN_FOREST, TERRAIN_GRASS, RENDER_GRASS, RENDER_FOREST_TREE)
 					else:
 						world_data.set_terrain(position, TERRAIN_GRASS, true, RENDER_GRASS)
 				3:
@@ -291,7 +291,7 @@ func _apply_mountain_chunk(world_data: WorldData, chunk: Dictionary, rng: Determ
 						world_data.set_terrain(position, TERRAIN_MOUNTAIN_PATH, true, RENDER_MOUNTAIN_PATH)
 				3:
 					if rng.next_range(0, 99) < 35:
-						world_data.set_terrain(position, TERRAIN_MOUNTAIN_CONIFER, false, RENDER_MOUNTAIN_CONIFER)
+						_set_tree_obstacle(world_data, position, TERRAIN_MOUNTAIN_CONIFER, TERRAIN_MOUNTAIN_SLOPE, RENDER_MOUNTAIN_SLOPE, RENDER_MOUNTAIN_CONIFER)
 					else:
 						world_data.set_terrain(position, TERRAIN_MOUNTAIN_SLOPE, true, RENDER_MOUNTAIN_SLOPE)
 				4:
@@ -348,7 +348,7 @@ func _apply_wasteland_chunk(world_data: WorldData, chunk: Dictionary, rng: Deter
 					elif local_x == 2 and local_y == 4:
 						world_data.set_terrain(position, TERRAIN_WASTELAND_CRACKED_GROUND, true, RENDER_WASTELAND_CRACKED_GROUND)
 					elif rng.next_range(0, 99) < 28:
-						world_data.set_terrain(position, TERRAIN_WASTELAND_DEAD_TREE, false, RENDER_WASTELAND_DEAD_TREE)
+						_set_tree_obstacle(world_data, position, TERRAIN_WASTELAND_DEAD_TREE, TERRAIN_WASTELAND_DRY_SOIL, RENDER_WASTELAND_DRY_SOIL, RENDER_WASTELAND_DEAD_TREE)
 					else:
 						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true, RENDER_WASTELAND_DRY_SOIL)
 				4:
@@ -409,7 +409,7 @@ func _apply_snowfield_chunk(world_data: WorldData, chunk: Dictionary, rng: Deter
 						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true, RENDER_SNOWFIELD_SNOW)
 				2:
 					if rng.next_range(0, 99) < 38:
-						world_data.set_terrain(position, TERRAIN_SNOWFIELD_PINE, false, RENDER_SNOWFIELD_PINE)
+						_set_tree_obstacle(world_data, position, TERRAIN_SNOWFIELD_PINE, TERRAIN_SNOWFIELD_SNOW, RENDER_SNOWFIELD_SNOW, RENDER_SNOWFIELD_PINE)
 					else:
 						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true, RENDER_SNOWFIELD_SNOW)
 				3:
@@ -487,7 +487,7 @@ func _apply_rainforest_chunk(world_data: WorldData, chunk: Dictionary, rng: Dete
 					if local_x == 1 or local_x == 6 or local_y == 1:
 						world_data.set_terrain(position, TERRAIN_RAINFOREST_VINE_PATH, true, RENDER_RAINFOREST_VINE_PATH)
 					elif rng.next_range(0, 99) < 50:
-						world_data.set_terrain(position, TERRAIN_RAINFOREST_AGARWOOD, false, RENDER_RAINFOREST_AGARWOOD)
+						_set_tree_obstacle(world_data, position, TERRAIN_RAINFOREST_AGARWOOD, TERRAIN_RAINFOREST_RIVER_BANK, RENDER_RAINFOREST_RIVER_BANK, RENDER_RAINFOREST_AGARWOOD)
 					else:
 						world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, true, RENDER_RAINFOREST_JUNGLE)
 				5:
@@ -611,11 +611,15 @@ func _apply_template_resource_cluster_anchors(rng: DeterministicRng, chunks: Arr
 func _paint_water_cell(world_data: WorldData, position: Vector2i, profile: Dictionary, water_cells: Array) -> void:
 	if not world_data.contains(position):
 		return
+	_clear_generated_tree_obstacle(world_data, position)
 	world_data.set_terrain(position, String(profile.water_terrain_id), bool(profile.water_walkable), String(profile.water_render_id))
 	water_cells.append(position)
 
 func _paint_shore_cell(world_data: WorldData, position: Vector2i, profile: Dictionary, shore_cells: Array) -> void:
-	if not world_data.contains(position) or not world_data.is_walkable(position):
+	if not world_data.contains(position):
+		return
+	_clear_generated_tree_obstacle(world_data, position)
+	if not world_data.is_walkable(position):
 		return
 	world_data.set_terrain(position, String(profile.shore_terrain_id), true, String(profile.shore_render_id))
 	shore_cells.append(position)
@@ -646,6 +650,7 @@ func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, cor
 	return landmarks
 
 func _add_landmark(world_data: WorldData, kind: String, index: int, position: Vector2i, profile: Dictionary, metadata := {}) -> Dictionary:
+	_clear_generated_tree_obstacle(world_data, position)
 	world_data.set_terrain(position, String(profile.path_terrain_id), true, String(profile.path_render_id))
 	var id := "%s_%d" % [kind, index]
 	var landmark_metadata := metadata.duplicate(true)
@@ -679,8 +684,30 @@ func _carve_path(world_data: WorldData, start: Vector2i, target: Vector2i, profi
 func _make_path_cell(world_data: WorldData, position: Vector2i, profile: Dictionary) -> void:
 	if not world_data.contains(position):
 		return
+	_clear_generated_tree_obstacle(world_data, position)
 	var terrain_id := String(profile.bridge_terrain_id) if not world_data.is_walkable(position) else String(profile.path_terrain_id)
 	world_data.set_terrain(position, terrain_id, true, String(profile.path_render_id))
+
+func _set_tree_obstacle(world_data: WorldData, position: Vector2i, terrain_id: String, base_terrain_id: String, base_render_id: String, tree_source_id: String) -> bool:
+	_clear_generated_tree_obstacle(world_data, position)
+	world_data.set_terrain(position, terrain_id, true, base_render_id)
+	var reserved := world_data.reserve_entity(_tree_owner_id(position), position, Vector2i.ONE, false, {
+		"source_id": tree_source_id,
+		"terrain_id": terrain_id,
+		"base_terrain_id": base_terrain_id,
+		"base_render_id": base_render_id,
+		"terrain_overlay": "tree"
+	})
+	if not reserved.ok:
+		world_data.set_terrain(position, base_terrain_id, true, base_render_id)
+		return false
+	return true
+
+func _clear_generated_tree_obstacle(world_data: WorldData, position: Vector2i) -> void:
+	world_data.release_footprint(_tree_owner_id(position))
+
+func _tree_owner_id(position: Vector2i) -> String:
+	return "terrain_tree_%d_%d" % [position.x, position.y]
 
 func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, reachable_cells: Dictionary, source_by_resource_id: Dictionary, templates := [], landmarks := []) -> Array:
 	var nodes := []
