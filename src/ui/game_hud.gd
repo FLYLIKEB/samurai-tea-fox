@@ -1282,14 +1282,6 @@ func _crafting_detail_row(detail: Dictionary) -> Control:
 	if detail.is_empty():
 		return _detail_card_with_text("상세", "표시할 제작법 없음")
 	var result: Dictionary = detail.get("result", {})
-	var parts := [
-		"%s → %s x%d" % [
-			String(detail.get("recipe_id", "")),
-			String(result.get("name", result.get("item_id", ""))),
-			int(result.get("quantity", 1))
-		],
-		String(detail.get("reason_label", ""))
-	]
 	var materials := []
 	for material in detail.get("materials", []):
 		materials.append("%s %d/%d" % [
@@ -1297,24 +1289,26 @@ func _crafting_detail_row(detail: Dictionary) -> Control:
 			int(material.get("available", 0)),
 			int(material.get("required", 0))
 		])
-	if not materials.is_empty():
-		parts.append("재료 %s" % ", ".join(materials))
 	var facilities := []
 	for facility in detail.get("facilities", []):
 		facilities.append("%s%s" % [
 			String(facility.get("name", facility.get("item_id", ""))),
 			"" if bool(facility.get("available", false)) else "(필요)"
 		])
-	if facilities.is_empty():
-		parts.append("손제작")
-	else:
-		parts.append("시설 %s" % ", ".join(facilities))
-	var unlock_biome_id := String(detail.get("unlock_biome_id", ""))
-	if not unlock_biome_id.is_empty():
-		parts.append("해금 %s" % unlock_biome_id)
 	var card := _detail_card("제작 상세")
 	var rows := card.get_node("Rows") as VBoxContainer
-	rows.add_child(_icon_text_row(_crafting_result_icon_reference(detail), " · ".join(parts), 11))
+	rows.add_child(_icon_text_row(_crafting_result_icon_reference(detail), "%s → %s x%d" % [
+		String(detail.get("recipe_id", "")),
+		String(result.get("name", result.get("item_id", ""))),
+		int(result.get("quantity", 1))
+	], 11))
+	rows.add_child(_label("상태 %s" % String(detail.get("reason_label", "")), 10))
+	if not materials.is_empty():
+		rows.add_child(_label("재료 %s" % ", ".join(materials), 10))
+	rows.add_child(_label("시설 %s" % ("손제작" if facilities.is_empty() else ", ".join(facilities)), 10))
+	var unlock_biome_id := String(detail.get("unlock_biome_id", ""))
+	if not unlock_biome_id.is_empty():
+		rows.add_child(_label("해금 %s" % unlock_biome_id, 10))
 	return card
 
 func _crafting_page_start(rows: Array, selected: String, page_size: int) -> int:
