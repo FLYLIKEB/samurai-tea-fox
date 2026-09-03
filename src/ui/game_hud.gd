@@ -787,7 +787,6 @@ func _rebuild_action_buttons() -> void:
 	_clear_container_children(_action_grid)
 	_add_text_action(_action_grid, "AttackButton", ICON_ATTACK, "공격", "attack", Vector2i.ZERO, 0)
 	_interaction_button = _add_interaction_action(_action_grid)
-	_add_text_action(_action_grid, "DodgeButton", ICON_DODGE, "회피", "dodge", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "InventoryButton", ICON_BAG, "가방", "open_inventory", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "CraftingButton", ICON_CONSUMABLE, "제작", "open_crafting", Vector2i.ZERO, 0)
 	if _action_menu_grid != null:
@@ -1741,7 +1740,9 @@ func _map_rows() -> Array:
 	var current_biome_id := String(world.get("biome_id", ""))
 	if current_biome_id.is_empty() and run_state != null:
 		current_biome_id = String(run_state.current_biome_id)
-	var dungeon_cleared: bool = run_state != null and run_state.completed_dungeon_ids.has(current_biome_id)
+	# Cheat mode represents a fully-completed save regardless of legacy/stale
+	# progression fields that may have been loaded before the HUD was configured.
+	var dungeon_cleared: bool = cheat_mode or (run_state != null and run_state.completed_dungeon_ids.has(current_biome_id))
 	if run_state != null:
 		dungeon_cleared = dungeon_cleared or String(run_state.teleport_states.get(current_biome_id, "")) in ["repairable", "repaired"]
 		dungeon_cleared = dungeon_cleared or run_state.crafting_unlocks.has(current_biome_id)

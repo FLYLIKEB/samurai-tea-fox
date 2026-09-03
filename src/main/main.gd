@@ -246,6 +246,10 @@ func _ready() -> void:
 		_set_loading_status("카메라와 HUD 준비 중…")
 		await get_tree().process_frame
 		if bool(cheat_result.get("applied", false)):
+			# World/progression construction may initialize an empty run state;
+			# reapply the completed-save flags after that lifecycle step.
+			_normalize_cheat_progression_state()
+		if bool(cheat_result.get("applied", false)):
 			var cheat_save_result := save_current_run()
 			if not cheat_save_result.ok:
 				push_error(cheat_save_result.error)
@@ -1102,17 +1106,7 @@ func _apply_cheat_start_inventory() -> Dictionary:
 		return {"ok": true, "applied": false}
 	if inventory == null or catalog == null or not catalog.has_method("get_definitions"):
 		return {"ok": false, "reason": "cheat_inventory_unavailable", "error": "Cheat mode requires inventory and item definitions."}
-	for definition in catalog.get_definitions("biomes"):
-		if String(definition.get("type", "")) != "바이옴":
-			continue
-		var biome_id := String(definition.get("id", ""))
-		if biome_id.is_empty():
-			continue
-		if not run_state.completed_dungeon_ids.has(biome_id):
-			run_state.completed_dungeon_ids.append(biome_id)
-		run_state.teleport_states[biome_id] = BiomeProgressionState.TELEPORT_REPAIRED
-		if not run_state.repaired_teleports.has(biome_id):
-			run_state.repaired_teleports.append(biome_id)
+	_normalize_cheat_progression_state()
 
 	var inventory_before: Dictionary = inventory.to_snapshot()
 	var capacity_result: Dictionary = inventory.expand_capacity(CHEAT_INVENTORY_SLOT_COUNT)
@@ -1133,6 +1127,21 @@ func _apply_cheat_start_inventory() -> Dictionary:
 				return add_result
 		resource_item_ids.append(item_id)
 	var bandage_quantity: int = CHEAT_BANDAGE_QUANTITY - int(inventory.get_total_quantity("bandage"))
+
+	for definition in catalog.get_definitions("biomes"):
+		var biome_id := String(definition.get("id", ""))
+		if biome_id.is_empty() or not definition.has("progression_order"):
+			continue
+		if not run_state.completed_dungeon_ids.has(biome_id):
+			run_state.completed_dungeon_ids.append(biome_id)
+		run_state.teleport_states[biome_id] = BiomeProgressionState.TELEPORT_REPAIRED
+		if not run_state.repaired_teleports.has(biome_id):
+			run_state.repaired_teleports.append(biome_id)
+		if not run_state.crafting_unlocks.has(biome_id):
+			run_state.crafting_unlocks.append(biome_id)
+	# Cheat mode is a fully-completed run snapshot, not merely an inventory boost.
+	run_state.completed_runtime_dungeon_ids.clear()
+	run_state.dungeon_runtime_state.clear()
 	if bandage_quantity > 0:
 		var bandage_result: Dictionary = inventory.add_item("bandage", bandage_quantity)
 		if not bandage_result.ok:
@@ -1162,6 +1171,23 @@ func _apply_cheat_start_inventory() -> Dictionary:
 		"weapon_id": weapon_id,
 		"resource_item_ids": resource_item_ids
 }
+
+func _normalize_cheat_progression_state() -> void:
+	if _start_mode != START_MODE_CHEAT or run_state == null or catalog == null:
+		return
+	for definition in catalog.get_definitions("biomes"):
+		var biome_id := String(definition.get("id", ""))
+		if biome_id.is_empty() or not definition.has("progression_order"):
+			continue
+		if not run_state.completed_dungeon_ids.has(biome_id):
+			run_state.completed_dungeon_ids.append(biome_id)
+		run_state.teleport_states[biome_id] = BiomeProgressionState.TELEPORT_REPAIRED
+		if not run_state.repaired_teleports.has(biome_id):
+			run_state.repaired_teleports.append(biome_id)
+		if not run_state.crafting_unlocks.has(biome_id):
+			run_state.crafting_unlocks.append(biome_id)
+	run_state.completed_runtime_dungeon_ids.clear()
+	run_state.dungeon_runtime_state.clear()
 
 func _strongest_weapon_id_for_cheat_start() -> String:
 	var best_id := ""
