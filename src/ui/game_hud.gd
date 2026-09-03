@@ -135,6 +135,7 @@ var asset_catalog := AssetCatalog.new()
 var _asset_catalog_ready := false
 var _toast_queue: Array[String] = []
 var _toast_label: Label
+var _toast_panel: PanelContainer
 var _toast_remaining := 0.0
 var _crafting_filter := "all"
 var _selected_recipe_id := ""
@@ -408,16 +409,18 @@ func _build() -> void:
 	_ignore_mouse(root)
 	root.theme = _theme
 	add_child(root)
+	_toast_panel = _panel(Vector2(250, 30))
+	_toast_panel.name = "StatusToastPanel"
+	_toast_panel.z_index = 100
+	_toast_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_toast_panel.visible = false
+	root.add_child(_toast_panel)
 	_toast_label = _label("", 12)
-	_toast_label.name = "StatusToast"
-	_toast_label.z_index = 100
+	_toast_label.name = "StatusToastLabel"
 	_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_toast_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_toast_label.position = Vector2(-180.0, 8.0)
-	_toast_label.size = Vector2(360.0, 24.0)
 	_toast_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_toast_label.visible = false
-	root.add_child(_toast_label)
+	_toast_panel.add_child(_toast_label)
 
 	var status_panel := _panel(STATUS_PANEL_SIZE)
 	status_panel.name = "StatusPanel"
@@ -909,10 +912,13 @@ func _advance_status_toast() -> void:
 	if _toast_label == null or _toast_queue.is_empty():
 		if _toast_label != null:
 			_toast_label.visible = false
+		if _toast_panel != null:
+			_toast_panel.visible = false
 		_toast_remaining = 0.0
 		return
 	_toast_label.text = _toast_queue.pop_front()
 	_toast_label.visible = true
+	_toast_panel.visible = true
 	_toast_remaining = 2.2
 
 func _placement_command_button(text: String, command_type: int) -> Button:
@@ -1724,7 +1730,7 @@ func _ordered_biome_definitions() -> Array:
 		return []
 	var definitions: Array = catalog.get_definitions("biomes")
 	definitions.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
-		return int(left.get("progression_order", 999)) < int(right.get("progression_order", 999))
+		return floori(float(left.get("progression_order", 999))) < floori(float(right.get("progression_order", 999)))
 	)
 	return definitions
 
@@ -1997,6 +2003,7 @@ func _apply_safe_area_layout() -> void:
 		enemy_top += RESOURCE_DETAIL_PANEL_SIZE.y + 4.0
 	_place_panel(_panels.enemy, Control.PRESET_TOP_LEFT, Vector2(margin.x, enemy_top))
 	_place_panel(_panels.quickslot, Control.PRESET_CENTER_TOP, Vector2(0.0, margin.y))
+	_place_panel(_toast_panel, Control.PRESET_CENTER_TOP, Vector2(0.0, margin.y + STATUS_PANEL_SIZE.y + 8.0))
 	_resize_menu_panel(viewport_size, margin)
 	_place_panel(_panels.menu, Control.PRESET_CENTER, Vector2.ZERO)
 	_place_panel(_panels.dpad, Control.PRESET_BOTTOM_LEFT, Vector2(margin.x, -margin.w))
