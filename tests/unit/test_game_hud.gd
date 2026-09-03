@@ -198,17 +198,31 @@ func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:
 	asserts.equal(read_model.tea_quickslot_count, 3, "HUD tea quick slots come from runtime tea service")
 	asserts.true_value(read_model.consumable_ready, "HUD derives the consumable quickslot from item definition data")
 	asserts.equal(read_model.ability_slot_count, 2, "HUD ability slots come from balance definitions")
-	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionScroll/ActionRows/ActionTabs/TeaTab") != null, "HUD groups non-primary tea controls behind an action tab")
-	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionScroll/ActionRows/ActionGrid/AttackButton") != null, "HUD shows primary combat controls by default")
-	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionScroll/ActionRows/ActionGrid/TeaButton3") == null, "HUD hides secondary tea slots until the tea tab is selected")
-	var tea_tab := hud.get_node_or_null("Root/ActionPanel/ActionScroll/ActionRows/ActionTabs/TeaTab") as Button
-	if tea_tab != null:
-		tea_tab.pressed.emit()
-	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionScroll/ActionRows/ActionGrid/TeaButton3") != null, "HUD creates tea controls from the runtime quickslot count after selecting the tea tab")
-	var other_tab := hud.get_node_or_null("Root/ActionPanel/ActionScroll/ActionRows/ActionTabs/OtherTab") as Button
-	if other_tab != null:
-		other_tab.pressed.emit()
-	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionScroll/ActionRows/ActionGrid/AbilityButton2") != null, "HUD creates ability controls from the balance slot count after selecting the other tab")
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/AttackButton") != null, "HUD shows attack as a primary mobile action")
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/DodgeButton") != null, "HUD shows dodge as a primary mobile action")
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/InventoryButton") != null, "HUD shows inventory as a primary mobile action")
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/CraftingButton") != null, "HUD shows crafting as a primary mobile action")
+	var quick_tea := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickTeaButton") as Button
+	var quick_consumable := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickConsumableButton") as Button
+	var quick_ability := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickAbilityButton") as Button
+	asserts.true_value(quick_tea != null, "HUD shows tea as an icon-only secondary quick action")
+	asserts.true_value(quick_consumable != null, "HUD shows consumable as an icon-only secondary quick action")
+	asserts.true_value(quick_ability != null, "HUD shows ability as an icon-only secondary quick action")
+	if quick_tea != null:
+		asserts.equal(quick_tea.text, "", "tea secondary quick action does not render explanatory text")
+	if quick_consumable != null:
+		asserts.equal(quick_consumable.text, "", "consumable secondary quick action does not render explanatory text")
+	if quick_ability != null:
+		asserts.equal(quick_ability.text, "", "ability secondary quick action does not render explanatory text")
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/ActionMenuButton") != null, "HUD opens secondary actions from a hamburger-style button")
+	asserts.true_value(hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ActionMenuGrid/TeaButton3") != null, "HUD creates tea controls from the runtime quickslot count in the secondary action drawer")
+	asserts.true_value(hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ActionMenuGrid/AbilityButton2") != null, "HUD creates ability controls from the balance slot count in the secondary action drawer")
+	asserts.false_value((hud.get_node_or_null("Root/ActionMenuPanel") as Control).visible, "HUD keeps secondary actions hidden until the hamburger button is pressed")
+	var hamburger := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/ActionMenuButton") as Button
+	if hamburger != null:
+		hamburger.pressed.emit()
+	asserts.true_value((hud.get_node_or_null("Root/ActionMenuPanel") as Control).visible, "HUD shows the secondary action drawer after pressing the hamburger button")
+	asserts.equal((hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll") as Control).mouse_filter, Control.MOUSE_FILTER_STOP, "secondary action scroll consumes touch input instead of moving the player")
 	asserts.equal(read_model.time_phase, "night", "HUD reads current time phase")
 	asserts.equal(read_model.time_progress_percent, 25, "HUD calculates time progress from the time read model")
 	asserts.true_value(hud.get_node_or_null("Root/StatusPanel/StatusBody/PlayerPortrait") != null, "HUD renders the mockup-style player portrait block")
@@ -307,6 +321,7 @@ func _assert_dodge_control_does_not_use_baked_dash_asset(asserts) -> void:
 func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	var hud := _configured_hud()
 	asserts.true_value(hud.show_inventory_menu(), "HUD opens the inventory menu")
+	asserts.equal((hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll") as Control).mouse_filter, Control.MOUSE_FILTER_STOP, "menu scroll consumes touch input instead of moving the player")
 	asserts.true_value(_tree_has_text(hud, "차 & 도구 (인벤토리) · 2/14 · all"), "inventory menu renders the mockup-style inventory header")
 	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip/InventorySlotCard0") != null, "inventory menu renders slot cards")
 	asserts.true_value(hud.show_facilities_menu(), "HUD opens the facilities menu")

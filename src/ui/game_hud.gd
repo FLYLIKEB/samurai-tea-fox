@@ -36,8 +36,10 @@ const QUICKSLOT_PANEL_SIZE := Vector2(218, 32)
 const DPAD_PANEL_SIZE := Vector2(66, 66)
 const DPAD_BOARD_SIZE := Vector2(56, 56)
 const ACTION_BUTTON_SIZE := Vector2(62, 26)
-const ACTION_TAB_BUTTON_SIZE := Vector2(56, 22)
-const ACTION_PANEL_SIZE := Vector2(142, 122)
+const ACTION_MENU_BUTTON_SIZE := Vector2(26, 22)
+const SECONDARY_ACTION_ICON_BUTTON_SIZE := Vector2(22, 22)
+const ACTION_PANEL_SIZE := Vector2(142, 84)
+const ACTION_MENU_PANEL_SIZE := Vector2(142, 132)
 const ACTION_PANEL_COLUMNS := 2
 const MENU_PANEL_SIZE := Vector2(320, 142)
 const MENU_CONTENT_SIZE := Vector2(304, 90)
@@ -73,12 +75,14 @@ var _mobile_adapter := MobileCommandAdapter.new()
 var _built := false
 var _theme: Theme
 var _time_refresh_elapsed := 0.0
-var _action_category := "primary"
+var _action_menu_open := false
 var _action_grid: GridContainer
-var _action_tab_grid: GridContainer
+var _secondary_action_bar: HBoxContainer
+var _action_menu_grid: GridContainer
 var _menu_content: VBoxContainer
 var _minimap_grid: GridContainer
 var _action_scroll: ScrollContainer
+var _action_menu_scroll: ScrollContainer
 var _narrative_options: HBoxContainer
 var _narrative_background: TextureRect
 var _narrative_left_portrait: TextureRect
@@ -368,6 +372,13 @@ func _build() -> void:
 	_panels.action = action_panel
 	_build_actions(action_panel)
 
+	var action_menu_panel := _panel(ACTION_MENU_PANEL_SIZE)
+	action_menu_panel.name = "ActionMenuPanel"
+	action_menu_panel.visible = false
+	root.add_child(action_menu_panel)
+	_panels.action_menu = action_menu_panel
+	_build_action_menu(action_menu_panel)
+
 	var menu_panel := _menu_panel(MENU_PANEL_SIZE)
 	menu_panel.name = "MenuPanel"
 	menu_panel.visible = false
@@ -407,6 +418,9 @@ func _build() -> void:
 
 func _ignore_mouse(control: Control) -> void:
 	control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+func _block_mouse(control: Control) -> void:
+	control.mouse_filter = Control.MOUSE_FILTER_STOP
 
 func _update() -> void:
 	if not _built:
@@ -515,28 +529,38 @@ func _build_dpad(parent: PanelContainer) -> void:
 	_add_direction_button(board, "DPadStop", Rect2(cell, cell, cell, cell), Vector2i.ZERO, "정지")
 
 func _build_actions(parent: PanelContainer) -> void:
-	_action_scroll = ScrollContainer.new()
-	_action_scroll.name = "ActionScroll"
-	_action_scroll.custom_minimum_size = Vector2(ACTION_PANEL_SIZE.x - 12.0, ACTION_PANEL_SIZE.y - 12.0)
-	_action_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_action_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_action_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_ignore_mouse(_action_scroll)
-	_ignore_mouse(_action_scroll.get_h_scroll_bar())
-	_ignore_mouse(_action_scroll.get_v_scroll_bar())
-	parent.add_child(_action_scroll)
+	_block_mouse(parent)
 	var action_rows := VBoxContainer.new()
 	action_rows.name = "ActionRows"
 	_ignore_mouse(action_rows)
 	action_rows.add_theme_constant_override("separation", 4)
-	_action_scroll.add_child(action_rows)
-	_action_tab_grid = GridContainer.new()
-	_action_tab_grid.name = "ActionTabs"
-	_ignore_mouse(_action_tab_grid)
-	_action_tab_grid.columns = 2
-	_action_tab_grid.add_theme_constant_override("h_separation", 4)
-	_action_tab_grid.add_theme_constant_override("v_separation", 3)
-	action_rows.add_child(_action_tab_grid)
+	parent.add_child(action_rows)
+	var menu_row := HBoxContainer.new()
+	menu_row.name = "ActionMenuBar"
+	_ignore_mouse(menu_row)
+	menu_row.add_theme_constant_override("separation", 4)
+	action_rows.add_child(menu_row)
+	var spacer := Control.new()
+	_ignore_mouse(spacer)
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	menu_row.add_child(spacer)
+	_secondary_action_bar = HBoxContainer.new()
+	_secondary_action_bar.name = "SecondaryActionBar"
+	_ignore_mouse(_secondary_action_bar)
+	_secondary_action_bar.add_theme_constant_override("separation", 3)
+	menu_row.add_child(_secondary_action_bar)
+	var menu_button := Button.new()
+	menu_button.name = "ActionMenuButton"
+	menu_button.text = "☰"
+	menu_button.tooltip_text = "보조 행동"
+	menu_button.custom_minimum_size = ACTION_MENU_BUTTON_SIZE
+	menu_button.focus_mode = Control.FOCUS_NONE
+	menu_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	menu_button.add_theme_font_size_override("font_size", 12)
+	menu_button.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.08, 0.06, 0.80), true))
+	menu_button.add_theme_stylebox_override("hover", _button_style(Color(0.16, 0.12, 0.08, 0.92), true))
+	menu_button.pressed.connect(func(): _toggle_action_menu())
+	menu_row.add_child(menu_button)
 	_action_grid = GridContainer.new()
 	_action_grid.name = "ActionGrid"
 	_ignore_mouse(_action_grid)
@@ -546,77 +570,74 @@ func _build_actions(parent: PanelContainer) -> void:
 	action_rows.add_child(_action_grid)
 	_rebuild_action_buttons()
 
+func _build_action_menu(parent: PanelContainer) -> void:
+	_block_mouse(parent)
+	_action_menu_scroll = ScrollContainer.new()
+	_action_menu_scroll.name = "ActionMenuScroll"
+	_action_menu_scroll.custom_minimum_size = Vector2(ACTION_MENU_PANEL_SIZE.x - 12.0, ACTION_MENU_PANEL_SIZE.y - 12.0)
+	_action_menu_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_action_menu_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_action_menu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_action_menu_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+	_action_menu_scroll.get_h_scroll_bar().mouse_filter = Control.MOUSE_FILTER_STOP
+	_action_menu_scroll.get_v_scroll_bar().mouse_filter = Control.MOUSE_FILTER_STOP
+	parent.add_child(_action_menu_scroll)
+	_action_menu_grid = GridContainer.new()
+	_action_menu_grid.name = "ActionMenuGrid"
+	_ignore_mouse(_action_menu_grid)
+	_action_menu_grid.columns = 2
+	_action_menu_grid.add_theme_constant_override("h_separation", 4)
+	_action_menu_grid.add_theme_constant_override("v_separation", 4)
+	_action_menu_scroll.add_child(_action_menu_grid)
+	_rebuild_action_buttons()
+
 func _rebuild_action_buttons() -> void:
 	if _action_grid == null:
 		return
-	if _action_tab_grid != null:
-		if _action_tab_grid.get_child_count() == 0:
-			_add_action_category_button("PrimaryTab", "기본", "primary")
-			_add_action_category_button("TeaTab", "차", "tea")
-			_add_action_category_button("MenuTab", "메뉴", "menu")
-			_add_action_category_button("OtherTab", "기타", "other")
-		_refresh_action_category_tabs()
+	if _secondary_action_bar != null:
+		for child in _secondary_action_bar.get_children():
+			child.free()
+		if _tea_quickslot_count() > 0:
+			_add_icon_action(_secondary_action_bar, "QuickTeaButton", ICON_TEA, "차 사용", "drink_tea", Vector2i.ZERO, 0)
+		_add_icon_action(_secondary_action_bar, "QuickConsumableButton", ICON_CONSUMABLE, "소모품 사용", "use_consumable", Vector2i.ZERO, 0)
+		if _balance_integer(BALANCE_ABILITY_SLOTS_ID) > 0:
+			_add_icon_action(_secondary_action_bar, "QuickAbilityButton", ICON_ABILITY, "요술 사용", "cast_ability", Vector2i.ZERO, 0)
 	for child in _action_grid.get_children():
 		child.free()
 	_add_text_action(_action_grid, "AttackButton", ICON_ATTACK, "공격", "attack", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "DodgeButton", ICON_DODGE, "회피", "dodge", Vector2i.ZERO, 0)
-	match _action_category:
-		"tea":
-			for slot in range(_tea_quickslot_count()):
-				_add_text_action(_action_grid, "TeaButton%d" % (slot + 1), ICON_TEA, "차%d" % (slot + 1), "drink_tea", Vector2i.ZERO, slot)
-			_add_text_action(_action_grid, "TeaBrewingButton", ICON_TEA, "우리기", "open_tea_brewing", Vector2i.ZERO, 0)
-		"menu":
-			_add_text_action(_action_grid, "InventoryButton", ICON_BAG, "가방", "open_inventory", Vector2i.ZERO, 0)
-			_add_text_action(_action_grid, "MetaCodexButton", ICON_BAG, "도감", "open_meta_codex", Vector2i.ZERO, 0)
-			_add_text_action(_action_grid, "MapButton", ICON_MAP, "지도", "open_map", Vector2i.ZERO, 0)
-			_add_text_action(_action_grid, "CraftingButton", ICON_CONSUMABLE, "제작", "open_crafting", Vector2i.ZERO, 0)
-			_add_text_action(_action_grid, "FacilitiesButton", ICON_MAP, "시설", "open_facilities", Vector2i.ZERO, 0)
-		"other":
-			_add_text_action(_action_grid, "ConsumableButton", ICON_CONSUMABLE, "소모", "use_consumable", Vector2i.ZERO, 0)
-			for slot in range(_balance_integer(BALANCE_ABILITY_SLOTS_ID)):
-				_add_text_action(_action_grid, "AbilityButton%d" % (slot + 1), ICON_ABILITY, "요술%d" % (slot + 1), "cast_ability", Vector2i.ZERO, slot)
-			_add_text_action(_action_grid, "SleepButton", ICON_TEA, "수면", "sleep", Vector2i.ZERO, 0)
-			_add_text_action(_action_grid, "DungeonButton", ICON_ATTACK, "던전", "complete_dungeon", Vector2i.ZERO, 0)
-			_add_text_action(_action_grid, "TeleportRepairButton", ICON_MAP, "수리", "repair_teleport", Vector2i.ZERO, 0)
-		_:
-			_add_text_action(_action_grid, "TeaButton1", ICON_TEA, "차1", "drink_tea", Vector2i.ZERO, 0)
-			_add_text_action(_action_grid, "AbilityButton1", ICON_ABILITY, "요술1", "cast_ability", Vector2i.ZERO, 0)
+	_add_text_action(_action_grid, "InventoryButton", ICON_BAG, "가방", "open_inventory", Vector2i.ZERO, 0)
+	_add_text_action(_action_grid, "CraftingButton", ICON_CONSUMABLE, "제작", "open_crafting", Vector2i.ZERO, 0)
+	if _action_menu_grid != null:
+		for child in _action_menu_grid.get_children():
+			child.free()
+		for slot in range(_tea_quickslot_count()):
+			_add_text_action(_action_menu_grid, "TeaButton%d" % (slot + 1), ICON_TEA, "차%d" % (slot + 1), "drink_tea", Vector2i.ZERO, slot)
+		_add_text_action(_action_menu_grid, "ConsumableButton", ICON_CONSUMABLE, "소모", "use_consumable", Vector2i.ZERO, 0)
+		for slot in range(_balance_integer(BALANCE_ABILITY_SLOTS_ID)):
+			_add_text_action(_action_menu_grid, "AbilityButton%d" % (slot + 1), ICON_ABILITY, "요술%d" % (slot + 1), "cast_ability", Vector2i.ZERO, slot)
+		_add_text_action(_action_menu_grid, "TeaBrewingButton", ICON_TEA, "우리기", "open_tea_brewing", Vector2i.ZERO, 0)
+		_add_text_action(_action_menu_grid, "MetaCodexButton", ICON_BAG, "도감", "open_meta_codex", Vector2i.ZERO, 0)
+		_add_text_action(_action_menu_grid, "MapButton", ICON_MAP, "지도", "open_map", Vector2i.ZERO, 0)
+		_add_text_action(_action_menu_grid, "FacilitiesButton", ICON_MAP, "시설", "open_facilities", Vector2i.ZERO, 0)
+		_add_text_action(_action_menu_grid, "SleepButton", ICON_TEA, "수면", "sleep", Vector2i.ZERO, 0)
+		_add_text_action(_action_menu_grid, "DungeonButton", ICON_ATTACK, "던전", "complete_dungeon", Vector2i.ZERO, 0)
+		_add_text_action(_action_menu_grid, "TeleportRepairButton", ICON_MAP, "수리", "repair_teleport", Vector2i.ZERO, 0)
 	var action_panel := _panels.get("action") as Control
 	if action_panel != null:
 		action_panel.custom_minimum_size = ACTION_PANEL_SIZE
 		action_panel.size = ACTION_PANEL_SIZE
+	var action_menu_panel := _panels.get("action_menu") as Control
+	if action_menu_panel != null:
+		action_menu_panel.custom_minimum_size = ACTION_MENU_PANEL_SIZE
+		action_menu_panel.size = ACTION_MENU_PANEL_SIZE
+		action_menu_panel.visible = _action_menu_open
 
-func _add_action_category_button(name: String, text: String, category: String) -> void:
-	if _action_tab_grid == null:
-		return
-	var button := Button.new()
-	button.name = name
-	button.text = text
-	button.tooltip_text = text
-	button.set_meta("action_category", category)
-	button.custom_minimum_size = ACTION_TAB_BUTTON_SIZE
-	button.disabled = _action_category == category
-	button.focus_mode = Control.FOCUS_NONE
-	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	button.add_theme_font_size_override("font_size", 9)
-	button.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.08, 0.06, 0.76), true))
-	button.add_theme_stylebox_override("hover", _button_style(Color(0.16, 0.12, 0.08, 0.90), true))
-	button.add_theme_stylebox_override("disabled", _button_style(Color(0.72, 0.54, 0.30, 0.92), true))
-	button.pressed.connect(func():
-		_action_category = category
-		_rebuild_action_buttons()
-	)
-	_action_tab_grid.add_child(button)
-
-func _refresh_action_category_tabs() -> void:
-	if _action_tab_grid == null:
-		return
-	for child in _action_tab_grid.get_children():
-		var button := child as Button
-		if button == null:
-			continue
-		var category := String(button.get_meta("action_category", ""))
-		button.disabled = _action_category == category
+func _toggle_action_menu() -> void:
+	_action_menu_open = not _action_menu_open
+	var action_menu_panel := _panels.get("action_menu") as Control
+	if action_menu_panel != null:
+		action_menu_panel.visible = _action_menu_open
 
 func _add_direction_button(parent: Control, name: String, rect: Rect2, direction: Vector2i, tooltip: String) -> void:
 	var button := Button.new()
@@ -651,7 +672,25 @@ func _add_text_action(parent: Container, name: String, icon_path: String, text: 
 	button.pressed.connect(func(): press_mobile_button(button_id, direction, slot))
 	parent.add_child(button)
 
+func _add_icon_action(parent: Container, name: String, icon_path: String, tooltip: String, button_id: String, direction: Vector2i, slot: int) -> void:
+	var button := Button.new()
+	button.name = name
+	button.custom_minimum_size = SECONDARY_ACTION_ICON_BUTTON_SIZE
+	button.text = ""
+	button.icon = _load_texture(icon_path)
+	button.expand_icon = true
+	button.add_theme_constant_override("icon_max_width", 15)
+	button.tooltip_text = tooltip
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.08, 0.06, 0.80), true))
+	button.add_theme_stylebox_override("hover", _button_style(Color(0.16, 0.12, 0.08, 0.92), true))
+	button.add_theme_stylebox_override("pressed", _button_style(Color(0.77, 0.54, 0.25, 0.96), true))
+	button.pressed.connect(func(): press_mobile_button(button_id, direction, slot))
+	parent.add_child(button)
+
 func _build_menu_panel(parent: PanelContainer) -> void:
+	_block_mouse(parent)
 	var rows := VBoxContainer.new()
 	rows.name = "MenuRows"
 	_ignore_mouse(rows)
@@ -681,7 +720,9 @@ func _build_menu_panel(parent: PanelContainer) -> void:
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.follow_focus = true
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_ignore_mouse(scroll)
+	scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+	scroll.get_h_scroll_bar().mouse_filter = Control.MOUSE_FILTER_STOP
+	scroll.get_v_scroll_bar().mouse_filter = Control.MOUSE_FILTER_STOP
 	rows.add_child(scroll)
 	_menu_content = VBoxContainer.new()
 	_menu_content.name = "MenuContent"
@@ -720,12 +761,16 @@ func _portrait_rect(name: String) -> TextureRect:
 	return rect
 
 func _set_gameplay_hud_visible(visible: bool) -> void:
-	for panel_id in ["status", "map", "enemy", "quickslot", "dpad", "action", "menu"]:
+	for panel_id in ["status", "map", "enemy", "quickslot", "dpad", "action", "action_menu", "menu"]:
 		var panel := _panels.get(panel_id) as Control
 		if panel != null:
-			panel.visible = visible and (panel_id != "menu" or not _open_menu_id.is_empty())
+			panel.visible = visible and (
+				(panel_id != "menu" or not _open_menu_id.is_empty())
+				and (panel_id != "action_menu" or _action_menu_open)
+			)
 	if not visible:
 		_open_menu_id = ""
+		_action_menu_open = false
 
 func _clear_narrative_options() -> void:
 	for child in _narrative_options.get_children():
@@ -1512,6 +1557,7 @@ func _apply_safe_area_layout() -> void:
 	_place_panel(_panels.quickslot, Control.PRESET_CENTER_TOP, Vector2(0.0, margin.y))
 	_place_panel(_panels.menu, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w))
 	_place_panel(_panels.dpad, Control.PRESET_BOTTOM_LEFT, Vector2(margin.x, -margin.w))
+	_place_panel(_panels.action_menu, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w - ACTION_PANEL_SIZE.y - 8.0))
 	_place_panel(_panels.action, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w))
 	_place_panel(_panels.narrative, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w - 6.0))
 

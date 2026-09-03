@@ -55,6 +55,8 @@ const TESTS := [
 func _init() -> void:
 	var asserts := TestAssert.new()
 	var test_filter := OS.get_environment("TEST_FILTER")
+	if test_filter.is_empty():
+		test_filter = _test_filter_from_args(OS.get_cmdline_user_args())
 	var filters := _test_filters(test_filter)
 	var selected_count := 0
 
@@ -87,6 +89,17 @@ func _test_filters(test_filter: String) -> Array[String]:
 		if not filter.is_empty():
 			filters.append(filter)
 	return filters
+
+func _test_filter_from_args(args: PackedStringArray) -> String:
+	for index in range(args.size()):
+		var arg := String(args[index])
+		if arg.begins_with("--test-filter="):
+			return arg.trim_prefix("--test-filter=")
+		if arg.begins_with("--unit="):
+			return arg.trim_prefix("--unit=")
+		if arg in ["--test-filter", "--unit"] and index + 1 < args.size():
+			return String(args[index + 1])
+	return ""
 
 func _matches_any_filter(resource_path: String, filters: Array[String]) -> bool:
 	for filter in filters:

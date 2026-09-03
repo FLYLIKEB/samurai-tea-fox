@@ -127,15 +127,19 @@ func run() -> void:
 			_assert_hud_layout_fits_viewport([status_panel, map_panel, enemy_panel, quickslot_panel, action_panel])
 			_assert_hud_layout_keeps_center_play_area_clear([status_panel, map_panel, enemy_panel, quickslot_panel, dpad_panel, action_panel])
 			var visible_action_buttons := _button_count(action_panel)
-			if visible_action_buttons > 9:
-				failures.append("runtime HUD keeps secondary actions grouped instead of showing every command at once: %d buttons" % visible_action_buttons)
-			if action_panel.get_node_or_null("ActionScroll/ActionRows/ActionTabs/MenuTab") == null:
-				failures.append("runtime HUD exposes secondary action groups through category tabs")
+			if visible_action_buttons != 8:
+				failures.append("runtime HUD shows four primary actions, three icon-only secondary actions, and one hamburger menu button: %d buttons" % visible_action_buttons)
+			var action_menu_panel := hud.get_node_or_null("Root/ActionMenuPanel") as Control
+			if action_menu_panel == null:
+				failures.append("runtime HUD owns a secondary hamburger action drawer")
+			elif action_menu_panel.visible:
+				failures.append("runtime HUD keeps the secondary action drawer hidden by default")
 			var time_label := hud.get("_labels").get("time") as Label
 			if time_label == null or not time_label.get_parent().visible:
 				failures.append("runtime HUD shows the canonical runtime time state")
-		if not _passive_controls_ignore_mouse(hud):
-			failures.append("runtime HUD passive controls do not block world click and touch input")
+		var mouse_filter_problem := _hud_mouse_filter_problem(hud)
+		if not mouse_filter_problem.is_empty():
+			failures.append("runtime HUD mouse filters separate passive display from interactive menu surfaces: %s" % mouse_filter_problem)
 
 	var unopened_inventory := GameCommand.new(GameCommand.Type.OPEN_INVENTORY)
 	if not main.submit_mobile_action_command(unopened_inventory):
@@ -185,13 +189,30 @@ func _first_walkable_neighbor(main, origin: Vector2i) -> Vector2i:
 			return direction
 	return Vector2i.ZERO
 
-func _passive_controls_ignore_mouse(node: Node) -> bool:
-	if node is Control and not node is BaseButton and (node as Control).mouse_filter != Control.MOUSE_FILTER_IGNORE:
-		return false
+func _hud_mouse_filter_problem(node: Node) -> String:
+	if node is Control and not node is BaseButton:
+		var control := node as Control
+		if _is_interactive_surface(control):
+			if control.mouse_filter != Control.MOUSE_FILTER_STOP:
+				return "%s should stop input but is %d" % [control.get_path(), control.mouse_filter]
+		elif control.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+			return "%s should ignore input but is %d" % [control.get_path(), control.mouse_filter]
 	for child in node.get_children():
-		if not _passive_controls_ignore_mouse(child):
-			return false
-	return true
+		var problem := _hud_mouse_filter_problem(child)
+		if not problem.is_empty():
+			return problem
+	return ""
+
+func _is_interactive_surface(control: Control) -> bool:
+	if control is ScrollBar:
+		return true
+	return control.name in [
+		"ActionPanel",
+		"ActionMenuPanel",
+		"ActionMenuScroll",
+		"MenuPanel",
+		"MenuScroll"
+	]
 
 func _assert_hud_layout_fits_viewport(panels: Array) -> void:
 	var viewport_size := Vector2(640, 360)
