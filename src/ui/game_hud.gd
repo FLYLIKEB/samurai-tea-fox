@@ -1246,7 +1246,9 @@ func _crafting_row(row_model: Dictionary) -> Control:
 	)
 	actions.add_child(button)
 	card.add_child(actions)
-	return _card_frame(card, bool(row_model.get("selected", false)))
+	var frame := _card_frame(card, bool(row_model.get("selected", false)))
+	frame.add_theme_stylebox_override("panel", _crafting_card_style(row_model))
+	return frame
 
 func _crafting_filter_button(text: String, category: String) -> Button:
 	var button := Button.new()
@@ -1883,6 +1885,22 @@ func _menu_card_style(selected := false) -> StyleBoxFlat:
 	if selected:
 		style.bg_color = Color(0.10, 0.08, 0.055, 0.96)
 		style.border_color = Color(0.92, 0.68, 0.32, 1.0)
+	return style
+
+func _crafting_card_style(row_model: Dictionary) -> StyleBoxFlat:
+	var selected := bool(row_model.get("selected", false))
+	var style := _menu_card_style(selected)
+	if bool(row_model.get("craftable", false)):
+		style.bg_color = Color(0.045, 0.095, 0.055, 0.94)
+		style.border_color = Color(0.45, 0.86, 0.36, 1.0)
+	elif String(row_model.get("reason", "")) == "missing_materials":
+		style.bg_color = Color(0.11, 0.045, 0.04, 0.94)
+		style.border_color = Color(0.86, 0.34, 0.25, 1.0)
+	if selected:
+		style.border_width_left = 3
+		style.border_width_top = 3
+		style.border_width_right = 3
+		style.border_width_bottom = 3
 	return style
 
 func _parchment_style() -> StyleBoxFlat:

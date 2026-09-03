@@ -69,15 +69,19 @@ func read_model(inventory, context := {}, options := {}) -> Dictionary:
 	var recipe_ids := recipe_definitions.keys()
 	recipe_ids.sort()
 	var rows := []
+	var unlocked_total := 0
 	for recipe_id_value in recipe_ids:
 		var recipe_id := String(recipe_id_value)
 		var recipe: Dictionary = recipe_definitions[recipe_id]
+		var availability: Dictionary = can_craft(recipe_id, inventory, context)
+		if String(availability.get("reason", "")) == "locked":
+			continue
+		unlocked_total += 1
 		var category := String(recipe.get("category", ""))
 		if not category.is_empty() and not categories.has(category):
 			categories.append(category)
 		if selected_filter != "all" and category != selected_filter:
 			continue
-		var availability: Dictionary = can_craft(recipe_id, inventory, context)
 		rows.append(_recipe_read_model_row(recipe, availability, inventory))
 	if rows.is_empty():
 		selected_recipe_id = ""
@@ -99,7 +103,7 @@ func read_model(inventory, context := {}, options := {}) -> Dictionary:
 		"rows": rows,
 		"detail": detail,
 		"counts": {
-			"total": recipe_definitions.size(),
+			"total": unlocked_total,
 			"visible": rows.size(),
 			"craftable": _craftable_count(rows)
 		}

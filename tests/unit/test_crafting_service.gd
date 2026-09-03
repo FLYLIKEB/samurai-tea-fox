@@ -130,7 +130,8 @@ func _assert_crafting_read_model_reports_filters_detail_and_reasons(asserts) -> 
 	asserts.equal(model.detail.reason_label, "재료 부족", "read model labels material shortage")
 	asserts.true_value(inventory.add_item("clay", 1).ok, "read model remaining clay add succeeds")
 	var locked: Dictionary = service.read_model(inventory, {}, {"selected_recipe_id": "regional_bowl"})
-	asserts.equal(locked.detail.reason, "locked", "read model distinguishes current-run locked recipe")
+	asserts.false_value(_read_model_has_recipe(locked, "regional_bowl"), "read model hides recipes locked by current-run unlock state")
+	asserts.true_value(String(locked.get("selected_recipe_id", "")) != "regional_bowl", "read model does not keep a hidden locked recipe selected")
 	var missing_facility: Dictionary = service.read_model(inventory, {"unlocked_biome_ids": ["common_region"]}, {"selected_recipe_id": "humble_clay_bowl"})
 	asserts.equal(missing_facility.detail.facilities[0].item_id, "wooden_workbench", "read model exposes required facility item id")
 	asserts.false_value(missing_facility.detail.facilities[0].available, "read model marks missing facility")
@@ -241,3 +242,9 @@ func _recipe_rows() -> Array:
 		{"id": "regional_bowl", "result_item_id": "humble_clay_bowl", "name": "지역 흙사발 제작", "status": "테스트", "category": "다구", "facility": "손제작", "materials_note": "점토 3", "unlock_biome_id": "common_region"},
 		{"id": "crowded_bowl", "name": "꽉 찬 사발 제작", "status": "테스트", "category": "다구", "facility": "손제작", "materials": [{"item_id": "clay", "quantity": 2}]}
 	]
+
+func _read_model_has_recipe(model: Dictionary, recipe_id: String) -> bool:
+	for row in model.get("rows", []):
+		if typeof(row) == TYPE_DICTIONARY and String(row.get("recipe_id", "")) == recipe_id:
+			return true
+	return false

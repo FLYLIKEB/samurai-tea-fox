@@ -129,14 +129,27 @@ class FakeCraftingService:
 			"facilities": [],
 			"unlock_biome_id": "common_region"
 		}
+		var missing_row := {
+			"recipe_id": "stone_axe",
+			"name": "돌도끼 제작",
+			"category": "도구",
+			"selected": false,
+			"craftable": false,
+			"reason": "missing_materials",
+			"reason_label": "재료 부족",
+			"result": {"item_id": "stone_axe", "name": "돌도끼", "quantity": 1},
+			"materials": [{"item_id": "stone", "name": "돌", "available": 0, "required": 1}],
+			"facilities": [],
+			"unlock_biome_id": "common_region"
+		}
 		return {
 			"ok": true,
 			"selected_filter": String(options.get("category", "all")),
 			"selected_recipe_id": "wooden_workbench",
 			"categories": ["all", "도구"],
-			"rows": [row],
+			"rows": [row, missing_row],
 			"detail": row,
-			"counts": {"total": 1, "visible": 1, "craftable": 1 if bool(availability.craftable) else 0}
+			"counts": {"total": 2, "visible": 2, "craftable": 1 if bool(availability.craftable) else 0}
 		}
 
 class FakeTimeConfig:
@@ -344,10 +357,11 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	var received: Array = []
 	hud.mobile_command_issued.connect(func(command): received.append(command))
 	asserts.true_value(hud.show_crafting_menu(), "HUD opens the crafting menu")
-	asserts.true_value(_tree_has_text(hud, "제작법 1/1 · 가능 1 · 필터 전체"), "crafting menu shows recipe counts and active filter")
+	asserts.true_value(_tree_has_text(hud, "제작법 2/2 · 가능 1 · 필터 전체"), "crafting menu shows recipe counts and active filter")
 	asserts.true_value(_tree_has_text(hud, "wooden_workbench → 목재 작업대 x1 · 제작 가능 · 재료 목재 3/2 · 손제작 · 해금 common_region"), "crafting menu shows selected recipe detail")
 	asserts.true_value(_tree_has_textured_item_icon(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip")), "crafting recipe cards render result item images")
 	asserts.true_value(_panel_uses_dark_background(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/DetailCard") as Control), "crafting detail card uses the shared dark inner background")
+	asserts.true_value(_crafting_recipe_cards_have_distinct_state_styles(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip")), "crafting cards visibly separate craftable and missing-material states")
 	var craft_button := _first_enabled_button_with_text(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent"), "제작")
 	if craft_button != null:
 		craft_button.pressed.emit()
@@ -469,6 +483,20 @@ func _tree_has_textured_item_icon(node: Node) -> bool:
 		if _tree_has_textured_item_icon(child):
 			return true
 	return false
+
+func _crafting_recipe_cards_have_distinct_state_styles(node: Node) -> bool:
+	if node == null:
+		return false
+	var border_colors := {}
+	for child in node.get_children():
+		var panel := child as PanelContainer
+		if panel == null:
+			continue
+		var style := panel.get_theme_stylebox("panel") as StyleBoxFlat
+		if style == null:
+			continue
+		border_colors["%.3f,%.3f,%.3f" % [style.border_color.r, style.border_color.g, style.border_color.b]] = true
+	return border_colors.size() >= 2
 
 func _tree_has_text(node: Node, text: String) -> bool:
 	if node is Label and (node as Label).text == text:
