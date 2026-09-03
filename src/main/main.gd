@@ -1809,6 +1809,8 @@ func _sync_runtime_world_render() -> void:
 	if not world_render_result.ok:
 		push_error(world_render_result.error)
 	_configure_runtime_camera()
+	if player != null and player.has_method("configure_grid_navigation"):
+		player.configure_grid_navigation(world_data, _runtime_world_origin(), _runtime_tile_size())
 	if combat_dummy != null and combat_dummy.has_method("configure_grid_navigation"):
 		combat_dummy.configure_grid_navigation(world_data, _runtime_world_origin(), _runtime_tile_size())
 
