@@ -5354,6 +5354,38 @@
       "runtime_scale": 1
     },
     {
+      "id": "asset_assets_tiles_terrain_mountain_mountain_ground_01_32x32_png",
+      "name": "mountain_ground_01_32x32",
+      "status": "완료",
+      "kind": "runtime_png",
+      "path": "res://assets/tiles/terrain/mountain/mountain_ground_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {"columns": 1, "rows": 1, "frame_width": 32, "frame_height": 32},
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "runtime_scale": 1
+    },
+    {
+      "id": "asset_assets_tiles_terrain_mountain_mountain_trail_01_32x32_png",
+      "name": "mountain_trail_01_32x32",
+      "status": "완료",
+      "kind": "runtime_png",
+      "path": "res://assets/tiles/terrain/mountain/mountain_trail_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {"columns": 1, "rows": 1, "frame_width": 32, "frame_height": 32},
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "runtime_scale": 1
+    },
+    {
       "id": "asset_assets_tiles_terrain_desert_bone_cross_32x32_png",
       "name": "bone_cross_32x32",
       "status": "완료",
