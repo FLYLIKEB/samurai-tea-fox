@@ -106,5 +106,11 @@ func command_for_action(action: String, direction := Vector2i.ZERO, slot := 0, p
 			return GameCommand.new(GameCommand.Type.REPAIR_TELEPORT, Vector2i.ZERO, -1, payload)
 		"advance_biome":
 			return GameCommand.new(GameCommand.Type.ADVANCE_BIOME, Vector2i.ZERO, -1, payload)
+		"facility_rotate":
+			return GameCommand.new(GameCommand.Type.FACILITY_ROTATE)
+		"facility_confirm":
+			return GameCommand.new(GameCommand.Type.FACILITY_CONFIRM)
+		"facility_cancel":
+			return GameCommand.new(GameCommand.Type.FACILITY_CANCEL)
 		_:
 			return null

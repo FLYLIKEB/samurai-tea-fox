@@ -144,6 +144,18 @@ func to_projection() -> Dictionary:
 	projection["read_only"] = true
 	return projection
 
+func sync_active_world_state(next_world_data, next_player_cell: Vector2i, next_enemy_states := {}) -> Dictionary:
+	if _instance == null or _instance.lifecycle_state != DungeonInstanceState.STATE_ACTIVE:
+		return {"ok": false, "reason": "dungeon_not_active"}
+	if next_world_data == null or not next_world_data.has_method("to_dictionary"):
+		return _fail("invalid_world_data", "Active dungeon state requires serializable WorldData.")
+	_instance.world_data = next_world_data.to_dictionary()
+	_instance.player_cell = {"x": next_player_cell.x, "y": next_player_cell.y}
+	if typeof(next_enemy_states) == TYPE_DICTIONARY:
+		_instance.enemy_states = next_enemy_states.duplicate(true)
+	_persist()
+	return {"ok": true}
+
 func _build_clear_event(payload: Dictionary) -> Dictionary:
 	return {
 		"event_type": CLEAR_EVENT_TYPE,

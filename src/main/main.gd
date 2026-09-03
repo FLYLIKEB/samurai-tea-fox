@@ -1,6 +1,7 @@
 extends Node2D
 
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
+const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
 const CoreTeaWareCollection = preload("res://src/dungeon/core_tea_ware_collection.gd")
 const DesktopCommandAdapter = preload("res://src/core/commands/desktop_command_adapter.gd")
 const DungeonRuntime = preload("res://src/dungeon/dungeon_runtime.gd")
@@ -37,6 +38,50 @@ const CraftingService = preload("res://src/crafting/crafting_service.gd")
 const FacilityPlacementService = preload("res://src/world/placement/facility_placement_service.gd")
 const ConsumableService = preload("res://src/consumable/consumable_service.gd")
 const AcquisitionEffect = preload("res://src/presentation/acquisition_effect.gd")
+
+class FacilityPlacementPreview extends Node2D:
+	var origin := Vector2i(-1, -1)
+	var footprint := Vector2i.ONE
+	var tile_size := 32.0
+	var valid := false
+	var sprite: Sprite2D
+
+	func _ensure_sprite() -> void:
+		if sprite != null:
+			return
+		sprite = Sprite2D.new()
+		sprite.name = "FacilityGhostSprite"
+		sprite.centered = true
+		sprite.modulate = Color(1.0, 1.0, 1.0, 0.58)
+		add_child(sprite)
+
+	func configure(next_origin: Vector2i, next_footprint: Vector2i, next_tile_size: float, next_valid: bool, texture: Texture2D, rotation_quarter_turns: int) -> void:
+		origin = next_origin
+		footprint = next_footprint
+		tile_size = next_tile_size
+		valid = next_valid
+		_ensure_sprite()
+		sprite.texture = texture
+		sprite.visible = texture != null
+		sprite.position = Vector2(origin) * tile_size + Vector2(footprint) * tile_size * 0.5
+		sprite.rotation = float(rotation_quarter_turns) * PI * 0.5
+		sprite.modulate = Color(1.0, 1.0, 1.0, 0.58) if valid else Color(1.0, 0.32, 0.28, 0.58)
+		queue_redraw()
+
+	func clear() -> void:
+		origin = Vector2i(-1, -1)
+		if sprite != null:
+			sprite.visible = false
+		queue_redraw()
+
+	func _draw() -> void:
+		if origin.x < 0 or origin.y < 0:
+			return
+		var fill := Color(0.20, 0.78, 0.34, 0.28) if valid else Color(0.88, 0.12, 0.10, 0.38)
+		var outline := Color(0.40, 1.0, 0.48, 0.95) if valid else Color(1.0, 0.18, 0.12, 0.95)
+		var rect := Rect2(Vector2(origin) * tile_size, Vector2(footprint) * tile_size)
+		draw_rect(rect, fill, true)
+		draw_rect(rect, outline, false, 2.0)
 
 const DEFAULT_RUN_SEED := 11037
 const FRESH_RUN_SEED := 0
@@ -127,6 +172,11 @@ var _pointer_move_route: Array = []
 var _pending_pointer_interaction_target_id := ""
 var _pending_pointer_interaction_cell := Vector2i.ZERO
 var _pending_facility_placement: Dictionary = {}
+var _pending_facility_origin := Vector2i(-1, -1)
+var _pending_facility_rotation := 0
+var _facility_placement_preview: FacilityPlacementPreview
+var _preview_asset_catalog := AssetCatalog.new()
+var _preview_asset_catalog_ready := false
 var _feedback_player: AudioStreamPlayer
 var _feedback_playback: AudioStreamGeneratorPlayback
 var feedback_beep_count := 0
@@ -246,6 +296,8 @@ func _physics_process(_delta: float) -> void:
 	if _death_transition_active:
 		return
 	_update_dungeon_sign_visibility()
+	if has_pending_facility_placement():
+		return
 	if player != null and player.ability_runtime != null:
 		player.ability_runtime.tick(_delta)
 	_record_current_map_discovery()
@@ -363,7 +415,7 @@ func _is_hud_menu_open(menu_id: String) -> bool:
 
 func submit_pointer_interaction(world_position: Vector2) -> bool:
 	if has_pending_facility_placement():
-		_place_pending_facility_at(world_cell_from_world_position(world_position))
+		_select_pending_facility_at(world_cell_from_world_position(world_position))
 		return true
 	_dungeon_debug("클릭 상호작용: world=%s cell=%s" % [world_position, world_cell_from_world_position(world_position)])
 	var ore_hit := _dungeon_ore_target_near_cell(world_cell_from_world_position(world_position), 2)
@@ -420,7 +472,7 @@ func _try_dungeon_interaction_from_input() -> bool:
 		_dungeon_debug("E 대상 없음: origin_cell=%s" % origin_cell)
 		return false
 	_dungeon_debug("E 거리 대상 발견: %s" % landmark)
-	return submit_interaction_at_world_cell(landmark.cell)
+	return submit_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": String(landmark.target_id)}))
 
 func _pointer_enemy_clicked(world_position: Vector2) -> bool:
 	var hit_radius := maxf(_runtime_tile_size() * 0.5, 16.0)
@@ -619,7 +671,7 @@ func submit_player_interaction(direction := Vector2i.ZERO) -> bool:
 		if nearby_landmark.is_empty():
 			nearby_landmark = _large_house_target_near_world_position(player.global_position, _runtime_tile_size() * 3.5)
 		if not nearby_landmark.is_empty():
-			return submit_interaction_at_world_cell(nearby_landmark.cell)
+			return submit_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": String(nearby_landmark.target_id)}))
 	return false
 
 func _landmark_target_near_world_position(world_position: Vector2, max_distance := -1.0) -> Dictionary:
@@ -629,7 +681,7 @@ func _landmark_target_near_world_position(world_position: Vector2, max_distance 
 	var distance_limit := tile_size * 1.6 if max_distance < 0.0 else max_distance
 	for landmark in world_data.get_required_landmarks():
 		var kind := String(landmark.get("kind", landmark.get("type", "")))
-		if kind != WorldData.LANDMARK_CORE_DUNGEON:
+		if kind != WorldData.LANDMARK_CORE_DUNGEON and kind != WorldData.LANDMARK_TELEPORT_ZONE:
 			continue
 		var cell := _vector_from_dictionary(landmark.get("position", {}))
 		var center := world_position_for_cell_center(cell) + Vector2(tile_size * 0.5, tile_size * 0.5)
@@ -707,6 +759,12 @@ func submit_action_command(command) -> bool:
 			if accepted:
 				_play_feedback_beep()
 			return accepted
+		GameCommand.Type.FACILITY_ROTATE:
+			return _rotate_pending_facility()
+		GameCommand.Type.FACILITY_CONFIRM:
+			return _confirm_pending_facility()
+		GameCommand.Type.FACILITY_CANCEL:
+			return _cancel_pending_facility_placement()
 		GameCommand.Type.OPEN_TEA_BREWING:
 			var accepted: bool = game_hud != null and game_hud.show_tea_brewing_menu()
 			if accepted:
@@ -883,7 +941,9 @@ func snapshot_run_state() -> Dictionary:
 		_sync_consumable_runtime_state()
 	if time_state != null:
 		run_state.time = time_state.to_snapshot()
-	if player != null and not _in_dungeon_map:
+	if player != null and _in_dungeon_map:
+		_sync_dungeon_runtime_save_state()
+	elif player != null:
 		var cell := _player_world_cell()
 		run_state.player_cell = {"x": cell.x, "y": cell.y}
 	return run_state.to_dictionary()
@@ -1434,9 +1494,15 @@ func _enter_dungeon_map(layout: WorldData, definition: Dictionary) -> void:
 				if not register_result.ok:
 					_dungeon_debug("광석 노드 등록 실패: %s" % register_result)
 	_render_generated_world(generated_world)
-	player.global_position = world_position_for_cell_center(Vector2i(1, 1))
+	var spawn_cell := Vector2i(1, 1)
+	var saved_player_cell: Dictionary = run_state.dungeon_runtime_state.get("player_cell", {}) if run_state != null else {}
+	var saved_cell := _vector_from_dictionary(saved_player_cell)
+	if not saved_player_cell.is_empty() and world_data.contains(saved_cell) and world_data.is_walkable(saved_cell):
+		spawn_cell = saved_cell
+	player.global_position = world_position_for_cell_center(spawn_cell)
 	_spawn_dungeon_combatants()
 	_configure_game_hud()
+	_save_progress_after_turn()
 
 func _spawn_dungeon_combatants() -> void:
 	_clear_dungeon_combatants(false)
@@ -1450,6 +1516,10 @@ func _spawn_dungeon_combatants() -> void:
 	]
 	for index in range(specs.size()):
 		var spec: Dictionary = specs[index]
+		var saved_states: Dictionary = run_state.dungeon_runtime_state.get("enemy_states", {}) if run_state != null else {}
+		var saved_state: Dictionary = saved_states.get(String(spec.id), {})
+		if not saved_state.is_empty() and not bool(saved_state.get("visible", true)):
+			continue
 		var enemy = _overworld_combat_dummy.duplicate()
 		add_child(enemy)
 		enemy.name = String(spec.id)
@@ -1458,12 +1528,15 @@ func _spawn_dungeon_combatants() -> void:
 		enemy.collision_layer = 2
 		enemy.collision_mask = 1
 		enemy.visible = true
-		enemy.global_position = world_position_for_cell_center(spec.cell)
+		var enemy_cell: Vector2i = _vector_from_dictionary(saved_state.get("cell", {})) if not saved_state.is_empty() else spec.cell
+		enemy.global_position = world_position_for_cell_center(enemy_cell)
 		var configured: Dictionary = enemy.configure_combat(catalog, player, player.combat_config)
 		if configured.ok and bool(spec.get("boss", false)):
 			enemy.combatant.hp_max *= 3
 			enemy.combatant.hp = enemy.combatant.hp_max
 			enemy.combatant.attack *= 2
+		if configured.ok and not saved_state.is_empty():
+			enemy.combatant.hp = clampi(int(saved_state.get("hp", enemy.combatant.hp)), 0, enemy.combatant.hp_max)
 		if enemy.has_method("_apply_sprite"):
 			enemy._apply_sprite()
 		if enemy.has_signal("defeat_event"):
@@ -1736,6 +1809,11 @@ func _on_acquisition_completed(result: Dictionary) -> void:
 func _on_combat_drop_requested(event: Dictionary) -> void:
 	if acquisition_service == null:
 		return
+	# Dungeon acquisition is intentionally configured with resource nodes only.
+	# Dungeon combatants may still emit the shared monster-drop hook, but their
+	# overworld drop definitions must not be treated as a dungeon configuration error.
+	if _in_dungeon_map:
+		return
 	var normalized := event.duplicate(true)
 	if not normalized.has("position") and combat_dummy != null:
 		var drop_cell := world_cell_from_world_position(combat_dummy.global_position)
@@ -1783,6 +1861,14 @@ func _run_enemy_turn_after_player_action() -> void:
 	for enemy in _combat_targets():
 		if enemy.has_method("take_turn"):
 			enemy.take_turn(player)
+	_save_progress_after_turn()
+
+func _save_progress_after_turn() -> void:
+	if run_state == null or save_store == null:
+		return
+	var result: Dictionary = save_current_run()
+	if not bool(result.get("ok", false)):
+		push_error(String(result.get("error", "Failed to save run progress.")))
 
 func _is_turn_advancing_player_action(command) -> bool:
 	if not command is GameCommand:
@@ -2336,7 +2422,25 @@ func _craft_recipe_or_begin_facility_placement(recipe_id: String) -> Dictionary:
 		"facility_item_id": result_item_id,
 		"metadata": _player_facility_metadata(result_item_id)
 	}
+	_pending_facility_origin = Vector2i(-1, -1)
+	_pending_facility_rotation = 0
 	_clear_pointer_movement()
+	_clear_facility_placement_preview()
+	if game_hud != null:
+		game_hud.hide_menu()
+		game_hud.show_facility_placement_controls()
+	var initial_placement: Dictionary = facility_placement_service.find_placement_near(
+		result_item_id,
+		world_data,
+		_player_world_cell(),
+		_facility_placement_context()
+	)
+	if bool(initial_placement.get("ok", false)):
+		var initial_origin := Vector2i(
+			int(initial_placement.origin.x),
+			int(initial_placement.origin.y)
+		)
+		_select_pending_facility_at(initial_origin)
 	return {
 		"ok": true,
 		"placement_pending": true,
@@ -2347,14 +2451,59 @@ func _craft_recipe_or_begin_facility_placement(recipe_id: String) -> Dictionary:
 func has_pending_facility_placement() -> bool:
 	return not _pending_facility_placement.is_empty()
 
-func _place_pending_facility_at(origin: Vector2i) -> Dictionary:
-	if not has_pending_facility_placement():
-		return {"ok": false, "reason": "no_pending_facility_placement"}
+func _facility_placement_context() -> Dictionary:
+	return {
+		"rotation_quarter_turns": _pending_facility_rotation,
+		"metadata": _pending_facility_placement.get("metadata", {}).duplicate(true)
+	}
+
+func _pending_facility_validation(origin: Vector2i) -> Dictionary:
+	if not has_pending_facility_placement() or facility_placement_service == null:
+		return {"ok": false, "reason": "no_pending_facility"}
 	var player_cell := _player_world_cell()
 	var distance := absi(origin.x - player_cell.x) + absi(origin.y - player_cell.y)
 	if distance == 0 or distance > FacilityPlacementService.DEFAULT_PLACEMENT_SEARCH_RADIUS:
-		return _facility_placement_failed("placement_out_of_range")
+		return {"ok": false, "reason": "placement_out_of_range"}
+	return facility_placement_service.can_place_facility(
+		String(_pending_facility_placement.get("facility_item_id", "")),
+		world_data,
+		origin,
+		_facility_placement_context()
+	)
 
+func _select_pending_facility_at(origin: Vector2i) -> void:
+	_pending_facility_origin = origin
+	var validation := _pending_facility_validation(origin)
+	_update_facility_placement_preview(validation)
+	if game_hud != null:
+		game_hud.update_facility_placement_controls(
+			bool(validation.get("ok", false)),
+			"설치 가능" if bool(validation.get("ok", false)) else _facility_placement_reason(String(validation.get("reason", "invalid_placement")))
+		)
+
+func _rotate_pending_facility() -> bool:
+	if not has_pending_facility_placement():
+		return false
+	_pending_facility_rotation = (_pending_facility_rotation + 1) % 4
+	if _pending_facility_origin.x >= 0:
+		_select_pending_facility_at(_pending_facility_origin)
+	elif game_hud != null:
+		game_hud.update_facility_placement_controls(true, "방향 %d°" % (_pending_facility_rotation * 90))
+	return true
+
+func _confirm_pending_facility() -> bool:
+	if not has_pending_facility_placement() or _pending_facility_origin.x < 0:
+		return false
+	var validation := _pending_facility_validation(_pending_facility_origin)
+	if not bool(validation.get("ok", false)):
+		_select_pending_facility_at(_pending_facility_origin)
+		return false
+	_place_pending_facility_at(_pending_facility_origin)
+	return true
+
+func _place_pending_facility_at(origin: Vector2i) -> Dictionary:
+	if not has_pending_facility_placement():
+		return {"ok": false, "reason": "no_pending_facility_placement"}
 	var recipe_id := String(_pending_facility_placement.get("recipe_id", ""))
 	var facility_item_id := String(_pending_facility_placement.get("facility_item_id", ""))
 	var crafting_context := _crafting_context()
@@ -2362,6 +2511,7 @@ func _place_pending_facility_at(origin: Vector2i) -> Dictionary:
 	if not availability.ok:
 		return _facility_placement_failed(String(availability.get("reason", "craft_unavailable")))
 	var placement_context := {
+		"rotation_quarter_turns": _pending_facility_rotation,
 		"metadata": _pending_facility_placement.get("metadata", {}).duplicate(true)
 	}
 	var placed: Dictionary = facility_placement_service.place_facility(
@@ -2382,6 +2532,11 @@ func _place_pending_facility_at(origin: Vector2i) -> Dictionary:
 	crafted["installed"] = true
 	crafted["placement"] = placed.duplicate(true)
 	_pending_facility_placement.clear()
+	_pending_facility_origin = Vector2i(-1, -1)
+	_pending_facility_rotation = 0
+	_clear_facility_placement_preview()
+	if game_hud != null:
+		game_hud.hide_facility_placement_controls()
 	_sync_inventory_runtime_state()
 	save_current_run()
 	_configure_game_hud()
@@ -2394,16 +2549,73 @@ func _place_pending_facility_at(origin: Vector2i) -> Dictionary:
 
 func _facility_placement_failed(reason: String) -> Dictionary:
 	if game_hud != null:
-		game_hud.show_command_feedback("설치 불가: %s" % reason)
+		game_hud.update_facility_placement_controls(false, _facility_placement_reason(reason))
 	return {"ok": false, "reason": reason, "placement_pending": true}
+
+func _facility_placement_reason(reason: String) -> String:
+	match reason:
+		"blocked":
+			return "설치 불가: 막힌 타일"
+		"out_of_bounds":
+			return "설치 불가: 맵 밖"
+		"missing_workspace":
+			return "설치 불가: 작업 공간 부족"
+		"placement_out_of_range":
+			return "설치 불가: 너무 멂"
+		_:
+			return "설치 불가"
 
 func _cancel_pending_facility_placement() -> bool:
 	if not has_pending_facility_placement():
 		return false
 	_pending_facility_placement.clear()
+	_pending_facility_origin = Vector2i(-1, -1)
+	_pending_facility_rotation = 0
+	_clear_facility_placement_preview()
+	if game_hud != null:
+		game_hud.hide_facility_placement_controls()
 	if game_hud != null:
 		game_hud.show_command_feedback("시설 설치를 취소했습니다.")
 	return true
+
+func _update_facility_placement_preview(validation: Dictionary) -> void:
+	if world_visuals == null or _pending_facility_origin.x < 0:
+		return
+	if _facility_placement_preview == null:
+		_facility_placement_preview = FacilityPlacementPreview.new()
+		_facility_placement_preview.z_index = 50
+		world_visuals.add_child(_facility_placement_preview)
+	var footprint := _facility_footprint_for_pending_facility()
+	if validation.has("footprint_size"):
+		footprint = Vector2i(int(validation.footprint_size.x), int(validation.footprint_size.y))
+	_facility_placement_preview.configure(
+		_pending_facility_origin,
+		footprint,
+		_runtime_tile_size(),
+		bool(validation.get("ok", false)),
+		_facility_preview_texture(),
+		_pending_facility_rotation
+	)
+
+func _facility_preview_texture() -> Texture2D:
+	if not _preview_asset_catalog_ready:
+		var manifest_result: Dictionary = _preview_asset_catalog.load_manifest()
+		if not bool(manifest_result.get("ok", false)):
+			return null
+		_preview_asset_catalog_ready = true
+	var metadata: Dictionary = _pending_facility_placement.get("metadata", {})
+	return _preview_asset_catalog.load_texture_reference(String(metadata.get("source_id", "")))
+
+func _clear_facility_placement_preview() -> void:
+	if _facility_placement_preview != null:
+		_facility_placement_preview.clear()
+
+func _facility_footprint_for_pending_facility() -> Vector2i:
+	if facility_placement_service == null:
+		return Vector2i.ONE
+	var definition: Dictionary = facility_placement_service.facility_for(String(_pending_facility_placement.get("facility_item_id", "")))
+	var size: Vector2i = definition.get("footprint_size", Vector2i.ONE)
+	return size if _pending_facility_rotation % 2 == 0 else Vector2i(size.y, size.x)
 
 func _player_facility_metadata(facility_item_id: String) -> Dictionary:
 	var definition: Dictionary = facility_placement_service.facility_for(facility_item_id)
@@ -2467,6 +2679,12 @@ func _handle_complete_dungeon_command(command: GameCommand) -> bool:
 	if not entered_result.ok and String(entered_result.get("reason", "")) != "dungeon_already_active":
 		_dungeon_debug("던전 입장 실패: %s" % entered_result)
 		return false
+	# Runtime persistence and the rendered map can briefly diverge (for
+	# example after returning from a dungeon). Rehydrate the active instance
+	# before acknowledging the interaction so a successful entry is visible.
+	if _dungeon_runtime_is_active() and not _in_dungeon_map:
+		_dungeon_debug("활성 던전 화면 복원: runtime=active map=false")
+		_restore_dungeon_map_from_runtime()
 	if bool(command.payload.get("entry_only", false)):
 		save_current_run()
 		_configure_game_hud()
@@ -2507,8 +2725,16 @@ func _handle_biome_progression_command(command: GameCommand) -> bool:
 		return false
 	if not command.payload.has("biome_id") and run_state != null:
 		command.payload["biome_id"] = String(run_state.current_biome_id)
+	_dungeon_debug("바이옴 진행 상태: biome=%s completed=%s teleport=%s" % [
+		String(command.payload.get("biome_id", "")),
+		str(run_state.completed_dungeon_ids if run_state != null else []),
+		str(run_state.teleport_states if run_state != null else {})
+	])
 	var result: Dictionary = biome_progression_state.apply_command(command)
 	if not result.ok:
+		_dungeon_debug("바이옴 진행 명령 실패: type=%s biome=%s reason=%s" % [command.type, String(command.payload.get("biome_id", "")), String(result.get("reason", "unknown"))])
+		if game_hud != null:
+			game_hud.show_command_feedback("수리 불가: %s" % String(result.get("reason", "unknown")))
 		return false
 	var world_result := _configure_world_for_current_run()
 	if not world_result.ok:
@@ -2623,6 +2849,22 @@ func _available_facility_item_ids() -> Array:
 		for facility_item_id in facility_placement_service.facility_item_ids_near(world_data, player_cell):
 			if not ids.has(String(facility_item_id)):
 				ids.append(String(facility_item_id))
+	# Keep saved player facilities usable even when a legacy reservation lacks
+	# the facility metadata used by facility_item_ids_near().
+	if run_state != null:
+		var current_biome_id := String(generated_world.get("biome_id", run_state.current_biome_id))
+		for record_value in run_state.placed_facilities:
+			if typeof(record_value) != TYPE_DICTIONARY:
+				continue
+			var record: Dictionary = record_value
+			if String(record.get("biome_id", current_biome_id)) != current_biome_id:
+				continue
+			var origin := _vector_from_dictionary(record.get("origin", {}))
+			if maxi(absi(player_cell.x - origin.x), absi(player_cell.y - origin.y)) > FacilityPlacementService.DEFAULT_USE_DISTANCE:
+				continue
+			var facility_item_id := String(record.get("facility_item_id", ""))
+			if not facility_item_id.is_empty() and not ids.has(facility_item_id):
+				ids.append(facility_item_id)
 	var name_to_id = crafting_service.get("item_name_to_id")
 	if typeof(name_to_id) != TYPE_DICTIONARY:
 		return ids
@@ -2674,6 +2916,12 @@ func _unlocked_biome_ids() -> Array:
 			var id := String(biome_id)
 			if not id.is_empty() and not ids.has(id):
 				ids.append(id)
+		# The biome the player is currently in is already reached for this run.
+		# Include it immediately so recipes for facilities available in the
+		# current region are shown instead of being filtered out as locked.
+		var current_id := String(run_state.current_biome_id)
+		if not current_id.is_empty() and not ids.has(current_id):
+			ids.append(current_id)
 	return ids
 
 func _on_tea_drink_completed(result: Dictionary) -> void:
@@ -2708,6 +2956,7 @@ func skip_memory_tea_cutscene() -> Dictionary:
 func _render_generated_world(world: Dictionary) -> void:
 	_hide_prototype_visuals()
 	var renderer_input: Dictionary = world.get("renderer_input", {})
+	_apply_teleport_states_to_renderer_input(renderer_input)
 	var origin := _centered_world_origin(renderer_input)
 	world_render_result = WorldSceneRenderer.new().render(
 		world_visuals,
@@ -2735,6 +2984,7 @@ func _sync_runtime_world_render() -> void:
 		return
 	var world_snapshot: Dictionary = world_data.to_dictionary()
 	var renderer_input: Dictionary = WorldRendererProjection.new().project(world_snapshot)
+	_apply_teleport_states_to_renderer_input(renderer_input)
 	var previous_renderer_input: Dictionary = generated_world.get("renderer_input", {})
 	if previous_renderer_input.has("required_landmarks"):
 		renderer_input["required_landmarks"] = previous_renderer_input.required_landmarks.duplicate(true)
@@ -2755,6 +3005,33 @@ func _sync_runtime_world_render() -> void:
 	if combat_dummy != null and combat_dummy.has_method("configure_grid_navigation"):
 		combat_dummy.configure_grid_navigation(world_data, _runtime_world_origin(), _runtime_tile_size())
 
+func _sync_dungeon_runtime_save_state() -> void:
+	if not _in_dungeon_map or dungeon_runtime == null or world_data == null or player == null:
+		return
+	var enemy_states := {}
+	for enemy in _dungeon_enemy_nodes:
+		if not is_instance_valid(enemy):
+			continue
+		var cell := world_cell_from_world_position(enemy.global_position)
+		var owner_id := String(enemy.name)
+		enemy_states[owner_id] = {
+			"cell": {"x": cell.x, "y": cell.y},
+			"hp": int(enemy.current_hp()) if enemy.has_method("current_hp") else 0,
+			"visible": enemy.visible
+		}
+		_sync_dungeon_enemy_reservation(owner_id, cell, enemy.visible)
+	dungeon_runtime.sync_active_world_state(world_data, _player_world_cell(), enemy_states)
+
+func _sync_dungeon_enemy_reservation(owner_id: String, cell: Vector2i, active: bool) -> void:
+	var existing: Dictionary = world_data.get_reservation(owner_id)
+	if not existing.is_empty():
+		var existing_origin := _vector_from_dictionary(existing.get("origin", {}))
+		if existing_origin == cell and active:
+			return
+		world_data.release_footprint(owner_id)
+	if active and world_data.contains(cell) and world_data.is_walkable(cell):
+		world_data.reserve_entity(owner_id, cell, Vector2i.ONE, false, {"role": "dungeon_enemy"})
+
 func _configure_runtime_camera() -> void:
 	if player == null or world_data == null:
 		return
@@ -2774,10 +3051,19 @@ func _update_dungeon_sign_visibility() -> void:
 	if world_visuals == null or player == null:
 		return
 	var player_cell := world_cell_from_world_position(player.global_position)
-	for sign in world_visuals.find_children("DungeonSign", "PanelContainer", true, false):
+	for sign in world_visuals.find_children("InteractionPrompt", "PanelContainer", true, false):
 		var sign_node := sign as Control
 		var local_cell := Vector2i(int(round(sign_node.position.x / _runtime_tile_size())), int(round((sign_node.position.y + 52.0) / _runtime_tile_size())))
 		sign_node.visible = player_cell.distance_to(local_cell) <= 4.0
+
+func _apply_teleport_states_to_renderer_input(renderer_input: Dictionary) -> void:
+	if run_state == null:
+		return
+	var current_biome_id := String(run_state.current_biome_id)
+	for landmark in renderer_input.get("required_landmarks", []):
+		if String(landmark.get("kind", landmark.get("type", ""))) != WorldData.LANDMARK_TELEPORT_ZONE:
+			continue
+		landmark["teleport_state"] = String(run_state.teleport_states.get(current_biome_id, "undiscovered"))
 
 func _entry_spawn_cell(world: Dictionary) -> Vector2i:
 	var landmarks: Array = world.get("required_landmarks", [])
@@ -2815,6 +3101,7 @@ func _configure_game_hud() -> void:
 		"meta_codex_command_runtime": meta_codex_command_runtime,
 		"crafting_service": crafting_service,
 		"crafting_context": _crafting_context(),
+		"biome_progression_state": biome_progression_state,
 		"time_state": time_state,
 		"world_origin": _runtime_world_origin()
 	})

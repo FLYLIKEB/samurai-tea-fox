@@ -51,10 +51,17 @@ func _assert_generated_catalog_configures_equipment(asserts) -> void:
 	asserts.true_value(equipment.item_definitions.has("short_travel_sword"), "weapon definition is equippable")
 	asserts.true_value(equipment.item_definitions.has("traveler_quilted_clothes"), "armor definition is equippable")
 	asserts.true_value(equipment.item_definitions.has("oribe_green_glazed_bowl"), "core tea ware definition is equippable")
+	asserts.true_value(equipment.item_definitions.has("humble_clay_bowl"), "draft tea ware without redundant slot metadata is equippable")
 	asserts.false_value(equipment.item_definitions.has("clay"), "materials are not equippable")
 	asserts.equal(equipment.item_definitions.oribe_green_glazed_bowl.tea_recovery_bonus, 10, "generated core tea ware modifier is rebuilt from effect value")
 	asserts.true_value(equipment.item_definitions.oribe_green_glazed_bowl.core_tea_ware, "generated core tea ware flag is preserved")
 	asserts.equal(equipment.item_definitions.oribe_green_glazed_bowl.core_tea_ware_order, 1, "generated core tea ware order is preserved")
+	var inventory_result: Dictionary = InventoryModel.from_catalog(catalog)
+	asserts.true_value(inventory_result.ok, "generated catalog also configures inventory for draft tea ware")
+	if inventory_result.ok:
+		var inventory: InventoryModel = inventory_result.inventory
+		asserts.true_value(inventory.add_item("humble_clay_bowl", 1).ok, "draft tea ware can enter inventory")
+		asserts.true_value(equipment.equip_from_inventory(inventory, 0).ok, "draft tea ware equips from generated inventory")
 
 func _assert_equip_unequip_and_replace_preserve_instances(asserts) -> void:
 	var inventory := _fixture_inventory()

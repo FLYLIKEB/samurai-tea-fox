@@ -3,6 +3,7 @@ class_name WorldSceneRenderer
 
 const WorldData = preload("res://src/world/data/world_data.gd")
 const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
+const ProximityInteractionPrompt = preload("res://src/ui/proximity_interaction_prompt.gd")
 const PIXEL_FONT = preload("res://assets/fonts/galmuri/Galmuri11.ttf")
 
 const TERRAIN_LAYER := "TerrainTileMap"
@@ -15,6 +16,7 @@ const LANDMARK_LAYER := "Landmarks"
 const FACILITY_OUTLINE_COLOR := Color("d6a75d")
 const ENTRY_OUTLINE_COLOR := Color("c9d7c0")
 const TELEPORT_OUTLINE_COLOR := Color("5f879b")
+const REPAIRED_TELEPORT_OUTLINE_COLOR := Color("78b889")
 const DUNGEON_OUTLINE_COLOR := Color("7a668e")
 
 const ADJACENT_NORTH := 1
@@ -356,44 +358,22 @@ func _render_landmarks(parent: Node2D, landmarks: Array, tile_size: int, owner_s
 		if source_id.is_empty():
 			continue
 		var position := _position_from_dictionary(landmark.get("position", {}))
-		if _render_original_sprite(parent, _resource_path(source_id), position, tile_size, _landmark_outline_color(landmark_kind)):
+		var repaired := String(landmark.get("teleport_state", "")) == "repaired"
+		var outline_color := REPAIRED_TELEPORT_OUTLINE_COLOR if repaired and landmark_kind == WorldData.LANDMARK_TELEPORT_ZONE else _landmark_outline_color(landmark_kind)
+		if _render_original_sprite(parent, _resource_path(source_id), position, tile_size, outline_color):
 			if landmark_kind == WorldData.LANDMARK_CORE_DUNGEON:
-				_add_dungeon_label(parent, position, tile_size)
+				_add_interaction_prompt(parent, position, tile_size, "던전 입구", "[E] 입장")
+			elif landmark_kind == WorldData.LANDMARK_TELEPORT_ZONE and not repaired and String(landmark.get("teleport_state", "")) == "repairable":
+				_add_interaction_prompt(parent, position, tile_size, "유적", "[E] 수리")
+			elif landmark_kind == WorldData.LANDMARK_TELEPORT_ZONE:
+				_add_interaction_prompt(parent, position, tile_size, "유적", "수리됨")
 			rendered += 1
 	return rendered
 
-func _add_dungeon_label(parent: Node2D, position: Vector2i, tile_size: int) -> void:
-	var panel := PanelContainer.new()
-	panel.name = "DungeonSign"
-	panel.position = Vector2(position.x * tile_size - 16.0, position.y * tile_size - 52.0)
-	panel.size = Vector2(tile_size * 2 + 32.0, 44.0)
-	panel.z_index = 100
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var background := StyleBoxFlat.new()
-	background.bg_color = Color("1b1028", 0.96)
-	background.border_color = Color("d5a84a")
-	background.set_border_width_all(3)
-	background.corner_radius_top_left = 3
-	background.corner_radius_top_right = 3
-	background.corner_radius_bottom_left = 3
-	background.corner_radius_bottom_right = 3
-	background.content_margin_left = 3
-	background.content_margin_right = 3
-	background.content_margin_top = 1
-	background.content_margin_bottom = 1
-	panel.add_theme_stylebox_override("panel", background)
-	var label := Label.new()
-	label.text = "던전 입구\n[E] 입장"
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_override("font", PIXEL_FONT)
-	label.add_theme_font_size_override("font_size", 13)
-	label.add_theme_color_override("font_color", Color("ffe7a3"))
-	label.add_theme_color_override("font_shadow_color", Color("1a1024"))
-	label.add_theme_constant_override("shadow_offset_x", 1)
-	label.add_theme_constant_override("shadow_offset_y", 1)
-	panel.add_child(label)
-	parent.add_child(panel)
+func _add_interaction_prompt(parent: Node2D, position: Vector2i, tile_size: int, title: String, action_text: String) -> void:
+	var prompt := ProximityInteractionPrompt.new()
+	prompt.configure(title, action_text, Vector2(position.x * tile_size - 16.0, position.y * tile_size - 52.0), Vector2(tile_size * 2 + 32.0, 44.0))
+	parent.add_child(prompt)
 
 func _landmark_outline_color(landmark_kind: String) -> Color:
 	match landmark_kind:

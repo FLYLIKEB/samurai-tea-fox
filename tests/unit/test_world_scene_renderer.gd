@@ -220,5 +220,5 @@ func _assert_dungeon_landmark_uses_multicell_house_and_label(asserts) -> void:
 		asserts.true_value(sprite != null and sprite.texture != null, "dungeon uses a structure sprite")
 		if sprite != null and sprite.texture != null:
 			asserts.equal(sprite.texture.get_width(), 64, "dungeon structure spans two tiles")
-		asserts.true_value(landmarks.get_node_or_null("DungeonSign") != null, "dungeon has an explicit entry sign")
+		asserts.true_value(landmarks.get_node_or_null("InteractionPrompt") != null, "dungeon has an explicit entry prompt")
 	root.queue_free()

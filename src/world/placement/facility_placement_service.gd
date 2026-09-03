@@ -44,7 +44,7 @@ func can_place_facility(facility_item_id: String, world_data, origin: Vector2i, 
 		return _fail("invalid_world_data", "Facility placement requires WorldData occupancy API.")
 
 	var definition: Dictionary = facility_definitions[facility_item_id]
-	var size: Vector2i = definition.footprint_size
+	var size: Vector2i = _footprint_size_for_context(definition.footprint_size, context)
 	var footprint_result := _validate_open_footprint(world_data, origin, size)
 	if not footprint_result.ok:
 		return footprint_result
@@ -112,7 +112,10 @@ func facility_item_ids_near(world_data, position: Vector2i, max_distance := DEFA
 			continue
 		for cell_value in reservation.get("cells", []):
 			var cell := _vector_from_value(cell_value)
-			if _manhattan_distance(position, cell) <= distance_limit:
+			# Interaction range is tile-based: diagonal neighbors are just as
+			# close as cardinal neighbors. Manhattan distance incorrectly hid a
+			# facility when the player stood diagonally beside it.
+			if maxi(absi(position.x - cell.x), absi(position.y - cell.y)) <= distance_limit:
 				ids.append(facility_item_id)
 				break
 	ids.sort()
@@ -130,6 +133,10 @@ func _validate_open_footprint(world_data, origin: Vector2i, size: Vector2i) -> D
 		if not world_data.is_walkable(position):
 			return {"ok": false, "reason": "blocked", "position": _position_dictionary(position)}
 	return {"ok": true}
+
+func _footprint_size_for_context(size: Vector2i, context) -> Vector2i:
+	var turns := int(_context_value(context, "rotation_quarter_turns", 0))
+	return size if absi(turns) % 2 == 0 else Vector2i(size.y, size.x)
 
 func _validate_workspace(world_data, origin: Vector2i, size: Vector2i, context) -> Dictionary:
 	var required_count := int(_context_value(context, "required_workspace_cells", 1))

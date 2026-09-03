@@ -139,6 +139,8 @@ var tea_brewing_command_runtime
 var meta_codex_command_runtime
 var crafting_service
 var crafting_context: Dictionary = {}
+var biome_progression_state
+var _selected_map_biome_id := ""
 var time_state
 var _labels: Dictionary = {}
 var _panels: Dictionary = {}
@@ -164,6 +166,9 @@ var _open_menu_id := ""
 var _time_dial: TimeDial
 var _resource_detail_label: Label
 var _resource_detail_id := ""
+var _facility_placement_panel: PanelContainer
+var _facility_placement_install_button: Button
+var _facility_placement_status: Label
 
 func _ready() -> void:
 	_build()
@@ -189,6 +194,7 @@ func configure(player_node, generated_world: Dictionary, generated_render_result
 		meta_codex_command_runtime = runtime_context.get("meta_codex_command_runtime", null)
 		crafting_service = runtime_context.get("crafting_service", null)
 		crafting_context = runtime_context.get("crafting_context", {}).duplicate(true)
+		biome_progression_state = runtime_context.get("biome_progression_state", null)
 		time_state = runtime_context.get("time_state", null)
 	_build()
 	_rebuild_action_buttons()
@@ -239,6 +245,25 @@ func show_crafting_menu() -> bool:
 	_show_menu("제작법", _crafting_rows())
 	return true
 
+func show_facility_placement_controls() -> void:
+	_build()
+	if _facility_placement_panel == null:
+		return
+	_facility_placement_panel.visible = true
+	update_facility_placement_controls(false, "설치할 칸을 선택하세요")
+	_apply_safe_area_layout()
+
+func update_facility_placement_controls(can_install: bool, status: String) -> void:
+	if _facility_placement_install_button != null:
+		_facility_placement_install_button.disabled = not can_install
+	if _facility_placement_status != null:
+		_facility_placement_status.text = status
+
+func hide_facility_placement_controls() -> void:
+	if _facility_placement_panel != null:
+		_facility_placement_panel.visible = false
+	_apply_safe_area_layout()
+
 func show_facilities_menu() -> bool:
 	_open_menu_id = "facilities"
 	_show_menu("시설", _facility_rows())
@@ -256,6 +281,7 @@ func show_meta_codex_menu() -> bool:
 
 func show_map_menu() -> bool:
 	_open_menu_id = "map"
+	_selected_map_biome_id = String(world.get("biome_id", ""))
 	_show_menu("지도", _map_rows())
 	return true
 
@@ -464,6 +490,22 @@ func _build() -> void:
 	root.add_child(menu_panel)
 	_panels.menu = menu_panel
 	_build_menu_panel(menu_panel)
+	_facility_placement_panel = _panel(Vector2(250, 44))
+	_facility_placement_panel.name = "FacilityPlacementPanel"
+	_facility_placement_panel.visible = false
+	root.add_child(_facility_placement_panel)
+	var placement_row := HBoxContainer.new()
+	_ignore_mouse(placement_row)
+	placement_row.add_theme_constant_override("separation", 4)
+	_facility_placement_panel.add_child(placement_row)
+	_facility_placement_status = _label("설치할 칸을 선택하세요", 10)
+	_facility_placement_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	placement_row.add_child(_facility_placement_status)
+	placement_row.add_child(_placement_command_button("회전", GameCommand.Type.FACILITY_ROTATE))
+	_facility_placement_install_button = _placement_command_button("설치", GameCommand.Type.FACILITY_CONFIRM)
+	_facility_placement_install_button.disabled = true
+	placement_row.add_child(_facility_placement_install_button)
+	placement_row.add_child(_placement_command_button("취소", GameCommand.Type.FACILITY_CANCEL))
 
 	var narrative_overlay := Control.new()
 	narrative_overlay.name = "NarrativeOverlay"
@@ -713,8 +755,6 @@ func _rebuild_action_buttons() -> void:
 		_add_text_action(_action_menu_grid, "MapButton", ICON_MAP, "지도", "open_map", Vector2i.ZERO, 0)
 		_add_text_action(_action_menu_grid, "FacilitiesButton", ICON_MAP, "시설", "open_facilities", Vector2i.ZERO, 0)
 		_add_text_action(_action_menu_grid, "SleepButton", ICON_TEA, "수면", "sleep", Vector2i.ZERO, 0)
-		_add_text_action(_action_menu_grid, "DungeonButton", ICON_ATTACK, "던전", "complete_dungeon", Vector2i.ZERO, 0)
-		_add_text_action(_action_menu_grid, "TeleportRepairButton", ICON_MAP, "수리", "repair_teleport", Vector2i.ZERO, 0)
 	var action_panel := _panels.get("action") as Control
 	if action_panel != null:
 		action_panel.custom_minimum_size = ACTION_PANEL_SIZE
@@ -839,6 +879,15 @@ func _build_menu_panel(parent: PanelContainer) -> void:
 	scroll.add_child(_menu_content)
 	_labels.menu_feedback = _label("", 11)
 	rows.add_child(_labels.menu_feedback)
+
+func _placement_command_button(text: String, command_type: int) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(48, 26)
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.pressed.connect(func(): mobile_command_issued.emit(GameCommand.new(command_type)))
+	return button
 
 func _build_narrative_panel(parent: PanelContainer) -> void:
 	var rows := VBoxContainer.new()
@@ -1585,6 +1634,14 @@ func _map_rows() -> Array:
 	if not bool(model.get("ok", false)):
 		rows.append(_label("지도 read model 없음", 11))
 		return rows
+	rows.append(_section_label("전체 지도 · 접근 가능한 지역을 선택하세요"))
+	rows.append(_biome_map_selector())
+	var selected_id := _selected_map_biome_id if not _selected_map_biome_id.is_empty() else String(world.get("biome_id", ""))
+	var selected := _biome_definition(selected_id)
+	rows.append(_label("현재 보기: %s%s" % [String(selected.get("name", selected_id)), " · 현재 위치" if selected_id == String(world.get("biome_id", "")) else ""], 12))
+	if selected_id != String(world.get("biome_id", "")):
+		rows.append(_label("이 지역은 접근 가능 상태입니다. 실제 이동 후 지역 지도가 표시됩니다.", 10))
+		return rows
 	var bounds: Dictionary = model.bounds
 	rows.append(_label("지도 %dx%d · 발견 %d · 안개 %d" % [int(bounds.width), int(bounds.height), int(model.discovered_count), int(model.fog_count)], 11))
 	rows.append(_label("플레이어 (%d,%d)" % [int(model.player.position.x), int(model.player.position.y)], 11))
@@ -1603,6 +1660,54 @@ func _map_rows() -> Array:
 	if markers.size() > 8:
 		rows.append(_label("… 표식 %d개 더 있음" % (markers.size() - 8), 10))
 	return rows
+
+func _biome_map_selector() -> Control:
+	var strip := HBoxContainer.new()
+	strip.name = "BiomeMapSelector"
+	strip.add_theme_constant_override("separation", 4)
+	for definition in _ordered_biome_definitions():
+		var biome_id := String(definition.get("id", ""))
+		if not _is_biome_map_accessible(biome_id):
+			continue
+		var button := Button.new()
+		button.name = "BiomeMap_%s" % biome_id
+		button.text = String(definition.get("name", biome_id))
+		button.tooltip_text = "선택하여 지역 지도 보기"
+		button.custom_minimum_size = Vector2(86, 30)
+		button.disabled = biome_id == String(world.get("biome_id", "")) and _selected_map_biome_id == biome_id
+		button.pressed.connect(func():
+			_selected_map_biome_id = biome_id
+			_show_menu("지도", _map_rows())
+		)
+		strip.add_child(button)
+	if strip.get_child_count() == 0:
+		strip.add_child(_label("접근 가능한 지역 없음", 10))
+	return strip
+
+func _ordered_biome_definitions() -> Array:
+	if catalog == null or not catalog.has_method("get_definitions"):
+		return []
+	var definitions: Array = catalog.get_definitions("biomes")
+	definitions.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
+		return int(left.get("progression_order", 999)) < int(right.get("progression_order", 999))
+	)
+	return definitions
+
+func _biome_definition(biome_id: String) -> Dictionary:
+	for definition in _ordered_biome_definitions():
+		if String(definition.get("id", "")) == biome_id:
+			return definition
+	return {}
+
+func _is_biome_map_accessible(biome_id: String) -> bool:
+	var current_id := String(world.get("biome_id", ""))
+	if biome_id == current_id:
+		return true
+	if run_state != null and run_state.crafting_unlocks.has(biome_id):
+		return true
+	if biome_progression_state != null and biome_progression_state.has_method("teleport_state_for"):
+		return String(biome_progression_state.teleport_state_for(biome_id)) == "repaired"
+	return false
 
 func _minimap_read_model() -> Dictionary:
 	var model := _map_read_model({"minimap_width": 11, "minimap_height": 7})
@@ -1863,6 +1968,7 @@ func _apply_safe_area_layout() -> void:
 	_place_panel(_panels.action_menu, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w - ACTION_PANEL_SIZE.y - 8.0))
 	_place_panel(_panels.action, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w))
 	_place_panel(_panels.narrative, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w - NARRATIVE_PANEL_BOTTOM_OFFSET))
+	_place_panel(_facility_placement_panel, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w - 8.0))
 
 func _place_panel(panel, preset: int, offset: Vector2) -> void:
 	if not panel is Control:

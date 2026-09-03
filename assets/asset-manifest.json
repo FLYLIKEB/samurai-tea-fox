@@ -81,8 +81,8 @@
       "alpha_required": true,
       "texture_filter": "nearest",
       "placeholder": false,
-      "source_sha256": "sha256:4bc69604f811a0e920f9c0eba28478676a3341ec2ca3c8f937d973f8676560d2",
-      "rgba_sha256": "sha256:092e19cda51bdef30971f9493d1a32f66019d2c8fb145c618e3d58ef7a915833",
+      "source_sha256": "sha256:7064586c3dd140a199d5e81c047bf005185446a2b89c4b231b7952f038cd0680",
+      "rgba_sha256": "sha256:6f3d10878ea1bc77f86f1e47689d45314501e8e6d5433561eb5bbeeedc02809a",
       "runtime_scale": 1
     },
     {
@@ -104,8 +104,8 @@
       "alpha_required": true,
       "texture_filter": "nearest",
       "placeholder": false,
-      "source_sha256": "sha256:ae5ea2ee7fbd7e8c40c11c484865547225fb4bbcb2b08c6b3844216a7eb7f8f0",
-      "rgba_sha256": "sha256:ed94785f041156160afbb1c00bc50d2a75059d13abd759bb290d7c32b776742c",
+      "source_sha256": "sha256:0844f04bcf91b42b9988b277b2fc0e361bd56625ded311fae12fe38b9fc7cd8c",
+      "rgba_sha256": "sha256:0e97fcd0c219033da2b03e9163100d275b6a3b8ae14defc98d24b068bafb4c34",
       "runtime_scale": 1
     },
     {
@@ -127,8 +127,8 @@
       "alpha_required": true,
       "texture_filter": "nearest",
       "placeholder": false,
-      "source_sha256": "sha256:b04d9c89f745aea2b4dd3c7558afc7227356362508147c1cec9e11d25580905c",
-      "rgba_sha256": "sha256:f2ab3ffac65a51fdc4b5e153cccd165804b39605551d48c58cd0fa8e024084f3",
+      "source_sha256": "sha256:9e42d6ba5aede1f0792d79a001493e862d32344f25df547a6b3f76591a040ea2",
+      "rgba_sha256": "sha256:df6157037deea297ebf83e5f077d7d203dd1cd22f1a58039ab798a51f6e6460d",
       "runtime_scale": 1
     },
     {
@@ -150,8 +150,8 @@
       "alpha_required": true,
       "texture_filter": "nearest",
       "placeholder": false,
-      "source_sha256": "sha256:f4d0de98f8f548d6545dcd3a8768939aa7ee8dc0a4b16d29f198facc0bb0e991",
-      "rgba_sha256": "sha256:8c7e7a18d921c06a7338dc18ad05fab89892a3572ba51f040504531357becbc0",
+      "source_sha256": "sha256:a7cd5017184d592d28192bda41252cf3d1aa99030d240e1aa35f4e037cf333fa",
+      "rgba_sha256": "sha256:047e75a56c7e9340b40b915deee0f2cca2d11bf343245190cdab790a0adfa7e7",
       "runtime_scale": 1
     },
     {
@@ -173,8 +173,8 @@
       "alpha_required": true,
       "texture_filter": "nearest",
       "placeholder": false,
-      "source_sha256": "sha256:ac942acf97de133d075ee0915fd18b7076079e8bdbfd5a0593962544d7721130",
-      "rgba_sha256": "sha256:af60a32241b153e5aacc00c0133faf67957d7e2a0f85a3c99cc5d96c870dd00d",
+      "source_sha256": "sha256:4edb969cd6e0103c66bd78bc9c7574117220e9135527786c8428713c33ba2a19",
+      "rgba_sha256": "sha256:3fa4d8fb5d59321624bc6d58b8637f996d76ac5016e6493034645c294502d10c",
       "runtime_scale": 1
     },
     {
@@ -196,8 +196,8 @@
       "alpha_required": true,
       "texture_filter": "nearest",
       "placeholder": false,
-      "source_sha256": "sha256:8fd67ea0f303b19024e0ca6e42bc8e4f974f7b4a0700a0c55e916b09f1805333",
-      "rgba_sha256": "sha256:478a340ac1fe1ada056a18d069f9d52c63cc00575261fe31be12147290c78e7b",
+      "source_sha256": "sha256:1a960e2488f7c7485ced8104392eaba5d600cd02ba10771a07f5c229393fb555",
+      "rgba_sha256": "sha256:a7a2f1d72c6cd8f875a71132f5d3e49386f7f152f6249599bf0b226f7025d998",
       "runtime_scale": 1
     },
     {
@@ -219,8 +219,8 @@
       "alpha_required": true,
       "texture_filter": "nearest",
       "placeholder": false,
-      "source_sha256": "sha256:60ec5cc8b22983958b6002f11083462879d0a4ce6537c35a4614419c59e67c53",
-      "rgba_sha256": "sha256:65b15aea4d67694e73b2c7acd9a193e868a706449dd3c42383fa8b8889ae77b9",
+      "source_sha256": "sha256:6567c5ac08cf613165ef94d8ac92e3b9e688e8d7087d653d38beea7c71d76912",
+      "rgba_sha256": "sha256:5f0a558cee8444d2a29c96a1919bdbe3f287d4a098ec1b6354e330b3c437fe15",
       "runtime_scale": 1
     },
     {
@@ -242,8 +242,8 @@
       "alpha_required": true,
       "texture_filter": "nearest",
       "placeholder": false,
-      "source_sha256": "sha256:8227f09a3cb0391bfe47d338ceed88f64319914c82062675a0631790a8521883",
-      "rgba_sha256": "sha256:923e6c70a5e286ec91967a77e6ee2b52d8c3fc46ab2c341fea67b417ca7ddaae",
+      "source_sha256": "sha256:afa9f2ce6fb9262e72f493448c045b13697ac949c434666ac07ad38af56cf634",
+      "rgba_sha256": "sha256:725ef78e5bc7c0c8c136bf5a7fb25418dadc84e991892ecf9954beea10323222",
       "runtime_scale": 1
     },
     {
@@ -265,8 +265,8 @@
       "alpha_required": true,
       "texture_filter": "nearest",
       "placeholder": false,
-      "source_sha256": "sha256:90580a468afcc2872e8c79b3a71ed0fccb3cd092d07ce814aa8d3ffbc771b877",
-      "rgba_sha256": "sha256:5057acd50b7c0aa4ab509617b0d988ae3679934caca064dc3d37a442e933b966",
+      "source_sha256": "sha256:2b22840fde8b7cd2bee1bc99d1ff5579a2f33f36acbdb693ac6e46ebea71796e",
+      "rgba_sha256": "sha256:e68da705571679217ff524874ea079cc0ca979a303ab6b066506dc45635f5ed7",
       "runtime_scale": 1
     },
     {
@@ -288,8 +288,8 @@
       "alpha_required": true,
       "texture_filter": "nearest",
       "placeholder": false,
-      "source_sha256": "sha256:c07d8c74a41ae4ec68032deecef515a4b5e8c2771420fec4f98429a016acb73c",
-      "rgba_sha256": "sha256:fd4c908451b20370cf3e757e93e3f816bc836bfe46cab0160e3c42549db2c28f",
+      "source_sha256": "sha256:4205ef4b2f1a246507f639cdbcea917de48e903c81876e6904db0414c2c66dd3",
+      "rgba_sha256": "sha256:fbba4be648922dcc6e8f3ac4ca13842411cf41572b7f47dc075a848de5e9b9c0",
       "runtime_scale": 1
     },
     {
@@ -311,8 +311,8 @@
       "alpha_required": true,
       "texture_filter": "nearest",
       "placeholder": false,
-      "source_sha256": "sha256:29abafec9b89ab83b84d8d4bcca8e949593924b78e2af1ab17db324dd5615c11",
-      "rgba_sha256": "sha256:f48d0c74af909b8cbe6e07fca5b6d75a68f3e565a6ecbb94ab5bf8ecb7932d7c",
+      "source_sha256": "sha256:cffccb999073881f1efad11727552a476379150c320cfbdaac5bce77972aab2b",
+      "rgba_sha256": "sha256:c6550439dcd777582cae8c20ac004de9830f4af7da1e7f9959b02d2495b99fd9",
       "runtime_scale": 1
     },
     {
@@ -334,8 +334,8 @@
       "alpha_required": true,
       "texture_filter": "nearest",
       "placeholder": false,
-      "source_sha256": "sha256:c7005c9a2c104b1dea98b07f33c9067311b10bd9ba8f457cdf03801d8d5dc2af",
-      "rgba_sha256": "sha256:df8c1e5f81c9d428c2a0c46b3a9e317cdad918d8684f43380ff5cbe05a468d90",
+      "source_sha256": "sha256:8d7ca154fdacb8ded7fb2227059539887610c5478ed1d948a6877eb6250fd761",
+      "rgba_sha256": "sha256:1bdff53458fe8d293b6c2c69c0cff4458cebc59beae2030ba25c7d3f9029bdfd",
       "runtime_scale": 1
     },
     {
@@ -357,8 +357,8 @@
       "alpha_required": true,
       "texture_filter": "nearest",
       "placeholder": false,
-      "source_sha256": "sha256:49defcd6feaed3dbc30bb1c49fcb3452582fbdb2d6aa6673281ceaa3f52a005a",
-      "rgba_sha256": "sha256:f45b1dbe1e8e82b013f4963f580b983a13db6ceb7cb8d7b579233e05b089ba94",
+      "source_sha256": "sha256:fee85140367783ed851b51ba1f5257715c6d216a8b9ac5dd0eea99d233d318ed",
+      "rgba_sha256": "sha256:da4d414858ff9bdb3a38e2fb30e28ea26c5723d6503ef87d5734560993a76fda",
       "runtime_scale": 1
     },
     {
@@ -380,8 +380,8 @@
       "alpha_required": true,
       "texture_filter": "nearest",
       "placeholder": false,
-      "source_sha256": "sha256:cec5db1fa3d18bf5ce56d49cd8c1f1bd9390e0136b711a43a1d28a69fe9eacc1",
-      "rgba_sha256": "sha256:aad32fdd50df3a4f89be34e3bac96ea07bce8d853b06cb6356e1287abf11358e",
+      "source_sha256": "sha256:e53a9b67e8d711fa9358cfb889e99c3d3da99cba183557a9b51fa7fb1074ee7c",
+      "rgba_sha256": "sha256:d74ae1fb6aed45c960504f9f56338c76a2333d8fc119e7f8d9d71272e11518c1",
       "runtime_scale": 1
     },
     {
@@ -4600,6 +4600,27 @@
       "runtime_scale": 1,
       "source_sha256": "sha256:ce348317bfe1e0eb0efd86531804fabf6e8d708cafe4e9fbb5567c0a974d4d07",
       "rgba_sha256": "sha256:50c5ca3e58845954b45404973fef165da620932b60543f94f7c9ac900e21eb09"
+    },
+    {
+      "id": "asset_assets_sprites_objects_structures_wood_fence_horizontal_1x2_64x32_bottom_180_png",
+      "name": "wood_fence_horizontal_1x2_64x32_bottom_180",
+      "status": "완료",
+      "kind": "runtime_png",
+      "path": "res://assets/sprites/objects/structures/wood_fence_horizontal_1x2_64x32_bottom_180.png",
+      "width": 64,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 64,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "runtime_scale": 1
     },
     {
       "id": "asset_assets_sprites_objects_structures_wooden_bridge_3x2_96x64_png",

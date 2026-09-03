@@ -237,12 +237,15 @@ static func _definitions_from_catalog(catalog) -> Dictionary:
 static func _definition_from_item(row: Dictionary) -> Dictionary:
 	var item_id := String(row.get("id", ""))
 	var data_slot := String(row.get("equipment_slot", ""))
+	var item_type := String(row.get("type", ""))
+	# Draft tea ware rows may omit the redundant equipment slot; their stable type still defines it.
+	if data_slot.is_empty() and item_type == DATA_SLOT_TEA_WARE:
+		data_slot = DATA_SLOT_TEA_WARE
 	if data_slot == "":
 		return {"ok": true, "equippable": false}
 	if not SLOT_FROM_DATA.has(data_slot):
 		return _fail("invalid_equipment_slot", "Unknown item equipment slot: %s.%s" % [item_id, data_slot])
 	var slot_key: String = SLOT_FROM_DATA[data_slot]
-	var item_type := String(row.get("type", ""))
 	if item_type != data_slot:
 		return _fail("equipment_type_mismatch", "Item type and equipment slot differ: %s" % item_id)
 
@@ -278,7 +281,8 @@ static func _definition_from_item(row: Dictionary) -> Dictionary:
 			return _fail("invalid_effect_type", "Armor effect type must be defense: %s" % item_id)
 		definition["defense"] = defense_result.value
 	else:
-		if String(row.get("effect_type", "")) != EFFECT_TEA_OPERATION:
+		var effect_type := String(row.get("effect_type", ""))
+		if not effect_type.is_empty() and effect_type != EFFECT_TEA_OPERATION:
 			return _fail("invalid_effect_type", "Tea ware effect type must be tea operation: %s" % item_id)
 		var effect_result := _optional_number(row, "effect_value", 0.0)
 		if not effect_result.ok:
@@ -306,6 +310,16 @@ static func _definition_from_item(row: Dictionary) -> Dictionary:
 		definition["drink_seconds_bonus"] = drink_bonus_result.value
 		definition["sustain_modifier"] = sustain_result.value
 		var attachment_result := _attachment_stage_definition_from_row(row, item_id)
+		if not attachment_result.ok and not row.has("attachment_stage_thresholds") and not row.has("attachment_description_keys"):
+			attachment_result = {
+				"ok": true,
+				"thresholds": [0, 3, 7],
+				"description_keys": [
+					"items.%s.attachment.stage_0" % item_id,
+					"items.%s.attachment.stage_1" % item_id,
+					"items.%s.attachment.stage_2" % item_id
+				]
+			}
 		if not attachment_result.ok:
 			return attachment_result
 		definition["attachment_stage_thresholds"] = attachment_result.thresholds

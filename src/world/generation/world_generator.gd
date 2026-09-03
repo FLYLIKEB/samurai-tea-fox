@@ -110,6 +110,7 @@ const RENDER_RAINFOREST_INCENSE_SPACE := "asset_assets_sprites_objects_shrine_pr
 const LARGE_HOUSE_SOURCE_ID := "asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png"
 const FENCE_CORNER_SOURCE_ID := "asset_assets_sprites_objects_structures_wood_fence_corner_32x32_png"
 const FENCE_HORIZONTAL_SOURCE_ID := "asset_assets_sprites_objects_structures_wood_fence_horizontal_1x2_64x32_png"
+const FENCE_HORIZONTAL_BOTTOM_SOURCE_ID := "asset_assets_sprites_objects_structures_wood_fence_horizontal_1x2_64x32_bottom_180_png"
 const LARGE_HOUSE_ID := "large_fenced_house"
 
 const BALANCE_MIN_RESOURCE_NODES_ID := "biome_min_resource_nodes"
@@ -815,13 +816,38 @@ func _carve_landmark_paths(world_data: WorldData, landmarks: Array, profile: Dic
 		_carve_path(world_data, entry, _vector_from_dictionary(landmarks[index].position), profile)
 
 func _carve_path(world_data: WorldData, start: Vector2i, target: Vector2i, profile: Dictionary) -> void:
+	# A route may cross an already-built bridge, but only at one tile.  Snapshot
+	# bridge cells before carving so newly-created cells on this route are not
+	# mistaken for overlaps.
+	var bridge_terrain_id := String(profile.bridge_terrain_id)
+	var existing_bridge_cells := {}
+	for x in range(start.x, target.x + (1 if target.x >= start.x else -1), (1 if target.x >= start.x else -1)):
+		var horizontal_cell := Vector2i(x, start.y)
+		if world_data.contains(horizontal_cell) and world_data.terrain_id_at(horizontal_cell) == bridge_terrain_id:
+			existing_bridge_cells[horizontal_cell] = true
+	for y in range(start.y, target.y + (1 if target.y >= start.y else -1), (1 if target.y >= start.y else -1)):
+		var vertical_cell := Vector2i(target.x, y)
+		if world_data.contains(vertical_cell) and world_data.terrain_id_at(vertical_cell) == bridge_terrain_id:
+			existing_bridge_cells[vertical_cell] = true
+
+	var bridge_overlap_count := 0
 	var step_x := 1 if target.x >= start.x else -1
 	for x in range(start.x, target.x + step_x, step_x):
-		_make_path_cell(world_data, Vector2i(x, start.y), profile)
+		var position := Vector2i(x, start.y)
+		if existing_bridge_cells.has(position):
+			if bridge_overlap_count >= 1:
+				continue
+			bridge_overlap_count += 1
+		_make_path_cell(world_data, position, profile)
 
 	var step_y := 1 if target.y >= start.y else -1
 	for y in range(start.y, target.y + step_y, step_y):
-		_make_path_cell(world_data, Vector2i(target.x, y), profile)
+		var vertical_position := Vector2i(target.x, y)
+		if existing_bridge_cells.has(vertical_position):
+			if bridge_overlap_count >= 1:
+				continue
+			bridge_overlap_count += 1
+		_make_path_cell(world_data, vertical_position, profile)
 
 func _make_path_cell(world_data: WorldData, position: Vector2i, profile: Dictionary) -> void:
 	if not world_data.contains(position):
@@ -876,7 +902,7 @@ func _place_path_edge_fences(world_data: WorldData, rng: DeterministicRng, templ
 				continue
 			# A rotated 1x2 segment is taller than one tile and overlaps on
 			# descending lanes; use the 1x1 corner piece for those side posts.
-			var source_id := FENCE_CORNER_SOURCE_ID if side.x != 0 or placed % 5 == 4 else FENCE_HORIZONTAL_SOURCE_ID
+			var source_id := FENCE_CORNER_SOURCE_ID if side.x != 0 or placed % 5 == 4 else (FENCE_HORIZONTAL_BOTTOM_SOURCE_ID if side == Vector2i.DOWN else FENCE_HORIZONTAL_SOURCE_ID)
 			var rotation_degrees := 90.0 if side.x != 0 else 0.0
 			var owner_id := "path_fence_%d_%d" % [fence_position.x, fence_position.y]
 			var reservation := world_data.reserve_entity(owner_id, fence_position, Vector2i.ONE, false, {
