@@ -42,6 +42,7 @@ const POINTER_MOVE_STOP_DISTANCE_PIXELS := 4.0
 const FEEDBACK_BEEP_MIX_RATE := 22050.0
 const FEEDBACK_BEEP_SECONDS := 0.045
 const FEEDBACK_BEEP_FREQUENCY := 880.0
+const TIME_SECONDS_PER_TURN := 1.0
 const FIRST_RUN_PROLOGUE_EVENT_ID := "first_run_prologue"
 const START_MODE_META := "muchau_start_mode"
 const START_MODE_NEW := "new"
@@ -161,6 +162,7 @@ func _on_player_activity_feedback(_a = null, _b = null, _c = null) -> void:
 	_play_feedback_beep()
 
 func _on_player_grid_step_finished(_cell: Vector2i) -> void:
+	_advance_time_for_turn()
 	_queue_enemy_turn_after_player_action()
 
 func _configure_world_for_current_run() -> Dictionary:
@@ -189,8 +191,6 @@ func _configure_world_for_current_run() -> Dictionary:
 	return {"ok": true}
 
 func _physics_process(_delta: float) -> void:
-	if time_state != null and player != null and player.resources != null:
-		time_state.tick(_delta, player.resources)
 	if player != null and player.ability_runtime != null:
 		player.ability_runtime.tick(_delta)
 	_record_current_map_discovery()
@@ -378,18 +378,21 @@ func submit_action_command(command) -> bool:
 				return landmark_accepted
 			var accepted: bool = acquisition_service != null and bool(acquisition_service.handle_command(command).ok)
 			if accepted:
+				_advance_time_for_turn()
 				_play_feedback_beep()
 				_queue_enemy_turn_after_player_action()
 			return accepted
 		GameCommand.Type.DRINK_TEA:
 			var accepted: bool = _handle_tea_command(command)
 			if accepted:
+				_advance_time_for_turn()
 				_play_feedback_beep()
 				_queue_enemy_turn_after_player_action()
 			return accepted
 		GameCommand.Type.USE_CONSUMABLE:
 			var accepted: bool = _handle_consumable_command(command)
 			if accepted:
+				_advance_time_for_turn()
 				_play_feedback_beep()
 			return accepted
 		GameCommand.Type.SLEEP:
@@ -455,6 +458,7 @@ func submit_action_command(command) -> bool:
 		GameCommand.Type.CRAFT_RECIPE:
 			var accepted: bool = _handle_craft_recipe_command(command)
 			if accepted:
+				_advance_time_for_turn()
 				_play_feedback_beep()
 				_queue_enemy_turn_after_player_action()
 			return accepted
@@ -467,11 +471,13 @@ func submit_action_command(command) -> bool:
 			if _sen_rikyu_phase_two_accepts_command(command):
 				var accepted: bool = _handle_sen_rikyu_phase_two_action(command)
 				if accepted:
+					_advance_time_for_turn()
 					_play_feedback_beep()
 					_queue_enemy_turn_after_player_action()
 				return accepted
 			var accepted: bool = player != null and player.submit_command(command)
 			if accepted and _is_turn_advancing_player_action(command):
+				_advance_time_for_turn()
 				_queue_enemy_turn_after_player_action()
 			return accepted
 
@@ -1173,6 +1179,11 @@ func _is_turn_advancing_player_action(command) -> bool:
 		GameCommand.Type.REPAIR_TELEPORT,
 		GameCommand.Type.ADVANCE_BIOME
 	].has(command.type)
+
+func _advance_time_for_turn() -> void:
+	if time_state == null or player == null or player.resources == null:
+		return
+	time_state.tick(TIME_SECONDS_PER_TURN, player.resources)
 
 func _on_player_hp_depleted() -> Dictionary:
 	if run_lifecycle_service == null:

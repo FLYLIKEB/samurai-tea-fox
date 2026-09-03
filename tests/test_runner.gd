@@ -14,6 +14,7 @@ const TESTS := [
 	preload("res://tests/unit/test_player_resources.gd"),
 	preload("res://tests/unit/test_tail_state.gd"),
 	preload("res://tests/unit/test_time_state.gd"),
+	preload("res://tests/unit/test_turn_time_progression.gd"),
 	preload("res://tests/unit/test_combat_state.gd"),
 	preload("res://tests/unit/test_monster_runtime.gd"),
 	preload("res://tests/unit/test_monster_behavior.gd"),
