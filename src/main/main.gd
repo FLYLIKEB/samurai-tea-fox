@@ -1159,7 +1159,11 @@ func _queue_enemy_turn_after_player_action() -> void:
 
 func _run_enemy_turn_after_player_action() -> void:
 	if player != null and player.has_method("is_grid_step_active") and player.is_grid_step_active():
-		call_deferred("_run_enemy_turn_after_player_action")
+		var scene_tree := get_tree()
+		if scene_tree == null:
+			_enemy_turn_queued = false
+			return
+		scene_tree.process_frame.connect(Callable(self, "_run_enemy_turn_after_player_action"), CONNECT_ONE_SHOT)
 		return
 	_enemy_turn_queued = false
 	if combat_dummy == null or player == null or not combat_dummy.visible:
