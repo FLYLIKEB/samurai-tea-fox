@@ -98,6 +98,7 @@ const START_MODE_RESUME := "resume"
 const CHEAT_INVENTORY_SLOT_COUNT := 1000
 const CHEAT_RESOURCE_QUANTITY := 99
 const CHEAT_RESOURCE_ITEM_TYPE := "재료"
+const CHEAT_BANDAGE_QUANTITY := 200
 const TREE_HARVEST_TOOL_ITEM_ID := "stone_axe"
 const TREE_HARVEST_DEFINITION_PREFIX := "terrain_tree_wood"
 const DUNGEON_DEBUG_LOGGING := true
@@ -1032,6 +1033,20 @@ func _apply_cheat_start_inventory() -> Dictionary:
 				inventory.load_snapshot(inventory_before)
 				return add_result
 		resource_item_ids.append(item_id)
+	var bandage_quantity: int = CHEAT_BANDAGE_QUANTITY - int(inventory.get_total_quantity("bandage"))
+	if bandage_quantity > 0:
+		var bandage_result: Dictionary = inventory.add_item("bandage", bandage_quantity)
+		if not bandage_result.ok:
+			inventory.load_snapshot(inventory_before)
+			return bandage_result
+	var weapon_id := _strongest_weapon_id_for_cheat_start()
+	if not weapon_id.is_empty() and equipment != null:
+		var weapon_slot := _inventory_slot_for_item(weapon_id)
+		if weapon_slot >= 0:
+			var equip_result: Dictionary = equipment.equip_from_inventory(inventory, weapon_slot)
+			if not equip_result.ok:
+				inventory.load_snapshot(inventory_before)
+				return equip_result
 	resource_item_ids.sort()
 	_sync_inventory_runtime_state()
 	# Cheat-start setup mutates the freshly-created run after its initial save.
@@ -1043,8 +1058,28 @@ func _apply_cheat_start_inventory() -> Dictionary:
 		"applied": true,
 		"slot_count": inventory.slot_count,
 		"resource_quantity": CHEAT_RESOURCE_QUANTITY,
+		"bandage_quantity": CHEAT_BANDAGE_QUANTITY,
+		"weapon_id": weapon_id,
 		"resource_item_ids": resource_item_ids
 }
+
+func _strongest_weapon_id_for_cheat_start() -> String:
+	var best_id := ""
+	var best_damage := -1
+	for definition in catalog.get_definitions("items"):
+		if String(definition.get("type", "")) != "무기":
+			continue
+		var damage := int(definition.get("base_damage", definition.get("effect_value", 0)))
+		if damage > best_damage:
+			best_damage = damage
+			best_id = String(definition.get("id", ""))
+	return best_id
+
+func _inventory_slot_for_item(item_id: String) -> int:
+	for index in range(inventory.slot_count):
+		if String(inventory.get_slot(index).get("item_id", "")) == item_id:
+			return index
+	return -1
 
 func _first_biome_id_for_cheat_start() -> String:
 	var definitions: Array = catalog.get_definitions("biomes")
@@ -1539,7 +1574,20 @@ func _enter_dungeon_map(layout: WorldData, definition: Dictionary, is_new_entry 
 					_dungeon_debug("광석 노드 등록 실패: %s" % register_result)
 			var saved_dungeon_acquisitions: Dictionary = run_state.dungeon_runtime_state.get("acquisitions", {}) if run_state != null else {}
 			if not saved_dungeon_acquisitions.is_empty():
-				var acquisition_restore: Dictionary = acquisition_service.load_snapshot(saved_dungeon_acquisitions)
+				var normalized_acquisitions := saved_dungeon_acquisitions.duplicate(true)
+				var normalized_gatherables: Array = []
+				for saved_node in normalized_acquisitions.get("gatherables", []):
+					if typeof(saved_node) != TYPE_DICTIONARY:
+						continue
+					var node_snapshot: Dictionary = saved_node.duplicate(true)
+					var node_id := String(node_snapshot.get("node_id", ""))
+					if _is_dungeon_resource_target(node_id):
+						# Older saves stored the item id as definition_id; dungeon
+						# definitions are keyed by their stable node id.
+						node_snapshot["definition_id"] = node_id
+					normalized_gatherables.append(node_snapshot)
+				normalized_acquisitions["gatherables"] = normalized_gatherables
+				var acquisition_restore: Dictionary = acquisition_service.load_snapshot(normalized_acquisitions)
 				if not acquisition_restore.ok:
 					_dungeon_debug("던전 채집 상태 복원 실패: %s" % acquisition_restore)
 	_render_generated_world(generated_world)
