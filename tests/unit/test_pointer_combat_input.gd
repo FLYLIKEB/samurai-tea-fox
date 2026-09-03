@@ -7,10 +7,11 @@ const WorldData = preload("res://src/world/data/world_data.gd")
 class ActionPlayer:
 	extends Node2D
 	var submitted_commands: Array[GameCommand] = []
+	var accepts_actions := true
 
 	func submit_command(command: GameCommand) -> bool:
 		submitted_commands.append(command)
-		return true
+		return accepts_actions
 
 class EnemyTarget:
 	extends Node2D
@@ -34,9 +35,15 @@ func run(asserts) -> void:
 	asserts.equal(player.submitted_commands[0].type, GameCommand.Type.ATTACK, "enemy click uses the shared attack command")
 	asserts.equal(player.submitted_commands[0].direction, Vector2i.RIGHT, "enemy click attacks toward the enemy")
 
+	player.accepts_actions = false
+	main._pointer_move_target_world = main.world_position_for_cell_center(Vector2i(2, 0))
+	main._has_pointer_move_target = true
+	asserts.true_value(main.submit_pointer_interaction(enemy.global_position), "enemy click consumes input while an attack is unavailable")
+	asserts.false_value(main._has_pointer_move_target, "enemy click cancels pending pointer movement before attacking")
+
 	enemy.hp = 0
 	asserts.false_value(main.submit_pointer_interaction(enemy.global_position), "clicking a defeated enemy does not submit an attack")
-	asserts.equal(player.submitted_commands.size(), 1, "defeated enemy click leaves commands unchanged")
+	asserts.equal(player.submitted_commands.size(), 2, "defeated enemy click leaves commands unchanged")
 	enemy.free()
 	player.free()
 	main.free()
