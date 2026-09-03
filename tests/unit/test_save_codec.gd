@@ -109,6 +109,7 @@ func run(asserts) -> void:
 			"context": {}
 		}
 	}
+	state.time = {"schema_version": 1, "phase": "night", "phase_elapsed_seconds": 12.5, "kokoro_decay_carry": 0.25}
 	state.acquisitions = {
 		"schema_version": 1,
 		"next_pickup_id": 2,
@@ -136,6 +137,7 @@ func run(asserts) -> void:
 	asserts.equal(decoded.run_state.narrative_flags, ["met_sen_rikyu"], "hydrated run state preserves narrative flags")
 	asserts.equal(decoded.run_state.narrative_event_counts.sen_rikyu_intro, 2, "hydrated run state preserves narrative counts")
 	asserts.equal(decoded.run_state.consumables.active_action.elapsed_seconds, 0.5, "hydrated run state preserves active consumable progress")
+	asserts.equal(decoded.run_state.time.phase, "night", "hydrated run state preserves time phase")
 	asserts.true_value(decoded.run_state.acquisitions.gatherables[0].depleted, "hydrated run state preserves gatherable depletion")
 	asserts.equal(decoded.run_state.acquisitions.pickups[0].item_id, "wood", "hydrated run state preserves world pickups")
 	asserts.equal(decoded.run_state.trade_stock.shop_1, 2, "hydrated run state preserves trade stock")
@@ -144,11 +146,13 @@ func run(asserts) -> void:
 	progression_save.run.equipment.slots.tea_ware.metadata.tea_ware_use_count = 99
 	progression_save.run.narrative_flags.append("mutated_after_decode")
 	progression_save.run.consumables.active_action.elapsed_seconds = 0.75
+	progression_save.run.time.phase = "day"
 	progression_save.run.acquisitions.pickups[0].quantity = 99
 	progression_save.run.tail_state.path_flags.append("mutated_after_decode")
 	asserts.equal(decoded.run_state.equipment.slots.tea_ware.metadata.tea_ware_use_count, 4, "hydrated equipment state is detached from encoded payload")
 	asserts.equal(decoded.run_state.narrative_flags, ["met_sen_rikyu"], "hydrated narrative state is detached from encoded payload")
 	asserts.equal(decoded.run_state.consumables.active_action.elapsed_seconds, 0.5, "hydrated consumable state is detached from encoded payload")
+	asserts.equal(decoded.run_state.time.phase, "night", "hydrated time state is detached from encoded payload")
 	asserts.equal(decoded.run_state.acquisitions.pickups[0].quantity, 1, "hydrated acquisition state is detached from encoded payload")
 	asserts.equal(decoded.run_state.tail_state.path_flags, ["yokai_nature"], "hydrated tail state is detached from encoded payload")
 	state.reset_biome_progression()

@@ -78,11 +78,11 @@ func run() -> void:
 			failures.append("runtime HUD quickslots render icon-backed rows")
 		else:
 			_assert_hud_layout_fits_viewport([status_panel, map_panel, quickslot_panel, dpad_panel, action_panel])
-			if _button_count(action_panel) < 12:
-				failures.append("runtime HUD exposes attack, dodge, tea, consumable, ability, inventory, tea brewing, meta codex, map, crafting, and facilities controls")
+			if _button_count(action_panel) < 15:
+				failures.append("runtime HUD exposes attack, dodge, tea, consumable, ability, inventory, tea brewing, meta codex, map, crafting, facilities, sleep, dungeon, and teleport controls")
 			var time_label := hud.get("_labels").get("time") as Label
-			if time_label == null or time_label.get_parent().visible:
-				failures.append("runtime HUD hides the time row until a canonical runtime time state is supplied")
+			if time_label == null or not time_label.get_parent().visible:
+				failures.append("runtime HUD shows the canonical runtime time state")
 			if _button_count(dpad_panel) < 5:
 				failures.append("runtime HUD dpad exposes four directions and stop control")
 		if not _passive_controls_ignore_mouse(hud):

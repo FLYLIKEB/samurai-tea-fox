@@ -286,6 +286,8 @@ func _assert_snapshot_round_trips_active_action(asserts) -> void:
 	asserts.true_value(decoded.ok, "run save with consumable snapshot decodes")
 	asserts.equal(decoded.state.consumables.active_action.elapsed_seconds, 0.5, "run save preserves consumable progress")
 	asserts.false_value(decoded.state.consumables.has("active_action_owners"), "run save does not preserve legacy consumable action ownership")
+	var decoded_loaded := _fixture_service()
+	asserts.true_value(decoded_loaded.load_snapshot(decoded.state.consumables).ok, "decoded JSON-style consumable snapshot reloads")
 
 func _assert_snapshot_roundtrip_preserves_action_idempotency(asserts) -> void:
 	var service := _fixture_service()

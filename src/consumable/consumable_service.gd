@@ -241,7 +241,9 @@ func _normalize_snapshot_data_version(raw_data_version) -> Dictionary:
 	return {"ok": true, "data_version": String(raw_data_version)}
 
 func _normalize_snapshot_next_action_id(raw_next_action_id) -> Dictionary:
-	if typeof(raw_next_action_id) != TYPE_INT:
+	if typeof(raw_next_action_id) not in [TYPE_INT, TYPE_FLOAT]:
+		return _fail("invalid_consumable_next_action_id", "Consumable snapshot next action id must be an integer.")
+	if float(raw_next_action_id) != floor(float(raw_next_action_id)):
 		return _fail("invalid_consumable_next_action_id", "Consumable snapshot next action id must be an integer.")
 	var value := int(raw_next_action_id)
 	if value < 1:

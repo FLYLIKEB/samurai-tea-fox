@@ -34,6 +34,7 @@ const RUN_FIELD_TYPES := {
 	"memory_tea_cutscene": TYPE_DICTIONARY,
 	"tea": TYPE_DICTIONARY,
 	"consumables": TYPE_DICTIONARY,
+	"time": TYPE_DICTIONARY,
 	"choice_history": TYPE_ARRAY,
 	"choice_group_selections": TYPE_DICTIONARY,
 	"target_survival": TYPE_DICTIONARY,

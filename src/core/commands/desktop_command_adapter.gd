@@ -26,6 +26,8 @@ func command_for_action(action: String, direction := Vector2i.ZERO, slot := 0, p
 			return GameCommand.new(GameCommand.Type.DODGE, direction)
 		"drink_tea":
 			return GameCommand.new(GameCommand.Type.DRINK_TEA, Vector2i.ZERO, slot)
+		"sleep":
+			return GameCommand.new(GameCommand.Type.SLEEP)
 		"open_tea_brewing":
 			return GameCommand.new(GameCommand.Type.OPEN_TEA_BREWING)
 		"tea_brew_select_leaf":
@@ -98,5 +100,11 @@ func command_for_action(action: String, direction := Vector2i.ZERO, slot := 0, p
 			return GameCommand.new(GameCommand.Type.OPEN_FACILITIES)
 		"open_map":
 			return GameCommand.new(GameCommand.Type.OPEN_MAP)
+		"complete_dungeon":
+			return GameCommand.new(GameCommand.Type.COMPLETE_DUNGEON, Vector2i.ZERO, -1, payload)
+		"repair_teleport":
+			return GameCommand.new(GameCommand.Type.REPAIR_TELEPORT, Vector2i.ZERO, -1, payload)
+		"advance_biome":
+			return GameCommand.new(GameCommand.Type.ADVANCE_BIOME, Vector2i.ZERO, -1, payload)
 		_:
 			return null
