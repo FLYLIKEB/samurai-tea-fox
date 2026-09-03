@@ -64,6 +64,9 @@ tests/
 tools/
   asset_browser/
   notion_export/
+  capture_biome_maps.gd
+  capture_biome_maps.sh
+  BIOME_CAPTURE.md
 ```
 
 ## 도구
@@ -76,6 +79,23 @@ tools/asset_browser/run.sh
 
 앱 본체는 별도 레포 `https://github.com/FLYLIKEB/samurai-tea-fox-asset-browser`에서 관리하고,
 현재 레포에는 무차우 전용 프롬프트 템플릿과 launcher만 둡니다.
+
+### 바이옴 맵 캡처
+
+현재 `WorldGenerator`와 `WorldSceneRenderer`가 생성한 맵을 PNG로 캡처할 수 있습니다.
+
+```sh
+# 지원 바이옴 전체를 캡처하고 합본도 생성
+bash tools/capture_biome_maps.sh
+
+# 특정 바이옴을 원하는 시드로 캡처
+bash tools/capture_biome_maps.sh --biome=mountain_region --seed=22034
+
+# 지원 바이옴과 기본 시드 확인
+bash tools/capture_biome_maps.sh --list
+```
+
+기본 출력은 `artifacts/biome-previews/` 아래에 저장됩니다. 출력 폴더는 `--output-dir=...`로 바꿀 수 있고, 합본 없이 개별 PNG만 만들려면 `--no-contact-sheet`를 사용합니다. 전체 옵션과 지원 바이옴 ID는 [`tools/BIOME_CAPTURE.md`](tools/BIOME_CAPTURE.md)를 참고하세요.
 
 ## 게임 실행
 

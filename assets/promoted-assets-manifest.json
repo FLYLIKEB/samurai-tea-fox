@@ -4183,6 +4183,15 @@
       "alpha_empty": false,
       "source_sha256": "sha256:e53a9b67e8d711fa9358cfb889e99c3d3da99cba183557a9b51fa7fb1074ee7c",
       "rgba_sha256": "sha256:d74ae1fb6aed45c960504f9f56338c76a2333d8fc119e7f8d9d71272e11518c1"
+    },
+    {
+      "path": "assets/tiles/terrain/mountain/mountain_base_grass_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:7d8a2e145dd1a30f111489f23590bbbbff029724fea73f7e48c1409d8b00110e",
+      "rgba_sha256": "sha256:de3f2cd99f9d8a707f06a3ee04146c99b85304f0989e4f581343426a4d23c1f0"
     }
   ]
 }

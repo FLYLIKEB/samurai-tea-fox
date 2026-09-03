@@ -63,6 +63,7 @@ const RENDER_FIELD := "terrain_plains_flower_grass_01"
 const RENDER_FOREST_TREE := "terrain_tree_broadleaf_32x32"
 const RENDER_WATER := "terrain_river_water_01"
 const RENDER_MOUNTAIN_SLOPE := "asset_assets_tiles_terrain_mountain_mountain_ground_01_32x32_png"
+const RENDER_MOUNTAIN_BASE_GRASS := "terrain_mountain_base_grass_01"
 const RENDER_MOUNTAIN_PATH := "asset_assets_tiles_terrain_mountain_mountain_trail_01_32x32_png"
 const RENDER_MOUNTAIN_CLIFF := "asset_assets_tiles_terrain_mountain_mountain_cliff_01_32x32_png"
 const RENDER_BRIDGE_VERTICAL := "asset_assets_tiles_terrain_bridges_bridge_vertical_32x32_png"
@@ -178,7 +179,7 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 
 func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, layout_rng: DeterministicRng, content_rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, progression_projection: Dictionary, profile: Dictionary) -> Dictionary:
 	var world_data := WorldData.new(MAP_WIDTH, MAP_HEIGHT, String(profile.default_terrain_id), bool(profile.default_walkable))
-	world_data.base_terrain_id = String(profile.default_terrain_id)
+	world_data.base_terrain_id = _base_terrain_render_id(String(profile.id))
 	var chunks := _compose_chunks(layout_rng, world_data, profile)
 	_apply_map_boundary(world_data, profile, progression_projection.get("edge_exit_positions", []))
 	var templates := _apply_common_templates(world_data, layout_rng, chunks, profile)
@@ -1194,6 +1195,21 @@ func _facility_candidate_offsets() -> Array:
 		Vector2i(-1, -3),
 		Vector2i(1, 3)
 	]
+
+func _base_terrain_render_id(biome_id: String) -> String:
+	match biome_id:
+		BIOME_COMMON:
+			return RENDER_GROUND
+		BIOME_MOUNTAIN:
+			return RENDER_MOUNTAIN_BASE_GRASS
+		BIOME_WASTELAND:
+			return RENDER_WASTELAND_DRY_SOIL
+		BIOME_SNOWFIELD:
+			return RENDER_SNOWFIELD_SNOW
+		BIOME_RAINFOREST:
+			return RENDER_RAINFOREST_RIVER_BANK
+		_:
+			return ""
 
 func _reachable_access_position(position: Vector2i, reachable_cells: Dictionary, offsets: Array) -> Vector2i:
 	for offset in offsets:

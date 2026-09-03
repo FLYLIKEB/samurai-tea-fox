@@ -5386,6 +5386,24 @@
       "runtime_scale": 1
     },
     {
+      "id": "terrain_mountain_base_grass_01",
+      "name": "mountain_base_grass_01_32x32",
+      "status": "완료",
+      "kind": "terrain_tile",
+      "path": "res://assets/tiles/terrain/mountain/mountain_base_grass_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {"columns": 1, "rows": 1, "frame_width": 32, "frame_height": 32},
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:7d8a2e145dd1a30f111489f23590bbbbff029724fea73f7e48c1409d8b00110e",
+      "rgba_sha256": "sha256:de3f2cd99f9d8a707f06a3ee04146c99b85304f0989e4f581343426a4d23c1f0",
+      "runtime_scale": 1
+    },
+    {
       "id": "asset_assets_tiles_terrain_desert_bone_cross_32x32_png",
       "name": "bone_cross_32x32",
       "status": "완료",
