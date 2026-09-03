@@ -111,6 +111,7 @@ var _pointer_move_target_world := Vector2.ZERO
 var _pointer_move_route: Array = []
 var _pending_pointer_interaction_target_id := ""
 var _pending_pointer_interaction_cell := Vector2i.ZERO
+var _pending_facility_placement: Dictionary = {}
 var _feedback_player: AudioStreamPlayer
 var _feedback_playback: AudioStreamGeneratorPlayback
 var feedback_beep_count := 0
@@ -333,6 +334,9 @@ func _is_hud_menu_open(menu_id: String) -> bool:
 	return game_hud != null and game_hud.has_method("active_menu_id") and String(game_hud.active_menu_id()) == menu_id
 
 func submit_pointer_interaction(world_position: Vector2) -> bool:
+	if has_pending_facility_placement():
+		_place_pending_facility_at(world_cell_from_world_position(world_position))
+		return true
 	_dungeon_debug("클릭 상호작용: world=%s cell=%s" % [world_position, world_cell_from_world_position(world_position)])
 	var landmark_hit := _landmark_target_near_world_position(world_position)
 	if not landmark_hit.is_empty():
@@ -637,13 +641,14 @@ func submit_action_command(command) -> bool:
 				_play_feedback_beep()
 			return accepted
 		GameCommand.Type.HIDE_MENU:
-			var accepted: bool = game_hud != null and game_hud.hide_menu()
+			var placement_cancelled := _cancel_pending_facility_placement()
+			var accepted: bool = (game_hud != null and game_hud.hide_menu()) or placement_cancelled
 			if accepted:
 				_play_feedback_beep()
 			return accepted
 		GameCommand.Type.CRAFT_RECIPE:
 			var accepted: bool = _handle_craft_recipe_command(command)
-			if accepted:
+			if accepted and not has_pending_facility_placement():
 				_advance_time_for_turn()
 				_play_feedback_beep()
 				_queue_enemy_turn_after_player_action()
@@ -1959,20 +1964,23 @@ func _handle_craft_recipe_command(command: GameCommand) -> bool:
 	var recipe_id := String(command.payload.get("recipe_id", ""))
 	if recipe_id.is_empty():
 		return false
-	var result: Dictionary = _craft_recipe_with_world_install(recipe_id)
+	var result: Dictionary = _craft_recipe_or_begin_facility_placement(recipe_id)
 	if game_hud != null:
-		game_hud.show_command_feedback(
-			("제작·설치 완료: %s" if bool(result.get("installed", false)) else "제작 완료: %s") % result.get("result_item_id", recipe_id)
-			if result.ok
-			else "제작 불가: %s" % String(result.get("reason", "unknown"))
-		)
-	if result.ok:
+		if bool(result.get("placement_pending", false)):
+			game_hud.show_command_feedback("설치할 타일을 선택하세요. (플레이어 기준 2칸 이내)")
+		else:
+			game_hud.show_command_feedback(
+				"제작 완료: %s" % result.get("result_item_id", recipe_id)
+				if result.ok
+				else "제작 불가: %s" % String(result.get("reason", "unknown"))
+			)
+	if result.ok and not bool(result.get("placement_pending", false)):
 		_sync_inventory_runtime_state()
 		save_current_run()
 		_configure_game_hud()
 	return bool(result.ok)
 
-func _craft_recipe_with_world_install(recipe_id: String) -> Dictionary:
+func _craft_recipe_or_begin_facility_placement(recipe_id: String) -> Dictionary:
 	var recipe: Dictionary = crafting_service.recipe_for(recipe_id)
 	var result_item_id := String(recipe.get("result_item_id", ""))
 	if not crafting_service.is_facility_item(result_item_id):
@@ -1986,37 +1994,79 @@ func _craft_recipe_with_world_install(recipe_id: String) -> Dictionary:
 	var availability: Dictionary = crafting_service.can_craft(recipe_id, inventory, crafting_context)
 	if not availability.ok:
 		return availability
-	var placement_context := {
-		"metadata": _player_facility_metadata(result_item_id),
-		"search_radius": FacilityPlacementService.DEFAULT_PLACEMENT_SEARCH_RADIUS
+	_pending_facility_placement = {
+		"recipe_id": recipe_id,
+		"facility_item_id": result_item_id,
+		"metadata": _player_facility_metadata(result_item_id)
 	}
-	var candidate: Dictionary = facility_placement_service.find_placement_near(
-		result_item_id,
-		world_data,
-		_player_world_cell(),
-		placement_context
-	)
-	if not candidate.ok:
-		return candidate
-	placement_context["owner_id"] = String(candidate.owner_id)
+	_clear_pointer_movement()
+	return {
+		"ok": true,
+		"placement_pending": true,
+		"recipe_id": recipe_id,
+		"result_item_id": result_item_id
+	}
+
+func has_pending_facility_placement() -> bool:
+	return not _pending_facility_placement.is_empty()
+
+func _place_pending_facility_at(origin: Vector2i) -> Dictionary:
+	if not has_pending_facility_placement():
+		return {"ok": false, "reason": "no_pending_facility_placement"}
+	var player_cell := _player_world_cell()
+	var distance := absi(origin.x - player_cell.x) + absi(origin.y - player_cell.y)
+	if distance == 0 or distance > FacilityPlacementService.DEFAULT_PLACEMENT_SEARCH_RADIUS:
+		return _facility_placement_failed("placement_out_of_range")
+
+	var recipe_id := String(_pending_facility_placement.get("recipe_id", ""))
+	var facility_item_id := String(_pending_facility_placement.get("facility_item_id", ""))
+	var crafting_context := _crafting_context()
+	var availability: Dictionary = crafting_service.can_craft(recipe_id, inventory, crafting_context)
+	if not availability.ok:
+		return _facility_placement_failed(String(availability.get("reason", "craft_unavailable")))
+	var placement_context := {
+		"metadata": _pending_facility_placement.get("metadata", {}).duplicate(true)
+	}
 	var placed: Dictionary = facility_placement_service.place_facility(
-		result_item_id,
+		facility_item_id,
 		world_data,
-		_vector_from_dictionary(candidate.origin),
+		origin,
 		placement_context
 	)
 	if not placed.ok:
-		return placed
+		return _facility_placement_failed(String(placed.get("reason", "invalid_placement")))
 
 	var crafted: Dictionary = crafting_service.craft(recipe_id, inventory, crafting_context, {"store_result": false})
 	if not crafted.ok:
 		world_data.release_footprint(String(placed.owner_id))
-		return crafted
+		return _facility_placement_failed(String(crafted.get("reason", "craft_failed")))
 	_record_placed_facility(placed)
 	_sync_runtime_world_render()
 	crafted["installed"] = true
 	crafted["placement"] = placed.duplicate(true)
+	_pending_facility_placement.clear()
+	_sync_inventory_runtime_state()
+	save_current_run()
+	_configure_game_hud()
+	if game_hud != null:
+		game_hud.show_command_feedback("제작·설치 완료: %s" % facility_item_id)
+	_advance_time_for_turn()
+	_play_feedback_beep()
+	_queue_enemy_turn_after_player_action()
 	return crafted
+
+func _facility_placement_failed(reason: String) -> Dictionary:
+	if game_hud != null:
+		game_hud.show_command_feedback("설치 불가: %s" % reason)
+	return {"ok": false, "reason": reason, "placement_pending": true}
+
+func _cancel_pending_facility_placement() -> bool:
+	if not has_pending_facility_placement():
+		return false
+	_pending_facility_placement.clear()
+	if game_hud != null:
+		game_hud.show_command_feedback("시설 설치를 취소했습니다.")
+	return true
 
 func _player_facility_metadata(facility_item_id: String) -> Dictionary:
 	var definition: Dictionary = facility_placement_service.facility_for(facility_item_id)
