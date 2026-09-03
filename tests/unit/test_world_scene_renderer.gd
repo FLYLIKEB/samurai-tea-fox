@@ -9,6 +9,7 @@ func run(asserts) -> void:
 	_assert_explicit_atlas_coords_override_adjacency(asserts)
 	_assert_river_uses_connection_specific_sources(asserts)
 	_assert_path_uses_connection_specific_sources(asserts)
+	_assert_base_underlay_survives_path_layer(asserts)
 	_assert_tree_footprints_overlay_base_terrain(asserts)
 	_assert_multicell_footprints_keep_original_texture(asserts)
 	_assert_dungeon_landmark_uses_multicell_house_and_label(asserts)
@@ -117,6 +118,39 @@ func _assert_path_uses_connection_specific_sources(asserts) -> void:
 	asserts.equal(curve, "asset_assets_tiles_terrain_paths_road_corner_ne_32x32_png", "path curve mask uses north-east corner road tile")
 	asserts.true_value(vertical != horizontal, "vertical and horizontal route tiles remain visually distinct")
 	asserts.true_value(curve != vertical and curve != horizontal, "route corner tile differs from straight tiles")
+
+func _assert_base_underlay_survives_path_layer(asserts) -> void:
+	var renderer := WorldSceneRenderer.new()
+	var root := Node2D.new()
+	var base := "terrain_plains_grass_ground_01"
+	var path := WorldSceneRenderer.PATH_BASE_SOURCE_ID
+	var input := {
+		"schema_version": 1,
+		"read_only": true,
+		"tile_size": 32,
+		"bounds": {"width": 1, "height": 1},
+		"layers": [
+			{"id": "base_terrain", "kind": "tile", "cells": [
+				{"position": {"x": 0, "y": 0}, "source_id": base}
+			]},
+			{"id": WorldData.LAYER_TERRAIN, "kind": "tile", "cells": [
+				{"position": {"x": 0, "y": 0}, "source_id": path}
+			]}
+		],
+		"required_landmarks": []
+	}
+	var result: Dictionary = renderer.render(root, input)
+	asserts.true_value(result.ok, "renderer accepts base and path underlay layers")
+	var base_layer := root.get_node_or_null(WorldSceneRenderer.TERRAIN_UNDERLAY_LAYER) as TileMapLayer
+	var path_layer := root.get_node_or_null(WorldSceneRenderer.PATH_UNDERLAY_LAYER) as TileMapLayer
+	asserts.true_value(base_layer != null and path_layer != null, "base and path underlays render as separate tilemap layers")
+	if base_layer != null:
+		asserts.equal(base_layer.get_cell_source_id(Vector2i.ZERO), 0, "base terrain cell remains present after path underlay rendering")
+		var base_source := base_layer.tile_set.get_source(0) as TileSetAtlasSource if base_layer.tile_set != null else null
+		asserts.true_value(base_source != null and base_source.texture != null and base_source.texture.resource_path.ends_with("plain_grass_01_32x32.png"), "base underlay keeps its original grass texture")
+	if path_layer != null:
+		asserts.equal(path_layer.get_cell_source_id(Vector2i.ZERO), 0, "path underlay writes its own fill cell")
+	root.queue_free()
 
 func _assert_tree_footprints_overlay_base_terrain(asserts) -> void:
 	var renderer := WorldSceneRenderer.new()

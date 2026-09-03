@@ -9,6 +9,8 @@ const PIXEL_FONT = preload("res://assets/fonts/galmuri/Galmuri11.ttf")
 
 const TERRAIN_LAYER := "TerrainTileMap"
 const TERRAIN_UNDERLAY_LAYER := "TerrainUnderlay"
+const PATH_UNDERLAY_LAYER := "PathUnderlay"
+const WATER_UNDERLAY_LAYER := "WaterUnderlay"
 const TERRAIN_FOOTPRINT_LAYER := "TerrainFootprints"
 const FACILITY_LAYER := "Facilities"
 const ENTITY_LAYER := "Entities"
@@ -98,6 +100,8 @@ func render(root: Node2D, renderer_input: Dictionary, owner_sources := {}, origi
 	var tile_size := int(renderer_input.get("tile_size", RuntimeConstants.float_value("world.tile_size_pixels")))
 	var rendered_counts := {}
 	var terrain_underlay_layer := _add_tilemap_layer(root, TERRAIN_UNDERLAY_LAYER, -110)
+	var path_underlay_layer := _add_tilemap_layer(root, PATH_UNDERLAY_LAYER, -109)
+	var water_underlay_layer := _add_tilemap_layer(root, WATER_UNDERLAY_LAYER, -105)
 	var terrain_layer := _add_tilemap_layer(root, TERRAIN_LAYER, -100)
 	var terrain_footprint_layer := _add_layer(root, TERRAIN_FOOTPRINT_LAYER, -90)
 	var facility_layer := _add_layer(root, FACILITY_LAYER, -20)
@@ -109,8 +113,10 @@ func render(root: Node2D, renderer_input: Dictionary, owner_sources := {}, origi
 		if layer_id == "base_terrain":
 			rendered_counts[layer_id] = _render_tilemap_cells(terrain_underlay_layer, terrain_footprint_layer, layer.get("cells", []), tile_size)
 		elif layer_id == WorldData.LAYER_TERRAIN:
-			_render_path_grass_underlay(terrain_underlay_layer, layer.get("cells", []), tile_size)
-			_render_bridge_water_underlay(terrain_underlay_layer, layer.get("cells", []), tile_size)
+			# Keep path fill on its own layer. Replacing the base layer's TileSet here
+			# would invalidate every already-written base cell (including river edges).
+			_render_path_grass_underlay(path_underlay_layer, layer.get("cells", []), tile_size)
+			_render_bridge_water_underlay(water_underlay_layer, layer.get("cells", []), tile_size)
 			rendered_counts[layer_id] = _render_tilemap_cells(
 				terrain_layer,
 				terrain_footprint_layer,
@@ -167,6 +173,7 @@ func _render_bridge_water_underlay(tilemap_layer: TileMapLayer, cells: Array, ti
 			bridge_positions.append(_position_from_dictionary(cell.get("position", {})))
 	if bridge_positions.is_empty():
 		return
+	# Keep the layer order as base grass -> water -> bridge sprite.
 	var path := _resource_path(RIVER_BASE_SOURCE_ID)
 	if path.is_empty():
 		return
@@ -178,6 +185,32 @@ func _render_bridge_water_underlay(tilemap_layer: TileMapLayer, cells: Array, ti
 	tilemap_layer.tile_set = tile_set
 	for position in bridge_positions:
 		tilemap_layer.set_cell(position, int(source_meta.source_index), Vector2i.ZERO, 0)
+
+func _render_water_grass_underlay(tilemap_layer: TileMapLayer, cells: Array, tile_size: int) -> void:
+	if tilemap_layer == null:
+		return
+	var water_positions: Array[Vector2i] = []
+	for cell in cells:
+		var source_id := String(cell.get("source_id", ""))
+		if _is_water_terrain_source(source_id):
+			water_positions.append(_position_from_dictionary(cell.get("position", {})))
+	if water_positions.is_empty():
+		return
+	var path := _resource_path(TREE_UNDERLAY_SOURCE_ID)
+	if path.is_empty():
+		return
+	var tile_set := tilemap_layer.tile_set if tilemap_layer.tile_set != null else TileSet.new()
+	tile_set.tile_size = Vector2i(tile_size, tile_size)
+	var source_meta := _add_tileset_source(tile_set, path, tile_size)
+	if not source_meta.ok:
+		return
+	tilemap_layer.tile_set = tile_set
+	for position in water_positions:
+		tilemap_layer.set_cell(position, int(source_meta.source_index), Vector2i.ZERO, 0)
+
+func _is_water_terrain_source(source_id: String) -> bool:
+	var normalized := source_id.to_lower()
+	return normalized.contains("water") or normalized.contains("river") or normalized.contains("stream")
 
 func _render_tilemap_cells(tilemap_layer: TileMapLayer, footprint_layer: Node2D, cells: Array, tile_size: int) -> int:
 	var tile_set := TileSet.new()

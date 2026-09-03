@@ -905,9 +905,11 @@ func _make_path_cell(world_data: WorldData, position: Vector2i, profile: Diction
 		var water_north_south := world_data.terrain_id_at(position + Vector2i.UP) == String(profile.water_terrain_id) or world_data.terrain_id_at(position + Vector2i.DOWN) == String(profile.water_terrain_id)
 		var water_east_west := world_data.terrain_id_at(position + Vector2i.LEFT) == String(profile.water_terrain_id) or world_data.terrain_id_at(position + Vector2i.RIGHT) == String(profile.water_terrain_id)
 		if water_north_south and not water_east_west:
-			render_id = RENDER_BRIDGE_VERTICAL
-		elif water_east_west:
+			# The bridge crosses a north/south river, so its deck runs east/west.
 			render_id = RENDER_BRIDGE_HORIZONTAL
+		elif water_east_west:
+			# The bridge crosses an east/west river, so its deck runs north/south.
+			render_id = RENDER_BRIDGE_VERTICAL
 	world_data.set_terrain(position, terrain_id, true, render_id)
 
 func _place_path_edge_fences(world_data: WorldData, rng: DeterministicRng, templates: Array, profile: Dictionary) -> void:
@@ -935,6 +937,17 @@ func _place_path_edge_fences(world_data: WorldData, rng: DeterministicRng, templ
 				continue
 			var fence_position: Vector2i = position + side
 			if not world_data.contains(fence_position) or path_positions.has(_key(fence_position)):
+				continue
+			# Path fencing is reserved for river-side banks.  Fencing every
+			# path edge makes long straight roads look artificial and causes
+			# rotated 1x2 pieces to read as continuous vertical rails.
+			var water_terrain_id := String(profile.water_terrain_id)
+			var next_to_river := false
+			for river_side in [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]:
+				if world_data.terrain_id_at(fence_position + river_side) == water_terrain_id:
+					next_to_river = true
+					break
+			if not next_to_river:
 				continue
 			# Never fill the narrow gap between two nearby road lanes.
 			var adjacent_path_count := 0
