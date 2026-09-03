@@ -133,6 +133,9 @@ var run_state
 var tea_service
 var asset_catalog := AssetCatalog.new()
 var _asset_catalog_ready := false
+var _toast_queue: Array[String] = []
+var _toast_label: Label
+var _toast_remaining := 0.0
 var _crafting_filter := "all"
 var _selected_recipe_id := ""
 var tea_brewing_command_runtime
@@ -367,7 +370,20 @@ func show_command_feedback(message: String) -> void:
 	if not _open_menu_id.is_empty():
 		_refresh_open_menu()
 
+func show_status_toast(message: String) -> void:
+	if message.is_empty():
+		return
+	if _toast_queue.size() >= 4 and _toast_queue.back() == message:
+		return
+	_toast_queue.append(message)
+	if _toast_label != null and _toast_remaining <= 0.0:
+		_advance_status_toast()
+
 func _process(delta: float) -> void:
+	if _toast_label != null and _toast_remaining > 0.0:
+		_toast_remaining -= maxf(delta, 0.0)
+		if _toast_remaining <= 0.0:
+			_advance_status_toast()
 	if time_state == null:
 		return
 	_time_refresh_elapsed += maxf(delta, 0.0)
@@ -879,6 +895,25 @@ func _build_menu_panel(parent: PanelContainer) -> void:
 	scroll.add_child(_menu_content)
 	_labels.menu_feedback = _label("", 11)
 	rows.add_child(_labels.menu_feedback)
+	_toast_label = _label("", 12)
+	_toast_label.name = "StatusToast"
+	_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_toast_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_toast_label.position = Vector2(-180.0, 8.0)
+	_toast_label.size = Vector2(360.0, 24.0)
+	_toast_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_toast_label.visible = false
+	root.add_child(_toast_label)
+
+func _advance_status_toast() -> void:
+	if _toast_label == null or _toast_queue.is_empty():
+		if _toast_label != null:
+			_toast_label.visible = false
+		_toast_remaining = 0.0
+		return
+	_toast_label.text = _toast_queue.pop_front()
+	_toast_label.visible = true
+	_toast_remaining = 2.2
 
 func _placement_command_button(text: String, command_type: int) -> Button:
 	var button := Button.new()

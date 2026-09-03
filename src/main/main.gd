@@ -1577,6 +1577,8 @@ func _on_dungeon_enemy_defeated(_event: Dictionary, enemy, owner_id: String) -> 
 	if world_data != null:
 		world_data.release_footprint(owner_id)
 	_dungeon_debug("던전 몬스터 처치: %s, remaining=%d" % [owner_id, _combat_targets().size()])
+	if game_hud != null:
+		game_hud.show_status_toast("적을 처치했다!")
 
 func _restore_dungeon_map_from_runtime() -> void:
 	var projection: Dictionary = dungeon_runtime.to_projection()
@@ -1805,6 +1807,8 @@ func _on_acquisition_completed(result: Dictionary) -> void:
 		world_position_for_cell_center(_vector_from_dictionary(result.position))
 	)
 	add_child(effect)
+	if game_hud != null:
+		game_hud.show_status_toast("%s을(를) 얻었다!" % item_name)
 
 func _on_combat_drop_requested(event: Dictionary) -> void:
 	if acquisition_service == null:
@@ -2262,6 +2266,7 @@ func _handle_landmark_interaction(target_id: String) -> bool:
 		_configure_game_hud()
 		if game_hud != null:
 			game_hud.show_command_feedback("던전에서 귀환")
+			game_hud.show_status_toast("던전에서 나왔다!")
 		return true
 	if _is_core_dungeon_target(target_id):
 		_dungeon_debug("던전 랜드마크 상호작용: %s" % target_id)
@@ -2688,6 +2693,8 @@ func _handle_complete_dungeon_command(command: GameCommand) -> bool:
 	if bool(command.payload.get("entry_only", false)):
 		save_current_run()
 		_configure_game_hud()
+		if game_hud != null:
+			game_hud.show_status_toast("던전에 들어갔다!")
 		_dungeon_debug("입구 상호작용은 입장만 처리: in_dungeon=%s" % _in_dungeon_map)
 		return true
 	if String(previous_projection.get("lifecycle_state", DungeonInstanceState.STATE_OUTSIDE)) in [DungeonInstanceState.STATE_OUTSIDE, DungeonInstanceState.STATE_RETURNED] \
