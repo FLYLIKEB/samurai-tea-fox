@@ -408,6 +408,16 @@ func _build() -> void:
 	_ignore_mouse(root)
 	root.theme = _theme
 	add_child(root)
+	_toast_label = _label("", 12)
+	_toast_label.name = "StatusToast"
+	_toast_label.z_index = 100
+	_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_toast_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_toast_label.position = Vector2(-180.0, 8.0)
+	_toast_label.size = Vector2(360.0, 24.0)
+	_toast_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_toast_label.visible = false
+	root.add_child(_toast_label)
 
 	var status_panel := _panel(STATUS_PANEL_SIZE)
 	status_panel.name = "StatusPanel"
@@ -895,17 +905,6 @@ func _build_menu_panel(parent: PanelContainer) -> void:
 	scroll.add_child(_menu_content)
 	_labels.menu_feedback = _label("", 11)
 	rows.add_child(_labels.menu_feedback)
-	_toast_label = _label("", 12)
-	_toast_label.name = "StatusToast"
-	_toast_label.z_index = 100
-	_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_toast_label.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_toast_label.position = Vector2(-180.0, 8.0)
-	_toast_label.size = Vector2(360.0, 24.0)
-	_toast_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_toast_label.visible = false
-	parent.add_child(_toast_label)
-
 func _advance_status_toast() -> void:
 	if _toast_label == null or _toast_queue.is_empty():
 		if _toast_label != null:
