@@ -810,6 +810,39 @@
       "runtime_scale": 1
     },
     {
+      "id": "chr_8_fox_samurai_attack",
+      "name": "무차우 4방향 공격 시트",
+      "art_asset_id": "ART-23",
+      "character_id": "CHR-8",
+      "animation_id": "attack",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_attack_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frames_per_direction": 8,
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:944eebd1636c64bc014ab587c6da29f1d7ac02d97443955ea9626d0b829281ad",
+      "rgba_sha256": "sha256:d1ea28982617c64bef982029fd7a76f73eab2a0a9df131ebd93900174e035ecf",
+      "runtime_scale": 1
+    },
+    {
       "id": "chr_9_wandering_tea_merchant_walk",
       "name": "떠돌이 차 상인 4방향 걷기 시트",
       "art_asset_id": "ART-22",

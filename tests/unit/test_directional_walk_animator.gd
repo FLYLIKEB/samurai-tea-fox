@@ -14,6 +14,7 @@ const WALK_ASSET_IDS := [
 	"chr_8_fox_samurai_walk",
 	"chr_9_wandering_tea_merchant_walk"
 ]
+const ATTACK_ASSET_ID := "chr_8_fox_samurai_attack"
 
 func run(asserts) -> void:
 	var catalog := AssetCatalog.new()
@@ -29,6 +30,12 @@ func run(asserts) -> void:
 			definition_result.ok,
 			"%s follows the shared 4x8 walk contract: %s" % [asset_id, definition_result.get("error", "")]
 		)
+	var attack_validator := DirectionalWalkAnimator.new()
+	var attack_definition_result := attack_validator.validate_definition(catalog.definition_for(ATTACK_ASSET_ID), "Attack")
+	asserts.true_value(
+		attack_definition_result.ok,
+		"%s follows the shared 4x8 attack contract: %s" % [ATTACK_ASSET_ID, attack_definition_result.get("error", "")]
+	)
 
 	var sprite := Sprite2D.new()
 	var animator := DirectionalWalkAnimator.new()
@@ -65,6 +72,16 @@ func run(asserts) -> void:
 	animator.update(0.0, "north", false)
 	asserts.equal(animator.current_asset_id(), "fox_samurai_back_idle", "stopping restores the facing idle asset")
 	asserts.equal(Vector2i(sprite.hframes, sprite.vframes), Vector2i.ONE, "stopping restores the single-frame texture contract")
+
+	asserts.true_value(animator.play_attack("west"), "configured CHR-8 animator starts the attack sheet")
+	asserts.equal(animator.current_asset_id(), ATTACK_ASSET_ID, "attack selects the CHR-8 attack sheet")
+	asserts.equal(Vector2i(sprite.hframes, sprite.vframes), Vector2i(8, 4), "attack sheet exposes an 8x4 frame grid")
+	asserts.equal(sprite.frame_coords, Vector2i(0, 1), "attack starts on the requested direction row")
+	animator.update(0.0625, "west", false)
+	asserts.equal(sprite.frame_coords, Vector2i(1, 1), "attack timing advances one frame at sixteen frames per second")
+	animator.update(0.5, "west", false)
+	asserts.equal(animator.current_asset_id(), "fox_samurai_left_idle", "attack returns to idle after the final frame")
+	asserts.false_value(animator.is_attacking(), "attack state ends after the non-looping sequence")
 
 	var npc_sprite := Sprite2D.new()
 	var npc_animator := DirectionalWalkAnimator.new()

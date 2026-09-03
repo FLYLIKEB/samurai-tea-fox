@@ -6,7 +6,7 @@
     "remaining_source_files": 0,
     "remaining_source_image_files": 0
   },
-  "total_runtime_pngs": 425,
+  "total_runtime_pngs": 426,
   "runtime_roots": [
     "assets/backgrounds",
     "assets/sprites",
@@ -3829,6 +3829,15 @@
       "alpha_empty": false,
       "source_sha256": "sha256:e933ef7b27d493baae24a61fb6dcab8041648d79c4eac3786e26eff3f447fccd",
       "rgba_sha256": "sha256:99971a15c0e9cfc56ca15c9d1d50cd6e66b94d456aac676bf3800dd79f49b6e9"
+    },
+    {
+      "path": "assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_attack_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:944eebd1636c64bc014ab587c6da29f1d7ac02d97443955ea9626d0b829281ad",
+      "rgba_sha256": "sha256:d1ea28982617c64bef982029fd7a76f73eab2a0a9df131ebd93900174e035ecf"
     },
     {
       "path": "assets/sprites/characters/npcs/chr-9-wandering-tea-merchant/wandering_tea_merchant_walk_4dir_8f_32x32.png",

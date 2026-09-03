@@ -1,0 +1,271 @@
+{
+  "created_at": "2026-09-03T06:06:45+00:00",
+  "schema_version": 1,
+  "task": "fox_samurai_attack_animation",
+  "notion_art_asset_page": "https://app.notion.com/p/3d0373699e6681df9dc7e74bcdf1e036",
+  "official_schema_checked_at": "2026-09-03",
+  "endpoint": "/animate-with-text-v3",
+  "grid": {
+    "canvas_px": [
+      256,
+      128
+    ],
+    "cell_px": [
+      32,
+      32
+    ],
+    "directions": [
+      "south",
+      "west",
+      "east",
+      "north"
+    ],
+    "frames_per_direction": 8,
+    "total_frames": 32
+  },
+  "source_hashes": {
+    "south": "9f42af00d727de6d2e81089d2c396f35798ae5c12aaea5adc49b6526b2c24b04",
+    "west": "c7964137000ff783af0a794e5aabd1d99f44a2363f4d62775154076f508052c0",
+    "east": "fc335599f1eb3c0e4ca944e313c6c20fbacc1c64a22f8a7f74c516a55097cedc",
+    "north": "ef51226b76edf3c3808a768fb839487d1dbc65437165c21d5388b8c7c0cbc9c7"
+  },
+  "jobs": {
+    "east": {
+      "endpoint": "/animate-with-text-v3",
+      "direction": "east",
+      "frame_count": 8,
+      "seed": 930802,
+      "no_background": true,
+      "drift_threshold": 0.08,
+      "enhance_prompt": false,
+      "last_frame": "same_as_first_frame",
+      "prompt": "attacking east, strict right cardinal sprite, no 3/4 turn. 8-frame short non-looping sword attack for one 32x32 pixel character. Muchau is a human/kitsune hybrid with large red fox ears, readable tail, small sword, tea tin, and tea ware. Show anticipation, small slash, follow-through, and return to idle. Keep gear attached; preserve first-frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood. Transparent background, no shadow plate, no extra character, no text. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, oversized weapon, magic aura, full screen effect, side-scrolling scene, isometric.",
+      "source_path": "assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_right_idle_32x32.png",
+      "source_sha256": "fc335599f1eb3c0e4ca944e313c6c20fbacc1c64a22f8a7f74c516a55097cedc",
+      "status": "completed",
+      "background_job_id": "8537a454-73fe-42af-b310-0688160d0b5c",
+      "image_source": "images",
+      "frame_paths": [
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/east/frame_00.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/east/frame_01.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/east/frame_02.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/east/frame_03.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/east/frame_04.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/east/frame_05.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/east/frame_06.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/east/frame_07.png"
+      ],
+      "frame_sha256": [
+        "0467817049c3aec7403055cd6c09cb01d9b4e802be2424f9347ddb5170ea2ee9",
+        "54bbd7d3f7e6acb62bc39c8e7fcb9fb3515e400cf3572ecc32f92039d313c4e8",
+        "5ca3fd209ced45d390aba89862385928657443c9a45269b8e39672abfb236729",
+        "17faaae948222617218f81d06755fb88ec5fbc777c4c68c1163e2cfec0c9ce41",
+        "c015e50f4320bebc0ac176f5d5957a86ebec6398bb519f828c5966e36e856f2f",
+        "cd15ee49014aecbf2bb47b3507693be81058b3b7e6ed142613d333222a0593d6",
+        "4c2710cbb07bff738faf653c8960d1a73be4afb372b39ed431f16d142fedbc04",
+        "b09df24f38faa2ea88054ed4f07006f0d4f129c5061b277cf69b16261fa9eb2c"
+      ]
+    },
+    "west": {
+      "endpoint": "/animate-with-text-v3",
+      "direction": "west",
+      "frame_count": 8,
+      "seed": 930801,
+      "no_background": true,
+      "drift_threshold": 0.08,
+      "enhance_prompt": false,
+      "last_frame": "same_as_first_frame",
+      "prompt": "attacking west, strict left cardinal sprite, no 3/4 turn. 8-frame short non-looping sword attack for one 32x32 pixel character. Muchau is a human/kitsune hybrid with large red fox ears, readable tail, small sword, tea tin, and tea ware. Show anticipation, small slash, follow-through, and return to idle. Keep gear attached; preserve first-frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood. Transparent background, no shadow plate, no extra character, no text. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, oversized weapon, magic aura, full screen effect, side-scrolling scene, isometric.",
+      "source_path": "assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_left_idle_32x32.png",
+      "source_sha256": "c7964137000ff783af0a794e5aabd1d99f44a2363f4d62775154076f508052c0",
+      "status": "completed",
+      "background_job_id": "1918ffa6-1c1e-48f4-94e0-ca5df64a994e",
+      "image_source": "images",
+      "frame_paths": [
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/west/frame_00.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/west/frame_01.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/west/frame_02.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/west/frame_03.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/west/frame_04.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/west/frame_05.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/west/frame_06.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/west/frame_07.png"
+      ],
+      "frame_sha256": [
+        "606746f95dd33114e268da062d469c871baee1d546e689410921a91bf5cbc895",
+        "fcf451747cb3cb009c2bbd57f8f790dba0f063a570a373088e184912c8aaab3f",
+        "e7b95dda9c41bc38ce50a2a8bd2177c148181c8d47c03a3d06e0838c698431af",
+        "0fd2a57288cebeb6ff7aaed6ecfc5fe119d41feb17577dcf713531a76ac4cd07",
+        "1c3412ce4ccee46a6e55afc613e020d9ac00cb8ed56cfe32fa7065d2108c79d6",
+        "2467b4163ab62eb6bdbe6f8b14668e48cea027c61a583e061ed4f69b7f975877",
+        "90ec73fbf14e198fa033a300cff3a490b21b81a9631c2f82462759068b90b5f9",
+        "291094827de34c3e4054ee523f9c0282146f4f76931d05c61d3ccc9454ca82fb"
+      ]
+    },
+    "north": {
+      "endpoint": "/animate-with-text-v3",
+      "direction": "north",
+      "frame_count": 8,
+      "seed": 930803,
+      "no_background": true,
+      "drift_threshold": 0.08,
+      "enhance_prompt": false,
+      "last_frame": "same_as_first_frame",
+      "prompt": "attacking north, back-facing cardinal sprite, no 3/4 turn. 8-frame short non-looping sword attack for one 32x32 pixel character. Muchau is a human/kitsune hybrid with large red fox ears, readable tail, small sword, tea tin, and tea ware. Show anticipation, small slash, follow-through, and return to idle. Keep gear attached; preserve first-frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood. Transparent background, no shadow plate, no extra character, no text. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, oversized weapon, magic aura, full screen effect, side-scrolling scene, isometric.",
+      "source_path": "assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_back_idle_32x32.png",
+      "source_sha256": "ef51226b76edf3c3808a768fb839487d1dbc65437165c21d5388b8c7c0cbc9c7",
+      "status": "completed",
+      "background_job_id": "c8734ccf-9879-46bb-8e11-be8d205d39bf",
+      "image_source": "images",
+      "frame_paths": [
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/north/frame_00.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/north/frame_01.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/north/frame_02.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/north/frame_03.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/north/frame_04.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/north/frame_05.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/north/frame_06.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/north/frame_07.png"
+      ],
+      "frame_sha256": [
+        "c4ad40e93cacb21d070855dc168e56b985ecf8100df311c705d16e1e3312fd48",
+        "bb95f82d8d38378f5da3ef1a2dff5b14dff8672e6f747fd5afc797f0c1d3d3c3",
+        "01b4416f403f2b75a2ad78c6bccfac141bca31945b966cabc5e85446464efead",
+        "9cc90c841e0b6061db508b60934c8167208f10487b9498bc58b76c8f4aace186",
+        "d43ced8c5062df050cc822b57ffe450121c4e5a3a3d9216e01bbf21fc683aac1",
+        "cb7dbff088a98cda7300eed141c772b82ad549a4342b68de7393a217797e97cc",
+        "9e8aecd548cb169877e9f0cf5d8fc3c42803cb751400e514dcd40eee0d7f1098",
+        "dfc792848ebad6df9faa2576109ba56f82741e6e56381ceebd42856530d90c90"
+      ]
+    },
+    "south": {
+      "endpoint": "/animate-with-text-v3",
+      "direction": "south",
+      "frame_count": 8,
+      "seed": 930800,
+      "no_background": true,
+      "drift_threshold": 0.08,
+      "enhance_prompt": false,
+      "last_frame": "same_as_first_frame",
+      "prompt": "attacking south, facing directly forward toward camera. 8-frame short non-looping sword attack for one 32x32 pixel character. Muchau is a human/kitsune hybrid with large red fox ears, readable tail, small sword, tea tin, and tea ware. Show anticipation, small slash, follow-through, and return to idle. Keep gear attached; preserve first-frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood. Transparent background, no shadow plate, no extra character, no text. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, oversized weapon, magic aura, full screen effect, side-scrolling scene, isometric.",
+      "source_path": "assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_front_idle_32x32.png",
+      "source_sha256": "9f42af00d727de6d2e81089d2c396f35798ae5c12aaea5adc49b6526b2c24b04",
+      "status": "completed",
+      "background_job_id": "fad6d840-3902-42d5-ac27-c867670798f9",
+      "image_source": "images",
+      "frame_paths": [
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/south/frame_00.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/south/frame_01.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/south/frame_02.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/south/frame_03.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/south/frame_04.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/south/frame_05.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/south/frame_06.png",
+        "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/south/frame_07.png"
+      ],
+      "frame_sha256": [
+        "81f071f65fa1a7f5df0f4049971aa6da741865f2e55aa5958b7f8a3a26191fe8",
+        "9b0e6768305575edf1b1a706cef4a47054636c0cda30ba0c8385838990a1fb3c",
+        "7df1d5d0838af899292b53b556f09e0101f6509267105a4e8aa5a46f301078da",
+        "8e7aaf89a082b4da4a5bf7aa995998d245a1a16b619158fc8ba7ac2805713357",
+        "4ff507585ccb9aaedfeeecf2e42dd9475e74dc5c18f62907a2bca60f30e8156e",
+        "3781a9081b383c3f6343414e9217c3603596cd4a43c083e1e1bb40a43ee914d4",
+        "7bc5081057d078fd4eb168d27b3ecb70dffd332f7d3c2b3121fa880d41747668",
+        "188aa0f62ce56fea97ed7d37114d77bc7290ccd7753acb797edd621c3cf87110"
+      ]
+    }
+  },
+  "updated_at": "2026-09-03T06:08:28+00:00",
+  "source_hash_immutability": {
+    "checked_at": "2026-09-03T06:08:28+00:00",
+    "status": "passed",
+    "sha256": {
+      "south": "9f42af00d727de6d2e81089d2c396f35798ae5c12aaea5adc49b6526b2c24b04",
+      "west": "c7964137000ff783af0a794e5aabd1d99f44a2363f4d62775154076f508052c0",
+      "east": "fc335599f1eb3c0e4ca944e313c6c20fbacc1c64a22f8a7f74c516a55097cedc",
+      "north": "ef51226b76edf3c3808a768fb839487d1dbc65437165c21d5388b8c7c0cbc9c7"
+    }
+  },
+  "final_path": "assets/sprites/characters/player/chr-8-fox-samurai/fox_samurai_attack_4dir_8f_32x32.png",
+  "final_sha256": "944eebd1636c64bc014ab587c6da29f1d7ac02d97443955ea9626d0b829281ad",
+  "raw_contact_sheets": [
+    "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/contact_1x.png",
+    "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/contact_2x.png"
+  ],
+  "raw_preview_gif": "assets/source/imagegen/pixellab-character-attack-20260903/raw/chr-8/attack_preview.gif",
+  "validation": {
+    "status": "passed",
+    "size": [
+      256,
+      128
+    ],
+    "mode": "RGBA",
+    "directions": 4,
+    "frames_per_direction": 8,
+    "total_frames": 32,
+    "sha256": "944eebd1636c64bc014ab587c6da29f1d7ac02d97443955ea9626d0b829281ad"
+  },
+  "motion_metrics": {
+    "status": "passed",
+    "minimum_unique_frames_per_direction": 4,
+    "directions": {
+      "south": {
+        "unique_frame_count": 8,
+        "unique_frame_minimum_met": true,
+        "frame_sha256": [
+          "81f071f65fa1a7f5df0f4049971aa6da741865f2e55aa5958b7f8a3a26191fe8",
+          "9b0e6768305575edf1b1a706cef4a47054636c0cda30ba0c8385838990a1fb3c",
+          "7df1d5d0838af899292b53b556f09e0101f6509267105a4e8aa5a46f301078da",
+          "8e7aaf89a082b4da4a5bf7aa995998d245a1a16b619158fc8ba7ac2805713357",
+          "4ff507585ccb9aaedfeeecf2e42dd9475e74dc5c18f62907a2bca60f30e8156e",
+          "3781a9081b383c3f6343414e9217c3603596cd4a43c083e1e1bb40a43ee914d4",
+          "7bc5081057d078fd4eb168d27b3ecb70dffd332f7d3c2b3121fa880d41747668",
+          "188aa0f62ce56fea97ed7d37114d77bc7290ccd7753acb797edd621c3cf87110"
+        ]
+      },
+      "west": {
+        "unique_frame_count": 8,
+        "unique_frame_minimum_met": true,
+        "frame_sha256": [
+          "606746f95dd33114e268da062d469c871baee1d546e689410921a91bf5cbc895",
+          "fcf451747cb3cb009c2bbd57f8f790dba0f063a570a373088e184912c8aaab3f",
+          "e7b95dda9c41bc38ce50a2a8bd2177c148181c8d47c03a3d06e0838c698431af",
+          "0fd2a57288cebeb6ff7aaed6ecfc5fe119d41feb17577dcf713531a76ac4cd07",
+          "1c3412ce4ccee46a6e55afc613e020d9ac00cb8ed56cfe32fa7065d2108c79d6",
+          "2467b4163ab62eb6bdbe6f8b14668e48cea027c61a583e061ed4f69b7f975877",
+          "90ec73fbf14e198fa033a300cff3a490b21b81a9631c2f82462759068b90b5f9",
+          "291094827de34c3e4054ee523f9c0282146f4f76931d05c61d3ccc9454ca82fb"
+        ]
+      },
+      "east": {
+        "unique_frame_count": 8,
+        "unique_frame_minimum_met": true,
+        "frame_sha256": [
+          "0467817049c3aec7403055cd6c09cb01d9b4e802be2424f9347ddb5170ea2ee9",
+          "54bbd7d3f7e6acb62bc39c8e7fcb9fb3515e400cf3572ecc32f92039d313c4e8",
+          "5ca3fd209ced45d390aba89862385928657443c9a45269b8e39672abfb236729",
+          "17faaae948222617218f81d06755fb88ec5fbc777c4c68c1163e2cfec0c9ce41",
+          "c015e50f4320bebc0ac176f5d5957a86ebec6398bb519f828c5966e36e856f2f",
+          "cd15ee49014aecbf2bb47b3507693be81058b3b7e6ed142613d333222a0593d6",
+          "4c2710cbb07bff738faf653c8960d1a73be4afb372b39ed431f16d142fedbc04",
+          "b09df24f38faa2ea88054ed4f07006f0d4f129c5061b277cf69b16261fa9eb2c"
+        ]
+      },
+      "north": {
+        "unique_frame_count": 8,
+        "unique_frame_minimum_met": true,
+        "frame_sha256": [
+          "c4ad40e93cacb21d070855dc168e56b985ecf8100df311c705d16e1e3312fd48",
+          "bb95f82d8d38378f5da3ef1a2dff5b14dff8672e6f747fd5afc797f0c1d3d3c3",
+          "01b4416f403f2b75a2ad78c6bccfac141bca31945b966cabc5e85446464efead",
+          "9cc90c841e0b6061db508b60934c8167208f10487b9498bc58b76c8f4aace186",
+          "d43ced8c5062df050cc822b57ffe450121c4e5a3a3d9216e01bbf21fc683aac1",
+          "cb7dbff088a98cda7300eed141c772b82ad549a4342b68de7393a217797e97cc",
+          "9e8aecd548cb169877e9f0cf5d8fc3c42803cb751400e514dcd40eee0d7f1098",
+          "dfc792848ebad6df9faa2576109ba56f82741e6e56381ceebd42856530d90c90"
+        ]
+      }
+    },
+    "risks": []
+  }
+}

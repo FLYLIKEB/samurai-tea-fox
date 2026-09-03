@@ -26,6 +26,11 @@ func run(asserts) -> void:
 		"character animation metadata resolves a stable runtime asset ID"
 	)
 	asserts.equal(
+		catalog.character_animation_id("CHR-8", "attack"),
+		"chr_8_fox_samurai_attack",
+		"character animation metadata resolves the player attack asset ID"
+	)
+	asserts.equal(
 		catalog.id_for_path("assets/sprites/objects/structures/small_signpost_32x32.png"),
 		"small_signpost",
 		"promoted runtime path resolves back to a manifest ID"
