@@ -9,8 +9,9 @@ const CombatState = preload("res://src/combat/combat_state.gd")
 const AbilityRuntime = preload("res://src/ability/ability_runtime.gd")
 const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
 const DirectionalWalkAnimator = preload("res://src/presentation/directional_walk_animator.gd")
+const RuntimeConstants = preload("res://src/core/config/runtime_constants.gd")
 
-const TILE_SIZE_PIXELS := 32.0
+static var TILE_SIZE_PIXELS := RuntimeConstants.float_value("world.tile_size_pixels")
 const PLAYER_COMBAT_ID := "player"
 const PLAYER_CHARACTER_ID := "CHR-8"
 const IDLE_ASSET_IDS := {
@@ -28,7 +29,7 @@ signal grid_step_started(from_cell: Vector2i, to_cell: Vector2i)
 signal grid_step_blocked(from_cell: Vector2i, to_cell: Vector2i)
 signal grid_step_finished(cell: Vector2i)
 
-@export_range(1.0, 512.0, 1.0) var movement_speed_pixels_per_second := 96.0
+@export_range(1.0, 512.0, 1.0) var movement_speed_pixels_per_second := RuntimeConstants.float_value("player.movement_speed_pixels_per_second")
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var attack_area: Area2D = $AttackArea
@@ -146,10 +147,10 @@ func apply_movement_command(command) -> bool:
 	_update_sprite_animation(0.0)
 	return true
 
-func configure_grid_navigation(world_data = null, world_origin := Vector2.ZERO, tile_size := TILE_SIZE_PIXELS) -> void:
+func configure_grid_navigation(world_data = null, world_origin := Vector2.ZERO, tile_size := -1.0) -> void:
 	_grid_world_data = world_data
 	_grid_world_origin = world_origin
-	_grid_tile_size = maxf(tile_size, 1.0)
+	_grid_tile_size = maxf(TILE_SIZE_PIXELS if tile_size < 0.0 else tile_size, 1.0)
 	var current_cell := _grid_cell_for_position(global_position)
 	if _grid_cell_is_walkable(current_cell):
 		global_position = _grid_position_for_cell_center(current_cell)

@@ -8,6 +8,8 @@ var lifecycle_epoch := 0
 var seed := 0
 var current_biome_id := ""
 var player_cell := {}
+var player_resources := {}
+var overworld_enemy_state := {}
 var inventory := {}
 var equipment := {}
 var currency := 0
@@ -45,6 +47,8 @@ static func from_dictionary(data: Dictionary):
 	state.seed = int(data.get("seed", 0))
 	state.current_biome_id = String(data.get("current_biome_id", ""))
 	state.player_cell = _dictionary_value(data.get("player_cell", {}))
+	state.player_resources = _dictionary_value(data.get("player_resources", {}))
+	state.overworld_enemy_state = _dictionary_value(data.get("overworld_enemy_state", {}))
 	state.inventory = _dictionary_value(data.get("inventory", {}))
 	state.equipment = _dictionary_value(data.get("equipment", {}))
 	state.currency = int(data.get("currency", 0))
@@ -105,6 +109,8 @@ func to_dictionary() -> Dictionary:
 		"seed": seed,
 		"current_biome_id": current_biome_id,
 		"player_cell": player_cell.duplicate(true),
+		"player_resources": player_resources.duplicate(true),
+		"overworld_enemy_state": overworld_enemy_state.duplicate(true),
 		"inventory": inventory.duplicate(true),
 		"equipment": equipment.duplicate(true),
 		"currency": currency,

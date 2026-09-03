@@ -1,16 +1,17 @@
 extends RefCounted
 class_name WorldGenerator
 
+const RuntimeConstants = preload("res://src/core/config/runtime_constants.gd")
 const DeterministicRng = preload("res://src/core/rng/deterministic_rng.gd")
 const ConnectivityValidator = preload("res://src/world/generation/connectivity_validator.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldRendererProjection = preload("res://src/world/rendering/world_renderer_projection.gd")
 
-const MAP_WIDTH := 64
-const MAP_HEIGHT := 36
-const CHUNK_WIDTH := 8
-const CHUNK_HEIGHT := 6
-const DEFAULT_RETRY_LIMIT := 8
+static var MAP_WIDTH := RuntimeConstants.int_value("world.overworld_width")
+static var MAP_HEIGHT := RuntimeConstants.int_value("world.overworld_height")
+static var CHUNK_WIDTH := RuntimeConstants.int_value("world.chunk_width")
+static var CHUNK_HEIGHT := RuntimeConstants.int_value("world.chunk_height")
+static var DEFAULT_RETRY_LIMIT := RuntimeConstants.int_value("world.generation_retry_limit")
 const BIOME_COMMON := "common_region"
 const BIOME_MOUNTAIN := "mountain_region"
 const BIOME_WASTELAND := "wasteland"
@@ -139,7 +140,9 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 	var min_resource_nodes := int(min_resource_result.value)
 	var max_resource_placement_attempts := int(options.get("max_resource_placement_attempts", max(64, min_resource_nodes * 24)))
 	var core_dungeon_count := _balance_value(balance_definitions, "biome_core_dungeon_count", 1)
-	var teleport_zone_count := _balance_value(balance_definitions, "biome_teleport_zone_count", 1)
+	# Every overworld must expose exactly one primary teleport zone, even when
+	# balance data is missing or temporarily sets the count to zero.
+	var teleport_zone_count := maxi(1, _balance_value(balance_definitions, "biome_teleport_zone_count", 1))
 	var combined_seed := _combined_seed(seed, data_version, biome_definition.get("id", ""))
 	var progression_projection: Dictionary = options.get("progression_projection", {})
 
@@ -781,12 +784,23 @@ func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, cor
 			{"teleport_biome_id": biome_id}
 		))
 
+	# Ruins are independent points of interest, separate from both the dungeon
+	# entrance and the teleport zone.
+	landmarks.append(_add_landmark(
+		world_data,
+		WorldData.LANDMARK_RUIN,
+		0,
+		Vector2i(rng.next_range(6, MAP_WIDTH / 4), rng.next_range(6, MAP_HEIGHT - 7)),
+		profile
+	))
+
 	for index in range(core_dungeon_count):
 		landmarks.append(_add_landmark(
 			world_data,
 			WorldData.LANDMARK_CORE_DUNGEON,
 			index,
-			Vector2i(rng.next_range(MAP_WIDTH - 12, MAP_WIDTH - 4), rng.next_range(6, MAP_HEIGHT - 7)),
+			# Keep ruins in the far-east zone, well away from central teleports.
+			Vector2i(rng.next_range(MAP_WIDTH - 6, MAP_WIDTH - 3), rng.next_range(6, MAP_HEIGHT - 7)),
 			profile
 		))
 
@@ -915,6 +929,10 @@ func _place_path_edge_fences(world_data: WorldData, rng: DeterministicRng, templ
 				placed += 1
 
 func _set_tree_obstacle(world_data: WorldData, position: Vector2i, terrain_id: String, base_terrain_id: String, base_render_id: String, tree_source_id: String) -> bool:
+	# Wall cells are structural boundaries and must remain free of tree
+	# overlays/obstacles, regardless of the biome's tree placement pass.
+	if terrain_id.to_lower().contains("wall") or base_terrain_id.to_lower().contains("wall"):
+		return false
 	_clear_generated_tree_obstacle(world_data, position)
 	world_data.set_terrain(position, terrain_id, true, base_render_id)
 	var reserved := world_data.reserve_entity(_tree_owner_id(position), position, Vector2i.ONE, true, {

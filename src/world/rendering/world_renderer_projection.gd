@@ -2,6 +2,7 @@ extends RefCounted
 class_name WorldRendererProjection
 
 const WorldData = preload("res://src/world/data/world_data.gd")
+const RuntimeConstants = preload("res://src/core/config/runtime_constants.gd")
 
 func project(world_data: Dictionary, progression_projection := {}) -> Dictionary:
 	var bounds: Dictionary = world_data.get("bounds", {})
@@ -36,7 +37,7 @@ func project(world_data: Dictionary, progression_projection := {}) -> Dictionary
 	return {
 		"schema_version": 1,
 		"read_only": true,
-		"tile_size": int(world_data.get("tile_size", 32)),
+		"tile_size": int(world_data.get("tile_size", RuntimeConstants.float_value("world.tile_size_pixels"))),
 		"bounds": bounds.duplicate(true),
 		"layers": [
 			{"id": WorldData.LAYER_TERRAIN, "kind": "tile", "cells": terrain_cells},

@@ -4,14 +4,15 @@ class_name CombatDummy
 const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
 const DirectionalWalkAnimator = preload("res://src/presentation/directional_walk_animator.gd")
 const MonsterSpawnFactory = preload("res://src/enemy/monster_spawn_factory.gd")
-const TILE_SIZE_PIXELS := 32.0
-const HIT_FLASH_SECONDS := 0.16
+const RuntimeConstants = preload("res://src/core/config/runtime_constants.gd")
+static var TILE_SIZE_PIXELS := RuntimeConstants.float_value("world.tile_size_pixels")
+static var HIT_FLASH_SECONDS := RuntimeConstants.float_value("combat.hit_flash_seconds")
 const HIT_FLASH_COLOR := Color(1.0, 0.26, 0.18, 1.0)
 const DAMAGE_POPUP_FONT := "res://assets/fonts/galmuri/Galmuri11.ttf"
 const DAMAGE_POPUP_COLOR := Color(1.0, 0.10, 0.07, 1.0)
-const DAMAGE_POPUP_SECONDS := 0.7
-const DAMAGE_POPUP_RISE_PIXELS := 8.0
-const GRID_STEP_TWEEN_SECONDS := 0.18
+static var DAMAGE_POPUP_SECONDS := RuntimeConstants.float_value("combat.damage_popup_seconds")
+static var DAMAGE_POPUP_RISE_PIXELS := RuntimeConstants.float_value("combat.damage_popup_rise_pixels")
+static var GRID_STEP_TWEEN_SECONDS := RuntimeConstants.float_value("combat.grid_step_tween_seconds")
 const DUMMY_CHARACTER_ID := ""
 const IDLE_ASSET_IDS := {}
 
@@ -28,7 +29,7 @@ signal turn_finished(result: Dictionary)
 @export var monster_id := "road_bandit"
 @export var sprite_asset_id := ""
 @export var automatic_attacks := true
-@export_range(1.0, 128.0, 1.0) var attack_range_pixels := 40.0
+@export_range(1.0, 128.0, 1.0) var attack_range_pixels := RuntimeConstants.float_value("combat.attack_range_pixels")
 
 var combatant
 var target
@@ -77,10 +78,10 @@ func configure_combat(catalog, attack_target = null, config = null) -> Dictionar
 	_update_health_bar()
 	return {"ok": true}
 
-func configure_grid_navigation(world_data = null, world_origin := Vector2.ZERO, tile_size := TILE_SIZE_PIXELS) -> void:
+func configure_grid_navigation(world_data = null, world_origin := Vector2.ZERO, tile_size := -1.0) -> void:
 	_grid_world_data = world_data
 	_grid_world_origin = world_origin
-	_grid_tile_size = maxf(tile_size, 1.0)
+	_grid_tile_size = maxf(TILE_SIZE_PIXELS if tile_size < 0.0 else tile_size, 1.0)
 	_snap_to_grid_center()
 
 func suspend_for_world_transition() -> Dictionary:

@@ -1,6 +1,7 @@
 extends RefCounted
 class_name WorldData
 
+const RuntimeConstants = preload("res://src/core/config/runtime_constants.gd")
 const LAYER_TERRAIN := "terrain"
 const LAYER_FACILITIES := "facilities"
 const LAYER_ENTITIES := "entities"
@@ -8,17 +9,19 @@ const LAYER_INTERACTABLES := "interactables"
 
 const LANDMARK_ENTRY := "entry"
 const LANDMARK_CORE_DUNGEON := "core_dungeon"
+const LANDMARK_RUIN := "ruin"
 const LANDMARK_TELEPORT_ZONE := "teleport_zone"
 
 const REQUIRED_LANDMARK_TYPES := [
 	LANDMARK_ENTRY,
 	LANDMARK_CORE_DUNGEON,
+	LANDMARK_RUIN,
 	LANDMARK_TELEPORT_ZONE
 ]
 
 var width := 0
 var height := 0
-var tile_size := 32
+var tile_size := int(RuntimeConstants.float_value("world.tile_size_pixels"))
 var default_terrain_id := "ground"
 
 var _cells: Dictionary = {}
@@ -189,7 +192,7 @@ static func from_dictionary(data: Dictionary):
 	var bounds: Dictionary = data.get("bounds", {})
 	var world_script = load("res://src/world/data/world_data.gd")
 	var world_data = world_script.new(int(bounds.get("width", 0)), int(bounds.get("height", 0)))
-	world_data.tile_size = int(data.get("tile_size", 32))
+	world_data.tile_size = int(data.get("tile_size", RuntimeConstants.float_value("world.tile_size_pixels")))
 	world_data._landmarks = data.get("required_landmarks", []).duplicate(true)
 
 	for serialized_cell in data.get("cells", []):

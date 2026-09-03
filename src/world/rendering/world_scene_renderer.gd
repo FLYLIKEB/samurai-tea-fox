@@ -2,6 +2,7 @@ extends RefCounted
 class_name WorldSceneRenderer
 
 const WorldData = preload("res://src/world/data/world_data.gd")
+const RuntimeConstants = preload("res://src/core/config/runtime_constants.gd")
 const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
 const ProximityInteractionPrompt = preload("res://src/ui/proximity_interaction_prompt.gd")
 const PIXEL_FONT = preload("res://assets/fonts/galmuri/Galmuri11.ttf")
@@ -94,7 +95,7 @@ func render(root: Node2D, renderer_input: Dictionary, owner_sources := {}, origi
 	_clear_children(root)
 	root.position = origin
 
-	var tile_size := int(renderer_input.get("tile_size", 32))
+	var tile_size := int(renderer_input.get("tile_size", RuntimeConstants.float_value("world.tile_size_pixels")))
 	var rendered_counts := {}
 	var terrain_underlay_layer := _add_tilemap_layer(root, TERRAIN_UNDERLAY_LAYER, -110)
 	var terrain_layer := _add_tilemap_layer(root, TERRAIN_LAYER, -100)
@@ -363,10 +364,12 @@ func _render_landmarks(parent: Node2D, landmarks: Array, tile_size: int, owner_s
 		if _render_original_sprite(parent, _resource_path(source_id), position, tile_size, outline_color):
 			if landmark_kind == WorldData.LANDMARK_CORE_DUNGEON:
 				_add_interaction_prompt(parent, position, tile_size, "던전 입구", "[E] 입장")
+			elif landmark_kind == WorldData.LANDMARK_RUIN:
+				_add_interaction_prompt(parent, position, tile_size, "유적", "[E] 이동")
 			elif landmark_kind == WorldData.LANDMARK_TELEPORT_ZONE and not repaired and String(landmark.get("teleport_state", "")) == "repairable":
-				_add_interaction_prompt(parent, position, tile_size, "유적", "[E] 수리")
-			elif landmark_kind == WorldData.LANDMARK_TELEPORT_ZONE:
-				_add_interaction_prompt(parent, position, tile_size, "유적", "수리됨")
+				_add_interaction_prompt(parent, position, tile_size, "텔레포트", "[E] 수리")
+			elif landmark_kind == WorldData.LANDMARK_TELEPORT_ZONE and repaired:
+				_add_interaction_prompt(parent, position, tile_size, "텔레포트 · 수리됨", "[E] 연결지")
 			rendered += 1
 	return rendered
 
@@ -381,6 +384,8 @@ func _landmark_outline_color(landmark_kind: String) -> Color:
 			return TELEPORT_OUTLINE_COLOR
 		WorldData.LANDMARK_CORE_DUNGEON:
 			return DUNGEON_OUTLINE_COLOR
+		WorldData.LANDMARK_RUIN:
+			return Color(0.72, 0.48, 0.28, 1.0)
 		WorldData.LANDMARK_ENTRY:
 			return ENTRY_OUTLINE_COLOR
 		_:

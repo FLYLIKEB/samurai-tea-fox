@@ -229,11 +229,12 @@ func load_snapshot(snapshot: Dictionary) -> Dictionary:
 	var request_ids = snapshot.get("processed_drop_request_ids", [])
 	if typeof(request_ids) != TYPE_ARRAY:
 		return _fail("invalid_drop_request_ids", "Processed drop request ids must be an array.")
+	var preserved_metadata := _reservation_metadata_for(gatherables, pickups)
 
 	# Prove every reservation against a detached world before mutating live state.
 	var staged_world = WorldData.from_dictionary(world_data.to_dictionary())
 	_release_reservations(staged_world, gatherables, pickups)
-	var staged_restore := _restore_snapshot_reservations(staged_world, normalized_gatherables.values, normalized_pickups.values)
+	var staged_restore := _restore_snapshot_reservations(staged_world, normalized_gatherables.values, normalized_pickups.values, preserved_metadata)
 	if not staged_restore.ok:
 		return staged_restore
 
@@ -242,7 +243,7 @@ func load_snapshot(snapshot: Dictionary) -> Dictionary:
 	_release_runtime_reservations()
 	gatherables = normalized_gatherables.values
 	pickups = normalized_pickups.values
-	var live_restore := _restore_snapshot_reservations(world_data, gatherables, pickups)
+	var live_restore := _restore_snapshot_reservations(world_data, gatherables, pickups, preserved_metadata)
 	if not live_restore.ok:
 		_release_runtime_reservations()
 		gatherables = previous_gatherables
@@ -346,16 +347,19 @@ func _release_reservations(target_world, source_gatherables: Dictionary, source_
 	for pickup_id in source_pickups:
 		target_world.release_footprint(pickup_id)
 
-func _restore_snapshot_reservations(target_world, source_gatherables: Dictionary, source_pickups: Dictionary) -> Dictionary:
+func _restore_snapshot_reservations(target_world, source_gatherables: Dictionary, source_pickups: Dictionary, preserved_metadata := {}) -> Dictionary:
 	for node in source_gatherables.values():
 		if bool(node.depleted):
 			continue
+		var metadata: Dictionary = preserved_metadata.get(String(node.node_id), {}).duplicate(true)
+		if metadata.is_empty():
+			metadata = {"interaction_kind": GATHERABLE_KIND, "definition_id": node.definition_id}
 		var reservation: Dictionary = target_world.reserve_entity(
 			node.node_id,
 			_vector_from_dictionary(node.position),
 			Vector2i.ONE,
 			true,
-			{"interaction_kind": GATHERABLE_KIND, "definition_id": node.definition_id}
+			metadata
 		)
 		if not reservation.ok:
 			return _world_failure(reservation)
@@ -370,6 +374,18 @@ func _restore_snapshot_reservations(target_world, source_gatherables: Dictionary
 		if not reservation.ok:
 			return _world_failure(reservation)
 	return {"ok": true}
+
+func _reservation_metadata_for(source_gatherables: Dictionary, source_pickups: Dictionary) -> Dictionary:
+	var metadata := {}
+	for node_id in source_gatherables:
+		var reservation: Dictionary = world_data.get_reservation(String(node_id))
+		if not reservation.is_empty():
+			metadata[String(node_id)] = reservation.get("metadata", {}).duplicate(true)
+	for pickup_id in source_pickups:
+		var reservation: Dictionary = world_data.get_reservation(String(pickup_id))
+		if not reservation.is_empty():
+			metadata[String(pickup_id)] = reservation.get("metadata", {}).duplicate(true)
+	return metadata
 
 func _rollback_new_pickups(existing_pickup_ids: Array) -> void:
 	for pickup_id in pickups.keys():

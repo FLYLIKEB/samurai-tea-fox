@@ -134,6 +134,28 @@ func to_dictionary() -> Dictionary:
 		"kokoro_low_threshold": kokoro_low_threshold
 	}
 
+func load_snapshot(snapshot: Dictionary) -> Dictionary:
+	for field in ["hp", "hp_max", "ki", "ki_max", "kokoro", "kokoro_max", "kokoro_low_threshold"]:
+		var value = snapshot.get(field)
+		var numeric: float = float(value) if typeof(value) in [TYPE_INT, TYPE_FLOAT] else NAN
+		if not is_finite(numeric) or numeric != floor(numeric):
+			return {"ok": false, "reason": "invalid_resource_snapshot", "error": "Resource snapshot field must be an integer: %s" % field}
+	if int(snapshot.hp_max) != hp_max or int(snapshot.ki_max) != ki_max or int(snapshot.kokoro_max) != kokoro_max:
+		return {"ok": false, "reason": "resource_definition_mismatch", "error": "Resource maximums do not match the current catalog."}
+	if int(snapshot.kokoro_low_threshold) < 0 or int(snapshot.kokoro_low_threshold) > kokoro_max:
+		return {"ok": false, "reason": "invalid_resource_snapshot", "error": "Kokoro threshold is outside the current resource bounds."}
+	_set_resource_current(_hp, int(snapshot.hp))
+	_set_resource_current(_ki, int(snapshot.ki))
+	_set_resource_current(_kokoro, int(snapshot.kokoro))
+	kokoro_low_threshold = int(snapshot.kokoro_low_threshold)
+	return {"ok": true}
+
+func _set_resource_current(resource, value: int) -> void:
+	if value < resource.current:
+		resource.decrease(resource.current - value)
+	elif value > resource.current:
+		resource.increase(value - resource.current)
+
 func prepare_snapshot_delta(before: Dictionary, after: Dictionary) -> Dictionary:
 	if not _valid_public_snapshot(before) or not _valid_public_snapshot(after):
 		return {"ok": false, "reason": "invalid_resource_snapshot", "error": "Resource delta requires complete public snapshots."}

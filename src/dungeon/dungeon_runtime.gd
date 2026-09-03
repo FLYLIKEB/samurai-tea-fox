@@ -144,7 +144,7 @@ func to_projection() -> Dictionary:
 	projection["read_only"] = true
 	return projection
 
-func sync_active_world_state(next_world_data, next_player_cell: Vector2i, next_enemy_states := {}) -> Dictionary:
+func sync_active_world_state(next_world_data, next_player_cell: Vector2i, next_enemy_states := {}, next_acquisitions := {}) -> Dictionary:
 	if _instance == null or _instance.lifecycle_state != DungeonInstanceState.STATE_ACTIVE:
 		return {"ok": false, "reason": "dungeon_not_active"}
 	if next_world_data == null or not next_world_data.has_method("to_dictionary"):
@@ -153,6 +153,8 @@ func sync_active_world_state(next_world_data, next_player_cell: Vector2i, next_e
 	_instance.player_cell = {"x": next_player_cell.x, "y": next_player_cell.y}
 	if typeof(next_enemy_states) == TYPE_DICTIONARY:
 		_instance.enemy_states = next_enemy_states.duplicate(true)
+	if typeof(next_acquisitions) == TYPE_DICTIONARY and not next_acquisitions.is_empty():
+		_instance.acquisitions = next_acquisitions.duplicate(true)
 	_persist()
 	return {"ok": true}
 

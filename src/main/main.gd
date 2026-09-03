@@ -254,6 +254,8 @@ func _ready() -> void:
 		_clear_loading_overlay()
 
 func _create_loading_overlay() -> void:
+	if get_node_or_null("LoadingOverlay") != null:
+		return
 	var layer := CanvasLayer.new()
 	layer.name = "LoadingOverlay"
 	layer.layer = 200
@@ -393,6 +395,8 @@ func _physics_process(_delta: float) -> void:
 	if Input.is_action_just_pressed("attack"):
 		_dungeon_debug("E/attack 입력 감지: player_cell=%s in_dungeon=%s" % [world_cell_from_world_position(player.global_position) if player != null else "nil", _in_dungeon_map])
 		dungeon_interaction_handled = _try_dungeon_interaction_from_input()
+		if not dungeon_interaction_handled:
+			dungeon_interaction_handled = _try_landmark_interaction_from_input()
 		_dungeon_debug("E/attack 처리 결과: dungeon_handled=%s in_dungeon=%s" % [dungeon_interaction_handled, _in_dungeon_map])
 		if not dungeon_interaction_handled:
 			submit_desktop_action_command("attack", desktop_command.direction)
@@ -567,6 +571,14 @@ func _pointer_enemy_clicked(world_position: Vector2) -> bool:
 			combat_dummy = enemy
 			return true
 	return false
+
+func _try_landmark_interaction_from_input() -> bool:
+	if player == null:
+		return false
+	var target := _landmark_target_near_world_position(player.global_position, _runtime_tile_size() * 2.5)
+	if target.is_empty():
+		return false
+	return submit_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": String(target.get("target_id", ""))}))
 
 func _is_dungeon_enemy_cell(cell: Vector2i) -> bool:
 	if not _in_dungeon_map or world_data == null:
@@ -848,7 +860,7 @@ func submit_action_command(command) -> bool:
 				_play_feedback_beep()
 			return accepted
 		GameCommand.Type.TRAVEL_TO_BIOME:
-			var accepted: bool = _travel_to_biome(String(command.payload.get("biome_id", "")))
+			var accepted: bool = _travel_to_biome(String(command.payload.get("biome_id", "")), String(command.payload.get("travel_mode", "teleport")))
 			if accepted:
 				_play_feedback_beep()
 			return accepted
@@ -2561,14 +2573,24 @@ func _handle_landmark_interaction(target_id: String) -> bool:
 			return true
 		return _handle_complete_dungeon_command(GameCommand.new(GameCommand.Type.COMPLETE_DUNGEON, Vector2i.ZERO, -1, {"entry_only": true}))
 	if target_id.begins_with("%s_" % WorldData.LANDMARK_RUIN):
+		var current_biome_id := String(run_state.current_biome_id) if run_state != null else ""
+		var dungeon_cleared := run_state != null and run_state.completed_dungeon_ids.has(current_biome_id)
+		if dungeon_cleared:
+			if game_hud != null:
+				game_hud.show_ruin_travel_menu()
+			return true
 		if game_hud != null:
-			game_hud.show_command_feedback("유적은 수리 가능한 별도 시설입니다")
+			game_hud.show_command_feedback("유적 연결은 던전 클리어 후 이용할 수 있습니다")
 		return true
 	if target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE):
 		var biome_id := String(run_state.current_biome_id) if run_state != null else ""
 		var progression := _ensure_biome_progression_state()
 		if not progression.ok:
 			return false
+		if dungeon_runtime != null and _in_dungeon_map and _combat_targets().is_empty():
+			var clear_result: Dictionary = dungeon_runtime.complete_dungeon({"objective_complete": true, "resolution_type": "combat", "choice_key": "dungeon_boss_defeated", "run_flag": "dungeon_boss_defeated", "reward_item_ids": [], "progression_unlock_ids": [biome_id]})
+			if clear_result.ok:
+				_dungeon_debug("유적 접근 전 미기록 던전 클리어 보정 완료")
 		var teleport_state: String = String(run_state.teleport_states.get(biome_id, "")) if run_state != null else biome_progression_state.teleport_state_for(biome_id)
 		if teleport_state != BiomeProgressionState.TELEPORT_REPAIRED:
 			return _handle_biome_progression_command(GameCommand.new(GameCommand.Type.REPAIR_TELEPORT, Vector2i.ZERO, -1, {"biome_id": biome_id}))
@@ -2577,18 +2599,31 @@ func _handle_landmark_interaction(target_id: String) -> bool:
 		return true
 	return false
 
-func _travel_to_biome(biome_id: String) -> bool:
+func _travel_to_biome(biome_id: String, travel_mode: String = "teleport") -> bool:
 	if run_state == null or biome_id.is_empty():
 		return false
 	var current_id := String(run_state.current_biome_id)
 	var progression := _ensure_biome_progression_state()
-	if not progression.ok or not _is_connected_biome(current_id, biome_id):
+	if not progression.ok or biome_id == current_id:
+		return false
+	var can_travel := false
+	if travel_mode == "ruin":
+		can_travel = run_state.completed_dungeon_ids.has(biome_id)
+	else:
+		can_travel = _is_connected_biome(current_id, biome_id)
+	if not can_travel:
+		if game_hud != null:
+			game_hud.show_command_feedback("텔레포트 연결 조건을 만족하지 않았습니다")
 		return false
 	run_state.current_biome_id = biome_id
-	run_state.teleport_states[biome_id] = BiomeProgressionState.TELEPORT_BROKEN
+	if travel_mode != "ruin":
+		run_state.teleport_states[biome_id] = BiomeProgressionState.TELEPORT_BROKEN
+	_create_loading_overlay()
+	_set_loading_status("%s 지역으로 이동하는 중…" % _loading_biome_label())
 	var world_result := _configure_world_for_current_run()
 	if not world_result.ok:
 		return false
+	_clear_loading_overlay()
 	save_current_run()
 	return true
 
@@ -2600,10 +2635,14 @@ func _is_connected_biome(from_id: String, to_id: String) -> bool:
 	var to_index := ordered.find(to_id)
 	if from_index < 0 or to_index < 0 or absi(from_index - to_index) != 1:
 		return false
-	# A forward destination must first be opened by clearing the current ruin.
-	if to_index > from_index and not run_state.completed_dungeon_ids.has(from_id):
+	var current_teleport_repaired := String(run_state.teleport_states.get(from_id, "")) == BiomeProgressionState.TELEPORT_REPAIRED
+	if not current_teleport_repaired:
 		return false
-	return to_index < from_index or String(run_state.teleport_states.get(to_id, "undiscovered")) != "undiscovered"
+	# The repaired current gate opens the next adjacent biome. A destination
+	# may still be marked undiscovered until the player first arrives there.
+	if to_index > from_index:
+		return to_index == from_index + 1
+	return run_state.completed_dungeon_ids.has(to_id) or String(run_state.teleport_states.get(to_id, "")) != "undiscovered"
 
 func _is_available_acquisition_target(target_id: String) -> bool:
 	if acquisition_service == null or target_id.is_empty():

@@ -15,6 +15,7 @@ var lifecycle_state := STATE_OUTSIDE
 var world_data := {}
 var player_cell := {}
 var enemy_states := {}
+var acquisitions := {}
 var return_context := {}
 var completion_payload := {}
 var clear_event := {}
@@ -31,6 +32,7 @@ static func from_dictionary(data: Dictionary):
 	state.world_data = _dictionary_value(data.get("world_data", {}))
 	state.player_cell = _dictionary_value(data.get("player_cell", {}))
 	state.enemy_states = _dictionary_value(data.get("enemy_states", {}))
+	state.acquisitions = _dictionary_value(data.get("acquisitions", {}))
 	state.return_context = _dictionary_value(data.get("return_context", {}))
 	state.completion_payload = _dictionary_value(data.get("completion_payload", {}))
 	state.clear_event = _dictionary_value(data.get("clear_event", {}))
@@ -49,6 +51,7 @@ func to_dictionary() -> Dictionary:
 		"world_data": world_data.duplicate(true),
 		"player_cell": player_cell.duplicate(true),
 		"enemy_states": enemy_states.duplicate(true),
+		"acquisitions": acquisitions.duplicate(true),
 		"return_context": return_context.duplicate(true),
 		"completion_payload": completion_payload.duplicate(true),
 		"clear_event": clear_event.duplicate(true),

@@ -2,14 +2,15 @@ extends RefCounted
 class_name MapReadModelBuilder
 
 const WorldData = preload("res://src/world/data/world_data.gd")
+const RuntimeConstants = preload("res://src/core/config/runtime_constants.gd")
 
 const SNAPSHOT_SCHEMA_VERSION := 1
 # The runtime camera uses a 640x360 logical viewport at 2x zoom over 32px
 # tiles (roughly 10x6 cells). Keep one extra cell of reveal margin so the
 # visible screen never ends in undiscovered fog.
-const DISCOVERY_RADIUS := 6
-const DEFAULT_MINIMAP_WIDTH := 11
-const DEFAULT_MINIMAP_HEIGHT := 7
+static var DISCOVERY_RADIUS := RuntimeConstants.int_value("camera.discovery_radius")
+static var DEFAULT_MINIMAP_WIDTH := RuntimeConstants.int_value("camera.minimap_width")
+static var DEFAULT_MINIMAP_HEIGHT := RuntimeConstants.int_value("camera.minimap_height")
 const MARKER_PLAYER := "player"
 const MARKER_DUNGEON := "dungeon"
 const MARKER_TELEPORT := "teleport"
@@ -31,7 +32,10 @@ func build(world_source, run_state = null, player_cell := Vector2i.ZERO, options
 	var height := int(bounds.get("height", 0))
 	if width <= 0 or height <= 0:
 		return _fail("invalid_world_bounds", "Map read model requires positive world bounds.")
+	var reveal_all := bool(options.get("reveal_all", false))
 	var discovery := _discovery_cells(run_state, player_cell, int(options.get("discovery_radius", DISCOVERY_RADIUS)))
+	if reveal_all:
+		discovery = _all_cells(world)
 	var discovered_cells := _visible_cells(world, discovery, false)
 	var minimap := _minimap(world, discovery, player_cell, int(options.get("minimap_width", DEFAULT_MINIMAP_WIDTH)), int(options.get("minimap_height", DEFAULT_MINIMAP_HEIGHT)))
 	return {
@@ -45,15 +49,41 @@ func build(world_source, run_state = null, player_cell := Vector2i.ZERO, options
 		"fog_count": width * height - discovered_cells.size(),
 		"cells": discovered_cells,
 		"markers": _markers(world, discovery, player_cell),
+		"dungeon_progress": _dungeon_progress(world, run_state),
 		"minimap": minimap,
 		"full_map_hook": {"type": "show_full_map", "command": "open_map"}
 	}
 
-static func discover_cells(existing_discovery: Dictionary, center: Vector2i, radius := DISCOVERY_RADIUS) -> Dictionary:
+func _dungeon_progress(world: Dictionary, run_state) -> Dictionary:
+	var biome_id := String(world.get("biome_id", ""))
+	var completed := false
+	if run_state != null:
+		if biome_id.is_empty():
+			biome_id = String(run_state.get("current_biome_id", "") if run_state is Dictionary else run_state.current_biome_id)
+		var ids = run_state.get("completed_dungeon_ids", []) if run_state is Dictionary else run_state.completed_dungeon_ids
+		completed = ids is Array and ids.has(biome_id)
+		var teleport_states = run_state.get("teleport_states", {}) if run_state is Dictionary else run_state.teleport_states
+		var teleport_state := String(teleport_states.get(biome_id, "")) if teleport_states is Dictionary else ""
+		# A repairable or repaired teleport is authoritative evidence that this
+		# biome's dungeon was cleared, including migrated/legacy saves.
+		completed = completed or teleport_state in ["repairable", "repaired"]
+		var unlocks = run_state.get("crafting_unlocks", []) if run_state is Dictionary else run_state.crafting_unlocks
+		completed = completed or unlocks is Array and unlocks.has(biome_id)
+	return {"biome_id": biome_id, "cleared": completed, "label": "클리어" if completed else "미클리어"}
+
+func _all_cells(world: Dictionary) -> Dictionary:
+	var result := {}
+	for raw_cell in _array_value(world.get("cells", [])):
+		var cell: Dictionary = _dictionary_value(raw_cell)
+		result[_cell_key(_vector_from_dictionary(cell.get("position", {})))] = true
+	return result
+
+static func discover_cells(existing_discovery: Dictionary, center: Vector2i, radius := -1) -> Dictionary:
 	var result := _dictionary_value(existing_discovery)
+	var reveal_radius := DISCOVERY_RADIUS if radius < 0 else radius
 	var cells := _string_set(result.get("discovered_cells", []))
-	for y in range(center.y - radius, center.y + radius + 1):
-		for x in range(center.x - radius, center.x + radius + 1):
+	for y in range(center.y - reveal_radius, center.y + reveal_radius + 1):
+		for x in range(center.x - reveal_radius, center.x + reveal_radius + 1):
 			cells[_cell_key(Vector2i(x, y))] = true
 	var sorted := cells.keys()
 	sorted.sort()
@@ -106,7 +136,10 @@ func _visible_cells(world: Dictionary, discovery: Dictionary, minimap_only: bool
 
 func _markers(world: Dictionary, discovery: Dictionary, player_cell: Vector2i) -> Array:
 	var markers := [{"id": "player", "marker_type": MARKER_PLAYER, "position": _position_dictionary(player_cell), "known": true}]
-	for landmark_value in _array_value(world.get("required_landmarks", [])):
+	var landmark_values: Array = _array_value(world.get("required_landmarks", []))
+	if landmark_values.is_empty():
+		landmark_values = _array_value(world.get("landmarks", []))
+	for landmark_value in landmark_values:
 		var landmark := _dictionary_value(landmark_value)
 		var position := _vector_from_dictionary(landmark.get("position", {}))
 		if not bool(landmark.get("required", false)) and not discovery.has(_cell_key(position)):
@@ -129,8 +162,8 @@ func _minimap(world: Dictionary, discovery: Dictionary, player_cell: Vector2i, m
 	var bounds: Dictionary = world.get("bounds", {})
 	var width := int(bounds.get("width", 0))
 	var height := int(bounds.get("height", 0))
-	max_width = clampi(max_width, 3, 21)
-	max_height = clampi(max_height, 3, 15)
+	max_width = clampi(max_width, 3, 48)
+	max_height = clampi(max_height, 3, 28)
 	var origin := Vector2i(
 		clampi(player_cell.x - max_width / 2, 0, max(0, width - max_width)),
 		clampi(player_cell.y - max_height / 2, 0, max(0, height - max_height))
@@ -173,6 +206,8 @@ func _marker_type_for_landmark(landmark_type: String) -> String:
 	match landmark_type:
 		WorldData.LANDMARK_CORE_DUNGEON:
 			return MARKER_DUNGEON
+		WorldData.LANDMARK_RUIN:
+			return "ruin"
 		WorldData.LANDMARK_TELEPORT_ZONE:
 			return MARKER_TELEPORT
 		_:
