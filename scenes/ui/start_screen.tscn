@@ -40,9 +40,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -298.0
-offset_top = -135.0
+offset_top = -180.0
 offset_right = 298.0
-offset_bottom = 135.0
+offset_bottom = 180.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 8
@@ -68,17 +68,28 @@ custom_minimum_size = Vector2(216, 44)
 layout_mode = 2
 size_flags_horizontal = 4
 focus_neighbor_top = NodePath(".")
-focus_neighbor_bottom = NodePath("../ContinueButton")
+focus_neighbor_bottom = NodePath("../CheatButton")
 mouse_default_cursor_shape = 2
 theme_override_font_sizes/font_size = 19
 text = "처음부터 시작하기"
+
+[node name="CheatButton" type="Button" parent="Content"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(216, 44)
+layout_mode = 2
+size_flags_horizontal = 4
+focus_neighbor_top = NodePath("../StartButton")
+focus_neighbor_bottom = NodePath("../ContinueButton")
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 19
+text = "치트 모드로 시작"
 
 [node name="ContinueButton" type="Button" parent="Content"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(216, 44)
 layout_mode = 2
 size_flags_horizontal = 4
-focus_neighbor_top = NodePath("../StartButton")
+focus_neighbor_top = NodePath("../CheatButton")
 focus_neighbor_bottom = NodePath(".")
 mouse_default_cursor_shape = 2
 theme_override_font_sizes/font_size = 19
@@ -95,4 +106,5 @@ text = "ENTER / SPACE"
 horizontal_alignment = 1
 
 [connection signal="pressed" from="Content/StartButton" to="." method="_on_start_button_pressed"]
+[connection signal="pressed" from="Content/CheatButton" to="." method="_on_cheat_button_pressed"]
 [connection signal="pressed" from="Content/ContinueButton" to="." method="_on_continue_button_pressed"]

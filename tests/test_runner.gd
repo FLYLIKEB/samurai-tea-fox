@@ -20,6 +20,7 @@ const TESTS := [
 	preload("res://tests/unit/test_monster_behavior.gd"),
 	preload("res://tests/unit/test_ability_runtime.gd"),
 	preload("res://tests/unit/test_inventory_model.gd"),
+	preload("res://tests/unit/test_cheat_start_runtime.gd"),
 	preload("res://tests/unit/test_equipment_model.gd"),
 	preload("res://tests/unit/test_inventory_command_runtime.gd"),
 	preload("res://tests/unit/test_tea_service.gd"),

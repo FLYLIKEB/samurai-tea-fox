@@ -28,6 +28,7 @@ func run(asserts) -> void:
 	_assert_versioned_snapshot_round_trips(asserts)
 	_assert_max_owned_rejects_manipulated_snapshot_and_insert(asserts)
 	_assert_change_and_failure_events_are_observable(asserts)
+	_assert_capacity_expansion_preserves_contents(asserts)
 	_assert_invalid_catalog_values_are_rejected(asserts)
 
 func _assert_generated_catalog_configures_inventory(asserts) -> void:
@@ -145,6 +146,16 @@ func _assert_change_and_failure_events_are_observable(asserts) -> void:
 	asserts.equal(changes[0].schema_version, InventoryModel.SNAPSHOT_SCHEMA_VERSION, "change event carries a versioned snapshot")
 	asserts.equal(failures.size(), 1, "failure event emits once for a failed command")
 	asserts.equal(failures[0].reason, "unknown_item", "failure event carries a stable reason")
+
+func _assert_capacity_expansion_preserves_contents(asserts) -> void:
+	var inventory := _fixture_inventory(2)
+	asserts.true_value(inventory.add_item("clay", 7).ok, "capacity fixture contains an item before expansion")
+	asserts.true_value(inventory.expand_capacity(1000).ok, "inventory capacity can expand for a cheat run")
+	asserts.equal(inventory.slot_count, 1000, "expanded inventory exposes the requested slot count")
+	asserts.equal(inventory.slots.size(), 1000, "expanded inventory allocates every slot")
+	asserts.equal(inventory.get_total_quantity("clay"), 7, "capacity expansion preserves existing items")
+	asserts.equal(inventory.to_snapshot().slot_count, 1000, "expanded capacity is included in the run snapshot")
+	asserts.false_value(inventory.expand_capacity(999).ok, "capacity expansion API does not silently discard slots")
 
 func _assert_invalid_catalog_values_are_rejected(asserts) -> void:
 	var missing_slots: Dictionary = InventoryModel.from_catalog(FakeCatalog.new({

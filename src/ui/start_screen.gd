@@ -10,9 +10,11 @@ const LOGO_ASSET_ID := "muchau_title_plaque"
 const DIVIDER_ASSET_ID := "divider_under_brand"
 const START_MODE_META := "muchau_start_mode"
 const START_MODE_NEW := "new"
+const START_MODE_CHEAT := "cheat"
 const START_MODE_RESUME := "resume"
 
 @onready var start_button: Button = %StartButton
+@onready var cheat_button: Button = %CheatButton
 @onready var continue_button: Button = %ContinueButton
 @onready var background: TextureRect = $Background
 @onready var logo: TextureRect = $Content/Logo
@@ -36,6 +38,9 @@ func _unhandled_input(event: InputEvent) -> void:
 func _on_start_button_pressed() -> void:
 	_start_game(START_MODE_NEW)
 
+func _on_cheat_button_pressed() -> void:
+	_start_game(START_MODE_CHEAT)
+
 func _on_continue_button_pressed() -> void:
 	_start_game(START_MODE_RESUME)
 
@@ -44,6 +49,7 @@ func _start_game(start_mode := START_MODE_RESUME) -> void:
 		return
 	_is_starting = true
 	start_button.disabled = true
+	cheat_button.disabled = true
 	continue_button.disabled = true
 	get_tree().root.set_meta(START_MODE_META, start_mode)
 
@@ -54,6 +60,7 @@ func _start_game(start_mode := START_MODE_RESUME) -> void:
 	get_tree().root.remove_meta(START_MODE_META)
 	_is_starting = false
 	start_button.disabled = false
+	cheat_button.disabled = false
 	_update_continue_button()
 	push_error("Could not start gameplay scene: %s" % error_string(change_error))
 

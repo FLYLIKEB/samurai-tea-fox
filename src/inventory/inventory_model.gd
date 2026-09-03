@@ -56,6 +56,19 @@ func configure(new_slot_count: int, definitions: Dictionary, new_data_version :=
 	_emit_changed()
 	return {"ok": true}
 
+func expand_capacity(new_slot_count: int) -> Dictionary:
+	if new_slot_count <= 0:
+		return _fail_and_emit(_fail("invalid_slot_count", "Inventory slot count must be positive."))
+	if new_slot_count < slot_count:
+		return _fail_and_emit(_fail("capacity_shrink_not_supported", "Inventory capacity cannot be reduced."))
+	if new_slot_count == slot_count:
+		return {"ok": true, "slot_count": slot_count}
+	while slots.size() < new_slot_count:
+		slots.append({})
+	slot_count = new_slot_count
+	_emit_changed()
+	return {"ok": true, "slot_count": slot_count}
+
 func has_definition(item_id: String) -> bool:
 	return item_definitions.has(item_id)
 

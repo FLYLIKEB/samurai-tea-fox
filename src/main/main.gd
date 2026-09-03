@@ -48,7 +48,11 @@ const TIME_SECONDS_PER_TURN := 1.0
 const FIRST_RUN_PROLOGUE_EVENT_ID := "first_run_prologue"
 const START_MODE_META := "muchau_start_mode"
 const START_MODE_NEW := "new"
+const START_MODE_CHEAT := "cheat"
 const START_MODE_RESUME := "resume"
+const CHEAT_INVENTORY_SLOT_COUNT := 1000
+const CHEAT_RESOURCE_QUANTITY := 99
+const CHEAT_RESOURCE_ITEM_TYPE := "재료"
 const TREE_HARVEST_TOOL_ITEM_ID := "stone_axe"
 const TREE_HARVEST_DEFINITION_PREFIX := "terrain_tree_wood"
 const DUNGEON_DEBUG_LOGGING := true
@@ -137,6 +141,10 @@ func _ready() -> void:
 	if not runtime_result.ok:
 		push_error(runtime_result.error)
 		return
+	var cheat_result := _apply_cheat_start_inventory()
+	if not cheat_result.ok:
+		push_error(cheat_result.error)
+		return
 	var combat_lifecycle_result := _configure_combat_lifecycle()
 	if not combat_lifecycle_result.ok:
 		push_error(combat_lifecycle_result.error)
@@ -151,6 +159,11 @@ func _ready() -> void:
 	if not world_result.ok:
 		push_error(world_result.error)
 	else:
+		if bool(cheat_result.get("applied", false)):
+			var cheat_save_result := save_current_run()
+			if not cheat_save_result.ok:
+				push_error(cheat_save_result.error)
+				return
 		_maybe_show_first_run_prologue()
 
 func _configure_combat_lifecycle() -> Dictionary:
@@ -779,7 +792,7 @@ func snapshot_run_state() -> Dictionary:
 func load_or_create_run_state() -> Dictionary:
 	if run_state != null:
 		return {"ok": true, "state": "provided", "run_state": run_state}
-	if _start_mode == START_MODE_NEW:
+	if _start_mode in [START_MODE_NEW, START_MODE_CHEAT]:
 		return _create_new_run_state_from_start_request()
 	if save_store != null and FileAccess.file_exists(save_store.run_path):
 		var loaded: Dictionary = save_store.load_run()
@@ -796,7 +809,7 @@ func _consume_start_mode() -> void:
 		return
 	_start_mode = String(root.get_meta(START_MODE_META, START_MODE_RESUME))
 	root.remove_meta(START_MODE_META)
-	_force_first_run_prologue = _start_mode == START_MODE_NEW
+	_force_first_run_prologue = _start_mode in [START_MODE_NEW, START_MODE_CHEAT]
 
 func _create_new_run_state_from_start_request() -> Dictionary:
 	run_state = RunState.new()
@@ -813,6 +826,40 @@ func _create_new_run_state_from_start_request() -> Dictionary:
 	if not saved.ok:
 		return saved
 	return {"ok": true, "state": "created_new_start", "run_state": run_state}
+
+func _apply_cheat_start_inventory() -> Dictionary:
+	if _start_mode != START_MODE_CHEAT:
+		return {"ok": true, "applied": false}
+	if inventory == null or catalog == null or not catalog.has_method("get_definitions"):
+		return {"ok": false, "reason": "cheat_inventory_unavailable", "error": "Cheat mode requires inventory and item definitions."}
+
+	var inventory_before: Dictionary = inventory.to_snapshot()
+	var capacity_result: Dictionary = inventory.expand_capacity(CHEAT_INVENTORY_SLOT_COUNT)
+	if not capacity_result.ok:
+		return capacity_result
+	var resource_item_ids: Array = []
+	for definition in catalog.get_definitions("items"):
+		if String(definition.get("type", "")) != CHEAT_RESOURCE_ITEM_TYPE:
+			continue
+		var item_id := String(definition.get("id", ""))
+		if item_id.is_empty():
+			continue
+		var quantity_to_add: int = CHEAT_RESOURCE_QUANTITY - int(inventory.get_total_quantity(item_id))
+		if quantity_to_add > 0:
+			var add_result: Dictionary = inventory.add_item(item_id, quantity_to_add)
+			if not add_result.ok:
+				inventory.load_snapshot(inventory_before)
+				return add_result
+		resource_item_ids.append(item_id)
+	resource_item_ids.sort()
+	_sync_inventory_runtime_state()
+	return {
+		"ok": true,
+		"applied": true,
+		"slot_count": inventory.slot_count,
+		"resource_quantity": CHEAT_RESOURCE_QUANTITY,
+		"resource_item_ids": resource_item_ids
+	}
 
 func save_current_run() -> Dictionary:
 	if save_store == null:
