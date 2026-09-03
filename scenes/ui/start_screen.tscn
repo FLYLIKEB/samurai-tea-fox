@@ -1,44 +1,6 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://src/ui/start_screen.gd" id="1_start"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button"]
-bg_color = Color(0.0941176, 0.0862745, 0.0705882, 0.96)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.568627, 0.45098, 0.270588, 1)
-corner_radius_top_left = 2
-corner_radius_top_right = 2
-corner_radius_bottom_right = 2
-corner_radius_bottom_left = 2
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_hover"]
-bg_color = Color(0.313726, 0.329412, 0.160784, 0.98)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.917647, 0.8, 0.533333, 1)
-corner_radius_top_left = 2
-corner_radius_top_right = 2
-corner_radius_bottom_right = 2
-corner_radius_bottom_left = 2
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_button_pressed"]
-bg_color = Color(0.211765, 0.219608, 0.105882, 1)
-border_width_left = 2
-border_width_top = 3
-border_width_right = 2
-border_width_bottom = 1
-border_color = Color(0.94902, 0.85098, 0.627451, 1)
-corner_radius_top_left = 2
-corner_radius_top_right = 2
-corner_radius_bottom_right = 2
-corner_radius_bottom_left = 2
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_button"]
 
 [node name="StartScreen" type="Control"]
 layout_mode = 3
@@ -108,17 +70,7 @@ size_flags_horizontal = 4
 focus_neighbor_top = NodePath(".")
 focus_neighbor_bottom = NodePath("../ContinueButton")
 mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(0.929412, 0.823529, 0.611765, 1)
-theme_override_colors/font_hover_color = Color(1, 0.94902, 0.788235, 1)
-theme_override_colors/font_pressed_color = Color(1, 0.94902, 0.788235, 1)
-theme_override_colors/font_focus_color = Color(1, 0.94902, 0.788235, 1)
-theme_override_colors/font_disabled_color = Color(0.537255, 0.501961, 0.419608, 1)
 theme_override_font_sizes/font_size = 19
-theme_override_styles/normal = SubResource("StyleBoxFlat_button")
-theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
-theme_override_styles/focus = SubResource("StyleBoxFlat_button_hover")
-theme_override_styles/disabled = SubResource("StyleBoxEmpty_button")
 text = "처음부터 시작하기"
 
 [node name="ContinueButton" type="Button" parent="Content"]
@@ -129,17 +81,7 @@ size_flags_horizontal = 4
 focus_neighbor_top = NodePath("../StartButton")
 focus_neighbor_bottom = NodePath(".")
 mouse_default_cursor_shape = 2
-theme_override_colors/font_color = Color(0.929412, 0.823529, 0.611765, 1)
-theme_override_colors/font_hover_color = Color(1, 0.94902, 0.788235, 1)
-theme_override_colors/font_pressed_color = Color(1, 0.94902, 0.788235, 1)
-theme_override_colors/font_focus_color = Color(1, 0.94902, 0.788235, 1)
-theme_override_colors/font_disabled_color = Color(0.537255, 0.501961, 0.419608, 1)
 theme_override_font_sizes/font_size = 19
-theme_override_styles/normal = SubResource("StyleBoxFlat_button")
-theme_override_styles/hover = SubResource("StyleBoxFlat_button_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_button_pressed")
-theme_override_styles/focus = SubResource("StyleBoxFlat_button_hover")
-theme_override_styles/disabled = SubResource("StyleBoxEmpty_button")
 text = "이어하기"
 
 [node name="InputHint" type="Label" parent="Content"]

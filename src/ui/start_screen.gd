@@ -1,6 +1,7 @@
 extends Control
 
 const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
+const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
 const SaveStore = preload("res://src/save/save_store.gd")
 
 const GAMEPLAY_SCENE_PATH := "res://src/main/main.tscn"
@@ -22,6 +23,7 @@ var _asset_catalog := AssetCatalog.new()
 var _save_store := SaveStore.new()
 
 func _ready() -> void:
+	theme = PixelUiTheme.create()
 	_apply_manifest_textures()
 	_update_continue_button()
 	start_button.grab_focus()
