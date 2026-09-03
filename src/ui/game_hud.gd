@@ -1651,27 +1651,20 @@ func _safe_margin() -> Vector4:
 	)
 
 func _panel(size: Vector2) -> PanelContainer:
-	var panel := PanelContainer.new()
-	panel.size = size
-	panel.custom_minimum_size = size
-	_ignore_mouse(panel)
-	panel.add_theme_stylebox_override("panel", _panel_style())
-	return panel
+	return _styled_panel(size, _panel_style())
 
 func _dialogue_panel(size: Vector2) -> PanelContainer:
-	var panel := PanelContainer.new()
-	panel.size = size
-	panel.custom_minimum_size = size
-	_ignore_mouse(panel)
-	panel.add_theme_stylebox_override("panel", _parchment_style())
-	return panel
+	return _styled_panel(size, _parchment_style())
 
 func _menu_panel(size: Vector2) -> PanelContainer:
+	return _styled_panel(size, _panel_style())
+
+func _styled_panel(size: Vector2, style: StyleBoxFlat) -> PanelContainer:
 	var panel := PanelContainer.new()
 	panel.size = size
 	panel.custom_minimum_size = size
 	_ignore_mouse(panel)
-	panel.add_theme_stylebox_override("panel", _parchment_style())
+	panel.add_theme_stylebox_override("panel", style)
 	return panel
 
 func _portrait_box(asset_id: String) -> PanelContainer:

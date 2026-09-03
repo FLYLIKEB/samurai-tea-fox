@@ -328,6 +328,7 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 		asserts.equal(int(round(menu_panel.custom_minimum_size.y)), 280, "fast menu expands to a near-full logical viewport height")
 		asserts.equal(int(round(menu_panel.anchor_left * 100.0)), 50, "fast menu anchors from the horizontal center")
 		asserts.equal(int(round(menu_panel.anchor_top * 100.0)), 50, "fast menu anchors from the vertical center")
+		asserts.true_value(_panel_uses_dark_background(menu_panel), "fast menu uses the shared dark HUD panel background")
 	asserts.equal((hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll") as Control).mouse_filter, Control.MOUSE_FILTER_STOP, "menu scroll consumes touch input instead of moving the player")
 	asserts.true_value(_tree_has_text(hud, "차 & 도구 (인벤토리) · 2/14 · all"), "inventory menu renders the mockup-style inventory header")
 	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip/InventorySlotCard0") != null, "inventory menu renders slot cards")
@@ -439,6 +440,12 @@ func _tree_uses_texture(node: Node, needle: String) -> bool:
 
 func _texture_rect_has_texture(node: Node) -> bool:
 	return node is TextureRect and (node as TextureRect).texture != null
+
+func _panel_uses_dark_background(panel: Control) -> bool:
+	var style := panel.get_theme_stylebox("panel") as StyleBoxFlat
+	if style == null:
+		return false
+	return style.bg_color.r < 0.12 and style.bg_color.g < 0.12 and style.bg_color.b < 0.12 and style.bg_color.a >= 0.80
 
 func _tree_has_text(node: Node, text: String) -> bool:
 	if node is Label and (node as Label).text == text:
