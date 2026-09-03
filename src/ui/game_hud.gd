@@ -51,11 +51,11 @@ const MENU_PANEL_SIZE := Vector2(560, 280)
 const MENU_CONTENT_SIZE := Vector2(544, 228)
 const MENU_VIEWPORT_RATIO := Vector2(0.88, 0.78)
 const MENU_PANEL_PADDING := Vector2(16, 52)
-const NARRATIVE_PANEL_SIZE := Vector2(540, 126)
-const NARRATIVE_PORTRAIT_SIZE := Vector2(128, 128)
-const NARRATIVE_PORTRAIT_FRAME_SIZE := Vector2(136, 136)
+const NARRATIVE_PANEL_SIZE := Vector2(560, 118)
+const NARRATIVE_PORTRAIT_SIZE := Vector2(96, 96)
+const NARRATIVE_PORTRAIT_FRAME_SIZE := Vector2(104, 104)
 const NARRATIVE_PORTRAIT_INSET := 4.0
-const NARRATIVE_PANEL_BOTTOM_OFFSET := 10.0
+const NARRATIVE_PANEL_BOTTOM_OFFSET := 12.0
 
 signal mobile_command_issued(command)
 
@@ -232,7 +232,8 @@ func show_narrative_dialogue(read_model: Dictionary) -> bool:
 		var button := Button.new()
 		button.text = "넘어가기"
 		button.tooltip_text = String(option.get("display_text", "넘어가기"))
-		button.custom_minimum_size = Vector2(76, 26)
+		button.custom_minimum_size = Vector2(112, 28)
+		button.add_theme_font_size_override("font_size", 12)
 		button.focus_mode = Control.FOCUS_ALL
 		button.mouse_filter = Control.MOUSE_FILTER_STOP
 		button.pressed.connect(func(): mobile_command_issued.emit(GameCommand.new(
@@ -757,13 +758,20 @@ func _build_narrative_panel(parent: PanelContainer) -> void:
 	var rows := VBoxContainer.new()
 	rows.name = "NarrativeRows"
 	_ignore_mouse(rows)
-	rows.add_theme_constant_override("separation", 6)
+	rows.add_theme_constant_override("separation", 4)
 	parent.add_child(rows)
+	var speaker_plate := PanelContainer.new()
+	speaker_plate.name = "SpeakerPlate"
+	speaker_plate.custom_minimum_size = Vector2(260, 26)
+	speaker_plate.add_theme_stylebox_override("panel", PixelUiTheme.button_style(Color(0.12, 0.08, 0.05, 0.94)))
+	_ignore_mouse(speaker_plate)
+	rows.add_child(speaker_plate)
 	_labels.narrative_speaker = _label("", 13)
-	rows.add_child(_labels.narrative_speaker)
+	_labels.narrative_speaker.add_theme_color_override("font_color", Color(1.0, 0.88, 0.58, 1.0))
+	speaker_plate.add_child(_labels.narrative_speaker)
 	_labels.narrative_text = _label("", 12)
 	_labels.narrative_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_labels.narrative_text.custom_minimum_size = Vector2(460, 44)
+	_labels.narrative_text.custom_minimum_size = Vector2(528, 38)
 	rows.add_child(_labels.narrative_text)
 	_narrative_options = HBoxContainer.new()
 	_narrative_options.name = "NarrativeOptions"
@@ -1658,10 +1666,10 @@ func _apply_safe_area_layout() -> void:
 		_narrative_background.offset_bottom = 0
 	var portrait_y := maxf(
 		margin.y + 44.0,
-		viewport_size.y - margin.w - NARRATIVE_PANEL_BOTTOM_OFFSET - NARRATIVE_PANEL_SIZE.y - NARRATIVE_PORTRAIT_FRAME_SIZE.y - 8.0
+		viewport_size.y - margin.w - NARRATIVE_PANEL_BOTTOM_OFFSET - NARRATIVE_PANEL_SIZE.y - NARRATIVE_PORTRAIT_FRAME_SIZE.y + 16.0
 	)
-	var left_frame_position := Vector2(margin.x + 18.0, portrait_y)
-	var right_frame_position := Vector2(viewport_size.x - margin.z - NARRATIVE_PORTRAIT_FRAME_SIZE.x - 18.0, portrait_y)
+	var left_frame_position := Vector2(margin.x + 24.0, portrait_y)
+	var right_frame_position := Vector2(viewport_size.x - margin.z - NARRATIVE_PORTRAIT_FRAME_SIZE.x - 24.0, portrait_y)
 	if _narrative_left_portrait != null:
 		_narrative_left_portrait.size = NARRATIVE_PORTRAIT_SIZE
 		_narrative_left_portrait.position = left_frame_position + Vector2.ONE * NARRATIVE_PORTRAIT_INSET
