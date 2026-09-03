@@ -65,6 +65,11 @@ func run(asserts) -> void:
 	asserts.equal(received.size(), 1, "dispatcher emits exactly one valid command")
 	asserts.equal(received[0], attack, "dispatcher preserves command identity")
 	_assert_menu_shortcut_keys_are_unique(asserts)
+	_assert_attack_uses_e_shortcut(asserts)
+
+func _assert_attack_uses_e_shortcut(asserts) -> void:
+	var text := FileAccess.get_file_as_string("res://project.godot")
+	asserts.equal(_project_input_keycode(text, "attack"), 69, "attack uses the E keyboard shortcut")
 
 func _assert_menu_shortcut_keys_are_unique(asserts) -> void:
 	var text := FileAccess.get_file_as_string("res://project.godot")

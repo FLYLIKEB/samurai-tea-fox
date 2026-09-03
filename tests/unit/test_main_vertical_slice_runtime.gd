@@ -99,6 +99,10 @@ func run(asserts) -> void:
 
 	asserts.true_value(main.submit_desktop_action_command("complete_dungeon"), "slice enters the minimal common dungeon through Main")
 	asserts.equal(main.run_state.completed_dungeon_ids, [], "dungeon entry alone does not complete biome progression")
+	asserts.true_value(main._in_dungeon_map, "dungeon entry switches the active world to dungeon mode")
+	asserts.equal(main.world_data.width, 12, "dungeon map uses the dedicated dungeon width")
+	asserts.equal(main.world_data.height, 9, "dungeon map uses the dedicated dungeon height")
+	asserts.equal(main.world_cell_from_world_position(main.player.global_position), Vector2i(1, 1), "player spawns at the dungeon entrance")
 	for _attempt in range(10):
 		if main.combat_dummy.current_hp() <= 0:
 			break
@@ -107,6 +111,7 @@ func run(asserts) -> void:
 		asserts.true_value(main.submit_desktop_action_command("cast_ability", Vector2i.RIGHT, 0), "slice continues combat until the dungeon objective is clear")
 	asserts.true_value(main.combat_dummy.current_hp() <= 0, "combat objective is defeated before dungeon completion")
 	asserts.true_value(main.submit_desktop_action_command("complete_dungeon"), "slice completes the minimal common dungeon after combat objective clear")
+	asserts.false_value(main._in_dungeon_map, "dungeon completion returns to the overworld map")
 	asserts.equal(main.run_state.completed_dungeon_ids, ["common_region"], "dungeon completion updates biome progression")
 	asserts.equal(main.run_state.teleport_states.common_region, BiomeProgressionState.TELEPORT_REPAIRABLE, "dungeon completion makes teleport repairable")
 	asserts.true_value(main.submit_desktop_action_command("repair_teleport"), "slice repairs the common teleport through Main")

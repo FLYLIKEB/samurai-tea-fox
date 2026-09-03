@@ -68,14 +68,22 @@ func _add_owner_cells(output: Array, position: Dictionary, owners: Array, owner_
 		var source_id := String(owner_source_ids.get(String(owner_id), ""))
 		if not source_id.is_empty():
 			cell["source_id"] = source_id
+		var metadata: Dictionary = _owner_metadata.get(String(owner_id), {})
+		if metadata.has("rotation_degrees"):
+			cell["rotation_degrees"] = float(metadata.get("rotation_degrees", 0.0))
 		output.append(cell)
+
+var _owner_metadata: Dictionary = {}
 
 func _owner_source_ids(world_data: Dictionary) -> Dictionary:
 	var sources := {}
+	_owner_metadata = {}
 	for reservation in world_data.get("reservations", []):
 		var owner_id := String(reservation.get("owner_id", ""))
 		var metadata: Dictionary = reservation.get("metadata", {})
 		var source_id := String(metadata.get("source_id", ""))
 		if not owner_id.is_empty() and not source_id.is_empty():
 			sources[owner_id] = source_id
+		if not owner_id.is_empty():
+			_owner_metadata[owner_id] = metadata.duplicate(true)
 	return sources

@@ -41,6 +41,12 @@ func run(asserts) -> void:
 	asserts.true_value(runtime.main.submit_mobile_action_command(command), "main routes target INTERACT into acquisition")
 	asserts.equal(runtime.main.inventory.get_total_quantity("wood"), 1, "live interaction grants the confirmed resource")
 	asserts.true_value(runtime.main.run_state.acquisitions.gatherables[0].depleted, "live acquisition changes persist into RunState")
+	var gather_effect: Node = runtime.main.get_node_or_null("AcquisitionEffect")
+	asserts.true_value(gather_effect != null, "successful gathering creates a shared world effect")
+	if gather_effect != null:
+		asserts.equal(gather_effect.effect_kind, "gatherable", "gathering effect preserves the acquisition kind")
+		asserts.equal(gather_effect.position, runtime.main.world_position_for_cell_center(Vector2i.ZERO), "gathering effect appears at the resource position")
+		asserts.true_value((gather_effect.get_node("Caption") as Label).text.begins_with("채집 "), "gathering effect uses gathering feedback")
 	_assert_tree_terrain_requires_crafted_axe_and_disappears(asserts, catalog)
 
 	var render_runtime := _configured_runtime(catalog, RunState.new())

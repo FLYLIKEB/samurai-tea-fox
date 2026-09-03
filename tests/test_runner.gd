@@ -40,6 +40,7 @@ const TESTS := [
 	preload("res://tests/unit/test_save_store.gd"),
 	preload("res://tests/unit/test_biome_progression.gd"),
 	preload("res://tests/unit/test_dungeon_runtime.gd"),
+	preload("res://tests/unit/test_main_dungeon_interaction_runtime.gd"),
 	preload("res://tests/unit/test_core_tea_ware_collection.gd"),
 	preload("res://tests/unit/test_ending_route_runtime.gd"),
 	preload("res://tests/unit/test_meta_codex_command_runtime.gd"),

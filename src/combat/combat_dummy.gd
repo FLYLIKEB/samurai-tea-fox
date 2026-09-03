@@ -11,13 +11,9 @@ const DAMAGE_POPUP_FONT := "res://assets/fonts/galmuri/Galmuri11.ttf"
 const DAMAGE_POPUP_COLOR := Color(1.0, 0.10, 0.07, 1.0)
 const DAMAGE_POPUP_SECONDS := 0.7
 const DAMAGE_POPUP_RISE_PIXELS := 8.0
-const DUMMY_CHARACTER_ID := "CHR-2"
-const IDLE_ASSET_IDS := {
-	"south": "wasteland_daimyo_front_idle",
-	"west": "asset_assets_sprites_characters_bosses_chr_2_wasteland_daimyo_wasteland_daimyo_left_32x32_png",
-	"east": "asset_assets_sprites_characters_bosses_chr_2_wasteland_daimyo_wasteland_daimyo_right_32x32_png",
-	"north": "asset_assets_sprites_characters_bosses_chr_2_wasteland_daimyo_wasteland_daimyo_back_32x32_png"
-}
+const GRID_STEP_TWEEN_SECONDS := 0.18
+const DUMMY_CHARACTER_ID := ""
+const IDLE_ASSET_IDS := {}
 
 signal damaged(event: Dictionary, applied_damage: int)
 signal defeated()
@@ -30,7 +26,7 @@ signal grid_step_finished(cell: Vector2i)
 signal turn_finished(result: Dictionary)
 
 @export var monster_id := "road_bandit"
-@export var sprite_asset_id := "wasteland_daimyo_front_idle"
+@export var sprite_asset_id := "monster_foxfire_front_idle"
 @export var automatic_attacks := true
 @export_range(1.0, 128.0, 1.0) var attack_range_pixels := 40.0
 
@@ -51,6 +47,8 @@ var _grid_world_origin := Vector2.ZERO
 var _grid_tile_size := TILE_SIZE_PIXELS
 var walk_animator := DirectionalWalkAnimator.new()
 var _walk_animator_ready := false
+var _grid_step_active := false
+var _grid_step_tween: Tween
 var _damage_popup: Label
 var _damage_popup_tween: Tween
 
@@ -173,6 +171,9 @@ func attack_target(attack_target, hit_invulnerability_seconds := 0.0) -> int:
 func current_hp() -> int:
 	return combatant.hp if combatant != null else 0
 
+func is_grid_step_active() -> bool:
+	return _grid_step_active
+
 func received_hit_count() -> int:
 	return combatant.received_damage_events.size() if combatant != null else 0
 
@@ -224,9 +225,10 @@ func _apply_sprite() -> void:
 		return
 	sprite.texture = texture
 	sprite.z_index = 1
-	var animation_result := walk_animator.configure_for_character(sprite, asset_catalog, DUMMY_CHARACTER_ID, IDLE_ASSET_IDS)
-	if animation_result.ok:
-		_walk_animator_ready = true
+	# The initial overworld encounter uses the ordinary foxfire monster asset.
+	# Do not configure the boss-character directional animator here: its fallback
+	# character mapping would replace the selected monster texture with a king NPC.
+	_walk_animator_ready = false
 	_hide_placeholder_shapes()
 
 func _hide_placeholder_shapes() -> void:
@@ -271,17 +273,31 @@ func _move_one_grid_cell_toward(target_position: Vector2) -> bool:
 	_grid_target_position = _grid_position_for_cell_center(to_cell)
 	_grid_step_direction = Vector2(direction)
 	grid_step_started.emit(from_cell, to_cell)
-	var collision := move_and_collide(_grid_target_position - _grid_source_position)
+	# Probe the full step without moving the body; visual movement is performed by
+	# the tween below so the enemy never snaps to the destination first.
+	var collision := move_and_collide(_grid_target_position - _grid_source_position, true)
 	if collision != null:
 		global_position = _grid_source_position
 		_update_walk_animation(direction, false)
 		grid_step_blocked.emit(_grid_source_cell, _grid_cell_for_position(_grid_target_position))
 		return false
 	_update_walk_animation(direction, true)
-	global_position = _grid_target_position
-	_update_walk_animation(direction, false)
-	grid_step_finished.emit(_grid_cell_for_position(global_position))
+	_grid_step_active = true
+	if _grid_step_tween != null and _grid_step_tween.is_valid():
+		_grid_step_tween.kill()
+	_grid_step_tween = create_tween()
+	_grid_step_tween.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_grid_step_tween.tween_property(self, "global_position", _grid_target_position, GRID_STEP_TWEEN_SECONDS)
+	_grid_step_tween.tween_callback(_finish_grid_step_tween)
 	return true
+
+func _finish_grid_step_tween() -> void:
+	_grid_step_active = false
+	_update_walk_animation(
+		Vector2i(int(round(_grid_step_direction.x)), int(round(_grid_step_direction.y))),
+		false,
+	)
+	grid_step_finished.emit(_grid_cell_for_position(global_position))
 
 func _apply_grid_knockback(direction: Vector2, tile_count: int) -> bool:
 	if tile_count <= 0:

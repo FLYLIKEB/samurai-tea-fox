@@ -133,6 +133,7 @@ func gather(node_id: String) -> Dictionary:
 		"node_id": node_id,
 		"item_id": definition.item_id,
 		"quantity": definition.quantity,
+		"position": _position_dictionary(position),
 		"required_tool_item_id": String(definition.get("required_tool_item_id", "")),
 		"delivery": result.get("delivery", POLICY_DIRECT),
 		"pickup_id": result.get("pickup_id", "")
@@ -194,6 +195,7 @@ func collect_pickup(pickup_id: String) -> Dictionary:
 		"pickup_id": pickup_id,
 		"item_id": pickup.item_id,
 		"quantity": pickup.quantity,
+		"position": pickup.position.duplicate(true),
 		"delivery": POLICY_DIRECT
 	}
 	_emit_changed()

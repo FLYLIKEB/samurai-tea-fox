@@ -12,6 +12,7 @@ const WorldData = preload("res://src/world/data/world_data.gd")
 
 func run(asserts) -> void:
 	_assert_map_read_model_respects_discovery_and_markers(asserts)
+	_assert_default_discovery_covers_camera_view(asserts)
 	_assert_map_read_model_does_not_mutate_world_data(asserts)
 	_assert_minimap_is_bounded_around_player(asserts)
 	_assert_commands_and_hud_open_full_map(asserts)
@@ -34,6 +35,16 @@ func _assert_map_read_model_respects_discovery_and_markers(asserts) -> void:
 	asserts.equal(_marker_type(model.markers, "teleport_0"), MapReadModelBuilder.MARKER_TELEPORT, "required teleport is a known marker")
 	asserts.equal(_marker_type(model.markers, "player"), MapReadModelBuilder.MARKER_PLAYER, "player marker is present")
 	asserts.false_value(_cell_visible(model.cells, Vector2i(7, 5)), "undiscovered far cell is not exposed as terrain")
+
+func _assert_default_discovery_covers_camera_view(asserts) -> void:
+	var world := WorldData.new(24, 16, "grass", true)
+	var builder := MapReadModelBuilder.new()
+	builder.configure("map-fixture")
+	var model: Dictionary = builder.build(world, RunState.new(), Vector2i(12, 8))
+	asserts.true_value(_cell_visible(model.cells, Vector2i(7, 8)), "default discovery reaches the camera's horizontal left edge")
+	asserts.true_value(_cell_visible(model.cells, Vector2i(17, 8)), "default discovery reaches the camera's horizontal right edge")
+	asserts.true_value(_cell_visible(model.cells, Vector2i(12, 5)), "default discovery reaches the camera's vertical top edge")
+	asserts.true_value(_cell_visible(model.cells, Vector2i(12, 11)), "default discovery reaches the camera's vertical bottom edge")
 
 func _assert_map_read_model_does_not_mutate_world_data(asserts) -> void:
 	var world := _world()

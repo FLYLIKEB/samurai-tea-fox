@@ -4,7 +4,10 @@ class_name MapReadModelBuilder
 const WorldData = preload("res://src/world/data/world_data.gd")
 
 const SNAPSHOT_SCHEMA_VERSION := 1
-const DISCOVERY_RADIUS := 2
+# The runtime camera uses a 640x360 logical viewport at 2x zoom over 32px
+# tiles (roughly 10x6 cells). Keep one extra cell of reveal margin so the
+# visible screen never ends in undiscovered fog.
+const DISCOVERY_RADIUS := 6
 const DEFAULT_MINIMAP_WIDTH := 11
 const DEFAULT_MINIMAP_HEIGHT := 7
 const MARKER_PLAYER := "player"
