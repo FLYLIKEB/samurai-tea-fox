@@ -7,7 +7,7 @@ func run(asserts) -> void:
 	_assert_sixteen_adjacency_masks(asserts)
 	_assert_tilemap_layer_uses_adjacency_variants(asserts)
 	_assert_river_uses_connection_specific_sources(asserts)
-	_assert_tree_terrain_renders_grass_underlay(asserts)
+	_assert_tree_footprints_overlay_base_terrain(asserts)
 	_assert_multicell_footprints_keep_original_texture(asserts)
 
 func _assert_sixteen_adjacency_masks(asserts) -> void:
@@ -74,37 +74,38 @@ func _assert_river_uses_connection_specific_sources(asserts) -> void:
 	asserts.true_value(vertical != horizontal, "straight river variants differ by connection direction")
 	asserts.true_value(curve != vertical and curve != horizontal, "curved river variant differs from straight variants")
 
-func _assert_tree_terrain_renders_grass_underlay(asserts) -> void:
+func _assert_tree_footprints_overlay_base_terrain(asserts) -> void:
 	var renderer := WorldSceneRenderer.new()
 	var root := Node2D.new()
-	var tree := "terrain_tree_round_32x32"
+	var tree := "asset_assets_sprites_objects_natural_props_broadleaf_tree_small_32x32_png"
+	var ground := "terrain_plains_grass_ground_01"
 	var input := {
 		"schema_version": 1,
 		"read_only": true,
 		"tile_size": 32,
 		"bounds": {"width": 1, "height": 1},
-		"layers": [{
-			"id": WorldData.LAYER_TERRAIN,
-			"kind": "tile",
-			"cells": [{"position": {"x": 0, "y": 0}, "source_id": tree}]
-		}],
+		"layers": [
+			{"id": WorldData.LAYER_TERRAIN, "kind": "tile", "cells": [
+				{"position": {"x": 0, "y": 0}, "source_id": ground}
+			]},
+			{"id": WorldData.LAYER_ENTITIES, "kind": "footprint", "cells": [
+				{"position": {"x": 0, "y": 0}, "owner_id": "terrain_tree_0_0", "source_id": tree}
+			]}
+		],
 		"required_landmarks": []
 	}
 	var result: Dictionary = renderer.render(root, input)
-	asserts.true_value(result.ok, "renderer accepts tree terrain input")
+	asserts.true_value(result.ok, "renderer accepts tree-over-ground projection")
+	asserts.equal(int(result.counts.get(WorldData.LAYER_TERRAIN, 0)), 1, "renderer keeps the base terrain tile behind a tree")
+	asserts.equal(int(result.counts.get(WorldData.LAYER_ENTITIES, 0)), 1, "renderer draws the tree object on the entity layer")
 	var tilemap := root.get_node_or_null(WorldSceneRenderer.TERRAIN_LAYER) as TileMapLayer
-	var footprints := root.get_node_or_null(WorldSceneRenderer.TERRAIN_FOOTPRINT_LAYER) as Node2D
-	asserts.true_value(tilemap != null, "tree terrain keeps a tilemap underlay")
-	asserts.true_value(footprints != null, "tree terrain creates an overlay layer")
-	if tilemap != null and tilemap.tile_set != null:
-		var source_id := tilemap.get_cell_source_id(Vector2i.ZERO)
-		var source := tilemap.tile_set.get_source(source_id) as TileSetAtlasSource
-		asserts.true_value(source != null and source.texture != null and source.texture.resource_path.ends_with("grass_ground_01_32x32_crop_1_1_30x30_resize_32x32.png"), "tree terrain lays grass under the tree sprite")
-	if footprints != null:
-		asserts.equal(footprints.get_child_count(), 1, "tree terrain draws one tree overlay sprite")
-		var sprite := footprints.get_child(0) as Sprite2D
-		asserts.true_value(sprite != null and sprite.texture != null, "tree overlay uses the requested terrain-folder round tree sprite")
-	asserts.true_value("terrain_tree_round_32x32" in result.asset_report.used_asset_ids, "tree overlay source is audited as a terrain-folder tree asset")
+	asserts.true_value(tilemap != null, "tree projection still creates terrain tilemap")
+	if tilemap != null:
+		asserts.equal(tilemap.get_cell_source_id(Vector2i.ZERO), 0, "ground tile remains present below tree object")
+	var entities := root.get_node_or_null(WorldSceneRenderer.ENTITY_LAYER) as Node2D
+	asserts.true_value(entities != null and entities.get_child_count() == 1, "tree object renders once above terrain")
+	asserts.true_value(tree in result.asset_report.used_asset_ids, "renderer asset report resolves tree object reference")
+	asserts.true_value(ground in result.asset_report.used_asset_ids, "renderer asset report resolves ground tile reference")
 	root.queue_free()
 
 func _assert_multicell_footprints_keep_original_texture(asserts) -> void:

@@ -38,6 +38,7 @@ func run(asserts) -> void:
 	asserts.equal(a.renderer_input.read_only, true, "renderer input is read-only projection")
 	_assert_teleport_landmark_metadata(asserts, a.world_data, "common_region")
 	_assert_renderer_source_paths_exist(asserts, a.renderer_input)
+	_assert_tree_obstacles_render_over_base(asserts, a, WorldGenerator.TERRAIN_FOREST, WorldGenerator.RENDER_GRASS, WorldGenerator.RENDER_FOREST_TREE, "common forest")
 	_assert_resource_accessibility(asserts, a)
 	_assert_common_templates(asserts, a)
 	_assert_continuous_water_stroke(asserts, a)
@@ -132,6 +133,7 @@ func _assert_mountain_generation(asserts, catalog, generator: WorldGenerator) ->
 	_assert_facility_accessibility(asserts, generated)
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 	_assert_mountain_terrain_profile(asserts, generated.world_data)
+	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_MOUNTAIN_CONIFER, WorldGenerator.RENDER_MOUNTAIN_SLOPE, WorldGenerator.RENDER_MOUNTAIN_CONIFER, "mountain conifer")
 	_assert_mountain_renderer_sources(asserts, generated.renderer_input)
 	_assert_landmark_terrain_terms(asserts, generated.landmarks)
 	_assert_resource_ids_resolve_to_mountain_materials(asserts, generated.resource_nodes, mountain, catalog.get_definitions("items"))
@@ -180,6 +182,7 @@ func _assert_wasteland_generation(asserts, catalog, generator: WorldGenerator) -
 	_assert_facility_accessibility_for_terms(asserts, generated, ["폐촌", "버려진 초소", "무너진 다실", "전쟁터 흔적"])
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 	_assert_wasteland_terrain_profile(asserts, generated.world_data)
+	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_WASTELAND_DEAD_TREE, WorldGenerator.RENDER_WASTELAND_DRY_SOIL, WorldGenerator.RENDER_WASTELAND_DEAD_TREE, "wasteland dead tree")
 	_assert_wasteland_renderer_sources(asserts, generated.renderer_input)
 	_assert_landmark_terms(asserts, generated.landmarks, ["마른 흙", "갈라진 땅", "죽은 나무", "폐허", "말라붙은 하천", "군영 흔적"])
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, wasteland, catalog.get_definitions("items"))
@@ -232,6 +235,7 @@ func _assert_snowfield_generation(asserts, catalog, generator: WorldGenerator) -
 	_assert_facility_accessibility_for_terms(asserts, generated, ["산장", "온천", "설원 사당", "얼어붙은 광산"])
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 	_assert_snowfield_terrain_profile(asserts, generated.world_data)
+	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_SNOWFIELD_PINE, WorldGenerator.RENDER_SNOWFIELD_SNOW, WorldGenerator.RENDER_SNOWFIELD_PINE, "snowfield pine")
 	_assert_snowfield_renderer_sources(asserts, generated.renderer_input)
 	_assert_landmark_terms(asserts, generated.landmarks, ["눈밭", "얼어붙은 강", "침엽수", "빙벽", "눈 덮인 산길"])
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, snowfield, catalog.get_definitions("items"))
@@ -285,6 +289,7 @@ func _assert_rainforest_generation(asserts, catalog, generator: WorldGenerator) 
 	_assert_facility_accessibility_for_terms(asserts, generated, ["차 재배지", "강변 취락", "숲속 다실", "향 문화 공간"])
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 	_assert_rainforest_terrain_profile(asserts, generated.world_data)
+	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_RAINFOREST_AGARWOOD, WorldGenerator.RENDER_RAINFOREST_RIVER_BANK, WorldGenerator.RENDER_RAINFOREST_AGARWOOD, "rainforest agarwood")
 	_assert_rainforest_renderer_sources(asserts, generated.renderer_input)
 	_assert_landmark_terms(asserts, generated.landmarks, ["밀림", "습지", "넓은 강", "덩굴 통로", "차 재배지", "향목 숲"])
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, rainforest, catalog.get_definitions("items"))
@@ -404,6 +409,18 @@ func _layer_source_ids_by_owner(renderer_input: Dictionary, layer_id: String) ->
 				source_ids[owner_id] = source_id
 	return source_ids
 
+func _layer_source_ids_by_position(renderer_input: Dictionary, layer_id: String) -> Dictionary:
+	var source_ids := {}
+	for layer in renderer_input.layers:
+		if String(layer.id) != layer_id:
+			continue
+		for cell in layer.cells:
+			var position := _vector_from_dictionary(cell.get("position", {}))
+			var source_id := String(cell.get("source_id", ""))
+			if not source_id.is_empty():
+				source_ids[_key(position)] = source_id
+	return source_ids
+
 func _assert_renderer_source_paths_exist(asserts, renderer_input: Dictionary) -> void:
 	var asset_catalog := AssetCatalog.new()
 	var load_result: Dictionary = asset_catalog.load_manifest()
@@ -421,6 +438,31 @@ func _assert_renderer_source_paths_exist(asserts, renderer_input: Dictionary) ->
 	for source_id in seen.keys():
 		asserts.true_value(not asset_catalog.id_for_reference(source_id).is_empty(), "renderer source reference uses manifest ID: %s" % source_id)
 		asserts.true_value(not asset_catalog.path_for_reference(source_id).is_empty(), "renderer source reference path exists: %s" % source_id)
+
+func _assert_tree_obstacles_render_over_base(asserts, world: Dictionary, tree_terrain_id: String, base_render_id: String, tree_source_id: String, label: String) -> void:
+	var tree_owner_positions := {}
+	var interactable_owner_ids := _interactable_owner_ids(world.renderer_input)
+	for cell in world.world_data.cells:
+		var terrain: Dictionary = cell.layers.terrain
+		if String(terrain.id) != tree_terrain_id:
+			continue
+		asserts.equal(String(terrain.render_id), base_render_id, "%s terrain renders the base tile under the tree object" % label)
+		asserts.true_value(bool(terrain.walkable), "%s terrain keeps base walkability and delegates blocking to the tree object" % label)
+		var owners: Array = cell.layers.entities
+		asserts.equal(owners.size(), 1, "%s terrain cell owns one blocking tree object" % label)
+		if not owners.is_empty():
+			var owner_id := String(owners[0])
+			tree_owner_positions[owner_id] = _vector_from_dictionary(cell.position)
+			asserts.true_value(owner_id.begins_with("terrain_tree_"), "%s tree object uses generated terrain owner id" % label)
+			asserts.false_value(interactable_owner_ids.has(owner_id), "%s tree object is not registered as an interactable resource" % label)
+	asserts.true_value(not tree_owner_positions.is_empty(), "%s biome includes tree object obstacles" % label)
+	var terrain_sources := _layer_source_ids_by_position(world.renderer_input, WorldData.LAYER_TERRAIN)
+	var entity_sources := _layer_source_ids_by_owner(world.renderer_input, WorldData.LAYER_ENTITIES)
+	for owner_id in tree_owner_positions.keys():
+		var position: Vector2i = tree_owner_positions[owner_id]
+		asserts.equal(String(terrain_sources.get(_key(position), "")), base_render_id, "%s renderer keeps the base tile behind tree %s" % [label, owner_id])
+		asserts.equal(String(entity_sources.get(owner_id, "")), tree_source_id, "%s renderer uses the biome tree object source for %s" % [label, owner_id])
+	_assert_asset_reference_exists(asserts, tree_source_id, "%s tree object source exists" % label)
 
 func _assert_common_templates(asserts, world: Dictionary) -> void:
 	asserts.true_value(world.has("templates"), "world records common map templates")
@@ -510,7 +552,6 @@ func _assert_mountain_terrain_profile(asserts, world_data: Dictionary) -> void:
 	var required_blocked := {
 		"mountain_cliff": true,
 		"mountain_rock": true,
-		"mountain_conifer_forest": true,
 		"mountain_valley_water": true
 	}
 	var terrain_counts := {}
@@ -555,7 +596,6 @@ func _assert_wasteland_terrain_profile(asserts, world_data: Dictionary) -> void:
 	}
 	var required_blocked := {
 		"wasteland_ruin": true,
-		"wasteland_dead_tree": true,
 		"wasteland_dry_river": true,
 		"wasteland_camp_trace": true
 	}
@@ -603,7 +643,6 @@ func _assert_snowfield_terrain_profile(asserts, world_data: Dictionary) -> void:
 	}
 	var required_blocked := {
 		"snowfield_ice": true,
-		"snowfield_pine": true,
 		"snowfield_ice_wall": true
 	}
 	var terrain_counts := {}
@@ -651,8 +690,7 @@ func _assert_rainforest_terrain_profile(asserts, world_data: Dictionary) -> void
 	var required_blocked := {
 		"rainforest_jungle": true,
 		"rainforest_swamp": true,
-		"rainforest_river": true,
-		"rainforest_agarwood_grove": true
+		"rainforest_river": true
 	}
 	var terrain_counts := {}
 	var blocked_counts := {}
