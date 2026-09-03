@@ -16,8 +16,11 @@ const EndingRouteRuntime = preload("res://src/meta/ending_route_runtime.gd")
 const PlayerMovementState = preload("res://src/player/player_movement_state.gd")
 const TeaBrewingCommandRuntime = preload("res://src/tea/tea_brewing_command_runtime.gd")
 const TeaService = preload("res://src/tea/tea_service.gd")
+const TimeConfig = preload("res://src/time/time_config.gd")
+const TimeState = preload("res://src/time/time_state.gd")
 const MetaCodexCommandRuntime = preload("res://src/meta/meta_codex_command_runtime.gd")
 const BiomeProgressionState = preload("res://src/world/biome/biome_progression_state.gd")
+const DungeonInstanceState = preload("res://src/dungeon/dungeon_instance_state.gd")
 const RunState = preload("res://src/save/run_state.gd")
 const SenRikyuPhaseOneRuntime = preload("res://src/dungeon/sen_rikyu_phase_one_runtime.gd")
 const SenRikyuPhaseTwoRuntime = preload("res://src/dungeon/sen_rikyu_phase_two_runtime.gd")
@@ -53,6 +56,7 @@ var tea_brewing_command_runtime
 var meta_codex_command_runtime
 var crafting_service
 var consumable_service
+var time_state
 var core_tea_ware_collection
 var final_room_state_builder
 var sen_rikyu_phase_one_runtime
@@ -63,6 +67,7 @@ var ending_route_runtime
 var acquisition_service
 var dungeon_runtime
 var run_lifecycle_service
+var biome_progression_state
 var save_store = SaveStore.new()
 var run_state: RunState
 var world_data
@@ -82,6 +87,10 @@ func _ready() -> void:
 	var result: Dictionary = catalog.load_from_directory("res://data/generated")
 	if not result.ok:
 		push_error(result.error)
+		return
+	var loaded_run := load_or_create_run_state()
+	if not loaded_run.ok:
+		push_error(loaded_run.error)
 		return
 	var runtime_result := _configure_run_services(catalog)
 	if not runtime_result.ok:
@@ -110,10 +119,16 @@ func _configure_combat_lifecycle() -> Dictionary:
 	if not lifecycle_result.ok:
 		return lifecycle_result
 	run_lifecycle_service = lifecycle_result.run_lifecycle_service
-	player.resources.hp_depleted.connect(_on_player_hp_depleted)
+	if not player.resources.hp_depleted.is_connected(_on_player_hp_depleted):
+		player.resources.hp_depleted.connect(_on_player_hp_depleted)
 	var dummy_combat_result: Dictionary = combat_dummy.configure_combat(catalog, player, player.combat_config)
 	if not dummy_combat_result.ok:
 		return dummy_combat_result
+	if player.has_method("configure_ability_context"):
+		player.configure_ability_context(self, time_state, self)
+		var ability_result := _equip_default_playable_ability()
+		if not ability_result.ok:
+			return ability_result
 	return {"ok": true}
 
 func _connect_player_feedback_signals() -> void:
@@ -129,7 +144,8 @@ func _configure_world_for_current_run() -> Dictionary:
 	var progression_result := BiomeProgressionState.from_catalog(catalog, run_state)
 	if not progression_result.ok:
 		return progression_result
-	var projection: Dictionary = progression_result.progression_state.to_projection()
+	biome_progression_state = progression_result.progression_state
+	var projection: Dictionary = biome_progression_state.to_projection()
 	var current_biome_id := String(projection.get("current_biome_id", ""))
 	var current_biome: Dictionary = catalog.find_by_id("biomes", current_biome_id)
 	if current_biome.is_empty():
@@ -149,6 +165,10 @@ func _configure_world_for_current_run() -> Dictionary:
 	return {"ok": true}
 
 func _physics_process(_delta: float) -> void:
+	if time_state != null and player != null and player.resources != null:
+		time_state.tick(_delta, player.resources)
+	if player != null and player.ability_runtime != null:
+		player.ability_runtime.tick(_delta)
 	_record_current_map_discovery()
 	var desktop_command = _desktop_adapter.poll_movement_command()
 	player.submit_command(movement_command_for_current_inputs(desktop_command))
@@ -158,6 +178,8 @@ func _physics_process(_delta: float) -> void:
 		submit_desktop_action_command("dodge", desktop_command.direction)
 	if Input.is_action_just_pressed("drink_tea"):
 		submit_desktop_action_command("drink_tea")
+	if Input.is_action_just_pressed("sleep"):
+		submit_desktop_action_command("sleep")
 	if Input.is_action_just_pressed("open_tea_brewing"):
 		submit_desktop_action_command("open_tea_brewing")
 	if _is_hud_menu_open("tea_brewing"):
@@ -295,12 +317,37 @@ func submit_action_command(command) -> bool:
 			var target_id := String(command.payload.get("target_id", ""))
 			if target_id.is_empty():
 				return submit_player_interaction(command.direction)
+			if _is_landmark_target(target_id):
+				var landmark_accepted := _handle_landmark_interaction(target_id)
+				if landmark_accepted:
+					_play_feedback_beep()
+				return landmark_accepted
 			var accepted: bool = acquisition_service != null and bool(acquisition_service.handle_command(command).ok)
 			if accepted:
 				_play_feedback_beep()
 			return accepted
 		GameCommand.Type.DRINK_TEA:
 			var accepted: bool = _handle_tea_command(command)
+			if accepted:
+				_play_feedback_beep()
+			return accepted
+		GameCommand.Type.USE_CONSUMABLE:
+			var accepted: bool = _handle_consumable_command(command)
+			if accepted:
+				_play_feedback_beep()
+			return accepted
+		GameCommand.Type.SLEEP:
+			var accepted: bool = _handle_sleep_command()
+			if accepted:
+				_play_feedback_beep()
+			return accepted
+		GameCommand.Type.COMPLETE_DUNGEON:
+			var accepted: bool = _handle_complete_dungeon_command(command)
+			if accepted:
+				_play_feedback_beep()
+			return accepted
+		GameCommand.Type.REPAIR_TELEPORT, GameCommand.Type.ADVANCE_BIOME:
+			var accepted: bool = _handle_biome_progression_command(command)
 			if accepted:
 				_play_feedback_beep()
 			return accepted
@@ -382,6 +429,7 @@ func restore_run_state(state) -> Dictionary:
 	var inventory_before: Dictionary = inventory.to_snapshot() if inventory != null else {}
 	var equipment_before: Dictionary = equipment.to_snapshot() if equipment != null else {}
 	var tea_before: Dictionary = tea_service.to_snapshot() if tea_service != null else {}
+	var consumables_before: Dictionary = consumable_service.to_snapshot() if consumable_service != null else {}
 	var acquisitions_before: Dictionary = acquisition_service.to_snapshot() if acquisition_service != null else {}
 	if inventory != null and not state.inventory.is_empty():
 		var inventory_result: Dictionary = inventory.load_snapshot(state.inventory)
@@ -413,6 +461,20 @@ func restore_run_state(state) -> Dictionary:
 			if not tea_before.is_empty():
 				tea_service.load_snapshot(tea_before)
 			return tea_load_result
+	if consumable_service != null and not state.consumables.is_empty():
+		var consumable_load_result: Dictionary = consumable_service.load_snapshot(state.consumables)
+		if not consumable_load_result.ok:
+			if inventory != null and not inventory_before.is_empty():
+				inventory.load_snapshot(inventory_before)
+			if equipment != null and not equipment_before.is_empty():
+				equipment.load_snapshot(equipment_before)
+			if not tea_before.is_empty():
+				tea_service.load_snapshot(tea_before)
+			if not consumables_before.is_empty():
+				consumable_service.load_snapshot(consumables_before)
+			if not acquisitions_before.is_empty():
+				acquisition_service.load_snapshot(acquisitions_before)
+			return consumable_load_result
 	run_state = state
 	if inventory != null:
 		run_state.inventory = inventory.to_snapshot()
@@ -420,6 +482,10 @@ func restore_run_state(state) -> Dictionary:
 		run_state.equipment = equipment.to_snapshot()
 	if tea_service != null:
 		run_state.tea = tea_service.to_snapshot()
+	if consumable_service != null:
+		_sync_consumable_runtime_state()
+	if time_state != null:
+		run_state.time = time_state.to_snapshot()
 	if acquisition_service != null:
 		run_state.acquisitions = acquisition_service.to_snapshot()
 	_configure_game_hud()
@@ -446,7 +512,46 @@ func snapshot_run_state() -> Dictionary:
 		run_state.memory_tea_cutscene = memory_tea_cutscene_runtime.to_snapshot()
 	if tea_service != null:
 		run_state.tea = tea_service.to_snapshot()
+	if consumable_service != null:
+		_sync_consumable_runtime_state()
+	if time_state != null:
+		run_state.time = time_state.to_snapshot()
 	return run_state.to_dictionary()
+
+func load_or_create_run_state() -> Dictionary:
+	if run_state != null:
+		return {"ok": true, "state": "provided", "run_state": run_state}
+	if save_store != null and FileAccess.file_exists(save_store.run_path):
+		var loaded: Dictionary = save_store.load_run()
+		if not loaded.ok:
+			return loaded
+		run_state = loaded.run_state
+		return {"ok": true, "state": "loaded", "run_state": run_state}
+	run_state = RunState.new()
+	return {"ok": true, "state": "created", "run_state": run_state}
+
+func save_current_run() -> Dictionary:
+	if save_store == null:
+		return {"ok": false, "reason": "missing_save_store", "error": "Save store is not configured."}
+	return save_store.save_run(snapshot_run_state())
+
+func _catalog_declares_time_balance(loaded_catalog) -> bool:
+	if loaded_catalog == null or not loaded_catalog.has_method("find_by_id"):
+		return false
+	for id in [
+		TimeConfig.DAY_DURATION_ID,
+		TimeConfig.DUSK_DURATION_ID,
+		TimeConfig.NIGHT_DURATION_ID,
+		TimeConfig.LATE_NIGHT_DURATION_ID,
+		TimeConfig.DUSK_KOKORO_DECAY_ID,
+		TimeConfig.NIGHT_KOKORO_DECAY_ID,
+		TimeConfig.LATE_NIGHT_KOKORO_DECAY_ID,
+		TimeConfig.LOW_KOKORO_ABILITY_COST_INCREASE_ID,
+		TimeConfig.SLEEP_HEAL_RATIO_ID
+	]:
+		if not loaded_catalog.find_by_id("balance", id).is_empty():
+			return true
+	return false
 
 func _configure_run_services(loaded_catalog) -> Dictionary:
 	var inventory_result: Dictionary = InventoryModel.from_catalog(loaded_catalog)
@@ -458,6 +563,9 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	var tea_result: Dictionary = TeaService.from_catalog(loaded_catalog)
 	if not tea_result.ok:
 		return tea_result
+	var time_config_result: Dictionary = TimeConfig.from_catalog(loaded_catalog)
+	if not time_config_result.ok and _catalog_declares_time_balance(loaded_catalog):
+		return time_config_result
 	var crafting_result: Dictionary = CraftingService.from_catalog(loaded_catalog)
 	if not crafting_result.ok:
 		return crafting_result
@@ -481,12 +589,21 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 		if not equipment_load_result.ok:
 			return equipment_load_result
 	tea_service = tea_result.tea_service
+	time_state = TimeState.new(time_config_result.config) if time_config_result.ok else null
+	if time_state != null and run_state != null and not run_state.time.is_empty():
+		var time_load_result: Dictionary = time_state.load_snapshot(run_state.time)
+		if not time_load_result.ok:
+			return time_load_result
 	if run_state != null and not run_state.tea.is_empty():
 		var tea_load_result: Dictionary = tea_service.load_snapshot(run_state.tea)
 		if not tea_load_result.ok:
 			return tea_load_result
 	crafting_service = crafting_result.crafting_service
 	consumable_service = consumable_result.consumable_service if consumable_result.ok else null
+	if consumable_service != null and run_state != null and not run_state.consumables.is_empty():
+		var consumable_load_result: Dictionary = consumable_service.load_snapshot(run_state.consumables)
+		if not consumable_load_result.ok:
+			return consumable_load_result
 	core_tea_ware_collection = core_tea_ware_result.collection
 	final_room_state_builder = final_room_result.builder
 	sen_rikyu_phase_one_runtime = null
@@ -661,6 +778,101 @@ func configure_dungeon_runtime(progression_state, completion_resolver: Callable,
 				return normalized_additional
 		return record_boss_core_tea_ware_rewards(clear_event)
 	return dungeon_runtime.configure(run_state, progression_state, completion_resolver, reward_hook)
+
+func _equip_default_playable_ability() -> Dictionary:
+	if player == null or player.ability_runtime == null:
+		return {"ok": true, "reason": "missing_player_ability_runtime"}
+	if not player.ability_runtime.equipped_ability_id(0).is_empty():
+		return {"ok": true, "state": "already_equipped"}
+	var candidates: Dictionary = player.ability_runtime.ability_candidates({"tail_query": self})
+	if not candidates.ok:
+		return candidates
+	var ids: Array = candidates.get("ability_ids", [])
+	if ids.is_empty():
+		return {"ok": false, "reason": "missing_playable_ability", "error": "No current-tail playable ability exists."}
+	return player.equip_ability(0, String(ids[0]), self)
+
+func can_use_ability(_ability_id: String, tail_requirement: int) -> bool:
+	if run_state == null:
+		return int(tail_requirement) <= 1
+	return int(run_state.tails) >= int(tail_requirement)
+
+func targets_for_ability(source, definition, direction: Vector2) -> Array:
+	if combat_dummy != null \
+			and combat_dummy.has_method("current_hp") \
+			and int(combat_dummy.current_hp()) > 0 \
+			and _ability_target_is_in_range(source, definition, direction, combat_dummy):
+		return [combat_dummy]
+	return []
+
+func _ability_target_is_in_range(source, definition, direction: Vector2, target) -> bool:
+	if source == null or target == null:
+		return false
+	var source_position := Vector2(source.global_position) if source is Node2D else Vector2.ZERO
+	var target_position := Vector2(target.global_position) if target is Node2D else Vector2.ZERO
+	var offset := target_position - source_position
+	var range_pixels := maxf(float(definition.range_tiles), 0.0) * _runtime_tile_size()
+	if range_pixels > 0.0 and offset.length() > range_pixels:
+		return false
+	var aim := direction.normalized() if direction != Vector2.ZERO else offset.normalized()
+	if aim == Vector2.ZERO or offset == Vector2.ZERO:
+		return true
+	return offset.normalized().dot(aim) >= 0.35
+
+func _ensure_biome_progression_state() -> Dictionary:
+	if biome_progression_state != null:
+		return {"ok": true, "progression_state": biome_progression_state}
+	var progression_result := BiomeProgressionState.from_catalog(catalog, run_state)
+	if progression_result.ok:
+		biome_progression_state = progression_result.progression_state
+	return progression_result
+
+func _ensure_playable_dungeon_runtime() -> Dictionary:
+	var progression_result := _ensure_biome_progression_state()
+	if not progression_result.ok:
+		return progression_result
+	if dungeon_runtime != null:
+		return {"ok": true, "runtime": dungeon_runtime}
+	return configure_dungeon_runtime(
+		biome_progression_state,
+		func(payload: Dictionary, _projection: Dictionary) -> bool:
+			return _dungeon_completion_objective_met(payload)
+	)
+
+func _dungeon_completion_objective_met(payload: Dictionary) -> bool:
+	if bool(payload.get("objective_complete", false)):
+		return true
+	return combat_dummy != null and combat_dummy.has_method("current_hp") and int(combat_dummy.current_hp()) <= 0
+
+func _ensure_current_dungeon_entered() -> Dictionary:
+	var projection: Dictionary = dungeon_runtime.to_projection() if dungeon_runtime != null else {}
+	var lifecycle := String(projection.get("lifecycle_state", DungeonInstanceState.STATE_OUTSIDE))
+	if lifecycle == DungeonInstanceState.STATE_ACTIVE:
+		return {"ok": true, "state": "already_active"}
+	if lifecycle not in [DungeonInstanceState.STATE_OUTSIDE, DungeonInstanceState.STATE_RETURNED]:
+		return {"ok": false, "reason": "dungeon_lifecycle_busy", "error": "Dungeon lifecycle is not ready for a new entry."}
+	var definition := _current_biome_dungeon_definition()
+	if definition.is_empty():
+		return {"ok": false, "reason": "missing_current_dungeon", "error": "No dungeon definition exists for the current biome."}
+	var biome_id := String(run_state.current_biome_id)
+	definition["biome_id"] = biome_id
+	var layout := WorldData.new(5, 5, String(generated_world.get("biome_generation_rule_id", "common_region")), true)
+	return dungeon_runtime.enter_dungeon(
+		"%s_%d" % [String(definition.id), run_state.seed],
+		definition,
+		layout,
+		{"biome_id": biome_id, "world_seed": run_state.seed}
+	)
+
+func _current_biome_dungeon_definition() -> Dictionary:
+	if catalog == null or run_state == null:
+		return {}
+	var current_biome_id := String(run_state.current_biome_id)
+	for definition in catalog.get_definitions("dungeons"):
+		var biome_ids: Array = definition.get("biome_ids", [])
+		if biome_ids.has(current_biome_id):
+			return definition.duplicate(true)
+	return {}
 
 func _normalize_reward_hook_result(result) -> Dictionary:
 	if typeof(result) == TYPE_DICTIONARY:
@@ -933,7 +1145,29 @@ func _interaction_target_id_for_cell(cell: Vector2i) -> String:
 		var target_id := String(target_id_value)
 		if _is_available_acquisition_target(target_id):
 			return target_id
+	var landmark_id := _landmark_target_id_for_cell(cell)
+	if not landmark_id.is_empty():
+		return landmark_id
 	return ""
+
+func _landmark_target_id_for_cell(cell: Vector2i) -> String:
+	if world_data == null:
+		return ""
+	for landmark in world_data.get_required_landmarks():
+		if _vector_from_dictionary(landmark.get("position", {})) == cell:
+			return String(landmark.get("id", ""))
+	return ""
+
+func _is_landmark_target(target_id: String) -> bool:
+	return target_id.begins_with("%s_" % WorldData.LANDMARK_CORE_DUNGEON) \
+		or target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE)
+
+func _handle_landmark_interaction(target_id: String) -> bool:
+	if target_id.begins_with("%s_" % WorldData.LANDMARK_CORE_DUNGEON):
+		return _handle_complete_dungeon_command(GameCommand.new(GameCommand.Type.COMPLETE_DUNGEON))
+	if target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE):
+		return _handle_biome_progression_command(GameCommand.new(GameCommand.Type.REPAIR_TELEPORT, Vector2i.ZERO, -1, {"biome_id": String(run_state.current_biome_id)}))
+	return false
 
 func _is_available_acquisition_target(target_id: String) -> bool:
 	if acquisition_service == null or target_id.is_empty():
@@ -952,7 +1186,61 @@ func _handle_tea_command(command: GameCommand) -> bool:
 	var resources = player.resources if player != null else null
 	var completed: Dictionary = tea_service.complete_drinking(start_result.action, resources)
 	_sync_tea_runtime_state()
+	if completed.ok:
+		save_current_run()
 	return bool(completed.ok)
+
+func _handle_consumable_command(command: GameCommand) -> bool:
+	if consumable_service == null or inventory == null or player == null or player.resources == null:
+		return false
+	var item_id := _consumable_item_id_for_command(command)
+	if item_id.is_empty():
+		return false
+	var start: Dictionary = consumable_service.start_use(item_id, inventory, {"command_slot": command.slot})
+	if not start.ok:
+		return false
+	var completed: Dictionary = consumable_service.complete_use(inventory, player.resources)
+	_sync_inventory_runtime_state()
+	_sync_consumable_runtime_state()
+	if game_hud != null:
+		game_hud.show_command_feedback(
+			"소모품 사용: %s" % item_id
+			if completed.ok
+			else "소모품 실패: %s" % String(completed.get("reason", "unknown"))
+		)
+	if not completed.ok:
+		return false
+	save_current_run()
+	_configure_game_hud()
+	return true
+
+func _consumable_item_id_for_command(command: GameCommand) -> String:
+	var requested := String(command.payload.get("item_id", ""))
+	if not requested.is_empty():
+		return requested if consumable_service.has_definition(requested) and inventory.get_total_quantity(requested) > 0 else ""
+	var slots = inventory.get("slots")
+	if typeof(slots) != TYPE_ARRAY:
+		return ""
+	for slot in slots:
+		if typeof(slot) != TYPE_DICTIONARY:
+			continue
+		var item_id := String(slot.get("item_id", ""))
+		if not item_id.is_empty() and int(slot.get("quantity", 0)) > 0 and consumable_service.has_definition(item_id):
+			return item_id
+	return ""
+
+func _handle_sleep_command() -> bool:
+	if time_state == null or player == null or player.resources == null:
+		return false
+	var result: Dictionary = time_state.sleep_until_morning(player.resources)
+	if game_hud != null:
+		game_hud.show_command_feedback("수면 완료: HP +%d / 心 +%d" % [
+			int(result.get("hp_healed", 0)),
+			int(result.get("kokoro_restored", 0))
+		])
+	save_current_run()
+	_configure_game_hud()
+	return true
 
 func _handle_tea_brewing_command(command: GameCommand) -> bool:
 	if tea_brewing_command_runtime == null:
@@ -1001,6 +1289,7 @@ func _handle_craft_recipe_command(command: GameCommand) -> bool:
 		)
 	if result.ok:
 		_sync_inventory_runtime_state()
+		save_current_run()
 	return bool(result.ok)
 
 func _handle_inventory_command(command: GameCommand) -> bool:
@@ -1018,6 +1307,55 @@ func _handle_inventory_command(command: GameCommand) -> bool:
 	_sync_inventory_runtime_state()
 	if game_hud != null:
 		game_hud.show_inventory_menu()
+	save_current_run()
+	return true
+
+func _handle_complete_dungeon_command(command: GameCommand) -> bool:
+	var runtime_result := _ensure_playable_dungeon_runtime()
+	if not runtime_result.ok:
+		return false
+	var previous_projection: Dictionary = dungeon_runtime.to_projection()
+	var entered_result := _ensure_current_dungeon_entered()
+	if not entered_result.ok and String(entered_result.get("reason", "")) != "dungeon_already_active":
+		return false
+	if String(previous_projection.get("lifecycle_state", DungeonInstanceState.STATE_OUTSIDE)) in [DungeonInstanceState.STATE_OUTSIDE, DungeonInstanceState.STATE_RETURNED] \
+			and not _dungeon_completion_objective_met(command.payload):
+		save_current_run()
+		_configure_game_hud()
+		return true
+	var payload: Dictionary = command.payload.duplicate(true)
+	if String(payload.get("resolution_type", "")).is_empty():
+		payload["resolution_type"] = "combat"
+	if String(payload.get("choice_key", "")).is_empty():
+		payload["choice_key"] = "dev17_minimal_clear"
+	if String(payload.get("run_flag", "")).is_empty():
+		payload["run_flag"] = "dev17_common_dungeon_clear"
+	if not payload.has("reward_item_ids"):
+		payload["reward_item_ids"] = []
+	if not payload.has("progression_unlock_ids"):
+		payload["progression_unlock_ids"] = [String(run_state.current_biome_id)]
+	var completed: Dictionary = dungeon_runtime.complete_dungeon(payload)
+	if not completed.ok:
+		return false
+	dungeon_runtime.begin_return()
+	dungeon_runtime.finish_return()
+	save_current_run()
+	_configure_game_hud()
+	return true
+
+func _handle_biome_progression_command(command: GameCommand) -> bool:
+	var progression_result := _ensure_biome_progression_state()
+	if not progression_result.ok:
+		return false
+	if not command.payload.has("biome_id") and run_state != null:
+		command.payload["biome_id"] = String(run_state.current_biome_id)
+	var result: Dictionary = biome_progression_state.apply_command(command)
+	if not result.ok:
+		return false
+	var world_result := _configure_world_for_current_run()
+	if not world_result.ok:
+		return false
+	save_current_run()
 	return true
 
 func inventory_read_model() -> Dictionary:
@@ -1061,6 +1399,14 @@ func tea_brewing_read_model() -> Dictionary:
 	var model: Dictionary = tea_brewing_command_runtime.read_model()
 	model["ok"] = true
 	return model
+
+func _sync_consumable_runtime_state() -> void:
+	if run_state == null:
+		run_state = RunState.new()
+	if consumable_service != null:
+		var snapshot: Dictionary = consumable_service.to_snapshot()
+		var active_action: Dictionary = snapshot.get("active_action", {})
+		run_state.consumables = snapshot if not active_action.is_empty() else {}
 
 func meta_codex_read_model() -> Dictionary:
 	if meta_codex_command_runtime == null:
@@ -1197,7 +1543,8 @@ func _configure_game_hud() -> void:
 		"tea_brewing_command_runtime": tea_brewing_command_runtime,
 		"meta_codex_command_runtime": meta_codex_command_runtime,
 		"crafting_service": crafting_service,
-		"crafting_context": _tea_brewing_context()
+		"crafting_context": _tea_brewing_context(),
+		"time_state": time_state
 	})
 
 func _configure_audio_feedback() -> void:

@@ -368,6 +368,9 @@ func _rebuild_action_buttons() -> void:
 	_add_text_action(_action_grid, "MapButton", ICON_MAP, "지도", "open_map", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "CraftingButton", ICON_CONSUMABLE, "제작", "open_crafting", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "FacilitiesButton", ICON_MAP, "시설", "open_facilities", Vector2i.ZERO, 0)
+	_add_text_action(_action_grid, "SleepButton", ICON_TEA, "수면", "sleep", Vector2i.ZERO, 0)
+	_add_text_action(_action_grid, "DungeonButton", ICON_ATTACK, "던전", "complete_dungeon", Vector2i.ZERO, 0)
+	_add_text_action(_action_grid, "TeleportRepairButton", ICON_MAP, "수리", "repair_teleport", Vector2i.ZERO, 0)
 	var row_count := maxi(1, int(ceil(float(_action_grid.get_child_count()) / float(_action_grid.columns))))
 	var action_size := Vector2(294, 12 + row_count * 44 + (row_count - 1) * 6)
 	var action_panel := _panels.get("action") as Control

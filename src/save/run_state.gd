@@ -27,6 +27,7 @@ var discovered_records := []
 var memory_tea_cutscene := {}
 var tea := {}
 var consumables := {}
+var time := {}
 var choice_history := []
 var choice_group_selections := {}
 var target_survival := {}
@@ -65,6 +66,7 @@ static func from_dictionary(data: Dictionary):
 	state.memory_tea_cutscene = _dictionary_value(data.get("memory_tea_cutscene", {}))
 	state.tea = _dictionary_value(data.get("tea", {}))
 	state.consumables = _dictionary_value(data.get("consumables", {}))
+	state.time = _dictionary_value(data.get("time", {}))
 	state.choice_history = _array_value(data.get("choice_history", []))
 	state.choice_group_selections = _dictionary_value(data.get("choice_group_selections", {}))
 	state.target_survival = _dictionary_value(data.get("target_survival", {}))
@@ -117,6 +119,7 @@ func to_dictionary() -> Dictionary:
 		"memory_tea_cutscene": memory_tea_cutscene.duplicate(true),
 		"tea": tea.duplicate(true),
 		"consumables": consumables.duplicate(true),
+		"time": time.duplicate(true),
 		"choice_history": choice_history.duplicate(true),
 		"choice_group_selections": choice_group_selections.duplicate(true),
 		"target_survival": target_survival.duplicate(true),

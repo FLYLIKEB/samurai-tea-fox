@@ -48,6 +48,33 @@ func sleep_until_morning(resources) -> Dictionary:
 		"hp_healed": hp_healed
 	}
 
+func to_snapshot() -> Dictionary:
+	return {
+		"schema_version": 1,
+		"phase": String(phase),
+		"phase_elapsed_seconds": phase_elapsed_seconds,
+		"kokoro_decay_carry": _kokoro_decay_carry
+	}
+
+func load_snapshot(snapshot: Dictionary) -> Dictionary:
+	var loaded_phase := StringName(String(snapshot.get("phase", String(DAY))))
+	if not PHASE_ORDER.has(loaded_phase):
+		return {"ok": false, "reason": "invalid_time_phase", "error": "Saved time phase is invalid: %s" % String(loaded_phase)}
+	var duration := config.phase_duration_seconds(loaded_phase)
+	var elapsed := float(snapshot.get("phase_elapsed_seconds", 0.0))
+	if not is_finite(elapsed) or elapsed < 0.0 or elapsed >= duration:
+		return {"ok": false, "reason": "invalid_time_elapsed", "error": "Saved time phase elapsed value is invalid."}
+	var carry := float(snapshot.get("kokoro_decay_carry", 0.0))
+	if not is_finite(carry) or carry < 0.0:
+		return {"ok": false, "reason": "invalid_time_decay_carry", "error": "Saved time decay carry is invalid."}
+	var previous := phase
+	phase = loaded_phase
+	phase_elapsed_seconds = elapsed
+	_kokoro_decay_carry = carry
+	if previous != phase:
+		phase_changed.emit(previous, phase)
+	return {"ok": true, "snapshot": to_snapshot()}
+
 func ability_cost_multiplier_for(resources) -> float:
 	return config.ability_cost_multiplier_for(resources)
 
