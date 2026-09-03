@@ -25,6 +25,31 @@ func run(asserts) -> void:
 		"chr_8_fox_samurai_walk",
 		"character animation metadata resolves a stable runtime asset ID"
 	)
+	asserts.equal(
+		catalog.id_for_path("assets/sprites/objects/structures/small_signpost_32x32.png"),
+		"small_signpost",
+		"promoted runtime path resolves back to a manifest ID"
+	)
+	asserts.equal(
+		catalog.path_for_reference("small_signpost"),
+		"res://assets/sprites/objects/structures/small_signpost_32x32.png",
+		"manifest ID reference resolves to its promoted path"
+	)
+	asserts.equal(
+		catalog.id_for_reference("res://assets/sprites/objects/structures/small_signpost_32x32.png"),
+		"small_signpost",
+		"res:// path reference resolves to its manifest ID"
+	)
+	asserts.true_value(catalog.load_texture_reference("small_signpost") != null, "manifest ID reference loads texture")
+	var audit: Dictionary = catalog.audit_references([
+		"small_signpost",
+		"res://assets/sprites/objects/structures/dungeon_entry_small_32x32.png",
+		"missing_asset_reference"
+	])
+	asserts.true_value("small_signpost" in audit.used_asset_ids, "asset audit reports used stable IDs")
+	asserts.true_value("dungeon_entry_small" in audit.used_asset_ids, "asset audit resolves path references to stable IDs")
+	asserts.equal(audit.missing_references, ["missing_asset_reference"], "asset audit reports missing references")
+	asserts.true_value("fox_samurai_front_idle" in audit.unused_asset_ids, "asset audit reports unused manifest assets")
 	asserts.equal(catalog.character_animation_id("CHR-404", "walk"), "", "unknown character animation metadata has no ID")
 	asserts.equal(catalog.path_for("missing_asset"), "", "unknown stable asset ID has no path")
 	asserts.true_value(catalog.load_texture("missing_asset") == null, "unknown stable asset ID has no texture")

@@ -1231,12 +1231,12 @@ func _centered_world_origin(renderer_input: Dictionary) -> Vector2:
 
 func _owner_sprite_sources(world: Dictionary) -> Dictionary:
 	var sources := {
-		WorldData.LANDMARK_ENTRY: "res://assets/sprites/objects/structures/small_signpost_32x32.png",
-		WorldData.LANDMARK_CORE_DUNGEON: "res://assets/sprites/objects/structures/dungeon_entry_small_32x32.png",
-		WorldData.LANDMARK_TELEPORT_ZONE: "res://assets/sprites/objects/shrine-props/stone_pagoda_lantern_32x32.png",
-		"wood": "res://assets/sprites/objects/nature/log_32x32.png",
-		"stone": "res://assets/sprites/objects/natural-props/small_rock_32x32.png",
-		"clay": "res://assets/sprites/objects/natural-props/mud_patch_32x32.png"
+		WorldData.LANDMARK_ENTRY: "small_signpost",
+		WorldData.LANDMARK_CORE_DUNGEON: "dungeon_entry_small",
+		WorldData.LANDMARK_TELEPORT_ZONE: "stone_pagoda_lantern",
+		"wood": "log_resource",
+		"stone": "small_rock_resource",
+		"clay": "mud_patch_resource"
 	}
 	for node in world.get("resource_nodes", []):
 		var owner_id := String(node.get("id", ""))

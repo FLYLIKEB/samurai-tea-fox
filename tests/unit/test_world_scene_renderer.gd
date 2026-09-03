@@ -10,7 +10,7 @@ func run(asserts) -> void:
 
 func _assert_sixteen_adjacency_masks(asserts) -> void:
 	var renderer := WorldSceneRenderer.new()
-	var source := "assets/tiles/terrain/forest/forest_boundary_tree_tileset_8x32.png"
+	var source := "terrain_forest_boundary_tree_tileset"
 	for mask in range(16):
 		var cells := [{"position": {"x": 0, "y": 0}, "source_id": source}]
 		if mask & WorldSceneRenderer.ADJACENT_NORTH:
@@ -21,15 +21,15 @@ func _assert_sixteen_adjacency_masks(asserts) -> void:
 			cells.append({"position": {"x": 0, "y": 1}, "source_id": source})
 		if mask & WorldSceneRenderer.ADJACENT_WEST:
 			cells.append({"position": {"x": -1, "y": 0}, "source_id": source})
-		cells.append({"position": {"x": 0, "y": -2}, "source_id": "assets/tiles/terrain/plains/grass_ground_01_32x32.png"})
+		cells.append({"position": {"x": 0, "y": -2}, "source_id": "terrain_plains_grass_ground_01"})
 		var index := renderer._terrain_cell_index(cells)
 		asserts.equal(renderer._adjacency_mask_for_cell(Vector2i.ZERO, source, index), mask, "N/E/S/W mask %d is exact and ignores other terrain" % mask)
 
 func _assert_tilemap_layer_uses_adjacency_variants(asserts) -> void:
 	var renderer := WorldSceneRenderer.new()
 	var root := Node2D.new()
-	var forest := "assets/tiles/terrain/forest/forest_boundary_tree_tileset_8x32.png"
-	var ground := "assets/tiles/terrain/plains/grass_ground_01_32x32.png"
+	var forest := "terrain_forest_boundary_tree_tileset"
+	var ground := "terrain_plains_grass_ground_01"
 	var input := {
 		"schema_version": 1,
 		"read_only": true,
@@ -57,12 +57,13 @@ func _assert_tilemap_layer_uses_adjacency_variants(asserts) -> void:
 	if tilemap != null:
 		asserts.equal(tilemap.get_cell_atlas_coords(Vector2i(1, 1)), Vector2i(7, 0), "four-way adjacency uses explicit N/E/S/W bitmask variant modulo available atlas frames")
 		asserts.equal(tilemap.get_cell_atlas_coords(Vector2i(1, 0)), Vector2i(4, 0), "south-only neighbor uses south bit variant")
+	asserts.true_value("terrain_plains_grass_ground_01" in result.asset_report.used_asset_ids, "renderer asset report resolves manifest ID terrain references")
 	root.queue_free()
 
 func _assert_multicell_footprints_keep_original_texture(asserts) -> void:
 	var renderer := WorldSceneRenderer.new()
 	var root := Node2D.new()
-	var source := "assets/sprites/objects/structures/ruined_wall_1x2_64x32.png"
+	var source := "asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png"
 	var input := {
 		"schema_version": 1,
 		"read_only": true,
@@ -70,7 +71,7 @@ func _assert_multicell_footprints_keep_original_texture(asserts) -> void:
 		"bounds": {"width": 3, "height": 2},
 		"layers": [
 			{"id": WorldData.LAYER_TERRAIN, "kind": "tile", "cells": [
-				{"position": {"x": 0, "y": 0}, "source_id": "assets/tiles/terrain/plains/grass_ground_01_32x32.png"}
+				{"position": {"x": 0, "y": 0}, "source_id": "terrain_plains_grass_ground_01"}
 			]},
 			{"id": WorldData.LAYER_FACILITIES, "kind": "footprint", "cells": [
 				{"position": {"x": 1, "y": 0}, "owner_id": "ruin", "source_id": source},
@@ -92,4 +93,5 @@ func _assert_multicell_footprints_keep_original_texture(asserts) -> void:
 			asserts.equal(sprite.texture.get_width(), 64, "multi-cell footprint preserves original width")
 			asserts.equal(sprite.texture.get_height(), 32, "multi-cell footprint preserves original height")
 			asserts.equal(sprite.region_enabled, false, "multi-cell footprint is not cropped into a 32x32 atlas region")
+	asserts.true_value("asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png" in result.asset_report.used_asset_ids, "renderer asset report resolves manifest ID footprint references")
 	root.queue_free()

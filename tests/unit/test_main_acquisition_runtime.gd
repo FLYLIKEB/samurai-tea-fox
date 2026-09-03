@@ -164,8 +164,8 @@ func _assert_wasteland_runtime_sources(asserts, runtime: Main) -> void:
 		if String(node.get("resource_id", "")) != "item_28":
 			continue
 		var owner_id := String(node.get("id", ""))
-		asserts.equal(String(node.get("source_id", "")), "assets/sprites/objects/mining/iron_ore_32x32.png", "wasteland repair resource carries promoted source id")
-		asserts.equal(String(owner_sources.get(owner_id, "")), "assets/sprites/objects/mining/iron_ore_32x32.png", "main maps wasteland repair resource owner to its source")
+		asserts.equal(String(node.get("source_id", "")), "asset_assets_sprites_objects_mining_iron_ore_32x32_png", "wasteland repair resource carries manifest asset id")
+		asserts.equal(String(owner_sources.get(owner_id, "")), "asset_assets_sprites_objects_mining_iron_ore_32x32_png", "main maps wasteland repair resource owner to its manifest asset id")
 		has_iron_scrap_source = true
 	asserts.true_value(has_iron_scrap_source, "wasteland runtime generates sourced iron-scrap repair resources")
 
@@ -176,8 +176,8 @@ func _assert_snowfield_runtime_sources(asserts, runtime: Main) -> void:
 		if String(node.get("resource_id", "")) != "wood":
 			continue
 		var owner_id := String(node.get("id", ""))
-		asserts.equal(String(node.get("source_id", "")), "assets/tiles/terrain/snow/snowy_pine_tree_01_32x32.png", "snowfield conifer wood carries promoted source id")
-		asserts.equal(String(owner_sources.get(owner_id, "")), "assets/tiles/terrain/snow/snowy_pine_tree_01_32x32.png", "main maps snowfield wood owner to its biome source")
+		asserts.equal(String(node.get("source_id", "")), "asset_assets_tiles_terrain_snow_snowy_pine_tree_01_32x32_png", "snowfield conifer wood carries manifest asset id")
+		asserts.equal(String(owner_sources.get(owner_id, "")), "asset_assets_tiles_terrain_snow_snowy_pine_tree_01_32x32_png", "main maps snowfield wood owner to its manifest asset id")
 		has_conifer_source = true
 	asserts.true_value(has_conifer_source, "snowfield runtime generates sourced conifer wood resources")
 
@@ -188,15 +188,15 @@ func _assert_rainforest_runtime_sources(asserts, runtime: Main) -> void:
 	for node in runtime.generated_world.get("resource_nodes", []):
 		if String(node.get("resource_id", "")) == "item_5":
 			var incense_owner_id := String(node.get("id", ""))
-			asserts.equal(String(node.get("source_id", "")), "assets/sprites/objects/natural-props/round_tree_large_32x32.png", "rainforest 침향 carries agarwood promoted source id")
-			asserts.equal(String(owner_sources.get(incense_owner_id, "")), "assets/sprites/objects/natural-props/round_tree_large_32x32.png", "main maps rainforest 침향 owner to agarwood source")
+			asserts.equal(String(node.get("source_id", "")), "asset_assets_sprites_objects_natural_props_round_tree_large_32x32_png", "rainforest 침향 carries agarwood manifest asset id")
+			asserts.equal(String(owner_sources.get(incense_owner_id, "")), "asset_assets_sprites_objects_natural_props_round_tree_large_32x32_png", "main maps rainforest 침향 owner to agarwood manifest asset id")
 			asserts.equal(runtime.acquisition_service.gatherable_for(incense_owner_id).definition_id, "item_5", "main registers rainforest 침향 as a gatherable")
 			has_incense_gatherable = true
 		if String(node.get("resource_id", "")) != "wood":
 			continue
 		var owner_id := String(node.get("id", ""))
-		asserts.equal(String(node.get("source_id", "")), "assets/sprites/objects/natural-props/round_tree_large_32x32.png", "rainforest wood carries agarwood promoted source id")
-		asserts.equal(String(owner_sources.get(owner_id, "")), "assets/sprites/objects/natural-props/round_tree_large_32x32.png", "main maps rainforest wood owner to its biome source")
+		asserts.equal(String(node.get("source_id", "")), "asset_assets_sprites_objects_natural_props_round_tree_large_32x32_png", "rainforest wood carries agarwood manifest asset id")
+		asserts.equal(String(owner_sources.get(owner_id, "")), "asset_assets_sprites_objects_natural_props_round_tree_large_32x32_png", "main maps rainforest wood owner to its manifest asset id")
 		has_agarwood_source = true
 	asserts.true_value(has_agarwood_source, "rainforest runtime generates sourced agarwood resources")
 	asserts.true_value(has_incense_gatherable, "rainforest runtime registers confirmed 침향 rare resources")

@@ -2,6 +2,7 @@ extends RefCounted
 class_name WorldSceneRenderer
 
 const WorldData = preload("res://src/world/data/world_data.gd")
+const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
 
 const TERRAIN_LAYER := "TerrainTileMap"
 const TERRAIN_FOOTPRINT_LAYER := "TerrainFootprints"
@@ -15,12 +16,17 @@ const ADJACENT_SOUTH := 4
 const ADJACENT_WEST := 8
 
 var _texture_cache: Dictionary = {}
+var asset_catalog := AssetCatalog.new()
+var _asset_catalog_ready := false
 
 func render(root: Node2D, renderer_input: Dictionary, owner_sources := {}, origin := Vector2.ZERO) -> Dictionary:
 	if root == null:
 		return {"ok": false, "error": "missing_world_visual_root"}
 	if typeof(renderer_input) != TYPE_DICTIONARY or not renderer_input.get("read_only", false):
 		return {"ok": false, "error": "invalid_renderer_input"}
+	var manifest_result := _ensure_asset_catalog()
+	if not manifest_result.ok:
+		return manifest_result
 
 	_clear_children(root)
 	root.position = origin
@@ -54,7 +60,11 @@ func render(root: Node2D, renderer_input: Dictionary, owner_sources := {}, origi
 		tile_size,
 		owner_sources
 	)
-	return {"ok": true, "counts": rendered_counts}
+	return {
+		"ok": true,
+		"counts": rendered_counts,
+		"asset_report": asset_catalog.audit_references(_collect_source_references(renderer_input, owner_sources))
+	}
 
 func _render_tilemap_cells(tilemap_layer: TileMapLayer, footprint_layer: Node2D, cells: Array, tile_size: int) -> int:
 	var tile_set := TileSet.new()
@@ -205,15 +215,8 @@ func _render_landmarks(parent: Node2D, landmarks: Array, tile_size: int, owner_s
 		if source_id.is_empty():
 			continue
 		var position := _position_from_dictionary(landmark.get("position", {}))
-		var texture := _texture_for_source(source_id, tile_size, position)
-		if texture == null:
-			continue
-		var sprite := Sprite2D.new()
-		sprite.texture = texture
-		sprite.centered = true
-		sprite.position = Vector2(position.x * tile_size + tile_size * 0.5, position.y * tile_size + tile_size * 0.5)
-		parent.add_child(sprite)
-		rendered += 1
+		if _render_original_sprite(parent, _resource_path(source_id), position, tile_size):
+			rendered += 1
 	return rendered
 
 func _texture_for_source(source_id: String, tile_size: int, position: Vector2i) -> Texture2D:
@@ -295,11 +298,39 @@ func _load_texture(path: String) -> Texture2D:
 	return ImageTexture.create_from_image(image)
 
 func _resource_path(source_id: String) -> String:
-	if source_id.begins_with("res://"):
+	return asset_catalog.path_for_reference(source_id) if _asset_catalog_ready else _normalize_asset_reference(source_id)
+
+func _normalize_asset_reference(source_id: String) -> String:
+	if source_id.begins_with("res://assets/"):
 		return source_id
 	if source_id.begins_with("assets/"):
 		return "res://%s" % source_id
 	return ""
+
+func _ensure_asset_catalog() -> Dictionary:
+	if _asset_catalog_ready:
+		return {"ok": true}
+	var result: Dictionary = asset_catalog.load_manifest()
+	if result.ok:
+		_asset_catalog_ready = true
+	return result
+
+func _collect_source_references(renderer_input: Dictionary, owner_sources: Dictionary) -> Array:
+	var references := []
+	for source in owner_sources.values():
+		references.append(String(source))
+	for layer in renderer_input.get("layers", []):
+		for cell in layer.get("cells", []):
+			if cell.has("source_id"):
+				references.append(String(cell.source_id))
+	for landmark in renderer_input.get("required_landmarks", []):
+		var landmark_id := String(landmark.get("id", ""))
+		var landmark_kind := String(landmark.get("kind", landmark.get("type", "")))
+		if owner_sources.has(landmark_id):
+			references.append(String(owner_sources[landmark_id]))
+		elif owner_sources.has(landmark_kind):
+			references.append(String(owner_sources[landmark_kind]))
+	return references
 
 func _target_layer(layer_id: String, facility_layer: Node2D, entity_layer: Node2D) -> Node2D:
 	match layer_id:
