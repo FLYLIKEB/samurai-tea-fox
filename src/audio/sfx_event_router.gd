@@ -36,6 +36,25 @@ const EVENTS := {
 	EVENT_INTERACT_SUCCESS: {"stream_path": DEFAULT_STREAM_PATH, "volume_db": -15.0, "pitch_scale": 1.05, "cooldown_msec": 80, "frequency_hz": 700.0, "duration_sec": 0.045, "wave": "triangle"},
 	EVENT_INTERACT_FAIL: {"stream_path": DEFAULT_STREAM_PATH, "volume_db": -15.0, "pitch_scale": 0.62, "cooldown_msec": 160, "frequency_hz": 200.0, "duration_sec": 0.08, "wave": "square"}
 }
+const SFX_EVENT_BY_MATERIAL_TAG := {
+	"stone": EVENT_GATHER_STONE,
+	"wood": EVENT_GATHER_WOOD
+}
+const MATERIAL_TAG_BY_ITEM_ID := {
+	"branch": "wood",
+	"copper_ore": "stone",
+	"iron_ore": "stone",
+	"ore": "stone",
+	"stone": "stone",
+	"timber": "wood",
+	"wood": "wood"
+}
+const MATERIAL_TAG_BY_SOURCE_PREFIX := {
+	"dungeon_iron_ore_": "stone",
+	"dungeon_stone_": "stone",
+	"terrain_mountain_mineral_": "stone",
+	"terrain_tree_": "wood"
+}
 
 var event_counts: Dictionary = {}
 var played_events: Array = []
@@ -59,26 +78,20 @@ static func event_id_for_acquisition(result: Dictionary) -> String:
 	if kind == "pickup":
 		return EVENT_ITEM_PICKUP
 	var material := _material_tag_for_acquisition(result)
-	if material == "stone":
-		return EVENT_GATHER_STONE
-	if material == "wood":
-		return EVENT_GATHER_WOOD
-	return EVENT_INTERACT_SUCCESS
+	return String(SFX_EVENT_BY_MATERIAL_TAG.get(material, EVENT_INTERACT_SUCCESS))
 
 static func _material_tag_for_acquisition(result: Dictionary) -> String:
 	var explicit := String(result.get("material_tag", result.get("interaction_tag", "")))
-	if explicit in ["wood", "stone"]:
+	if SFX_EVENT_BY_MATERIAL_TAG.has(explicit):
 		return explicit
 	var item_id := String(result.get("item_id", ""))
-	if item_id in ["wood", "timber", "branch"]:
-		return "wood"
-	if item_id in ["stone", "iron_ore", "copper_ore", "ore"]:
-		return "stone"
+	var item_tag := String(MATERIAL_TAG_BY_ITEM_ID.get(item_id, ""))
+	if not item_tag.is_empty():
+		return item_tag
 	var source_id := String(result.get("source_id", result.get("node_id", "")))
-	if source_id.begins_with("terrain_tree_"):
-		return "wood"
-	if source_id.begins_with("terrain_mountain_mineral_") or source_id.begins_with("dungeon_stone_") or source_id.begins_with("dungeon_iron_ore_"):
-		return "stone"
+	for prefix in MATERIAL_TAG_BY_SOURCE_PREFIX:
+		if source_id.begins_with(String(prefix)):
+			return String(MATERIAL_TAG_BY_SOURCE_PREFIX[prefix])
 	return ""
 
 func play_event(event_id: String, payload := {}, dedupe_key := "", now_msec := -1) -> Dictionary:

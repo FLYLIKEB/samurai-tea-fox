@@ -23,19 +23,34 @@ func run(asserts) -> void:
 		asserts.true_value(ids.has(required_id), "SFX registry includes event id: %s" % required_id)
 
 	asserts.equal(
-		SfxEventRouter.event_id_for_acquisition({"kind": "gatherable", "node_id": "terrain_tree_wood_1_0", "item_id": "wood"}),
+		SfxEventRouter.event_id_for_acquisition({"kind": "gatherable", "node_id": "any_node", "item_id": "wood", "material_tag": "wood"}),
 		SfxEventRouter.EVENT_GATHER_WOOD,
-		"wood gatherable resolves to the wood SFX event"
+		"explicit wood material tag resolves to the wood SFX event"
 	)
 	asserts.equal(
-		SfxEventRouter.event_id_for_acquisition({"kind": "gatherable", "node_id": "terrain_mountain_mineral_1_0", "item_id": "stone"}),
+		SfxEventRouter.event_id_for_acquisition({"kind": "gatherable", "node_id": "any_node", "item_id": "fixture_ore_item", "material_tag": "stone"}),
 		SfxEventRouter.EVENT_GATHER_STONE,
-		"stone gatherable resolves to the stone SFX event"
+		"explicit stone material tag resolves to the stone SFX event"
+	)
+	asserts.equal(
+		SfxEventRouter.event_id_for_acquisition({"kind": "gatherable", "node_id": "terrain_tree_wood_1_0", "item_id": "unmapped_fixture"}),
+		SfxEventRouter.EVENT_GATHER_WOOD,
+		"declarative source prefix map keeps legacy tree source fallback"
+	)
+	asserts.equal(
+		SfxEventRouter.event_id_for_acquisition({"kind": "gatherable", "node_id": "terrain_mountain_mineral_1_0", "item_id": "unmapped_fixture"}),
+		SfxEventRouter.EVENT_GATHER_STONE,
+		"declarative source prefix map keeps legacy mineral source fallback"
 	)
 	asserts.equal(
 		SfxEventRouter.event_id_for_acquisition({"kind": "pickup", "pickup_id": "pickup_000001", "item_id": "wood"}),
 		SfxEventRouter.EVENT_ITEM_PICKUP,
 		"world pickup resolves to the pickup SFX event"
+	)
+	asserts.equal(
+		SfxEventRouter.event_id_for_acquisition({"kind": "gatherable", "node_id": "unknown_node", "item_id": "unmapped_fixture"}),
+		SfxEventRouter.EVENT_INTERACT_SUCCESS,
+		"unknown acquisition material falls back to generic success SFX"
 	)
 	asserts.false_value(
 		SfxEventRouter.event_definition(SfxEventRouter.EVENT_GATHER_WOOD).pitch_scale == SfxEventRouter.event_definition(SfxEventRouter.EVENT_GATHER_STONE).pitch_scale,
