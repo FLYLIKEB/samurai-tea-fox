@@ -54,11 +54,13 @@ func _assert_generated_catalog_configures_crafting(asserts) -> void:
 	asserts.equal(service.required_facility_item_ids("humble_clay_bowl"), ["wooden_workbench"], "facility name maps through item data")
 	asserts.true_value(service.is_facility_item("wooden_workbench"), "recipe requirements identify crafting facility items")
 	asserts.false_value(service.is_facility_item("humble_clay_bowl"), "ordinary result items are not treated as facilities")
+	_assert_generated_catalog_extended_recipe_definitions(asserts, service)
 
 	var inventory_result: Dictionary = InventoryModel.from_catalog(catalog)
 	asserts.true_value(inventory_result.ok, "inventory initializes for generated crafting")
 	if inventory_result.ok:
 		var inventory: InventoryModel = inventory_result.inventory
+		_assert_generated_catalog_extended_recipe_read_model(asserts, service, inventory)
 		asserts.true_value(inventory.add_item("wood", 6).ok, "generated wood can be stocked")
 		asserts.true_value(inventory.add_item("stone", 3).ok, "generated stone can be stocked")
 		var repair_locked := service.can_craft("wooden_workbench", inventory, {"current_biome_id": "common_region"})
@@ -153,8 +155,10 @@ func _assert_crafting_read_model_reports_filters_detail_and_reasons(asserts) -> 
 	asserts.equal(all_model.selected_recipe_id, "crowded_bowl", "all recipes defaults selection to the first craftable recipe")
 	asserts.true_value(inventory.add_item("clay", 1).ok, "read model remaining clay add succeeds")
 	var locked: Dictionary = service.read_model(inventory, {}, {"selected_recipe_id": "regional_bowl"})
-	asserts.false_value(_read_model_has_recipe(locked, "regional_bowl"), "read model hides recipes locked by current-run unlock state")
-	asserts.true_value(String(locked.get("selected_recipe_id", "")) != "regional_bowl", "read model does not keep a hidden locked recipe selected")
+	asserts.true_value(_read_model_has_recipe(locked, "regional_bowl"), "read model keeps locked recipes visible in the catalog")
+	asserts.equal(locked.detail.recipe_id, "regional_bowl", "read model keeps the selected locked recipe visible")
+	asserts.equal(locked.detail.reason, "locked", "read model reports current-run locked recipes")
+	asserts.equal(locked.detail.reason_label, "미해금 · 일반 지역 필요", "read model labels the required biome for locked recipes")
 	var missing_facility: Dictionary = service.read_model(inventory, {"unlocked_biome_ids": ["common_region"]}, {"selected_recipe_id": "humble_clay_bowl"})
 	asserts.equal(missing_facility.detail.facilities[0].item_id, "wooden_workbench", "read model exposes required facility item id")
 	asserts.false_value(missing_facility.detail.facilities[0].available, "read model marks missing facility")
@@ -240,6 +244,87 @@ func _fixture_crafting_service() -> CraftingService:
 		"recipes": _recipe_rows()
 	}))
 	return result.crafting_service
+
+func _assert_generated_catalog_extended_recipe_definitions(asserts, service: CraftingService) -> void:
+	var expected := {
+		"incense_sticks": {
+			"result_item_id": "incense_sticks",
+			"materials": [{"item_id": "item_5", "quantity": 1}, {"item_id": "rare_wood", "quantity": 1}],
+			"facility_item_ids": ["wooden_workbench"],
+			"unlock_biome_id": "rainforest"
+		},
+		"insulated_tea_bottle": {
+			"result_item_id": "insulated_tea_bottle",
+			"materials": [{"item_id": "conifer_wood", "quantity": 1}, {"item_id": "iron_ore", "quantity": 2}, {"item_id": "snowfield_mineral", "quantity": 2}],
+			"facility_item_ids": ["mountain_kiln", "wooden_workbench"],
+			"unlock_biome_id": "snowfield"
+		},
+		"iron_kettle": {
+			"result_item_id": "iron_kettle",
+			"materials": [{"item_id": "copper_ore", "quantity": 1}, {"item_id": "iron_ore", "quantity": 3}, {"item_id": "wood", "quantity": 1}],
+			"facility_item_ids": ["mountain_kiln"],
+			"unlock_biome_id": "mountain_region"
+		},
+		"mountain_iron_dagger": {
+			"result_item_id": "mountain_iron_dagger",
+			"materials": [{"item_id": "iron_ore", "quantity": 4}, {"item_id": "wood", "quantity": 2}],
+			"facility_item_ids": ["mountain_kiln"],
+			"unlock_biome_id": "mountain_region"
+		},
+		"mountain_kiln": {
+			"result_item_id": "mountain_kiln",
+			"materials": [{"item_id": "clay", "quantity": 8}, {"item_id": "iron_ore", "quantity": 2}, {"item_id": "stone", "quantity": 5}],
+			"facility_item_ids": ["wooden_workbench"],
+			"unlock_biome_id": "mountain_region"
+		},
+		"portable_brazier": {
+			"result_item_id": "portable_brazier",
+			"materials": [{"item_id": "charcoal", "quantity": 2}, {"item_id": "item_28", "quantity": 4}],
+			"facility_item_ids": ["wooden_workbench"],
+			"unlock_biome_id": "wasteland"
+		},
+		"repair_hammer": {
+			"result_item_id": "repair_hammer",
+			"materials": [{"item_id": "item_28", "quantity": 3}, {"item_id": "old_wood", "quantity": 1}],
+			"facility_item_ids": ["wooden_workbench"],
+			"unlock_biome_id": "wasteland"
+		},
+		"wood_incense_burner": {
+			"result_item_id": "wood_incense_burner",
+			"materials": [{"item_id": "clay", "quantity": 2}, {"item_id": "rare_wood", "quantity": 2}],
+			"facility_item_ids": ["mountain_kiln", "wooden_workbench"],
+			"unlock_biome_id": "rainforest"
+		}
+	}
+	for recipe_id in expected.keys():
+		var recipe: Dictionary = service.recipe_for(recipe_id)
+		asserts.equal(recipe.get("definition_errors", []), [], "extended generated recipe has no definition errors: %s" % recipe_id)
+		asserts.equal(recipe.get("result_item_id", ""), expected[recipe_id].result_item_id, "extended generated recipe resolves result item: %s" % recipe_id)
+		asserts.equal(recipe.get("materials", []), expected[recipe_id].materials, "extended generated recipe resolves materials: %s" % recipe_id)
+		asserts.equal(recipe.get("facility_item_ids", []), expected[recipe_id].facility_item_ids, "extended generated recipe resolves facilities: %s" % recipe_id)
+		asserts.equal(recipe.get("unlock_biome_id", ""), expected[recipe_id].unlock_biome_id, "extended generated recipe resolves unlock biome: %s" % recipe_id)
+
+func _assert_generated_catalog_extended_recipe_read_model(asserts, service: CraftingService, inventory: InventoryModel) -> void:
+	var unlocked_context := {
+		"unlocked_biome_ids": ["mountain_region", "rainforest", "snowfield", "wasteland"],
+		"available_facility_item_ids": ["mountain_kiln", "wooden_workbench"]
+	}
+	for recipe_id in [
+		"incense_sticks",
+		"insulated_tea_bottle",
+		"iron_kettle",
+		"mountain_iron_dagger",
+		"mountain_kiln",
+		"portable_brazier",
+		"repair_hammer",
+		"wood_incense_burner"
+	]:
+		var craft_result: Dictionary = service.can_craft(recipe_id, inventory, unlocked_context)
+		asserts.equal(craft_result.reason, "missing_materials", "extended generated recipe reaches material shortage: %s" % recipe_id)
+		var model: Dictionary = service.read_model(inventory, unlocked_context, {"selected_recipe_id": recipe_id})
+		asserts.equal(model.detail.recipe_id, recipe_id, "extended generated recipe appears in read model: %s" % recipe_id)
+		asserts.equal(model.detail.reason, "missing_materials", "extended generated recipe read model reaches material shortage: %s" % recipe_id)
+		asserts.true_value(model.detail.reason != "invalid_recipe_definition", "extended generated recipe avoids definition error read model: %s" % recipe_id)
 
 func _fixture_placement_service() -> FacilityPlacementService:
 	var result: Dictionary = FacilityPlacementService.from_catalog(FakeCatalog.new({

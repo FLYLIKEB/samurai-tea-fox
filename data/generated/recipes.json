@@ -1,5 +1,5 @@
 {
-  "content_hash": "e463263071137d4bdba6d47b6030bb4da20724d913403862060c55e9736cdaf5",
+  "content_hash": "6147bf82ea351e6781e685edee80803283f27652194493a49113b93209aff5e9",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -24,9 +24,20 @@
       "category": "다구",
       "facility": "목재 작업대",
       "id": "humble_clay_bowl",
+      "materials": [
+        {
+          "item_id": "clay",
+          "quantity": 3
+        }
+      ],
       "materials_note": "점토 3",
       "name": "소박한 흙사발 제작",
-      "status": "초안",
+      "result_item_id": "humble_clay_bowl",
+      "result_quantity": 1,
+      "facility_item_ids": [
+        "wooden_workbench"
+      ],
+      "status": "확정",
       "unlock_biome": "일반",
       "unlock_biome_id": "common_region"
     },
@@ -44,19 +55,44 @@
           "quantity": 1
         }
       ],
-      "materials_note": "침향 소량 + 희귀 목재 가루",
+      "materials_note": "침향 1 + 희귀 목재 1",
       "name": "선향 제작",
-      "status": "초안",
+      "result_item_id": "incense_sticks",
+      "result_quantity": 1,
+      "facility_item_ids": [
+        "wooden_workbench"
+      ],
+      "status": "확정",
       "unlock_biome": "열대우림",
       "unlock_biome_id": "rainforest"
     },
     {
       "category": "다구",
-      "facility": "목재 작업대·금속 가공대",
+      "facility": "목재 작업대·산중 가마",
       "id": "insulated_tea_bottle",
+      "materials": [
+        {
+          "item_id": "iron_ore",
+          "quantity": 2
+        },
+        {
+          "item_id": "snowfield_mineral",
+          "quantity": 2
+        },
+        {
+          "item_id": "conifer_wood",
+          "quantity": 1
+        }
+      ],
       "materials_note": "설원 광물 2 + 철광석 2 + 침엽수 목재 1",
       "name": "보온 차병 제작",
-      "status": "초안",
+      "result_item_id": "insulated_tea_bottle",
+      "result_quantity": 1,
+      "facility_item_ids": [
+        "mountain_kiln",
+        "wooden_workbench"
+      ],
+      "status": "확정",
       "unlock_biome": "설원",
       "unlock_biome_id": "snowfield"
     },
@@ -64,19 +100,53 @@
       "category": "다구",
       "facility": "산중 가마",
       "id": "iron_kettle",
+      "materials": [
+        {
+          "item_id": "copper_ore",
+          "quantity": 1
+        },
+        {
+          "item_id": "iron_ore",
+          "quantity": 3
+        },
+        {
+          "item_id": "wood",
+          "quantity": 1
+        }
+      ],
       "materials_note": "철광석 3 + 구리광석 1 + 목재 1",
       "name": "철 차솥 제작",
-      "status": "초안",
+      "result_item_id": "iron_kettle",
+      "result_quantity": 1,
+      "facility_item_ids": [
+        "mountain_kiln"
+      ],
+      "status": "확정",
       "unlock_biome": "산악",
       "unlock_biome_id": "mountain_region"
     },
     {
       "category": "무기",
-      "facility": "산중 가마·대장간",
+      "facility": "산중 가마",
       "id": "mountain_iron_dagger",
+      "materials": [
+        {
+          "item_id": "iron_ore",
+          "quantity": 4
+        },
+        {
+          "item_id": "wood",
+          "quantity": 2
+        }
+      ],
       "materials_note": "철광석 4 + 목재 2",
       "name": "산철 단도 제작",
-      "status": "초안",
+      "result_item_id": "mountain_iron_dagger",
+      "result_quantity": 1,
+      "facility_item_ids": [
+        "mountain_kiln"
+      ],
+      "status": "확정",
       "unlock_biome": "산악",
       "unlock_biome_id": "mountain_region"
     },
@@ -84,9 +154,28 @@
       "category": "도구",
       "facility": "목재 작업대",
       "id": "mountain_kiln",
+      "materials": [
+        {
+          "item_id": "clay",
+          "quantity": 8
+        },
+        {
+          "item_id": "iron_ore",
+          "quantity": 2
+        },
+        {
+          "item_id": "stone",
+          "quantity": 5
+        }
+      ],
       "materials_note": "점토 8 + 돌 5 + 철광석 2",
       "name": "산중 가마 제작",
-      "status": "초안",
+      "result_item_id": "mountain_kiln",
+      "result_quantity": 1,
+      "facility_item_ids": [
+        "wooden_workbench"
+      ],
+      "status": "확정",
       "unlock_biome": "산악",
       "unlock_biome_id": "mountain_region"
     },
@@ -94,9 +183,24 @@
       "category": "도구",
       "facility": "목재 작업대",
       "id": "portable_brazier",
+      "materials": [
+        {
+          "item_id": "charcoal",
+          "quantity": 2
+        },
+        {
+          "item_id": "item_28",
+          "quantity": 4
+        }
+      ],
       "materials_note": "철 조각 4 + 숯 2",
       "name": "휴대 화로 제작",
-      "status": "초안",
+      "result_item_id": "portable_brazier",
+      "result_quantity": 1,
+      "facility_item_ids": [
+        "wooden_workbench"
+      ],
+      "status": "확정",
       "unlock_biome": "황무지",
       "unlock_biome_id": "wasteland"
     },
@@ -104,9 +208,24 @@
       "category": "도구",
       "facility": "목재 작업대",
       "id": "repair_hammer",
+      "materials": [
+        {
+          "item_id": "item_28",
+          "quantity": 3
+        },
+        {
+          "item_id": "old_wood",
+          "quantity": 1
+        }
+      ],
       "materials_note": "철 조각 3 + 오래된 목재 1",
       "name": "수선 망치 제작",
-      "status": "초안",
+      "result_item_id": "repair_hammer",
+      "result_quantity": 1,
+      "facility_item_ids": [
+        "wooden_workbench"
+      ],
+      "status": "확정",
       "unlock_biome": "황무지",
       "unlock_biome_id": "wasteland"
     },
@@ -130,9 +249,25 @@
       "category": "다구",
       "facility": "산중 가마·목재 작업대",
       "id": "wood_incense_burner",
+      "materials": [
+        {
+          "item_id": "clay",
+          "quantity": 2
+        },
+        {
+          "item_id": "rare_wood",
+          "quantity": 2
+        }
+      ],
       "materials_note": "희귀 목재 2 + 점토 2",
       "name": "목향 향로 제작",
-      "status": "초안",
+      "result_item_id": "wood_incense_burner",
+      "result_quantity": 1,
+      "facility_item_ids": [
+        "mountain_kiln",
+        "wooden_workbench"
+      ],
+      "status": "확정",
       "unlock_biome": "열대우림",
       "unlock_biome_id": "rainforest"
     },
@@ -140,9 +275,23 @@
       "category": "도구",
       "facility": "손제작",
       "id": "wooden_workbench",
+      "materials": [
+        {
+          "item_id": "stone",
+          "quantity": 3
+        },
+        {
+          "item_id": "wood",
+          "quantity": 6
+        }
+      ],
       "materials_note": "목재 6 + 돌 3",
       "name": "목재 작업대 제작",
-      "status": "초안"
+      "result_item_id": "wooden_workbench",
+      "result_quantity": 1,
+      "status": "확정",
+      "unlock_biome": "일반",
+      "unlock_biome_id": "common_region"
     }
   ],
   "profile": "confirmed-test",
