@@ -55,8 +55,8 @@ func run(asserts) -> void:
 	asserts.true_value(map_result.ok, "content image map loads after the asset manifest")
 	asserts.equal(
 		catalog.content_asset_id("items", "wood"),
-		"asset_assets_sprites_objects_village_props_firewood_pile_1x2_64x32_png",
-		"item stable ID resolves to its audited image asset"
+		"",
+		"unapproved item image audits are not exposed to runtime lookups"
 	)
 	asserts.equal(
 		catalog.content_asset_id("monsters", "road_bandit"),

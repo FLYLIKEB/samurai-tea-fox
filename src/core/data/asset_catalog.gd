@@ -101,7 +101,10 @@ func path_for_reference(reference: String) -> String:
 
 func content_asset_id(dataset: String, content_id: String) -> String:
 	var key := "%s:%s" % [dataset, content_id]
-	return String(_content_images.get(key, {}).get("asset_id", ""))
+	var content_image: Dictionary = _content_images.get(key, {})
+	if not bool(content_image.get("runtime_approved", false)):
+		return ""
+	return String(content_image.get("asset_id", ""))
 
 func id_for_reference(reference: String) -> String:
 	if definitions.has(reference):

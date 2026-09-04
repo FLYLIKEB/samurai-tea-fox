@@ -96,17 +96,18 @@ def item_entry(item: dict[str, Any], assets: dict[str, dict[str, Any]]) -> dict[
     explicit = first_non_empty(item, ["icon_asset_id", "icon", "asset_id", "sprite_asset_id", "source_id"])
     if explicit:
         result = asset_record(explicit, assets)
-        result.update({"resolution": "definition_field", "exception_reason": ""})
+        result.update({"resolution": "definition_field", "exception_reason": "", "dedicated_asset_missing": False})
         return result
     if item_id in ITEM_OVERRIDES:
         result = asset_record(ITEM_OVERRIDES[item_id], assets)
-        result.update({"resolution": "semantic_existing_asset", "exception_reason": ""})
+        result.update({"resolution": "semantic_existing_asset", "exception_reason": "", "dedicated_asset_missing": False})
         return result
     fallback = KIND_FALLBACKS.get(kind, "asset_assets_ui_icons_atlas_bag_png")
     result = asset_record(fallback, assets)
     result.update({
         "resolution": "kind_fallback_exception",
         "exception_reason": "No item-specific exported image field exists; use the type fallback until art review creates a dedicated row.",
+        "dedicated_asset_missing": True,
     })
     return result
 
@@ -114,11 +115,12 @@ def item_entry(item: dict[str, Any], assets: dict[str, dict[str, Any]]) -> dict[
 def monster_entry(monster: dict[str, Any], assets: dict[str, dict[str, Any]]) -> dict[str, Any]:
     monster_id = str(monster["id"])
     result = asset_record(f"monster_{monster_id}_front_idle", assets)
-    result.update({"resolution": "monster_id_convention", "exception_reason": ""})
+    result.update({"resolution": "monster_id_convention", "exception_reason": "", "dedicated_asset_missing": False})
     return result
 
 
 def content_entry(dataset: str, row: dict[str, Any], image: dict[str, Any]) -> dict[str, Any]:
+    art_review_required = dataset == "items"
     return {
         "dataset": dataset,
         "content_id": row["id"],
@@ -126,7 +128,8 @@ def content_entry(dataset: str, row: dict[str, Any], image: dict[str, Any]) -> d
         "status": row["status"],
         "kind": row.get("type", row.get("kind", "")),
         **image,
-        "art_review_required": image["resolution"] != "monster_id_convention",
+        "art_review_required": art_review_required,
+        "runtime_approved": not art_review_required,
     }
 
 
@@ -153,7 +156,10 @@ def audit_summary(items: list[dict[str, Any]], monsters: list[dict[str, Any]], i
         "items": len(items),
         "monsters": len(monsters),
         "missing_or_broken": len([issue for issue in issues if issue["severity"] in {"missing", "broken_path"}]),
-        "review_items": len([entry for entry in entries if entry["art_review_required"]]),
+        "path_integrity_missing_or_broken": len([issue for issue in issues if issue["severity"] in {"missing", "broken_path"}]),
+        "dedicated_asset_missing": len([entry for entry in entries if entry.get("dedicated_asset_missing") is True]),
+        "art_review_required": len([entry for entry in entries if entry["art_review_required"]]),
+        "runtime_approved": len([entry for entry in entries if entry["runtime_approved"]]),
         "by_resolution": by_resolution,
     }
 
@@ -198,7 +204,8 @@ def report_row(entry: dict[str, Any]) -> str:
     exception = str(entry.get("exception_reason", "")).replace("|", "\\|")
     return (
         f"| `{entry['content_id']}` | {entry['name']} | {entry.get('kind', '')} | "
-        f"{entry['resolution']} | `{entry['asset_id']}` | `{entry['path']}` | {exception} |"
+        f"{entry['resolution']} | {entry['runtime_approved']} | {entry['dedicated_asset_missing']} | "
+        f"`{entry['asset_id']}` | `{entry['path']}` | {exception} |"
     )
 
 
@@ -215,8 +222,12 @@ def write_report(payload: dict[str, Any], report: Path, issues: list[dict[str, s
         f"- 런타임 대상 행: {audit['runtime_target_rows']}개",
         f"- 아이템·다구: {audit['items']}개",
         f"- 몬스터·요괴: {audit['monsters']}개",
-        f"- 누락 또는 깨진 경로: {audit['missing_or_broken']}개",
-        f"- 사람 아트 검수 필요: {audit['review_items']}개",
+        f"- 파일 경로 무결성 누락/깨짐: {audit['path_integrity_missing_or_broken']}개",
+        f"- 전용 에셋 미해결: {audit['dedicated_asset_missing']}개",
+        f"- 사람 아트 검수 필요: {audit['art_review_required']}개",
+        f"- 런타임 승인 매핑: {audit['runtime_approved']}개",
+        "",
+        "`missing_or_broken`/`path_integrity_missing_or_broken`은 현재 연결된 manifest asset ID와 PNG 파일 경로의 무결성 지표다. 전용 에셋 완료 지표가 아니며, 미검수 아이템 매핑은 `runtime_approved=false`로 런타임 조회에서 제외한다.",
         "",
         "## Notion 확인 한계",
         "",
@@ -224,16 +235,16 @@ def write_report(payload: dict[str, Any], report: Path, issues: list[dict[str, s
         "",
         "## 아이템·다구",
         "",
-        "| content_id | 이름 | 종류 | resolution | asset_id | path | 예외 |",
-        "| --- | --- | --- | --- | --- | --- | --- |",
+        "| content_id | 이름 | 종류 | resolution | runtime_approved | dedicated_asset_missing | asset_id | path | 예외 |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     lines.extend(report_row(entry) for entry in payload["content"]["items"])
     lines.extend([
         "",
         "## 몬스터·요괴",
         "",
-        "| content_id | 이름 | 종류 | resolution | asset_id | path | 예외 |",
-        "| --- | --- | --- | --- | --- | --- | --- |",
+        "| content_id | 이름 | 종류 | resolution | runtime_approved | dedicated_asset_missing | asset_id | path | 예외 |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ])
     lines.extend(report_row(entry) for entry in payload["content"]["monsters"])
     lines.extend(["", "## 검증 이슈", ""])
@@ -267,7 +278,8 @@ def main() -> int:
     print(
         "Content image audit passed: "
         f"{audit['runtime_target_rows']} rows, {audit['missing_or_broken']} missing/broken, "
-        f"{audit['review_items']} review-required"
+        f"{audit['art_review_required']} art-review-required, "
+        f"{audit['dedicated_asset_missing']} dedicated-asset-missing"
     )
     return 0 if audit["missing_or_broken"] == 0 else 1
 

@@ -2104,10 +2104,6 @@ func _item_icon_reference(item_id: String, kind: String, definition: Dictionary)
 		var reference := String(definition.get(key, ""))
 		if not reference.is_empty():
 			return reference
-	if _ensure_asset_catalog():
-		var mapped_asset_id := asset_catalog.content_asset_id("items", item_id)
-		if not mapped_asset_id.is_empty():
-			return mapped_asset_id
 	match item_id:
 		"wood", "old_wood", "rare_wood":
 			return ICON_WOOD
@@ -2694,9 +2690,6 @@ func _ensure_asset_catalog() -> bool:
 		return true
 	var result: Dictionary = asset_catalog.load_manifest()
 	if result.ok:
-		var map_result: Dictionary = asset_catalog.load_content_image_map()
-		if not map_result.ok:
-			push_warning("HUD content image map failed: %s" % map_result.get("error", "unknown error"))
 		_asset_catalog_ready = true
 		return true
 	push_warning("HUD asset manifest failed: %s" % result.get("error", "unknown error"))
