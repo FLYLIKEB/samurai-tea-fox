@@ -4514,8 +4514,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:6e4f80d3253c6f1520c27f8e97cb153dd89bf7cf2e0b81b4507a5c4dbcf9b281",
-      "rgba_sha256": "sha256:f285eb4a9bedbcf773d50ba391160a84a705c92ba2ee407f3c7ed7aa69160a58"
+      "source_sha256": "sha256:f285eb4a9bedbcf773d50ba391160a84a705c92ba2ee407f3c7ed7aa69160a58",
+      "rgba_sha256": "sha256:d07be61a30d884e63c40d1fb6245e3b7471f355cfe34e07869fdcf9aee052cf8"
     },
     {
       "path": "assets/sprites/items/oribe_green_glazed_bowl_32x32.png",
@@ -4523,8 +4523,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:0402a061bc2648d61054f6c325d5859a7644d61b8280b74f597e084bd5628b71",
-      "rgba_sha256": "sha256:eb744c818712063252681990178792ff6b7f2f6980d872953b284f3b04900ccd"
+      "source_sha256": "sha256:eb744c818712063252681990178792ff6b7f2f6980d872953b284f3b04900ccd",
+      "rgba_sha256": "sha256:ad037fade710134e4b115d24c3e0d30f297e61dce6c010f86b71ccd16fb0543c"
     },
     {
       "path": "assets/sprites/items/insulated_tea_bottle_32x32.png",
@@ -4532,8 +4532,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:b18b47764d5dc4800a6dec52d934bce7c41e3021c8a2c5337237692ee6632c13",
-      "rgba_sha256": "sha256:a3b9676aebc5b44910873ab34fd108b9f167dce84965d92ded889f7b0342882c"
+      "source_sha256": "sha256:a3b9676aebc5b44910873ab34fd108b9f167dce84965d92ded889f7b0342882c",
+      "rgba_sha256": "sha256:c09ded75aba8080046f28845e46c73d9edba4a3f2eb8fbb203f7d2e4bd26c674"
     },
     {
       "path": "assets/sprites/items/unbroken_failure_32x32.png",
@@ -4541,8 +4541,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:8285ad74a8aa2dba1569c3cac1aaf97f64b71304c89e1672b8f72d869076a2fd",
-      "rgba_sha256": "sha256:491feb5c14672af3e9a7f6189a71c98763fe6ad46e71c306806ac2dbc151bd25"
+      "source_sha256": "sha256:491feb5c14672af3e9a7f6189a71c98763fe6ad46e71c306806ac2dbc151bd25",
+      "rgba_sha256": "sha256:0bc127999431a747f279c50a40235247c732faf3d234abdfe3e3e661c4a96395"
     },
     {
       "path": "assets/sprites/items/old_incense_box_32x32.png",
@@ -4550,8 +4550,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:7ac18cf216b7191844d8d891518ab18f19d2c0c7331dc89e92ec2967586a260c",
-      "rgba_sha256": "sha256:b765ed5c57936929a124ba5123bb0673bc5209fc15ebe35a27439badbc9e8124"
+      "source_sha256": "sha256:b765ed5c57936929a124ba5123bb0673bc5209fc15ebe35a27439badbc9e8124",
+      "rgba_sha256": "sha256:bbb9cc9eb4e2d8c3f478513fd37cb7d970a548a61303ed87e7913fe0c8681f65"
     },
     {
       "path": "assets/sprites/items/iron_kettle_32x32.png",
@@ -4559,8 +4559,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:42d50687f74d35de5fbda4e07c83a1bc3a96c0ce99682047eeecd583c4ebb980",
-      "rgba_sha256": "sha256:3a6d5c6a5d7e6b2cc91096617bd1cdd85947e0082c668bed223274adbdae1204"
+      "source_sha256": "sha256:3a6d5c6a5d7e6b2cc91096617bd1cdd85947e0082c668bed223274adbdae1204",
+      "rgba_sha256": "sha256:26211d6846b7f6909b7c04e59deac4aca6304190868c0740dcfd566d4dea1b63"
     },
     {
       "path": "assets/sprites/items/war_tea_caddy_32x32.png",
@@ -4568,8 +4568,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:c15d5e164c4a9bf4e125c4768cee29b1da217f0cf8e18df5f3e19341f44cfa70",
-      "rgba_sha256": "sha256:e3b2dae28ac102ac393f9bbcdd2f123200b49b15373fea76cdcb7bcc768c51f6"
+      "source_sha256": "sha256:e3b2dae28ac102ac393f9bbcdd2f123200b49b15373fea76cdcb7bcc768c51f6",
+      "rgba_sha256": "sha256:47c4d554d65c01525469aea1b893d2e4d04c6849fbf60c7ecb51d80b1255d395"
     },
     {
       "path": "assets/sprites/items/black_bamboo_tea_scoop_32x32.png",
@@ -4577,8 +4577,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:562e09198e463f9ca35c8a5b0acaf1d1a71f4b4851575fa01b4e449dcbd54156",
-      "rgba_sha256": "sha256:2ca7e4921a04f5e8dbc9bfa316892a23e5298fa95039f13e112c08f7b12b683a"
+      "source_sha256": "sha256:2ca7e4921a04f5e8dbc9bfa316892a23e5298fa95039f13e112c08f7b12b683a",
+      "rgba_sha256": "sha256:a2f681c092d0378cf382c610ade94dee0dcc8c12ff714806169ac92cc8e5604e"
     },
     {
       "path": "assets/sprites/items/ash_stained_iron_kettle_32x32.png",
@@ -4586,8 +4586,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:597ad9704a77fe5877827bcc49560b7109297356c2d14f4de5c0a76c3e98c592",
-      "rgba_sha256": "sha256:8fa183971e9d399dbe544ff253a9ce37faa7bec856c237104a488bc18907073b"
+      "source_sha256": "sha256:8fa183971e9d399dbe544ff253a9ce37faa7bec856c237104a488bc18907073b",
+      "rgba_sha256": "sha256:70843ed750b5c1154472538fbe5e2273626841ef04c737454ee79e7e72fca88a"
     },
     {
       "path": "assets/sprites/items/wood_incense_burner_32x32.png",
@@ -4595,8 +4595,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:2c2e2679d1e820c49505db5df63a135c657336a79bbc73147eb0efb112f9077a",
-      "rgba_sha256": "sha256:8513d3421761013cd2e344b000394bbc1c9dde339ddaf62837fb36ddae9bd2e6"
+      "source_sha256": "sha256:8513d3421761013cd2e344b000394bbc1c9dde339ddaf62837fb36ddae9bd2e6",
+      "rgba_sha256": "sha256:1d0659bf77cb51515131834534a8b92adf3d79108a3b24b02d088afbfd860d75"
     },
     {
       "path": "assets/sprites/items/portable_brazier_32x32.png",
@@ -4604,8 +4604,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:268211de0fc1b481f5da5ab16a3949bb30aa0177e5bb105c76913351e93f1d3b",
-      "rgba_sha256": "sha256:8e913614a4ff06b8b583d1a39fc351f67283b528fb71bc7c2caa7b627edfe23e"
+      "source_sha256": "sha256:8e913614a4ff06b8b583d1a39fc351f67283b528fb71bc7c2caa7b627edfe23e",
+      "rgba_sha256": "sha256:706ea3af097676c78b6fce60914e930310aaf95bf6480c08713cecc3cd4cad7c"
     },
     {
       "path": "assets/sprites/items/repair_hammer_32x32.png",
@@ -4613,8 +4613,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:54fd4ab81b6ff2eecb912a66a653b394f3b008e65ca3b65901b879856b9472a8",
-      "rgba_sha256": "sha256:ddb9ea788fc4e67bd4c39d8b8b89074f72494373062c05d8c5348ee7fe46e401"
+      "source_sha256": "sha256:ddb9ea788fc4e67bd4c39d8b8b89074f72494373062c05d8c5348ee7fe46e401",
+      "rgba_sha256": "sha256:8806451b3e4175c6ffbbebec189faa72314b005bc2bb9715984cabab87012de5"
     },
     {
       "path": "assets/sprites/items/short_travel_sword_32x32.png",
@@ -4622,8 +4622,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:3602822b67e1a41877ddb5d28d35e63663b70867969358605dada7fe41dc7967",
-      "rgba_sha256": "sha256:d7be5d87bbe2ee119a98fe620dcca6205d905d9ea94d659d6b96ac72a98ba2e6"
+      "source_sha256": "sha256:d7be5d87bbe2ee119a98fe620dcca6205d905d9ea94d659d6b96ac72a98ba2e6",
+      "rgba_sha256": "sha256:c5b05a3f8c56b38c256ab735d942da39a577d28517124d970dc269416a7656bf"
     },
     {
       "path": "assets/sprites/items/mountain_iron_dagger_32x32.png",
@@ -4631,8 +4631,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:e92645c96949bfe974ba3cd0794774a30ae39e898bc94b70ec1b8900066d87cc",
-      "rgba_sha256": "sha256:8f3be98bc29d7c9fb6c85c5eb9b6881120386c84f9aae9f54b21bfd3f464e283"
+      "source_sha256": "sha256:8f3be98bc29d7c9fb6c85c5eb9b6881120386c84f9aae9f54b21bfd3f464e283",
+      "rgba_sha256": "sha256:984f462efff887b7718a0b0949d42b81e399976672d2b2683c1efcaa36d7f386"
     }
   ]
 }
