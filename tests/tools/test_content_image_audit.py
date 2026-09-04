@@ -16,14 +16,14 @@ class ContentImageAuditTests(unittest.TestCase):
         self.assertEqual(payload["audit"]["monsters"], 21)
         self.assertEqual(payload["audit"]["missing_or_broken"], 0)
         self.assertEqual(payload["audit"]["path_integrity_missing_or_broken"], 0)
-        self.assertEqual(payload["audit"]["dedicated_asset_missing"], 8)
-        self.assertEqual(payload["audit"]["art_review_required"], 45)
-        self.assertEqual(payload["audit"]["runtime_approved"], 51)
+        self.assertEqual(payload["audit"]["dedicated_asset_missing"], 4)
+        self.assertEqual(payload["audit"]["art_review_required"], 41)
+        self.assertEqual(payload["audit"]["runtime_approved"], 55)
         self.assertEqual(payload["audit"]["by_resolution"]["dedicated_item_icon"], 36)
         self.assertIn("semantic_existing_asset", payload["audit"]["by_resolution"])
         self.assertEqual(payload["audit"]["by_resolution"]["kind_fallback_exception"], 2)
-        self.assertEqual(payload["audit"]["by_resolution"]["monster_id_convention"], 15)
-        self.assertEqual(payload["audit"]["by_resolution"]["monster_variant_fallback_exception"], 6)
+        self.assertEqual(payload["audit"]["by_resolution"]["monster_id_convention"], 19)
+        self.assertEqual(payload["audit"]["by_resolution"]["monster_variant_fallback_exception"], 2)
         self.assertEqual(payload["audit"]["by_resolution"]["semantic_existing_asset"], 1)
         items = {entry["content_id"]: entry for entry in payload["content"]["items"]}
         self.assertEqual(
@@ -38,6 +38,11 @@ class ContentImageAuditTests(unittest.TestCase):
             items["snow_bamboo_overcoat"]["asset_id"],
             "item_snow_bamboo_overcoat_icon",
         )
+        monsters = {entry["content_id"]: entry for entry in payload["content"]["monsters"]}
+        self.assertEqual(monsters["monster_16"]["asset_id"], "monster_monster_16_front_idle")
+        self.assertEqual(monsters["monster_17"]["asset_id"], "monster_monster_17_front_idle")
+        self.assertEqual(monsters["monster_20"]["asset_id"], "monster_monster_20_front_idle")
+        self.assertEqual(monsters["monster_21"]["asset_id"], "monster_monster_21_front_idle")
 
     def test_written_map_is_current(self):
         payload, _detail = build(ROOT)
