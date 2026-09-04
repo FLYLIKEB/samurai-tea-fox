@@ -1,5 +1,5 @@
 {
-  "content_hash": "947bca5285dc32a8f702af9fa76293b79ed49e028c8ac2f9e4beb069b01d9f37",
+  "content_hash": "ebc093f85cec857c7d836589293ef11da4c79664810ca87fcbbed45192bdc404",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -452,6 +452,15 @@
       "core_tea_ware": false,
       "craftable": true,
       "effect": "야영 가능한 안전 지점에서 차를 준비할 수 있게 하는 휴대 도구.",
+      "facility_capabilities": [
+        "sleep"
+      ],
+      "facility_interactions": {
+        "sleep": {
+          "front_direction": "south",
+          "tile_index": 0
+        }
+      },
       "grade": "고급",
       "id": "portable_brazier",
       "max_stack": 1,

@@ -3057,6 +3057,11 @@ func _consumable_item_id_for_command(command: GameCommand) -> String:
 func _handle_sleep_command() -> bool:
 	if time_state == null or player == null or player.resources == null:
 		return false
+	var facility_result := _sleep_facility_interaction_at_player()
+	if not facility_result.ok:
+		if game_hud != null:
+			game_hud.show_command_feedback(_sleep_facility_failure_message(String(facility_result.get("reason", "sleep_facility_unavailable"))))
+		return false
 	var result: Dictionary = time_state.sleep_until_morning(player.resources)
 	if game_hud != null:
 		game_hud.show_command_feedback("수면 완료: HP +%d / 心 +%d" % [
@@ -3066,6 +3071,22 @@ func _handle_sleep_command() -> bool:
 	save_current_run()
 	_configure_game_hud()
 	return true
+
+func _sleep_facility_interaction_at_player() -> Dictionary:
+	if facility_placement_service == null or world_data == null:
+		return {"ok": false, "reason": "missing_facility_capability"}
+	return facility_placement_service.facility_interaction_at(world_data, _player_world_cell(), "sleep")
+
+func _sleep_facility_failure_message(reason: String) -> String:
+	match reason:
+		"interaction_tile_blocked":
+			return "수면 불가: 시설 앞이 막혀 있습니다."
+		"facility_interaction_out_of_position":
+			return "수면 불가: 시설 정면에서만 가능합니다."
+		"interaction_tile_out_of_bounds":
+			return "수면 불가: 시설 정면 타일이 맵 밖입니다."
+		_:
+			return "수면 불가: 잘 수 있는 시설이 필요합니다."
 
 func _handle_tea_brewing_command(command: GameCommand) -> bool:
 	if tea_brewing_command_runtime == null:
@@ -3674,9 +3695,11 @@ func _restore_placed_facilities_for_current_biome() -> Dictionary:
 			continue
 		var facility_item_id := String(record.get("facility_item_id", ""))
 		var origin := _vector_from_dictionary(record.get("origin", {}))
+		var metadata: Dictionary = record.get("metadata", {}).duplicate(true)
 		var placement: Dictionary = facility_placement_service.place_facility(facility_item_id, world_data, origin, {
 			"owner_id": owner_id,
-			"metadata": record.get("metadata", {}).duplicate(true)
+			"rotation_quarter_turns": int(metadata.get("rotation_quarter_turns", 0)),
+			"metadata": metadata
 		})
 		if not placement.ok:
 			return {
