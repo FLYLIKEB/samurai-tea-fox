@@ -59,6 +59,21 @@ func run(asserts) -> void:
 		"runtime-approved dedicated item image audit is exposed to runtime lookups"
 	)
 	asserts.equal(
+		catalog.content_asset_id("items", "traveler_quilted_clothes"),
+		"item_traveler_quilted_clothes_icon",
+		"traveler armor resolves to its dedicated runtime icon"
+	)
+	asserts.equal(
+		catalog.content_asset_id("items", "mountain_wind_layered_clothes"),
+		"item_mountain_wind_layered_clothes_icon",
+		"mountain armor resolves to its dedicated runtime icon"
+	)
+	asserts.equal(
+		catalog.content_asset_id("items", "snow_bamboo_overcoat"),
+		"item_snow_bamboo_overcoat_icon",
+		"snow armor resolves to its dedicated runtime icon"
+	)
+	asserts.equal(
 		catalog.content_asset_id("monsters", "road_bandit"),
 		"monster_road_bandit_front_idle",
 		"monster stable ID resolves by the manifest convention"

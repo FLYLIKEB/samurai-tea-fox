@@ -6,7 +6,7 @@
     "remaining_source_files": 0,
     "remaining_source_image_files": 0
   },
-  "total_runtime_pngs": 515,
+  "total_runtime_pngs": 518,
   "runtime_roots": [
     "assets/backgrounds",
     "assets/sprites",
@@ -4651,6 +4651,33 @@
       "alpha_empty": false,
       "source_sha256": "sha256:17a4a751cea61887343509f0f41b76f43bba90bb13d0274a5a581c72a9866fe0",
       "rgba_sha256": "sha256:929711e64439986b552c0c29fbdd35ad4856c506cb55582e1536b3334b790912"
+    },
+    {
+      "path": "assets/sprites/items/traveler_quilted_clothes_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:ff425798c08f3dbb3de1ab543f46664407c6eabf3486e2a50383b3751670a212",
+      "rgba_sha256": "sha256:0bd803c1b603f4b0fa446650922d83ab6d0ec50504aa0cb216e3d1941a749171"
+    },
+    {
+      "path": "assets/sprites/items/mountain_wind_layered_clothes_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:1dc883d5baf5d65ec90d946f337383430c9284fc97d5d95ca16fd8888f17292b",
+      "rgba_sha256": "sha256:7e6651a4b86606d673763d613971c2fa4c085b1244b7c641e7611f771a8065e9"
+    },
+    {
+      "path": "assets/sprites/items/snow_bamboo_overcoat_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:0447fcee7d6185a08536d92dfad3df1ad5fd2f903641892df5daca9f2a4ef06a",
+      "rgba_sha256": "sha256:40aa4d9ef0707d375566d9e8087c19e878aa82ae5e3596b143ffad4c84ade3c1"
     }
   ]
 }
