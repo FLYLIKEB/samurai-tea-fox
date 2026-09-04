@@ -51,6 +51,18 @@ func run(asserts) -> void:
 		"res:// path reference resolves to its manifest ID"
 	)
 	asserts.true_value(catalog.load_texture_reference("small_signpost") != null, "manifest ID reference loads texture")
+	var map_result: Dictionary = catalog.load_content_image_map()
+	asserts.true_value(map_result.ok, "content image map loads after the asset manifest")
+	asserts.equal(
+		catalog.content_asset_id("items", "wood"),
+		"",
+		"unapproved item image audits are not exposed to runtime lookups"
+	)
+	asserts.equal(
+		catalog.content_asset_id("monsters", "road_bandit"),
+		"monster_road_bandit_front_idle",
+		"monster stable ID resolves by the manifest convention"
+	)
 	var audit: Dictionary = catalog.audit_references([
 		"small_signpost",
 		"res://assets/sprites/objects/structures/dungeon_entry_small_32x32.png",
