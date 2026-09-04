@@ -2042,6 +2042,13 @@ func _on_dungeon_enemy_defeated(_event: Dictionary, enemy, owner_id: String) -> 
 		world_data.release_footprint(owner_id)
 	var remaining := _combat_targets().size()
 	_dungeon_debug("던전 몬스터 처치: %s, remaining=%d" % [owner_id, remaining])
+	var defeated_monster_id := String(_event.get("monster_id", _event.get("definition_id", "")))
+	if defeated_monster_id.is_empty():
+		defeated_monster_id = String(enemy.get("monster_id"))
+	if defeated_monster_id.is_empty():
+		var enemy_combatant = enemy.get("combatant")
+		if enemy_combatant != null:
+			defeated_monster_id = String(enemy_combatant.get("definition_id"))
 	var dungeon_cleared := false
 	if owner_id == DUNGEON_BOSS_OWNER_ID and dungeon_runtime != null:
 		if not _dungeon_regular_combat_targets().is_empty():
@@ -2078,7 +2085,18 @@ func _on_dungeon_enemy_defeated(_event: Dictionary, enemy, owner_id: String) -> 
 			return
 		dungeon_cleared = true
 	if game_hud != null:
-		game_hud.show_status_toast("던전 클리어! 유적으로 돌아가세요." if dungeon_cleared else "적을 처치했다!")
+		if not defeated_monster_id.is_empty():
+			game_hud.show_status_event({
+				"type": "enemy_defeated",
+				"ok": true,
+				"monster_id": defeated_monster_id,
+				"event_id": owner_id
+			})
+		else:
+			game_hud.show_status_toast("적을 처치했다!")
+		if dungeon_cleared:
+			game_hud.show_status_event({"type": "dungeon_floor_changed", "ok": true, "event_id": "dungeon_cleared"})
+			game_hud.show_status_toast("던전 클리어! 유적으로 돌아가세요.")
 	_save_progress_after_turn()
 
 func _restore_dungeon_map_from_runtime() -> void:
@@ -2431,7 +2449,13 @@ func _on_acquisition_completed(result: Dictionary) -> void:
 	)
 	add_child(effect)
 	if game_hud != null:
-		game_hud.show_status_toast("%s을(를) 얻었다!" % item_name)
+		game_hud.show_status_event({
+			"type": "item_acquired",
+			"ok": true,
+			"item_id": item_id,
+			"quantity": int(result.get("quantity", 0)),
+			"event_id": String(result.get("pickup_id", result.get("node_id", result.get("id", result.get("target_id", "")))))
+		})
 
 func _on_combat_drop_requested(event: Dictionary, source = null) -> void:
 	if acquisition_service == null:
@@ -2936,7 +2960,12 @@ func _handle_landmark_interaction(target_id: String) -> bool:
 		_configure_game_hud()
 		if game_hud != null:
 			game_hud.show_command_feedback("던전에서 귀환")
-			game_hud.show_status_toast("던전에서 나왔다!")
+			game_hud.show_status_event({
+				"type": "dungeon_exited",
+				"ok": true,
+				"dungeon_id": String(dungeon_runtime.to_projection().get("dungeon_id", "")),
+				"event_id": "return:%s" % target_id
+			})
 		return true
 	if _is_core_dungeon_target(target_id):
 		_dungeon_debug("던전 랜드마크 상호작용: %s" % target_id)
@@ -2998,6 +3027,13 @@ func _travel_to_biome(biome_id: String, travel_mode: String = "teleport") -> boo
 		return false
 	_clear_loading_overlay()
 	save_current_run()
+	if game_hud != null:
+		game_hud.show_status_event({
+			"type": "biome_transition",
+			"ok": true,
+			"biome_id": biome_id,
+			"event_id": "%s:%s" % [travel_mode, biome_id]
+		})
 	return true
 
 func _is_connected_biome(from_id: String, to_id: String) -> bool:
@@ -3171,6 +3207,14 @@ func _handle_craft_recipe_command(command: GameCommand) -> bool:
 		_sync_inventory_runtime_state()
 		save_current_run()
 		_configure_game_hud()
+		if game_hud != null:
+			game_hud.show_status_event({
+				"type": "craft_completed",
+				"ok": true,
+				"result_item_id": String(result.get("result_item_id", "")),
+				"quantity": int(result.get("result_quantity", 0)),
+				"event_id": recipe_id
+			})
 	return bool(result.ok)
 
 func _craft_recipe_or_begin_facility_placement(recipe_id: String) -> Dictionary:
@@ -3459,7 +3503,12 @@ func _handle_complete_dungeon_command(command: GameCommand) -> bool:
 		save_current_run()
 		_configure_game_hud()
 		if game_hud != null:
-			game_hud.show_status_toast("던전에 들어갔다!")
+			game_hud.show_status_event({
+				"type": "dungeon_entered",
+				"ok": true,
+				"dungeon_id": String(dungeon_runtime.to_projection().get("dungeon_id", "")),
+				"event_id": "entry:%s" % String(run_state.current_biome_id)
+			})
 		_dungeon_debug("입구 상호작용은 입장만 처리: in_dungeon=%s" % _in_dungeon_map)
 		return true
 	if String(previous_projection.get("lifecycle_state", DungeonInstanceState.STATE_OUTSIDE)) in [DungeonInstanceState.STATE_OUTSIDE, DungeonInstanceState.STATE_RETURNED] \
@@ -3469,6 +3518,12 @@ func _handle_complete_dungeon_command(command: GameCommand) -> bool:
 		_configure_game_hud()
 		if game_hud != null:
 			game_hud.show_command_feedback("던전 입장")
+			game_hud.show_status_event({
+				"type": "dungeon_entered",
+				"ok": true,
+				"dungeon_id": String(dungeon_runtime.to_projection().get("dungeon_id", "")),
+				"event_id": "entry:%s" % String(run_state.current_biome_id)
+			})
 		return true
 	var payload: Dictionary = command.payload.duplicate(true)
 	if String(payload.get("resolution_type", "")).is_empty():
@@ -3513,6 +3568,13 @@ func _handle_biome_progression_command(command: GameCommand) -> bool:
 	if not world_result.ok:
 		return false
 	save_current_run()
+	if game_hud != null and command.type == GameCommand.Type.ADVANCE_BIOME:
+		game_hud.show_status_event({
+			"type": "biome_transition",
+			"ok": true,
+			"biome_id": String(run_state.current_biome_id),
+			"event_id": "advance:%s" % String(run_state.current_biome_id)
+		})
 	return true
 
 func inventory_read_model() -> Dictionary:
