@@ -557,6 +557,31 @@ class NotionExportPipelineTests(unittest.TestCase):
         with self.assertRaisesRegex(ExportValidationError, "events.*reachable dialogue cycle"):
             self.pipeline.build_snapshots(cycle, "confirmed-test")
 
+    def test_event_conditions_are_validated_before_snapshot_export(self):
+        invalid = self._minimal_event_capture()
+        option = invalid["datasets"]["events"]["items"][0]["nodes"][0]["options"][0]
+        option["conditions"] = "not-an-array"
+        with self.assertRaisesRegex(ExportValidationError, "conditions must be an array"):
+            self.pipeline.build_snapshots(invalid, "confirmed-test")
+
+        unknown = self._minimal_event_capture()
+        option = unknown["datasets"]["events"]["items"][0]["nodes"][0]["options"][0]
+        option["conditions"] = [{"type": "meta_unknown_flag", "id": "remembered_old_shrine"}]
+        with self.assertRaisesRegex(ExportValidationError, "unknown condition type meta_unknown_flag"):
+            self.pipeline.build_snapshots(unknown, "confirmed-test")
+
+        malformed_id = self._minimal_event_capture()
+        option = malformed_id["datasets"]["events"]["items"][0]["nodes"][0]["options"][0]
+        option["conditions"] = [{"type": "run_flag", "id": "Display Name"}]
+        with self.assertRaisesRegex(ExportValidationError, "condition id must be stable"):
+            self.pipeline.build_snapshots(malformed_id, "confirmed-test")
+
+        malformed_meta_value = self._minimal_event_capture()
+        option = malformed_meta_value["datasets"]["events"]["items"][0]["nodes"][0]["options"][0]
+        option["conditions"] = [{"type": "meta_run_count_at_least", "value": 1.5}]
+        with self.assertRaisesRegex(ExportValidationError, "meta_run_count_at_least value"):
+            self.pipeline.build_snapshots(malformed_meta_value, "confirmed-test")
+
     def test_recipe_unlock_biome_relation_uses_stable_id(self):
         schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
         recipe_notion = schema["datasets"]["recipes"]["notion"]

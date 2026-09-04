@@ -5,6 +5,19 @@ const BOSS_TEA_CONDITION_TYPES := ["always", "prepared_tea", "run_flag", "run_no
 const BOSS_TEA_HOOK_GROUPS := ["common", "peaceful_tea_ceremony", "mixed", "combat_started"]
 const BOSS_TEA_HOOK_CHANNELS := ["memory", "weakness", "dialogue"]
 const DROP_CONDITIONS := ["항상", "낮", "밤"]
+const EVENT_CONDITION_TYPES := [
+	"always",
+	"run_flag",
+	"run_not_flag",
+	"current_biome",
+	"has_item",
+	"meta_flag",
+	"meta_not_flag",
+	"meta_run_count_at_least",
+	"meta_past_choice",
+	"meta_reached_place",
+	"meta_death_record"
+]
 
 func validate_export_file(value, path: String) -> Dictionary:
 	if typeof(value) != TYPE_DICTIONARY:
@@ -151,6 +164,9 @@ func _validate_event_result_references(events: Array, ids_by_dataset: Dictionary
 			for option in options:
 				if typeof(option) != TYPE_DICTIONARY:
 					continue
+				var condition_result := _validate_event_conditions(event, node, option)
+				if not condition_result.ok:
+					return condition_result
 				var results = option.get("results", [])
 				if typeof(results) != TYPE_ARRAY:
 					continue
@@ -172,6 +188,32 @@ func _validate_event_result_references(events: Array, ids_by_dataset: Dictionary
 					var result_id := String(result.get("id", ""))
 					if not ids_by_dataset.items.has(result_id):
 						return {"ok": false, "error": "events item '%s' option '%s' grant_item targets missing item id '%s'." % [event.get("id", ""), option.get("id", ""), result_id]}
+	return {"ok": true}
+
+func _validate_event_conditions(event: Dictionary, node: Dictionary, option: Dictionary) -> Dictionary:
+	var conditions = option.get("conditions", [])
+	if typeof(conditions) != TYPE_ARRAY:
+		return {"ok": false, "error": "events item '%s' node '%s' option '%s' conditions must be an array." % [event.get("id", ""), node.get("id", ""), option.get("id", "")]}
+	for condition in conditions:
+		if typeof(condition) != TYPE_DICTIONARY:
+			return {"ok": false, "error": "events item '%s' node '%s' option '%s' contains a non-object condition." % [event.get("id", ""), node.get("id", ""), option.get("id", "")]}
+		var condition_type := String(condition.get("type", ""))
+		if not EVENT_CONDITION_TYPES.has(condition_type):
+			return {"ok": false, "error": "events item '%s' node '%s' option '%s' has unknown condition type '%s'." % [event.get("id", ""), node.get("id", ""), option.get("id", ""), condition_type]}
+		var allowed_fields := ["type"]
+		if condition_type == "meta_run_count_at_least":
+			allowed_fields.append("value")
+		elif condition_type != "always":
+			allowed_fields.append("id")
+		for field in condition:
+			if not allowed_fields.has(String(field)):
+				return {"ok": false, "error": "events item '%s' node '%s' option '%s' condition has unsupported field '%s'." % [event.get("id", ""), node.get("id", ""), option.get("id", ""), field]}
+		if condition_type == "meta_run_count_at_least":
+			var value = condition.get("value")
+			if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)) or float(value) != floor(float(value)) or int(value) < 0:
+				return {"ok": false, "error": "events item '%s' node '%s' option '%s' meta_run_count_at_least value must be a non-negative integer." % [event.get("id", ""), node.get("id", ""), option.get("id", "")]}
+		elif condition_type != "always" and (typeof(condition.get("id")) != TYPE_STRING or not _stable_id(String(condition.get("id", "")))):
+			return {"ok": false, "error": "events item '%s' node '%s' option '%s' condition id must be stable." % [event.get("id", ""), node.get("id", ""), option.get("id", "")]}
 	return {"ok": true}
 
 func _validate_item_contract(dataset_name: String, item: Dictionary) -> Dictionary:
