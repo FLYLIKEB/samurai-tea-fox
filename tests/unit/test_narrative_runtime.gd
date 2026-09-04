@@ -34,12 +34,14 @@ func run(asserts) -> void:
 	_assert_bad_references_are_rejected(asserts)
 	_assert_bad_graph_shapes_are_rejected(asserts)
 	_assert_result_contracts_are_rejected(asserts)
+	_assert_condition_contracts_are_rejected_at_load(asserts)
 	_assert_grant_item_requires_item_definitions(asserts)
 	_assert_run_meta_boundary(asserts)
 	_assert_allowed_memory_speakers_can_query_previous_runs(asserts)
 	_assert_malformed_meta_conditions_are_rejected(asserts)
 	_assert_meta_query_speaker_rejections(asserts)
 	_assert_read_model_does_not_mutate_state(asserts)
+	_assert_generated_representative_dialogue_conditions(asserts)
 
 func _assert_generated_events_execute_from_data(asserts) -> void:
 	var catalog := DataCatalog.new()
@@ -223,6 +225,20 @@ func _assert_grant_item_requires_item_definitions(asserts) -> void:
 	}))
 	asserts.true_value(events_only_flag.ok, "set_run_flag-only events do not require item definitions")
 
+func _assert_condition_contracts_are_rejected_at_load(asserts) -> void:
+	var unknown_type: Dictionary = _runtime_result_from_events([_condition_event([{"type": "meta_unknown_flag", "id": "remembered_old_shrine"}])])
+	asserts.false_value(unknown_type.ok, "unknown narrative condition types are rejected at catalog load")
+	asserts.equal(unknown_type.reason, "unknown_condition_type", "unknown condition type returns explicit reason")
+	var bad_id: Dictionary = _runtime_result_from_events([_condition_event([{"type": "run_flag", "id": "Display Name"}])])
+	asserts.false_value(bad_id.ok, "condition ids must be stable runtime ids")
+	asserts.equal(bad_id.reason, "invalid_condition_id", "bad condition id returns explicit reason")
+	var bad_count: Dictionary = _runtime_result_from_events([_condition_event([{"type": "meta_run_count_at_least", "value": 1.5}])])
+	asserts.false_value(bad_count.ok, "meta run-count condition rejects fractional thresholds")
+	asserts.equal(bad_count.reason, "invalid_meta_condition", "bad meta threshold returns explicit reason")
+	var extra_field: Dictionary = _runtime_result_from_events([_condition_event([{"type": "always", "id": "unexpected"}])])
+	asserts.false_value(extra_field.ok, "always condition rejects unsupported fields")
+	asserts.equal(extra_field.reason, "invalid_condition_field", "unsupported condition field returns explicit reason")
+
 func _assert_run_meta_boundary(asserts) -> void:
 	var runtime: NarrativeRuntime = _runtime_from_events(asserts, [_meta_query_event("CHR-5", [{"type": "meta_flag", "id": "remembered_old_shrine"}, {"type": "meta_run_count_at_least", "value": 3}])])
 	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": "common_region"}
@@ -232,7 +248,7 @@ func _assert_run_meta_boundary(asserts) -> void:
 	var meta_state := {"dialogue_memory_flags": ["remembered_old_shrine"], "unlocked_meta_flags": [], "run_count": 3}
 	var with_meta: Dictionary = runtime.read_model_for_event("meta_query_event", run_state, meta_state)
 	asserts.equal(_option_ids(with_meta.read_model), ["remember"], "allowed Sen Rikyu speaker can query run count and memory flags")
-	var boundary_runtime: NarrativeRuntime = _runtime_from_events(asserts, [{
+	var boundary_result: Dictionary = _runtime_result_from_events([{
 		"id": "bad_meta_condition",
 		"name": "Bad Meta Condition",
 		"status": "확정",
@@ -240,9 +256,8 @@ func _assert_run_meta_boundary(asserts) -> void:
 		"start_node_id": "start",
 		"nodes": [{"id": "start", "speaker_id": "CHR-5", "text": "", "options": [{"id": "bad", "display_text": "Bad", "conditions": [{"type": "meta_inventory_has_item", "id": "wood"}], "results": [], "next_node_id": "", "completes_event": true}]}]
 	}])
-	var boundary_result: Dictionary = boundary_runtime.read_model_for_event("bad_meta_condition", run_state, meta_state)
-	asserts.false_value(boundary_result.ok, "non-allowlisted meta condition type cannot query meta state")
-	asserts.equal(boundary_result.reason, "meta_boundary_violation", "unsupported meta query returns stable rejection")
+	asserts.false_value(boundary_result.ok, "non-allowlisted meta condition type is rejected before it can query meta state")
+	asserts.equal(boundary_result.reason, "unknown_condition_type", "unsupported meta query returns stable load rejection")
 
 func _assert_allowed_memory_speakers_can_query_previous_runs(asserts) -> void:
 	var conditions := [
@@ -277,10 +292,9 @@ func _assert_malformed_meta_conditions_are_rejected(asserts) -> void:
 		{"type": "meta_death_record"}
 	]
 	for condition in malformed_conditions:
-		var runtime: NarrativeRuntime = _runtime_from_events(asserts, [_meta_query_event("CHR-5", [condition])])
-		var result: Dictionary = runtime.read_model_for_event("meta_query_event", run_state, meta_state)
+		var result: Dictionary = _runtime_result_from_events([_meta_query_event("CHR-5", [condition])])
 		asserts.false_value(result.ok, "malformed meta condition is rejected: %s" % condition)
-		asserts.equal(result.reason, "invalid_meta_condition", "malformed meta condition returns stable explicit reason")
+		asserts.true_value(["invalid_meta_condition", "invalid_condition_id"].has(String(result.reason)), "malformed meta condition returns stable explicit reason")
 
 func _assert_meta_query_speaker_rejections(asserts) -> void:
 	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": ""}
@@ -304,6 +318,33 @@ func _assert_read_model_does_not_mutate_state(asserts) -> void:
 	var model: Dictionary = runtime.read_model_for_event("roadside_teahouse_intro", run_state)
 	asserts.true_value(model.ok, "read model can be built")
 	asserts.equal(run_state, before, "presentation read model does not mutate run state")
+
+func _assert_generated_representative_dialogue_conditions(asserts) -> void:
+	var catalog := DataCatalog.new()
+	var catalog_result: Dictionary = catalog.load_from_directory("res://data/generated")
+	asserts.true_value(catalog_result.ok, "generated catalog validates event condition contracts: %s" % catalog_result.get("error", ""))
+	if not catalog_result.ok:
+		return
+	var runtime_result: Dictionary = NarrativeRuntime.new().from_catalog(catalog)
+	asserts.true_value(runtime_result.ok, "narrative runtime accepts generated representative events")
+	if not runtime_result.ok:
+		return
+	var runtime: NarrativeRuntime = runtime_result.runtime
+	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": "common_region"}
+	var meta_state := {"run_count": 3, "dialogue_memory_flags": [], "unlocked_meta_flags": []}
+	asserts.true_value(runtime.read_model_for_event("first_run_prologue", run_state, meta_state).ok, "run-start prologue dialogue opens from generated data")
+	asserts.true_value(runtime.read_model_for_event("repeat_run_father_dream", run_state, meta_state).ok, "repeat-run start dialogue opens from generated data")
+	asserts.true_value(runtime.read_model_for_event("sen_rikyu_phase_3_final_victory", run_state, meta_state).ok, "post-combat representative dialogue opens from generated data")
+	asserts.true_value(runtime.read_model_for_event("ending_teahouse_memory", run_state, meta_state).ok, "ending representative dialogue opens from generated data")
+
+	var phase_state := {"narrative_flags": ["daimyo_relinquished_tea"], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": "common_region"}
+	var shared: Dictionary = runtime.read_model_for_node("sen_rikyu_phase_1_last_tea", "shared_dialogue", phase_state, meta_state)
+	asserts.true_value(shared.ok, "peaceful-resolution branch evaluates generated run and meta conditions")
+	asserts.equal(_option_ids(shared.read_model), ["shared_past_mercy", "shared_repetition", "shared_plain"], "generated option order keeps run-specific dialogue before repeat and fallback dialogue")
+	var before := phase_state.duplicate(true)
+	var repeat_read: Dictionary = runtime.read_model_for_node("sen_rikyu_phase_1_last_tea", "shared_dialogue", phase_state, meta_state)
+	asserts.true_value(repeat_read.ok, "condition read can be repeated")
+	asserts.equal(phase_state, before, "representative condition reads do not mutate run state")
 
 func _fixture_runtime(asserts) -> NarrativeRuntime:
 	return _runtime_from_events(asserts, _fixture_events())
@@ -338,6 +379,21 @@ func _single_result_event(result: Dictionary) -> Dictionary:
 		"replay_policy": "repeat",
 		"start_node_id": "start",
 		"nodes": [{"id": "start", "text": "", "options": [{"id": "done", "display_text": "Done", "results": [result], "next_node_id": "", "completes_event": true}]}]
+	}
+
+func _condition_event(conditions: Array) -> Dictionary:
+	return {
+		"id": "condition_event",
+		"name": "Condition Event",
+		"status": "확정",
+		"replay_policy": "repeat",
+		"start_node_id": "start",
+		"nodes": [{
+			"id": "start",
+			"speaker_id": "CHR-5",
+			"text": "",
+			"options": [{"id": "done", "display_text": "Done", "conditions": conditions, "results": [], "next_node_id": "", "completes_event": true}]
+		}]
 	}
 
 func _meta_query_event(speaker_id: String, conditions: Array) -> Dictionary:

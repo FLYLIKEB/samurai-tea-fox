@@ -20,6 +20,19 @@ class ExportPipeline:
     DROP_CONDITIONS = {"항상", "낮", "밤"}
     EVENT_REPLAY_POLICIES = {"once", "repeat"}
     EVENT_RESULT_TYPES = {"set_run_flag", "grant_item", "apply_choice"}
+    EVENT_CONDITION_TYPES = {
+        "always",
+        "run_flag",
+        "run_not_flag",
+        "current_biome",
+        "has_item",
+        "meta_flag",
+        "meta_not_flag",
+        "meta_run_count_at_least",
+        "meta_past_choice",
+        "meta_reached_place",
+        "meta_death_record",
+    }
     BOSS_TEA_CONDITION_TYPES = {"always", "prepared_tea", "run_flag", "run_not_flag", "current_biome", "has_item"}
     BOSS_TEA_HOOK_GROUPS = {"common", "peaceful_tea_ceremony", "mixed", "combat_started"}
     BOSS_TEA_HOOK_CHANNELS = {"memory", "weakness", "dialogue"}
@@ -684,6 +697,14 @@ class ExportPipeline:
                         raise ExportValidationError(
                             f"events item {event['id']} node {node_id} option {option_id}: results must be an array"
                         )
+                    conditions = option.get("conditions", [])
+                    self._validate_event_conditions(
+                        event["id"],
+                        node_id,
+                        option_id,
+                        conditions,
+                        stable_id,
+                    )
                     self._validate_event_results(event["id"], node_id, option_id, results, item_ids, items_available, choice_ids, choices_available, stable_id)
                 nodes_by_id[node_id] = node
 
@@ -699,6 +720,52 @@ class ExportPipeline:
                             f"events item {event['id']} node {node_id} option {option['id']}: next_node_id targets missing node {next_node_id}"
                         )
             self._validate_event_completion_paths(event["id"], start_node_id, nodes_by_id)
+
+    def _validate_event_conditions(
+        self,
+        event_id: str,
+        node_id: str,
+        option_id: str,
+        conditions: Any,
+        stable_id: re.Pattern[str],
+    ) -> None:
+        if not isinstance(conditions, list):
+            raise ExportValidationError(
+                f"events item {event_id} node {node_id} option {option_id}: conditions must be an array"
+            )
+        for condition_index, condition in enumerate(conditions):
+            if not isinstance(condition, dict):
+                raise ExportValidationError(
+                    f"events item {event_id} node {node_id} option {option_id}: conditions[{condition_index}] must be an object"
+                )
+            condition_type = condition.get("type")
+            if condition_type not in self.EVENT_CONDITION_TYPES:
+                raise ExportValidationError(
+                    f"events item {event_id} node {node_id} option {option_id}: unknown condition type {condition_type}"
+                )
+            if condition_type == "always":
+                allowed_fields = {"type"}
+            elif condition_type == "meta_run_count_at_least":
+                allowed_fields = {"type", "value"}
+            else:
+                allowed_fields = {"type", "id"}
+            unsupported_fields = set(condition) - allowed_fields
+            if unsupported_fields:
+                raise ExportValidationError(
+                    f"events item {event_id} node {node_id} option {option_id}: condition has unsupported field {sorted(unsupported_fields)[0]}"
+                )
+            if condition_type == "meta_run_count_at_least":
+                value = condition.get("value")
+                if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+                    raise ExportValidationError(
+                        f"events item {event_id} node {node_id} option {option_id}: meta_run_count_at_least value must be a non-negative integer"
+                    )
+            elif condition_type != "always":
+                condition_id = condition.get("id")
+                if not isinstance(condition_id, str) or not stable_id.fullmatch(condition_id):
+                    raise ExportValidationError(
+                        f"events item {event_id} node {node_id} option {option_id}: condition id must be stable"
+                    )
 
     def _validate_event_results(
         self,

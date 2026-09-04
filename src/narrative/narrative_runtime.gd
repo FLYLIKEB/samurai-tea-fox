@@ -10,6 +10,19 @@ const RESULT_SET_RUN_FLAG := "set_run_flag"
 const RESULT_GRANT_ITEM := "grant_item"
 const RESULT_APPLY_CHOICE := "apply_choice"
 const ALLOWED_RESULT_TYPES := [RESULT_SET_RUN_FLAG, RESULT_GRANT_ITEM, RESULT_APPLY_CHOICE]
+const ALLOWED_CONDITION_TYPES := [
+	"always",
+	"run_flag",
+	"run_not_flag",
+	"current_biome",
+	"has_item",
+	"meta_flag",
+	"meta_not_flag",
+	"meta_run_count_at_least",
+	"meta_past_choice",
+	"meta_reached_place",
+	"meta_death_record"
+]
 
 var event_definitions: Dictionary = {}
 var data_version := ""
@@ -223,15 +236,44 @@ func _options_from_node(row: Dictionary, raw_node: Dictionary, item_ids: Diction
 		var results_result := _validate_results(row, raw_node, option_id, results, item_ids, items_available, choice_ids, choices_available)
 		if not results_result.ok:
 			return results_result
+		var conditions = raw_option.get("conditions", [])
+		var conditions_result := _validate_conditions(row, raw_node, option_id, conditions)
+		if not conditions_result.ok:
+			return conditions_result
 		options.append({
 			"id": option_id,
 			"display_text": String(raw_option.get("display_text", "")),
-			"conditions": raw_option.get("conditions", []),
+			"conditions": conditions,
 			"results": results,
 			"next_node_id": String(raw_option.get("next_node_id", "")),
 			"completes_event": bool(raw_option.get("completes_event", false))
 		})
 	return {"ok": true, "options": options}
+
+func _validate_conditions(row: Dictionary, raw_node: Dictionary, option_id: String, conditions) -> Dictionary:
+	if typeof(conditions) != TYPE_ARRAY:
+		return _fail("invalid_conditions", "Narrative option '%s' conditions must be an array." % option_id)
+	for condition in conditions:
+		if typeof(condition) != TYPE_DICTIONARY:
+			return _fail("invalid_condition", "Narrative option '%s' contains a non-object condition." % option_id)
+		var condition_type := String(condition.get("type", ""))
+		if not ALLOWED_CONDITION_TYPES.has(condition_type):
+			return _fail("unknown_condition_type", "Narrative option '%s' has unknown condition type '%s'." % [option_id, condition_type])
+		var allowed_fields := ["type"]
+		if condition_type == "meta_run_count_at_least":
+			allowed_fields.append("value")
+		elif condition_type != "always":
+			allowed_fields.append("id")
+		for field in condition:
+			if not allowed_fields.has(String(field)):
+				return _fail("invalid_condition_field", "Narrative option '%s' condition '%s' has unsupported field '%s'." % [option_id, condition_type, field])
+		if condition_type == "meta_run_count_at_least":
+			var value = condition.get("value")
+			if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)) or float(value) != floor(float(value)) or int(value) < 0:
+				return _fail("invalid_meta_condition", "Narrative option '%s' meta_run_count_at_least requires a non-negative integer value." % option_id)
+		elif condition_type != "always" and (typeof(condition.get("id")) != TYPE_STRING or not _is_stable_id(String(condition.get("id", "")))):
+			return _fail("invalid_condition_id", "Narrative option '%s' condition '%s' requires a stable id." % [option_id, condition_type])
+	return {"ok": true}
 
 func _validate_results(row: Dictionary, raw_node: Dictionary, option_id: String, results: Array, item_ids: Dictionary, items_available: bool, choice_ids: Dictionary, choices_available: bool) -> Dictionary:
 	var choice_result_count := 0
