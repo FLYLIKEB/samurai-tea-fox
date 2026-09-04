@@ -8,9 +8,9 @@
 - 아이템·다구: 39개
 - 몬스터·요괴: 21개
 - 파일 경로 무결성 누락/깨짐: 0개
-- 전용 에셋 미해결: 11개
+- 전용 에셋 미해결: 8개
 - 사람 아트 검수 필요: 45개
-- 런타임 승인 매핑: 46개
+- 런타임 승인 매핑: 51개
 
 `missing_or_broken`/`path_integrity_missing_or_broken`은 현재 연결된 manifest asset ID와 PNG 파일 경로의 무결성 지표다. 전용 에셋 완료 지표가 아니며, 미검수 아이템 매핑은 `runtime_approved=false`로 런타임 조회에서 제외한다.
 
@@ -42,8 +42,8 @@
 | `item_5` | 침향 | 향 | dedicated_item_icon | True | False | `item_agarwood_icon` | `res://assets/sprites/items/agarwood_32x32.png` |  |
 | `metal_workbench` | 금속 가공대 | 도구 | kind_fallback_exception | False | True | `asset_assets_ui_icons_atlas_low_table_png` | `res://assets/ui/icons/atlas/low_table.png` | No item-specific exported image field exists; use the type fallback until art review creates a dedicated row. |
 | `mountain_iron_dagger` | 산철 단도 | 무기 | dedicated_item_icon | True | False | `item_mountain_iron_dagger_icon` | `res://assets/sprites/items/mountain_iron_dagger_32x32.png` |  |
-| `mountain_kiln` | 산중 가마 | 도구 | semantic_existing_asset | False | False | `asset_assets_sprites_objects_crafting_kiln_32x32_png` | `res://assets/sprites/objects/crafting/kiln_32x32.png` |  |
-| `mountain_wind_layered_clothes` | 산바람 겹옷 | 방어구 | kind_fallback_exception | False | True | `asset_assets_ui_icons_atlas_crate_png` | `res://assets/ui/icons/atlas/crate.png` | No item-specific exported image field exists; use the type fallback until art review creates a dedicated row. |
+| `mountain_kiln` | 산중 가마 | 도구 | dedicated_item_icon | True | False | `item_mountain_kiln_object_64` | `res://assets/sprites/objects/crafting/mountain_kiln_64x64.png` |  |
+| `mountain_wind_layered_clothes` | 산바람 겹옷 | 방어구 | dedicated_item_icon | True | False | `item_mountain_wind_layered_clothes_icon` | `res://assets/sprites/items/mountain_wind_layered_clothes_32x32.png` |  |
 | `old_incense_box` | 오래된 향합 | 다구 | dedicated_item_icon | True | False | `item_old_incense_box_icon` | `res://assets/sprites/items/old_incense_box_32x32.png` |  |
 | `old_wood` | 오래된 목재 | 재료 | dedicated_item_icon | True | False | `item_old_wood_icon` | `res://assets/sprites/items/old_wood_32x32.png` |  |
 | `oribe_green_glazed_bowl` | 오리베 녹유 찻사발 | 다구 | dedicated_item_icon | True | False | `item_oribe_green_glazed_bowl_icon` | `res://assets/sprites/items/oribe_green_glazed_bowl_32x32.png` |  |
@@ -51,16 +51,16 @@
 | `rare_wood` | 희귀 목재 | 재료 | dedicated_item_icon | True | False | `item_rare_wood_icon` | `res://assets/sprites/items/rare_wood_32x32.png` |  |
 | `repair_hammer` | 수선 망치 | 도구 | dedicated_item_icon | True | False | `item_repair_hammer_icon` | `res://assets/sprites/items/repair_hammer_32x32.png` |  |
 | `short_travel_sword` | 짧은 여행검 | 무기 | dedicated_item_icon | True | False | `item_short_travel_sword_icon` | `res://assets/sprites/items/short_travel_sword_32x32.png` |  |
-| `snow_bamboo_overcoat` | 설죽 덧옷 | 방어구 | kind_fallback_exception | False | True | `asset_assets_ui_icons_atlas_crate_png` | `res://assets/ui/icons/atlas/crate.png` | No item-specific exported image field exists; use the type fallback until art review creates a dedicated row. |
+| `snow_bamboo_overcoat` | 설죽 덧옷 | 방어구 | dedicated_item_icon | True | False | `item_snow_bamboo_overcoat_icon` | `res://assets/sprites/items/snow_bamboo_overcoat_32x32.png` |  |
 | `snowfield_mineral` | 설원 광물 | 재료 | dedicated_item_icon | True | False | `item_snowfield_mineral_icon` | `res://assets/sprites/items/snowfield_mineral_32x32.png` |  |
 | `stone` | 돌 | 재료 | dedicated_item_icon | True | False | `item_stone_icon` | `res://assets/sprites/items/stone_32x32.png` |  |
 | `stone_axe` | 돌도끼 | 도구 | semantic_existing_asset | False | False | `asset_assets_ui_icons_atlas_sword_png` | `res://assets/ui/icons/atlas/sword.png` |  |
-| `traveler_quilted_clothes` | 여행자의 누비옷 | 방어구 | kind_fallback_exception | False | True | `asset_assets_ui_icons_atlas_crate_png` | `res://assets/ui/icons/atlas/crate.png` | No item-specific exported image field exists; use the type fallback until art review creates a dedicated row. |
+| `traveler_quilted_clothes` | 여행자의 누비옷 | 방어구 | dedicated_item_icon | True | False | `item_traveler_quilted_clothes_icon` | `res://assets/sprites/items/traveler_quilted_clothes_32x32.png` |  |
 | `unbroken_failure` | 깨지지 않은 실패작 | 다구 | dedicated_item_icon | True | False | `item_unbroken_failure_icon` | `res://assets/sprites/items/unbroken_failure_32x32.png` |  |
 | `war_tea_caddy` | 전란의 차입 | 다구 | dedicated_item_icon | True | False | `item_war_tea_caddy_icon` | `res://assets/sprites/items/war_tea_caddy_32x32.png` |  |
 | `wood` | 목재 | 재료 | dedicated_item_icon | True | False | `item_wood_icon` | `res://assets/sprites/items/wood_32x32.png` |  |
 | `wood_incense_burner` | 목향 향로 | 다구 | dedicated_item_icon | True | False | `item_wood_incense_burner_icon` | `res://assets/sprites/items/wood_incense_burner_32x32.png` |  |
-| `wooden_workbench` | 목재 작업대 | 도구 | semantic_existing_asset | False | False | `asset_assets_sprites_objects_crafting_workbench_32x32_png` | `res://assets/sprites/objects/crafting/workbench_32x32.png` |  |
+| `wooden_workbench` | 목재 작업대 | 도구 | dedicated_item_icon | True | False | `item_wooden_workbench_object_64` | `res://assets/sprites/objects/crafting/wooden_workbench_64x64.png` |  |
 
 ## 몬스터·요괴
 
