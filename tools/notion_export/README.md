@@ -15,7 +15,7 @@ Notion은 편집 정본이며 Godot 런타임은 Notion API를 호출하지 않�
 
 ## Notion 동기화
 
-Notion integration token을 환경변수로 제공하고 11개 정본 DB를 한 번에 snapshot으로 만든다.
+Notion integration token을 환경변수로 제공하고 15개 런타임 정본 DB를 한 번에 snapshot으로 만든다. `art_assets`는 별도 제작 파이프라인용 계약이므로 런타임 `sync`에서는 제외한다.
 
 ```bash
 NOTION_ACCESS_TOKEN=... python3 -m tools.notion_export sync \

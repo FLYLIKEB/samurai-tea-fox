@@ -134,6 +134,7 @@ class ProjectContractTests(unittest.TestCase):
         export_schema = json.loads(
             (ROOT / "data/schemas/export_schema.json").read_text(encoding="utf-8")
         )
+        self.assertFalse(export_schema["datasets"]["art_assets"]["runtime"])
         for dataset, file_name in catalog_entries.items():
             generated = json.loads(
                 (ROOT / "data/generated" / file_name).read_text(encoding="utf-8")

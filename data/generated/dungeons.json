@@ -1,6 +1,6 @@
 {
-  "content_hash": "d46a5fb2ec6da3255e928260d819d5263c791d57df14acb79a33052f247dcd21",
-  "data_version": "notion-2026-09-01",
+  "content_hash": "399b7ab1fdfd63bbf566bffaaf3eec608096e2d8bf937e297402384efa29a5a5",
+  "data_version": "notion-2026-09-04",
   "items": [
     {
       "base_attack": 20,
@@ -11,8 +11,8 @@
       "boss": "다이묘",
       "boss_hp": 850,
       "choice_ids": [
-        "daimyo_relinquish_tea",
-        "daimyo_defeat"
+        "daimyo_defeat",
+        "daimyo_relinquish_tea"
       ],
       "core_gimmick": "명물 다기와 충성 의식이 전투 패턴과 연결된다. 전장 잔해 사이에서 권력의 상징물을 파괴하거나 보존할 수 있다.",
       "id": "dungeon_1",
@@ -26,9 +26,38 @@
         "전투",
         "다도"
       ],
-      "reward": "전란의 차입, 오래된 향합, 텔레포트 수리, 현재 런 휴대 탐험 도구 제작 확장",
+      "reward": "전란의 차입, 텔레포트 수리, 현재 런 휴대 탐험 도구 제작 확장",
       "reward_item_ids": [
-        "war_tea_caddy",
+        "war_tea_caddy"
+      ],
+      "status": "확정"
+    },
+    {
+      "base_attack": 28,
+      "biome": "열대우림",
+      "biome_ids": [
+        "rainforest"
+      ],
+      "boss": "요괴 다인",
+      "boss_hp": 1300,
+      "choice_ids": [
+        "yokai_defeat",
+        "yokai_share_memory"
+      ],
+      "core_gimmick": "복잡하게 갈라지는 강과 숲길, 향 연기를 이용한 시야 변화. 보스와의 대화 비중이 크다.",
+      "id": "dungeon_3",
+      "layout": "차나무·향목·습지가 침식한 오래된 목조 사당",
+      "name": "향목의 고대 사당",
+      "notion_id": "3cd37369-9e66-818f-97e5-c1568c45558f",
+      "pattern_count": 7,
+      "peaceful_resolution": true,
+      "phase_count": 3,
+      "resolution_types": [
+        "전투",
+        "다도"
+      ],
+      "reward": "오래된 향합, 텔레포트 수리, 현재 런 향·후반 다구 제작 확장",
+      "reward_item_ids": [
         "old_incense_box"
       ],
       "status": "확정"
@@ -41,6 +70,10 @@
       ],
       "boss": "후루타 오리베",
       "boss_hp": 450,
+      "choice_ids": [
+        "oribe_defeat",
+        "oribe_share_tea"
+      ],
       "core_gimmick": "비대칭 구조와 일부러 어긋난 동선. 전투 전 차를 마실 수 있고 선택에 따라 대화가 달라진다.",
       "id": "dungeon_4",
       "layout": "온대 마을 외곽의 목조 다실·저택형 던전",
@@ -53,34 +86,96 @@
         "전투",
         "다도"
       ],
-      "reward": "오리베의 찻사발, 깨지지 않은 실패작, 재 묻은 철솥, 텔레포트 수리, 현재 런 기초 제작 확장",
+      "reward": "오리베의 찻사발, 텔레포트 수리, 현재 런 기초 제작 확장",
       "reward_item_ids": [
-        "oribe_green_glazed_bowl",
-        "unbroken_failure",
+        "oribe_green_glazed_bowl"
+      ],
+      "status": "확정"
+    },
+    {
+      "base_attack": 24,
+      "biome": "설원",
+      "biome_ids": [
+        "snowfield"
+      ],
+      "boss": "승려",
+      "boss_hp": 1050,
+      "choice_ids": [
+        "monk_defeat",
+        "monk_reaccept_feeling"
+      ],
+      "core_gimmick": "밤과 한기가 心 관리와 맞물린다. 지나친 ‘비움’을 상징하는 비어 있는 방들이 이어진다.",
+      "id": "dungeon_5",
+      "layout": "얼어붙은 산사와 고요한 다실이 이어지는 사찰형 던전",
+      "name": "설원의 사찰",
+      "notion_id": "3cd37369-9e66-81d9-9b55-f661d68d3fe6",
+      "pattern_count": 6,
+      "peaceful_resolution": true,
+      "phase_count": 3,
+      "resolution_types": [
+        "전투",
+        "다도"
+      ],
+      "reward": "재 묻은 철솥, 텔레포트 수리, 현재 런 보온·설원 다구 제작 확장",
+      "reward_item_ids": [
         "ash_stained_iron_kettle"
       ],
       "status": "확정"
     },
     {
-      "base_attack": 18,
-      "biome": "백국",
+      "base_attack": 16,
+      "biome": "산악",
       "biome_ids": [
-        "baekguk"
+        "mountain_region"
       ],
-      "boss": "센리큐",
-      "boss_hp": 240,
-      "core_gimmick": "다실 arena 전환 후 검 공격·회피·요술로 센리큐의 체력을 0까지 낮춘다.",
-      "id": "final_tea_room",
-      "layout": "최종 다실이 전장으로 전환되는 단일 arena",
-      "name": "최종 다실",
-      "pattern_count": 4,
-      "peaceful_resolution": false,
+      "boss": "도공",
+      "boss_hp": 650,
+      "choice_ids": [
+        "potter_defeat",
+        "potter_save_work"
+      ],
+      "core_gimmick": "가마의 열기와 좁은 공방 동선. 완벽하지 않은 찻사발을 파괴하는 보스의 행동이 환경 기믹으로 나타난다.",
+      "id": "dungeon_6",
+      "layout": "광산과 가마 공방이 이어진 산중 제작소",
+      "name": "산중 가마",
+      "notion_id": "3cd37369-9e66-81e7-accd-e42d70a5413f",
+      "pattern_count": 5,
+      "peaceful_resolution": true,
       "phase_count": 2,
       "resolution_types": [
-        "전투"
+        "전투",
+        "다도"
       ],
-      "reward": "Phase 3 전환",
-      "reward_item_ids": [],
+      "reward": "도공의 실패작, 텔레포트 수리, 현재 런 금속·상위 다구 제작 확장",
+      "reward_item_ids": [
+        "unbroken_failure"
+      ],
+      "status": "확정"
+    },
+    {
+      "base_attack": 32,
+      "biome": "최종",
+      "boss": "센리큐",
+      "boss_hp": 1800,
+      "choice_ids": [
+        "rikyu_accept_control",
+        "rikyu_refuse_control",
+        "rikyu_share_final_cup"
+      ],
+      "core_gimmick": "1페이즈 다도 대화 → 2페이즈 검술 → 3페이즈 지금까지의 선택과 배운 철학이 전투에 반영된다.",
+      "id": "final_tea_room",
+      "layout": "모든 바이옴을 지난 뒤 도달하는 센리큐의 다실",
+      "name": "마지막 다실",
+      "notion_id": "3cd37369-9e66-817e-b42f-da6f7527c55d",
+      "pattern_count": 9,
+      "peaceful_resolution": true,
+      "phase_count": 3,
+      "resolution_types": [
+        "전투",
+        "다도",
+        "혼합"
+      ],
+      "reward": "엔딩·최종 다실 DB의 조건에 따라 루프 유지·부분 해제·완전 해제로 분기",
       "status": "확정"
     }
   ],

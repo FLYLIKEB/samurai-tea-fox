@@ -1,7 +1,24 @@
 {
-  "content_hash": "6756a09e3c3cc922d85a07c018f2f2578e395b74fb4997c09e7031a0ccaae75c",
-  "data_version": "notion-2026-09-01",
+  "content_hash": "b945e2f8d3fb7fbd44af5623b569945de6741bfaa28696eaca42681239dab930",
+  "data_version": "notion-2026-09-04",
   "items": [
+    {
+      "choice_key": "DAIMYO_DEFEAT",
+      "display_text": "명물과 충성의 질서를 전투로 무너뜨린다.",
+      "final_room_effect": "봉인이 갈라진 차입과 자원 압박형 Phase 3 효과가 나타난다.",
+      "id": "daimyo_defeat",
+      "meta_record": true,
+      "name": "다이묘의 권력을 검으로 해체한다",
+      "notion_id": "3ce37369-9e66-818e-93d0-c970a653c6cf",
+      "philosophy_marks": [
+        "清·절제",
+        "요괴성·힘"
+      ],
+      "resolution": "전투",
+      "run_flag": "daimyo_defeated",
+      "status": "확정",
+      "target_survives": true
+    },
     {
       "choice_key": "DAIMYO_RELINQUISH_TEA",
       "display_text": "명물 다구를 권력의 표식이 아니라 나누는 도구로 되돌린다.",
@@ -20,19 +37,189 @@
       "target_survives": true
     },
     {
-      "choice_key": "DAIMYO_DEFEAT",
-      "display_text": "명물과 충성의 질서를 전투로 무너뜨린다.",
-      "final_room_effect": "봉인이 갈라진 차입과 자원 압박형 Phase 3 효과가 나타난다.",
-      "id": "daimyo_defeat",
+      "choice_key": "MONK_DEFEAT",
+      "display_text": "감정을 지우는 수행을 검으로 멈춘다.",
+      "final_room_effect": "차가운 재와 心 소모 압박형 Phase 3 효과가 나타난다.",
+      "id": "monk_defeat",
       "meta_record": true,
-      "name": "다이묘의 권력을 검으로 해체한다",
-      "notion_id": "3ce37369-9e66-818e-93d0-c970a653c6cf",
+      "name": "승려의 침묵을 깨고 제압한다",
+      "notion_id": "3ce37369-9e66-8152-b406-f32d00a43525",
       "philosophy_marks": [
         "清·절제",
         "요괴성·힘"
       ],
       "resolution": "전투",
-      "run_flag": "daimyo_defeated",
+      "run_flag": "monk_defeated",
+      "status": "확정",
+      "target_survives": true
+    },
+    {
+      "choice_key": "MONK_REACCEPT_FEELING",
+      "display_text": "비움 속에 관계와 감정이 머물 자리도 있음을 보여준다.",
+      "final_room_effect": "재 묻은 철솥에서 따뜻한 김이 오르고 心 완화 효과가 생긴다.",
+      "id": "monk_reaccept_feeling",
+      "meta_record": true,
+      "name": "승려가 감정을 다시 받아들이게 한다",
+      "notion_id": "3ce37369-9e66-81f9-b1d5-c24e50cd4a63",
+      "philosophy_marks": [
+        "敬·마주봄",
+        "寂·여백"
+      ],
+      "resolution": "다도",
+      "run_flag": "monk_reaccepted_feeling",
+      "status": "확정",
+      "target_survives": true
+    },
+    {
+      "choice_key": "ORIBE_DEFEAT",
+      "display_text": "불완전함을 인정하지 않은 채 검으로 승부를 끝낸다.",
+      "final_room_effect": "찻사발의 균열이 벌어지고 공격형 Phase 3 효과가 등장한다.",
+      "id": "oribe_defeat",
+      "meta_record": true,
+      "name": "오리베를 검으로 꺾는다",
+      "notion_id": "3ce37369-9e66-816a-bcac-ff2eaa0aa713",
+      "philosophy_marks": [
+        "敬·마주봄",
+        "요괴성·힘"
+      ],
+      "resolution": "전투",
+      "run_flag": "oribe_defeated",
+      "status": "확정",
+      "target_survives": true
+    },
+    {
+      "choice_key": "ORIBE_SHARE_TEA",
+      "display_text": "금 간 찻사발을 그대로 두고 한 잔을 함께 마신다.",
+      "final_room_effect": "수선 자국이 남은 오리베 찻사발과 완화형 Phase 3 효과가 등장한다.",
+      "id": "oribe_share_tea",
+      "meta_record": true,
+      "name": "오리베와 차를 함께 마신다",
+      "notion_id": "3ce37369-9e66-812b-8a4f-e7422d04eadf",
+      "philosophy_marks": [
+        "和·공존",
+        "불완전함·수선"
+      ],
+      "resolution": "다도",
+      "run_flag": "oribe_shared_tea",
+      "status": "확정",
+      "target_survives": true
+    },
+    {
+      "choice_key": "POTTER_DEFEAT",
+      "display_text": "파괴의 반복을 검으로 끊고 도공을 제압한다.",
+      "final_room_effect": "불이 꺼진 가마 조각과 강공형 Phase 3 효과가 나타난다.",
+      "id": "potter_defeat",
+      "meta_record": true,
+      "name": "도공의 가마를 멈추고 제압한다",
+      "notion_id": "3ce37369-9e66-81c9-9ee7-d42c2aef49e3",
+      "philosophy_marks": [
+        "清·절제",
+        "요괴성·힘"
+      ],
+      "resolution": "전투",
+      "run_flag": "potter_defeated",
+      "status": "확정",
+      "target_survives": true
+    },
+    {
+      "choice_key": "POTTER_SAVE_WORK",
+      "display_text": "깨진 작품을 버리지 않고 실패의 흔적과 함께 남긴다.",
+      "final_room_effect": "깨지지 않은 실패작이 수선된 차호로 놓이고 우리기 보조 효과가 생긴다.",
+      "id": "potter_save_work",
+      "meta_record": true,
+      "name": "도공의 실패작을 보존한다",
+      "notion_id": "3ce37369-9e66-813c-9045-c450bea44a7e",
+      "philosophy_marks": [
+        "불완전함·수선",
+        "和·공존"
+      ],
+      "resolution": "다도",
+      "run_flag": "potter_saved_work",
+      "status": "확정",
+      "target_survives": true
+    },
+    {
+      "choice_key": "RIKYU_ACCEPT_CONTROL",
+      "display_text": "완벽하게 정돈된 한 잔과 반복의 질서를 받아들인다.",
+      "final_room_effect": "다실은 완벽히 닫히며 루프가 유지된다.",
+      "id": "rikyu_accept_control",
+      "meta_record": true,
+      "name": "센리큐의 통제를 받아들인다",
+      "notion_id": "3ce37369-9e66-81a0-8f4b-c7a9d6bc6fe8",
+      "philosophy_marks": [
+        "통제"
+      ],
+      "resolution": "기타",
+      "run_flag": "rikyu_accept_control",
+      "status": "확정",
+      "target_survives": true
+    },
+    {
+      "choice_key": "RIKYU_REFUSE_CONTROL",
+      "display_text": "정답을 강요하는 다실을 검과 요술로 깨뜨린다.",
+      "final_room_effect": "다실은 깨지지만 반복의 근원은 일부 남는다.",
+      "id": "rikyu_refuse_control",
+      "meta_record": true,
+      "name": "센리큐의 통제를 거절하고 싸운다",
+      "notion_id": "3ce37369-9e66-810a-9a1a-dbed51ec8750",
+      "philosophy_marks": [
+        "敬·마주봄",
+        "요괴성·힘"
+      ],
+      "resolution": "전투",
+      "run_flag": "rikyu_refuse_control",
+      "status": "확정",
+      "target_survives": true
+    },
+    {
+      "choice_key": "RIKYU_SHARE_FINAL_CUP",
+      "display_text": "센리큐를 쓰러뜨리는 대신 불완전한 마지막 한 잔을 함께 마신다.",
+      "final_room_effect": "모든 수선 흔적이 드러나며 반복이 완전히 풀릴 수 있다.",
+      "id": "rikyu_share_final_cup",
+      "meta_record": true,
+      "name": "센리큐와 마지막 잔을 함께 나눈다",
+      "notion_id": "3ce37369-9e66-81ec-bfd8-e182f16f1012",
+      "philosophy_marks": [
+        "和·공존",
+        "寂·여백",
+        "불완전함·수선"
+      ],
+      "resolution": "다도",
+      "run_flag": "rikyu_share_final_cup",
+      "status": "확정",
+      "target_survives": true
+    },
+    {
+      "choice_key": "YOKAI_DEFEAT",
+      "display_text": "진실을 얻기 위해 요괴 다인을 힘으로 제압한다.",
+      "final_room_effect": "향합이 닫힌 채 놓이고 기억 교란형 Phase 3 효과가 나타난다.",
+      "id": "yokai_defeat",
+      "meta_record": true,
+      "name": "요괴 다인의 기억을 빼앗아 길을 연다",
+      "notion_id": "3ce37369-9e66-81bb-ab60-cd972f081ba8",
+      "philosophy_marks": [
+        "요괴성·힘",
+        "통제"
+      ],
+      "resolution": "전투",
+      "run_flag": "yokai_defeated",
+      "status": "확정",
+      "target_survives": true
+    },
+    {
+      "choice_key": "YOKAI_SHARE_MEMORY",
+      "display_text": "센리큐의 과거와 오래된 숲의 기억을 함께 받아들인다.",
+      "final_room_effect": "오래된 향합이 열리고 기억 컷신과 회복형 Phase 3 효과가 나타난다.",
+      "id": "yokai_share_memory",
+      "meta_record": true,
+      "name": "요괴 다인과 기억을 함께 나눈다",
+      "notion_id": "3ce37369-9e66-814b-a791-d68dc54b0d66",
+      "philosophy_marks": [
+        "和·공존",
+        "寂·여백"
+      ],
+      "resolution": "다도",
+      "run_flag": "yokai_shared_memory",
       "status": "확정",
       "target_survives": true
     }

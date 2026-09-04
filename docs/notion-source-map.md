@@ -33,9 +33,11 @@
 | `data/generated/choices.json` | `collection://943e27c2-91e1-40ec-a5e9-30ef62737a40` | `선택·결과` |
 | `data/generated/characters.json` | `collection://86d9c16b-e60e-4434-9c84-26b4b00d16c8` | `캐릭터 목록` |
 | `data/generated/shops.json` | `collection://3f6354ff-02fb-4b92-9b81-9f821ae6408b` | `상점·거래` |
-| `data/generated/bosses.json` | `collection://cd97553c-f51f-44fe-9604-c257cc9d9342` | `던전·보스전` |
+| `data/generated/bosses.json` | `collection://7bd9f233-5ff4-40aa-ad2a-08d146ea1475` | `런타임 보스 정의` |
 
-`events.json`은 루트 정본의 대사 작업대가 관리하는 `🎬 인게임 대사 스크립트` DB에서 런타임 이벤트 객체를 추적한다. 개별 스토리 사건의 상위 기획 책임은 `스토리·퀘스트` DB가 소유한다.
+`events.json`은 루트 정본의 대사 작업대가 관리하는 `🎬 인게임 대사 스크립트` DB의 런타임 이벤트 ID별 대사 행을 노드·선택지 객체로 묶어 생성한다. 상태가 `검토 필요`인 비런타임 대사 묶음만 명시적으로 제외하며, 그 밖의 행에 런타임 이벤트 ID가 없으면 export를 실패시킨다. 개별 스토리 사건의 상위 기획 책임은 `스토리·퀘스트` DB가 소유한다.
+
+`bosses.json`은 `런타임 보스 정의` DB의 검증된 `정의 JSON`을 사용한다. `던전·보스전` DB는 던전별 보스 이름·HP·페이즈 수 같은 상위 설계를 소유하고, 런타임 패턴·소환·다도 해결 구조는 보스 정의 DB가 소유한다.
 
 ## 보조 출처와 에셋 경계
 

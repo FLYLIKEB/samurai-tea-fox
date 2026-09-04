@@ -1,91 +1,261 @@
 {
-  "content_hash": "6b1b69f3e91ea2f46941bd7c3cb2d53a3fb0ac47ac215477898fd42ed047bd4c",
-  "data_version": "notion-2026-09-01",
+  "content_hash": "b44646c65fca8a73ef29d0e908991986c7eb3387626b4bdb5f506919b1e28e9f",
+  "data_version": "notion-2026-09-04",
   "items": [
     {
-      "behavior_note": "동굴 입구와 좁은 통로를 지키며 막기와 찌르기를 반복한다.",
+      "attack": 16,
+      "attack_period_seconds": 2.1,
+      "behavior_note": "동굴 입구와 좁은 통로를 지키며 막기와 찌르기를 반복한다. 넓은 전장보다 위치 선정이 중요하다.",
+      "behavior_type": "방어",
       "biome": "산악",
+      "biome_ids": [
+        "mountain_region"
+      ],
       "danger": 3,
       "day_night": "둘 다",
+      "hp": 130,
       "id": "abandoned_mine_samurai",
       "kind": "도적·무사",
+      "movement_speed": 1.3,
       "name": "폐광 무사",
-      "status": "초안"
+      "notion_id": "3cd37369-9e66-816f-b113-c9b0ca70774f",
+      "stagger_resistance": 0.45,
+      "status": "테스트"
     },
     {
-      "behavior_note": "희귀 목재와 향목 주변을 순찰한다.",
+      "attack": 22,
+      "attack_period_seconds": 1.7,
+      "behavior_note": "희귀 목재와 향목 주변을 순찰하며 플레이어가 채집할 때 공격한다. 전투보다 자원 접근 경로를 통제하는 적.",
+      "behavior_type": "근접",
       "biome": "열대우림",
+      "biome_ids": [
+        "rainforest"
+      ],
       "danger": 4,
       "day_night": "둘 다",
+      "hp": 130,
       "id": "agarwood_thief",
       "kind": "도적·무사",
+      "movement_speed": 1.8,
       "name": "향목 도둑",
-      "status": "초안"
+      "notion_id": "3cd37369-9e66-81f6-8ab3-dc132294a3be",
+      "stagger_resistance": 0.25,
+      "status": "테스트"
     },
     {
       "attack": 15,
       "attack_period_seconds": 1.5,
-      "behavior_note": "짧게 시야를 가리고 다른 적 주변으로 흩어진다.",
+      "behavior_note": "직접 큰 피해를 주기보다 짧게 시야를 가리고 다른 적 주변으로 흩어진다. 별도 상태 게이지는 만들지 않는다.",
       "behavior_type": "방해",
       "biome": "황무지",
+      "biome_ids": [
+        "wasteland"
+      ],
       "danger": 3,
-      "day_night": "낮",
+      "day_night": "둘 다",
       "hp": 75,
       "id": "ash_crow_flock",
       "kind": "야생동물",
       "movement_speed": 2.7,
       "name": "잿빛 까마귀떼",
+      "notion_id": "3cd37369-9e66-81c1-9278-f133a8be1407",
       "stagger_resistance": 0,
       "status": "테스트"
     },
     {
-      "behavior_note": "느리지만 정면 공격을 잘 버틴다.",
+      "attack": 20,
+      "attack_period_seconds": 2.4,
+      "behavior_note": "느리지만 정면 공격을 잘 버틴다. 몇 차례 공격 후 갑주 틈이 벌어지는 단순한 약점 창이 생긴다.",
+      "behavior_type": "방어",
       "biome": "황무지",
+      "biome_ids": [
+        "wasteland"
+      ],
       "danger": 4,
-      "day_night": "밤",
+      "day_night": "둘 다",
+      "hp": 180,
       "id": "empty_armor_yokai",
       "kind": "요괴",
+      "movement_speed": 0.9,
       "name": "빈 갑주 요괴",
-      "status": "초안"
+      "notion_id": "3cd37369-9e66-81fc-a8a2-d77acbb7dfe2",
+      "stagger_resistance": 0.75,
+      "status": "테스트"
     },
     {
-      "behavior_note": "가까이 오면 한 번 사라져 옆으로 이동한다.",
+      "attack": 9,
+      "attack_period_seconds": 2,
+      "behavior_note": "가까이 오면 한 번 사라져 옆으로 이동한다. 밤의 요괴 출현 증가를 처음 체감시키는 적.",
+      "behavior_type": "원거리",
       "biome": "일반",
+      "biome_ids": [
+        "common_region"
+      ],
       "danger": 2,
       "day_night": "밤",
+      "hp": 40,
       "id": "foxfire",
       "kind": "요괴",
+      "movement_speed": 1.8,
       "name": "여우불",
-      "status": "초안"
+      "notion_id": "3cd37369-9e66-812e-a2e7-dc6477edf80b",
+      "stagger_resistance": 0,
+      "status": "테스트"
     },
     {
-      "behavior_note": "얼어붙은 강과 좁은 길 쪽으로 유도한다.",
+      "attack": 18,
+      "attack_period_seconds": 2.2,
+      "behavior_note": "빛으로 얼어붙은 강과 좁은 길 쪽으로 유도한 뒤 짧은 범위 공격을 쓴다. 추위 게이지 없이 지형으로 설원의 위험을 표현.",
+      "behavior_type": "원거리",
+      "biome": "설원",
+      "biome_ids": [
+        "snowfield"
+      ],
+      "danger": 4,
+      "day_night": "밤",
+      "hp": 85,
+      "id": "frost_lantern_yokai",
+      "kind": "요괴",
+      "movement_speed": 1.5,
+      "name": "서리등불 요괴",
+      "notion_id": "3cd37369-9e66-81c6-aa49-f6dab7d4d31c",
+      "stagger_resistance": 0.05,
+      "status": "테스트"
+    },
+    {
+      "attack": 12,
+      "attack_period_seconds": 2.2,
+      "behavior_note": "짧게 땅을 긁은 뒤 직선 돌진한다. 벽에 부딪히면 잠시 경직된다.",
+      "behavior_type": "돌진",
+      "biome": "일반",
+      "danger": 2,
+      "day_night": "낮",
+      "hp": 90,
+      "id": "monster_16",
+      "kind": "야생동물",
+      "movement_speed": 1.8,
+      "name": "논두렁 멧돼지",
+      "notion_id": "3ce37369-9e66-81b1-b4c9-dc05c96309d5",
+      "stagger_resistance": 0.35,
+      "status": "테스트"
+    },
+    {
+      "attack": 13,
+      "attack_period_seconds": 1.8,
+      "behavior_note": "원형으로 선회한 뒤 그림자 표시를 남기고 급강하한다.",
+      "behavior_type": "돌진",
+      "biome": "산악",
+      "danger": 3,
+      "day_night": "낮",
+      "hp": 70,
+      "id": "monster_17",
+      "kind": "야생동물",
+      "movement_speed": 2.6,
+      "name": "절벽 독수리",
+      "notion_id": "3ce37369-9e66-81d3-a633-c30c932157c2",
+      "stagger_resistance": 0.1,
+      "status": "테스트"
+    },
+    {
+      "attack": 18,
+      "attack_period_seconds": 2,
+      "behavior_note": "정면 방어 후 느린 횡베기. 등과 옆은 방어가 약하다.",
+      "behavior_type": "방어",
+      "biome": "황무지",
+      "danger": 4,
+      "day_night": "둘 다",
+      "hp": 140,
+      "id": "monster_18",
+      "kind": "도적·무사",
+      "movement_speed": 1.3,
+      "name": "모래갑옷 무사",
+      "notion_id": "3ce37369-9e66-81f3-a83d-fe6aceb4933c",
+      "stagger_resistance": 0.5,
+      "status": "테스트"
+    },
+    {
+      "attack": 17,
+      "attack_period_seconds": 1.6,
+      "behavior_note": "거리를 벌리며 작은 투척물을 두 번 던지고 위치를 바꾼다.",
+      "behavior_type": "원거리",
+      "biome": "황무지",
+      "danger": 3,
+      "day_night": "낮",
+      "hp": 95,
+      "id": "monster_19",
+      "kind": "도적·무사",
+      "movement_speed": 2,
+      "name": "바람굶주린 도적",
+      "notion_id": "3ce37369-9e66-8170-ad8d-e7977ba88b9e",
+      "stagger_resistance": 0.2,
+      "status": "테스트"
+    },
+    {
+      "attack": 16,
+      "attack_period_seconds": 1.4,
+      "behavior_note": "눈 속으로 숨었다가 다른 위치에서 튀어나오며 짧게 시선을 끈다.",
+      "behavior_type": "방해",
       "biome": "설원",
       "danger": 4,
       "day_night": "밤",
-      "id": "frost_lantern_yokai",
+      "hp": 70,
+      "id": "monster_20",
       "kind": "요괴",
-      "name": "서리등불 요괴",
-      "status": "초안"
+      "movement_speed": 2.8,
+      "name": "눈굴 토끼요괴",
+      "notion_id": "3ce37369-9e66-81fe-9721-cc6aace2e5c0",
+      "stagger_resistance": 0.05,
+      "status": "테스트"
     },
     {
-      "behavior_note": "오래된 나무처럼 멈춰 있고 가까이 오면 뿌리 범위 공격을 한다.",
+      "attack": 18,
+      "attack_period_seconds": 1.8,
+      "behavior_note": "주변 적에게 향가루를 뿌려 공격 주기를 잠시 줄이고, 혼자 남으면 도망친다.",
+      "behavior_type": "지원",
       "biome": "열대우림",
       "danger": 4,
       "day_night": "밤",
-      "id": "moss_tree_yokai",
+      "hp": 80,
+      "id": "monster_21",
       "kind": "요괴",
-      "name": "이끼쓴 나무요괴",
-      "status": "초안"
+      "movement_speed": 2.4,
+      "name": "향먹는 나방",
+      "notion_id": "3ce37369-9e66-8173-ae91-f6611657f923",
+      "stagger_resistance": 0.05,
+      "status": "테스트"
     },
     {
-      "behavior_note": "좁은 산길에서 짧은 예고 후 돌진한다.",
+      "attack": 25,
+      "attack_period_seconds": 2.6,
+      "behavior_note": "평소에는 오래된 나무처럼 멈춰 있고 가까이 오면 뿌리 범위 공격을 한다. 움직임보다 기다림과 위치 읽기가 핵심.",
+      "behavior_type": "방어",
+      "biome": "열대우림",
+      "biome_ids": [
+        "rainforest"
+      ],
+      "danger": 5,
+      "day_night": "둘 다",
+      "hp": 200,
+      "id": "moss_tree_yokai",
+      "kind": "요괴",
+      "movement_speed": 0.8,
+      "name": "이끼쓴 나무요괴",
+      "notion_id": "3cd37369-9e66-8171-a0f7-c775f03fbecb",
+      "stagger_resistance": 0.7,
+      "status": "테스트"
+    },
+    {
+      "behavior_note": "좁은 산길에서 짧은 예고 후 돌진한다. 절벽 쪽으로 몰아붙이는 지형 압박형.",
       "biome": "산악",
+      "biome_ids": [
+        "mountain_region"
+      ],
       "danger": 2,
       "day_night": "둘 다",
       "id": "mountain_boar",
       "kind": "야생동물",
       "name": "산멧돼지",
+      "notion_id": "3cd37369-9e66-81f1-aa30-c45af975df08",
       "status": "초안"
     },
     {
@@ -94,6 +264,9 @@
       "behavior_note": "정면 압박보다 길목을 막고 한두 번 베고 물러난다. 여러 명이 동시에 몰리지 않도록 단순 패턴 유지.",
       "behavior_type": "근접",
       "biome": "일반",
+      "biome_ids": [
+        "common_region"
+      ],
       "danger": 1,
       "day_night": "둘 다",
       "hp": 70,
@@ -101,72 +274,127 @@
       "kind": "도적·무사",
       "movement_speed": 1.6,
       "name": "노상 도적",
+      "notion_id": "3cd37369-9e66-81c2-ae68-d4459084ce22",
       "stagger_resistance": 0.2,
       "status": "테스트"
     },
     {
-      "behavior_note": "눈더미 뒤에서 접근해 한 번 공격하고 다시 거리를 둔다.",
+      "attack": 22,
+      "attack_period_seconds": 1.9,
+      "behavior_note": "눈더미 뒤에서 짧게 접근해 한 번 공격하고 다시 거리를 둔다. 心이 낮은 밤샘 상황에서 압박이 커진다.",
+      "behavior_type": "근접",
       "biome": "설원",
+      "biome_ids": [
+        "snowfield"
+      ],
       "danger": 4,
       "day_night": "밤",
+      "hp": 100,
       "id": "snow_path_assassin",
       "kind": "도적·무사",
+      "movement_speed": 2,
       "name": "눈길 자객",
-      "status": "초안"
+      "notion_id": "3cd37369-9e66-8145-8523-f92cd001a4ed",
+      "stagger_resistance": 0.15,
+      "status": "테스트"
     },
     {
-      "behavior_note": "두세 마리가 넓게 퍼져 접근한다.",
+      "attack": 20,
+      "attack_period_seconds": 1.5,
+      "behavior_note": "두세 마리가 넓게 퍼져 접근한다. 플레이어를 오래 쫓기보다 짧게 협공하고 빠진다.",
+      "behavior_type": "돌진",
       "biome": "설원",
-      "danger": 3,
+      "biome_ids": [
+        "snowfield"
+      ],
+      "danger": 4,
       "day_night": "둘 다",
+      "hp": 120,
       "id": "snow_wolf",
       "kind": "야생동물",
+      "movement_speed": 2.3,
       "name": "설원 늑대",
-      "status": "초안"
+      "notion_id": "3cd37369-9e66-81ac-b68a-cbd85e971ab2",
+      "stagger_resistance": 0.25,
+      "status": "테스트"
     },
     {
-      "behavior_note": "바위처럼 멈춰 있다가 가까이 오면 깨어난다.",
+      "attack": 15,
+      "attack_period_seconds": 2.4,
+      "behavior_note": "바위처럼 멈춰 있다가 가까이 오면 깨어난다. 공격 후 다시 움직임을 멈춰 지형과 구분이 어려워진다.",
+      "behavior_type": "방어",
       "biome": "산악",
+      "biome_ids": [
+        "mountain_region"
+      ],
       "danger": 3,
-      "day_night": "밤",
+      "day_night": "둘 다",
+      "hp": 110,
       "id": "stonebound_yokai",
       "kind": "요괴",
+      "movement_speed": 1.1,
       "name": "돌붙이 요괴",
-      "status": "초안"
+      "notion_id": "3cd37369-9e66-8133-bbfa-f11c383eba0b",
+      "stagger_resistance": 0.6,
+      "status": "테스트"
     },
     {
-      "behavior_note": "물가와 풀숲에 숨어 있다가 짧게 튀어나온다.",
+      "attack": 20,
+      "attack_period_seconds": 1.6,
+      "behavior_note": "물가와 풀숲에 숨어 있다가 짧게 튀어나온다. 공격 후 오래 추격하지 않아 탐험 흐름을 끊지 않는다.",
+      "behavior_type": "돌진",
       "biome": "열대우림",
-      "danger": 3,
+      "biome_ids": [
+        "rainforest"
+      ],
+      "danger": 4,
       "day_night": "둘 다",
+      "hp": 90,
       "id": "swamp_snake",
       "kind": "야생동물",
+      "movement_speed": 2.2,
       "name": "습지 뱀",
-      "status": "초안"
+      "notion_id": "3cd37369-9e66-81e8-88f0-ed0fff17f938",
+      "stagger_resistance": 0.1,
+      "status": "테스트"
     },
     {
-      "behavior_note": "간격을 재다가 플레이어 공격 직후 빈틈을 노린다.",
+      "attack": 14,
+      "attack_period_seconds": 1.7,
+      "behavior_note": "먼저 달려들지 않고 간격을 재다가 플레이어 공격 직후 빈틈을 노린다. 전란기의 피로한 무사상을 반영.",
+      "behavior_type": "근접",
       "biome": "황무지",
-      "danger": 3,
+      "biome_ids": [
+        "wasteland"
+      ],
+      "danger": 2,
       "day_night": "둘 다",
+      "hp": 100,
       "id": "wandering_ronin",
       "kind": "도적·무사",
+      "movement_speed": 1.7,
       "name": "떠돌이 낭인",
-      "status": "초안"
+      "notion_id": "3cd37369-9e66-8179-8505-efc33eacac10",
+      "stagger_resistance": 0.25,
+      "status": "테스트"
     },
     {
       "attack": 8,
       "attack_period_seconds": 1.4,
-      "behavior_note": "짧게 거리를 두고 빙글 돌다가 직선으로 달려든다.",
+      "behavior_note": "짧게 거리를 두고 빙글 돌다가 직선으로 달려든다. 초반 회피와 기본 검 타이밍 학습용.",
       "behavior_type": "돌진",
       "biome": "일반",
+      "biome_ids": [
+        "common_region"
+      ],
       "danger": 1,
-      "day_night": "둘 다",
+      "day_night": "낮",
       "hp": 45,
       "id": "wild_dog",
       "kind": "야생동물",
       "movement_speed": 2.4,
       "name": "들개",
+      "notion_id": "3cd37369-9e66-81d7-a397-ca750faec1af",
       "stagger_resistance": 0.1,
       "status": "테스트"
     }

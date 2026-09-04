@@ -40,7 +40,10 @@
           "id": "wooden_workbench",
           "name": "목재 작업대 제작",
           "status": "확정",
+          "facility": "손제작",
+          "materials_note": "목재 1",
           "result_item_id": "wood",
+          "result_quantity": 1,
           "unlock_biome_id": "common_region"
         }
       ]

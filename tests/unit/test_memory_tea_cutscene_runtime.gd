@@ -31,8 +31,8 @@ func _assert_memory_tea_completion_starts_cutscene(asserts, catalog: DataCatalog
 	asserts.true_value(start.started, "memory tea start reports started")
 	asserts.equal(start.sequence.event_id, "memory_tea_father_spring_pan_fired_tea", "memory event id is resolved from tea data")
 	asserts.equal(start.sequence.tea_id, "father_spring_pan_fired_tea", "sequence carries memory tea id")
-	asserts.equal(start.sequence.memory_strength, 24, "sequence carries memory strength")
-	asserts.true_value(String(start.sequence.memory_evidence).contains("백국 구미호"), "sequence carries memory evidence")
+	asserts.equal(start.sequence.memory_strength, 90, "sequence carries canonical memory strength")
+	asserts.true_value(String(start.sequence.memory_evidence).contains("중국 저장성"), "sequence carries canonical origin evidence")
 	asserts.true_value(start.sequence.frames.size() >= 3, "sequence exposes short pixel cutscene frames")
 	var finished := runtime.complete_current(run_state, meta_state)
 	asserts.true_value(finished.ok, "memory cutscene completes")
@@ -41,8 +41,8 @@ func _assert_memory_tea_completion_starts_cutscene(asserts, catalog: DataCatalog
 	asserts.equal(run_state.narrative_event_counts.memory_tea_father_spring_pan_fired_tea, 1, "run event count records memory event once")
 	asserts.equal(meta_state.discovered_records, ["memory_tea", "memory_tea_father_spring_pan_fired_tea"], "meta record hook records aggregate and specific memory")
 	asserts.equal(finished.meta_events[0].type, "discovery", "finish emits meta discovery hook event")
-	asserts.equal(finished.meta_events[0].memory_strength, 24, "meta event carries strength")
-	asserts.true_value(String(finished.meta_events[0].memory_evidence).contains("백국 구미호"), "meta event carries evidence")
+	asserts.equal(finished.meta_events[0].memory_strength, 90, "meta event carries canonical strength")
+	asserts.true_value(String(finished.meta_events[0].memory_evidence).contains("중국 저장성"), "meta event carries canonical evidence")
 
 func _assert_regular_tea_does_not_start_cutscene(asserts, catalog: DataCatalog) -> void:
 	var fixture := _tea_completion(asserts, catalog, "tea_8")
@@ -113,7 +113,7 @@ func _assert_main_routes_memory_tea_completion(asserts, catalog: DataCatalog) ->
 	asserts.true_value(services.ok, "main configures memory tea runtime")
 	asserts.true_value(runtime.inventory.add_item("father_spring_pan_fired_tea", 1).ok, "main fixture stocks memory tea")
 	asserts.true_value(runtime.inventory.add_item("humble_clay_bowl", 1).ok, "main fixture stocks vessel")
-	asserts.true_value(runtime.tea_service.brew("father_spring_pan_fired_tea", "humble_clay_bowl", runtime.inventory, 0).ok, "main fixture brews memory tea")
+	asserts.true_value(runtime.tea_service.brew("father_spring_pan_fired_tea", "humble_clay_bowl", runtime.inventory, 0, {"has_brewing_location": true}).ok, "main fixture brews memory tea")
 	asserts.true_value(runtime._handle_tea_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, 0, {"action": "drink_tea"})), "main tea command starts memory tea")
 	asserts.true_value(runtime.tick_tea_runtime(runtime.tea_service.drink_base_seconds).ok, "main advances memory tea through its fallback drinking time")
 	asserts.false_value(runtime.memory_tea_cutscene_runtime.active_sequence.is_empty(), "main starts memory cutscene from tea completion")
@@ -142,7 +142,7 @@ func _tea_completion(asserts, catalog: DataCatalog, tea_id: String) -> Dictionar
 	var inventory: InventoryModel = inventory_result.inventory
 	asserts.true_value(inventory.add_item(tea_id, 1).ok, "tea item can be added: %s" % tea_id)
 	asserts.true_value(inventory.add_item("humble_clay_bowl", 1).ok, "vessel can be added")
-	asserts.true_value(tea.brew(tea_id, "humble_clay_bowl", inventory, 0).ok, "tea brews: %s" % tea_id)
+	asserts.true_value(tea.brew(tea_id, "humble_clay_bowl", inventory, 0, {"has_brewing_location": true}).ok, "tea brews: %s" % tea_id)
 	var action: Dictionary = tea.start_drinking(0).action
 	var completion: Dictionary = tea.complete_drinking(action)
 	asserts.true_value(completion.ok, "tea completes: %s" % tea_id)
