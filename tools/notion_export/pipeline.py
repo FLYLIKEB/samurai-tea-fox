@@ -178,6 +178,9 @@ class ExportPipeline:
         return sorted(included, key=lambda item: item["id"])
 
     def _validate_row_contract(self, dataset_name: str, row: dict[str, Any]) -> None:
+        if dataset_name == "biomes":
+            self._validate_biome_contract(row)
+            return
         if dataset_name == "characters":
             self._validate_character_contract(row)
             return
@@ -354,6 +357,90 @@ class ExportPipeline:
             raise ExportValidationError(
                 f"teas item {tea_id}: {field} must be a positive integer"
             )
+
+    def _validate_biome_contract(self, row: dict[str, Any]) -> None:
+        if row.get("type") != "바이옴":
+            return
+        biome_id = row.get("id", "")
+        stable_id = re.compile(self.schema["stable_id_pattern"])
+        if row.get("generation_profile_id") != biome_id:
+            raise ExportValidationError(
+                f"biomes item {biome_id}: generation_profile_id must match biome id"
+            )
+        for field in (
+            "generation_terrain_ids",
+            "generation_chunk_rule_ids",
+            "generation_resource_item_ids",
+            "generation_walkability_rule_ids",
+        ):
+            self._validate_stable_id_array("biomes", biome_id, field, row.get(field))
+        for field in ("generation_facility_ids", "generation_facility_source_ids"):
+            value = row.get(field, [])
+            if value is None:
+                value = []
+            if not isinstance(value, list):
+                raise ExportValidationError(
+                    f"biomes item {biome_id}: {field} must be an array"
+                )
+            for entry in value:
+                if not isinstance(entry, str) or not stable_id.fullmatch(entry):
+                    raise ExportValidationError(
+                        f"biomes item {biome_id}: {field} must contain stable ids"
+                    )
+        facility_ids = row.get("generation_facility_ids", [])
+        facility_source_ids = row.get("generation_facility_source_ids", [])
+        if len(facility_ids) != len(facility_source_ids):
+            raise ExportValidationError(
+                f"biomes item {biome_id}: generation facility IDs and source IDs must align"
+            )
+        minimum = row.get("generation_minimum_facility_nodes")
+        if not isinstance(minimum, int) or isinstance(minimum, bool) or minimum < 0:
+            raise ExportValidationError(
+                f"biomes item {biome_id}: generation_minimum_facility_nodes must be a non-negative integer"
+            )
+        if minimum > len(facility_ids):
+            raise ExportValidationError(
+                f"biomes item {biome_id}: generation_minimum_facility_nodes exceeds facility IDs"
+            )
+        mapping = row.get("generation_resource_source_by_id", {})
+        if not isinstance(mapping, dict):
+            raise ExportValidationError(
+                f"biomes item {biome_id}: generation_resource_source_by_id must be an object"
+            )
+        resource_ids = set(row.get("generation_resource_item_ids", []))
+        for resource_id, source_id in mapping.items():
+            if resource_id not in resource_ids:
+                raise ExportValidationError(
+                    f"biomes item {biome_id}: generation_resource_source_by_id references unknown resource {resource_id}"
+                )
+            if not isinstance(source_id, str) or not stable_id.fullmatch(source_id):
+                raise ExportValidationError(
+                    f"biomes item {biome_id}: generation_resource_source_by_id must contain stable source ids"
+                )
+
+    def _validate_stable_id_array(
+        self,
+        dataset_name: str,
+        item_id: str,
+        field: str,
+        value: Any,
+    ) -> None:
+        if not isinstance(value, list) or not value:
+            raise ExportValidationError(
+                f"{dataset_name} item {item_id}: {field} must be a non-empty array"
+            )
+        stable_id = re.compile(self.schema["stable_id_pattern"])
+        seen: set[str] = set()
+        for entry in value:
+            if not isinstance(entry, str) or not stable_id.fullmatch(entry):
+                raise ExportValidationError(
+                    f"{dataset_name} item {item_id}: {field} must contain stable ids"
+                )
+            if entry in seen:
+                raise ExportValidationError(
+                    f"{dataset_name} item {item_id}: {field} contains duplicate id {entry}"
+                )
+            seen.add(entry)
 
     def _validate_character_contract(self, row: dict[str, Any]) -> None:
         character_id = row.get("character_id")
@@ -940,6 +1027,30 @@ def copy_json_value(value: Any) -> Any:
 
 def normalize_structured_fields(dataset_name: str, row: dict[str, Any]) -> dict[str, Any]:
     normalized = copy_json_value(row)
+    if dataset_name == "biomes":
+        for field in (
+            "generation_terrain_ids",
+            "generation_chunk_rule_ids",
+            "generation_facility_ids",
+            "generation_facility_source_ids",
+            "generation_resource_item_ids",
+            "generation_walkability_rule_ids",
+        ):
+            if field in normalized:
+                normalized[field] = _normalize_comma_list(normalized[field])
+        if "generation_resource_source_by_id" in normalized:
+            normalized["generation_resource_source_by_id"] = _normalize_mapping(
+                normalized["generation_resource_source_by_id"],
+                str(normalized.get("id", "")),
+                "generation_resource_source_by_id",
+            )
+        if "generation_minimum_facility_nodes" in normalized and isinstance(
+            normalized["generation_minimum_facility_nodes"], float
+        ):
+            value = normalized["generation_minimum_facility_nodes"]
+            if value.is_integer():
+                normalized["generation_minimum_facility_nodes"] = int(value)
+        return normalized
     if dataset_name == "teas" and "recovery_mode" in normalized:
         normalized["recovery_mode"] = {
             "즉시": "instant",
@@ -996,5 +1107,39 @@ def _normalize_attachment_description_keys(value: Any) -> Any:
     return value
 
 
+def _normalize_comma_list(value: Any) -> Any:
+    if isinstance(value, str):
+        return _split_comma_list(value)
+    if isinstance(value, list) and all(isinstance(part, str) for part in value):
+        return [part.strip() for part in value if part.strip()]
+    return value
+
+
+def _normalize_mapping(value: Any, item_id: str, field: str) -> Any:
+    if isinstance(value, dict):
+        return value
+    if not isinstance(value, str):
+        return value
+    mapping: dict[str, str] = {}
+    for part in _split_semicolon_list(value):
+        if "=" not in part:
+            raise ExportValidationError(
+                f"biomes item {item_id}: {field} entries must use resource_id=source_id"
+            )
+        key, raw_value = part.split("=", 1)
+        key = key.strip()
+        raw_value = raw_value.strip()
+        if not key or not raw_value:
+            raise ExportValidationError(
+                f"biomes item {item_id}: {field} entries must be non-empty"
+            )
+        mapping[key] = raw_value
+    return mapping
+
+
 def _split_comma_list(value: str) -> list[str]:
     return [part.strip() for part in value.split(",") if part.strip()]
+
+
+def _split_semicolon_list(value: str) -> list[str]:
+    return [part.strip() for part in value.split(";") if part.strip()]

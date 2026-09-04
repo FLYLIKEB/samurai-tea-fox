@@ -36,7 +36,7 @@
       "file": "biomes.json", "required_fields": ["id", "name", "status"],
       "notion": {
         "source": "collection://d4b40007-096f-4528-8840-53de80bda0dd", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "지역 ID", "id_prefix": "biome",
-        "field_map": {"종류": "type", "진행 순서": "progression_order", "난이도": "difficulty", "텔레포트": "teleport", "핵심 특징": "summary", "주요 지형": "terrain", "주요 자원": "resources", "주요 시설": "facilities", "핵심 던전 콘셉트": "core_dungeon_concept"}
+        "field_map": {"종류": "type", "진행 순서": "progression_order", "난이도": "difficulty", "텔레포트": "teleport", "핵심 특징": "summary", "주요 지형": "terrain", "주요 자원": "resources", "주요 시설": "facilities", "핵심 던전 콘셉트": "core_dungeon_concept", "생성 프로필 ID": "generation_profile_id", "생성 지형 ID": "generation_terrain_ids", "생성 청크 규칙 ID": "generation_chunk_rule_ids", "생성 시설 ID": "generation_facility_ids", "생성 시설 에셋 ID": "generation_facility_source_ids", "생성 자원 아이템 ID": "generation_resource_item_ids", "생성 자원 에셋 매핑": "generation_resource_source_by_id", "생성 통행 규칙 ID": "generation_walkability_rule_ids", "생성 최소 시설 수": "generation_minimum_facility_nodes"}
       }
     },
     "bosses": {
