@@ -51,7 +51,16 @@ func run() -> void:
 	await physics_frame
 	var player = main.get_node("Player")
 	var dummy = main.get_node("CombatDummy")
+	for _frame in 120:
+		if main.get_node_or_null("LoadingOverlay") == null and player.combat_state != null and dummy.combatant != null:
+			break
+		await process_frame
+		await physics_frame
 	dummy.automatic_attacks = false
+	dummy.visible = true
+	dummy.collision_layer = 2
+	dummy.collision_mask = 1
+	dummy.target = player
 
 	if player.combat_state == null or dummy.combatant == null:
 		failures.append("main scene configures player and dummy combat from generated data")
@@ -66,6 +75,13 @@ func run() -> void:
 	var equip_result: Dictionary = player.equip_ability(0, "ember")
 	if not equip_result.ok:
 		failures.append("player equips ability through injected tail query")
+	player.ability_runtime.cooldown_remaining["ember"] = 4.0
+	await physics_frame
+	var expected_cooldown_after_frame := 4.0 - (1.0 / float(Engine.physics_ticks_per_second))
+	var cooldown_after_frame := float(player.ability_runtime.cooldown_remaining.get("ember", -1.0))
+	if absf(cooldown_after_frame - expected_cooldown_after_frame) > 0.001:
+		failures.append("main scene advances ability cooldown exactly once per physics frame")
+	player.ability_runtime.cooldown_remaining.erase("ember")
 	player.resources.reduce_kokoro(70)
 	player.resources.spend_ki(82)
 	var ability_hp_before: int = dummy.current_hp()
@@ -140,8 +156,9 @@ func run() -> void:
 		if dummy.position != dummy._grid_position_for_cell_center(dummy._grid_cell_for_position(dummy.position)):
 			failures.append("monster remains snapped to a tile center after hit resolution")
 
+	var dummy_attack_damage := int(dummy.combatant.attack)
 	var player_hp_before: int = player.resources.hp
-	if dummy.attack_target(player) != 10 or player.resources.hp != player_hp_before - 10:
+	if dummy.attack_target(player) != dummy_attack_damage or player.resources.hp != player_hp_before - dummy_attack_damage:
 		failures.append("dummy attack applies exported monster damage to player HP")
 	player.resources.heal_hp(player.resources.hp_max)
 
@@ -158,6 +175,10 @@ func run() -> void:
 	elif monster_steps[0][0] != monster_start_cell or monster_steps[0][1] != monster_start_cell + Vector2i.LEFT:
 		failures.append("monster turn targets one adjacent tile toward the player")
 	var expected_monster_position: Vector2 = main.world_position_for_cell_center(monster_start_cell + Vector2i.LEFT)
+	for _frame in 20:
+		if not dummy.is_grid_step_active():
+			break
+		await physics_frame
 	if dummy.position != expected_monster_position:
 		failures.append("monster turn ends snapped to the destination tile center")
 	await physics_frame
@@ -180,9 +201,9 @@ func run() -> void:
 	for _frame in 20:
 		await physics_frame
 	var hp_before_hit_invulnerability: int = player.resources.hp
-	if dummy.attack_target(player, 0.2) != 10:
+	if dummy.attack_target(player, 0.2) != dummy_attack_damage:
 		failures.append("player receives damage after dodge invulnerability expires")
-	if dummy.attack_target(player, 0.2) != 0 or player.resources.hp != hp_before_hit_invulnerability - 10:
+	if dummy.attack_target(player, 0.2) != 0 or player.resources.hp != hp_before_hit_invulnerability - dummy_attack_damage:
 		failures.append("hit invulnerability blocks repeated damage events")
 
 	player.combat_state.tick(1.0)
