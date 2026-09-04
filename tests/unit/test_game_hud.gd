@@ -275,6 +275,18 @@ func _assert_equipment_strip_reads_runtime_equipment(asserts) -> void:
 	asserts.true_value(strip != null, "HUD keeps the equipment strip inside the player status panel")
 	if strip != null:
 		asserts.equal(strip.get_child_count(), 3, "equipment strip always shows weapon, armor, and tea ware slots")
+	var weapon_cell := hud.get_node_or_null("Root/StatusPanel/StatusBody/StatusRows/EquipmentStrip/EquipmentWeapon") as Control
+	var armor_cell := hud.get_node_or_null("Root/StatusPanel/StatusBody/StatusRows/EquipmentStrip/EquipmentArmor") as Control
+	var tea_ware_cell := hud.get_node_or_null("Root/StatusPanel/StatusBody/StatusRows/EquipmentStrip/EquipmentTeaWare") as Control
+	asserts.true_value(weapon_cell != null, "weapon equipment cell exists")
+	asserts.true_value(armor_cell != null, "armor equipment cell exists")
+	asserts.true_value(tea_ware_cell != null, "tea ware equipment cell exists")
+	if weapon_cell != null:
+		asserts.equal(weapon_cell.mouse_filter, Control.MOUSE_FILTER_PASS, "weapon equipment cell can receive hover for tooltip without stopping gameplay input")
+	if armor_cell != null:
+		asserts.equal(armor_cell.mouse_filter, Control.MOUSE_FILTER_PASS, "armor equipment cell can receive hover for tooltip without stopping gameplay input")
+	if tea_ware_cell != null:
+		asserts.equal(tea_ware_cell.mouse_filter, Control.MOUSE_FILTER_PASS, "tea ware equipment cell can receive hover for tooltip without stopping gameplay input")
 	var read_model: Dictionary = hud.runtime_read_model()
 	asserts.equal(read_model.equipment.weapon.item_id, "mountain_iron_dagger", "HUD runtime model reads equipped weapon from inventory runtime")
 	var snapshot: Dictionary = hud.equipment_hud_snapshot()

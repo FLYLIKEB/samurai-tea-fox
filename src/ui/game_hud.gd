@@ -2303,7 +2303,7 @@ func _build_equipment_strip() -> HBoxContainer:
 		cell.name = "Equipment%s" % String(slot_key).to_pascal_case()
 		cell.custom_minimum_size = EQUIPMENT_SLOT_SIZE
 		cell.add_theme_stylebox_override("panel", _equipment_slot_style(false))
-		_ignore_mouse(cell)
+		cell.mouse_filter = Control.MOUSE_FILTER_PASS
 		strip.add_child(cell)
 		var rows := VBoxContainer.new()
 		rows.name = "Rows"
