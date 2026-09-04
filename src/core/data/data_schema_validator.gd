@@ -197,11 +197,43 @@ func _validate_item_contract(dataset_name: String, item: Dictionary) -> Dictiona
 		return _validate_meta_unlock_contract(item)
 	if dataset_name == "bosses":
 		return _validate_boss_tea_contract(item)
+	if dataset_name == "teas":
+		return _validate_tea_contract(item)
 	if dataset_name != "items":
 		return {"ok": true}
 	if String(item.get("type", "")) != "다구" or String(item.get("equipment_slot", "")) != "다구":
 		return {"ok": true}
 	return _validate_attachment_stage_data(item)
+
+func _validate_tea_contract(item: Dictionary) -> Dictionary:
+	if item.has("ki_recovery"):
+		var recovery = item.ki_recovery
+		if typeof(recovery) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(recovery)) or float(recovery) != floor(float(recovery)) or int(recovery) < 0:
+			return {"ok": false, "error": "teas item '%s' ki_recovery must be a non-negative integer." % item.id}
+	var recovery_mode := String(item.get("recovery_mode", "instant"))
+	if recovery_mode not in ["instant", "progressive", "conditional"]:
+		return {"ok": false, "error": "teas item '%s' has invalid recovery_mode '%s'." % [item.id, recovery_mode]}
+	if item.has("drink_seconds"):
+		var drink_seconds = item.drink_seconds
+		if typeof(drink_seconds) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(drink_seconds)) or float(drink_seconds) <= 0.0:
+			return {"ok": false, "error": "teas item '%s' field 'drink_seconds' must be a positive number." % item.id}
+	for field in ["serving_size", "carry_uses"]:
+		if not item.has(field):
+			continue
+		var value = item[field]
+		if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)) or float(value) != floor(float(value)) or int(value) <= 0:
+			return {"ok": false, "error": "teas item '%s' field '%s' must be a positive integer." % [item.id, field]}
+	if item.has("sustain_modifier"):
+		var sustain = item.sustain_modifier
+		if typeof(sustain) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(sustain)) or float(sustain) < -100.0 or float(sustain) > 100.0:
+			return {"ok": false, "error": "teas item '%s' sustain_modifier must be between -100 and 100." % item.id}
+	if item.has("condition_key") and not String(item.condition_key).is_empty() and not _stable_id(String(item.condition_key)):
+		return {"ok": false, "error": "teas item '%s' condition_key must be a stable id." % item.id}
+	if item.has("requires_brewing_location") and typeof(item.requires_brewing_location) != TYPE_BOOL:
+		return {"ok": false, "error": "teas item '%s' requires_brewing_location must be a boolean." % item.id}
+	if item.has("special_effect") and typeof(item.special_effect) != TYPE_STRING:
+		return {"ok": false, "error": "teas item '%s' special_effect must be a string." % item.id}
+	return {"ok": true}
 
 func _validate_boss_tea_contract(item: Dictionary) -> Dictionary:
 	var config = item.get("tea_resolution", {})

@@ -74,20 +74,27 @@ func run(asserts) -> void:
 	asserts.true_value(main.submit_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": first_resource.id})), "slice gathers a generated common resource")
 	asserts.true_value(main.inventory.get_total_quantity(String(first_resource.resource_id)) > 0, "gathered resource enters inventory")
 
-	asserts.true_value(main.inventory.add_item("tea_8", 1).ok, "slice can stock the confirmed common tea leaf")
+	asserts.true_value(main.inventory.add_item("tea_11", 1).ok, "slice can stock a confirmed conditional tea leaf")
 	asserts.true_value(main.inventory.add_item("humble_clay_bowl", 1).ok, "slice can stock the minimal tea vessel")
-	asserts.true_value(main.tea_service.brew("tea_8", "humble_clay_bowl", main.inventory, 0).ok, "slice prepares tea in a quickslot")
+	asserts.true_value(main.tea_service.brew("tea_11", "humble_clay_bowl", main.inventory, 0, {"has_brewing_location": true}).ok, "slice prepares tea in a quickslot")
 	main.player.resources.apply_damage(30)
 	var hp_after_damage: int = main.player.resources.hp
 	main.player.resources.spend_ki(20)
 	var ki_before_tea: int = main.player.resources.ki
-	asserts.true_value(main.submit_desktop_action_command("drink_tea", Vector2i.ZERO, 0), "slice drinks prepared tea through Main")
+	asserts.true_value(main.submit_desktop_action_command("drink_tea", Vector2i.ZERO, 0), "slice starts prepared tea through Main")
+	asserts.true_value(main.is_tea_drink_active(), "tea remains active for its data-driven drinking time")
+	asserts.equal(main.player.resources.ki, ki_before_tea, "tea effect waits until drinking completes")
+	main.tick_tea_runtime(1.9)
+	asserts.equal(main.player.resources.ki, ki_before_tea, "tea does not complete before its exported duration")
+	main.tick_tea_runtime(0.1)
+	asserts.false_value(main.is_tea_drink_active(), "tea completes at its exported duration")
 	asserts.equal(main.player.resources.hp, hp_after_damage, "tea does not heal HP")
 	asserts.true_value(main.player.resources.ki > ki_before_tea, "tea restores ki")
 
 	var ki_before_ability: int = main.player.resources.ki
 	asserts.true_value(main.submit_desktop_action_command("cast_ability", Vector2i.RIGHT, 0), "slice casts the default ability through Main")
-	asserts.true_value(main.player.resources.ki < ki_before_ability, "ability spends ki")
+	asserts.equal(ki_before_ability - main.player.resources.ki, 13, "tea sustain modifier reduces the next ability ki cost once")
+	asserts.equal(main.run_state.tea.next_ability_ki_cost_modifier_percent, 0.0, "successful ability use clears the persisted one-shot tea modifier")
 	asserts.true_value(main.combat_dummy.current_hp() < main.combat_dummy.combatant.hp_max, "ability damages the common combat target")
 
 	main.time_state.tick(300.0 + 120.0 + 1.0, main.player.resources)

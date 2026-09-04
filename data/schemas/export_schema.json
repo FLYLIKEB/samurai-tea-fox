@@ -125,7 +125,7 @@
       }
     },
     "teas": {
-      "file": "teas.json", "required_fields": ["id", "name", "status"], "relations": {"biome_ids": "biomes"},
+      "file": "teas.json", "required_fields": ["id", "name", "status", "ki_recovery"], "relations": {"biome_ids": "biomes"},
       "notion": {
         "source": "collection://58c6edaf-0851-48da-a412-541be09d7dcb", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "차 ID", "id_prefix": "tea",
         "field_map": {"차류": "tea_type", "산지": "origin", "기운 회복": "ki_recovery", "기억 보유": "memory", "기억 강도": "memory_strength", "특수 효과": "special_effect", "마시는 시간(초)": "drink_seconds", "1회 소비량": "serving_size", "휴대 횟수": "carry_uses", "회복 방식": "recovery_mode", "조건 키": "condition_key", "기운 유지 보정": "sustain_modifier", "우리기 장소 필요": "requires_brewing_location"},

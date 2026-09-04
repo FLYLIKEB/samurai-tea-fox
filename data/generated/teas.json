@@ -1,5 +1,5 @@
 {
-  "content_hash": "62bf6681053ae13541808ff3eb1d5e97decb0bcfcf0fb4e3e10480a88857b721",
+  "content_hash": "1d282df4df71d0baf2dd835804dd595e091e20651b159258ecb59ab3977ea550",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -7,8 +7,10 @@
       "ki_recovery": 34,
       "memory": true,
       "name": "다이묘의 봉인 저장차",
+      "notion_id": "3cd37369-9e66-814a-8e9f-f64b059a3ef2",
       "origin": "백국산 찻잎·홍국 반입",
-      "status": "초안",
+      "special_effect": "기운이 낮을수록 회복 효율이 높고, 이미 기운이 충분할 때는 효율이 낮다. 소유보다 필요에 반응하는 차.",
+      "status": "확정",
       "tea_type": "흑차"
     },
     {
@@ -16,8 +18,10 @@
       "ki_recovery": 24,
       "memory": true,
       "name": "아버지의 봄 덖음차",
+      "notion_id": "3cd37369-9e66-81c8-8038-d51c3183feef",
       "origin": "백국 구미호가 머물던 산기슭",
-      "status": "초안",
+      "special_effect": "기준차. 별도 부가 효과 없이 기운 회복 자체에 집중한다.",
+      "status": "확정",
       "tea_type": "녹차"
     },
     {
@@ -25,8 +29,10 @@
       "ki_recovery": 28,
       "memory": true,
       "name": "승려의 설중차",
+      "notion_id": "3cd37369-9e66-81e7-bc3e-e838fc3b4397",
       "origin": "홍국 설산 사찰 주변 고지",
-      "status": "초안",
+      "special_effect": "心이 낮을 때 다음 요술 1회의 추가 기운 소모를 소폭 완화한다. 心 자체를 회복시키지는 않는다.",
+      "status": "확정",
       "tea_type": "녹차"
     },
     {
@@ -34,8 +40,10 @@
       "ki_recovery": 25,
       "memory": true,
       "name": "이름 없는 노다인의 말차",
+      "notion_id": "3cd37369-9e66-81c5-8413-d2ed4e52eb0a",
       "origin": "홍국 중부",
-      "status": "초안",
+      "special_effect": "첫 만남·세이브 찻잔·최종 다실에서 같은 맛이 반복된다. 전투 부가 효과는 두지 않는다.",
+      "status": "확정",
       "tea_type": "말차"
     },
     {
@@ -43,8 +51,10 @@
       "ki_recovery": 26,
       "memory": true,
       "name": "오리베의 청말",
+      "notion_id": "3cd37369-9e66-81d4-a1b5-cd65f1cb9b0c",
       "origin": "홍국 일반 지역",
-      "status": "초안",
+      "special_effect": "기운을 한 번에 채우지 않고 큰 회복 뒤 작은 회복이 이어지는 비대칭 2단 회복.",
+      "status": "확정",
       "tea_type": "말차"
     },
     {
@@ -52,71 +62,140 @@
       "ki_recovery": 30,
       "memory": true,
       "name": "도공의 산안개 청차",
+      "notion_id": "3cd37369-9e66-81b5-ac5c-f93e7a9ea8f9",
       "origin": "홍국 산악 고지",
-      "status": "초안",
+      "special_effect": "요술 사용 직후 마시면 회복 시작이 조금 빨라진다. 총 회복량보다 운용 타이밍 차이에 초점을 둔다.",
+      "status": "확정",
       "tea_type": "청차"
     },
     {
+      "carry_uses": 4,
+      "drink_seconds": 2.1,
       "id": "tea_10",
       "ki_recovery": 24,
       "name": "백설 백차",
+      "notion_id": "3ce37369-9e66-81af-afe1-d2e41e9a38aa",
+      "recovery_mode": "progressive",
+      "special_effect": "즉시량은 낮지만 기운 감소를 완만하게 한다.",
       "status": "확정",
+      "sustain_modifier": 12,
       "tea_type": "백차"
     },
     {
+      "carry_uses": 3,
+      "drink_seconds": 2,
       "id": "tea_11",
       "ki_recovery": 30,
       "name": "황토 숙성 황차",
+      "notion_id": "3ce37369-9e66-8127-8b26-d4ab275b6b91",
+      "recovery_mode": "conditional",
+      "special_effect": "心이 낮을 때 요술 기운 추가 소모를 소폭 완화한다.",
       "status": "확정",
+      "sustain_modifier": 8,
       "tea_type": "황차"
     },
     {
+      "carry_uses": 3,
+      "drink_seconds": 1.7,
       "id": "tea_12",
       "ki_recovery": 35,
       "name": "석양 홍차",
+      "notion_id": "3ce37369-9e66-81e2-b252-ef1f835fb52a",
+      "recovery_mode": "instant",
+      "special_effect": "회복량이 높고 유지 보정은 낮은 전투 진입용 차.",
       "status": "확정",
+      "sustain_modifier": 2,
       "tea_type": "홍차"
     },
     {
+      "carry_uses": 3,
+      "drink_seconds": 2.4,
       "id": "tea_13",
       "ki_recovery": 38,
       "name": "고목 흑차",
+      "notion_id": "3ce37369-9e66-81fe-9b5f-c549273ba295",
+      "recovery_mode": "progressive",
+      "special_effect": "느리게 마시지만 장기 탐험에 안정적이다.",
       "status": "확정",
+      "sustain_modifier": 10,
       "tea_type": "흑차"
     },
     {
+      "carry_uses": 2,
+      "drink_seconds": 1.2,
+      "id": "tea_14",
+      "ki_recovery": 42,
+      "name": "새벽 말차",
+      "notion_id": "3ce37369-9e66-81b9-8558-e6087f6dd313",
+      "recovery_mode": "instant",
+      "special_effect": "매우 빠르고 강하지만 기운 유지가 짧다.",
+      "status": "확정",
+      "sustain_modifier": -5,
+      "tea_type": "말차"
+    },
+    {
+      "carry_uses": 5,
+      "drink_seconds": 1.3,
       "id": "tea_15",
       "ki_recovery": 26,
       "name": "강변 초청차",
+      "notion_id": "3ce37369-9e66-817f-978d-f15cffd4d416",
+      "recovery_mode": "instant",
+      "special_effect": "휴대 횟수가 많아 초반 탐험에 적합하다.",
       "status": "확정",
+      "sustain_modifier": 0,
       "tea_type": "녹차"
     },
     {
+      "carry_uses": 3,
+      "drink_seconds": 1.9,
       "id": "tea_16",
       "ki_recovery": 34,
       "name": "우림 난향 청차",
+      "notion_id": "3ce37369-9e66-8104-8deb-df84f42b3b0a",
+      "recovery_mode": "conditional",
+      "special_effect": "요괴형 적에게 피격된 뒤 다음 요술 기운 소모를 1회 소폭 줄인다.",
       "status": "확정",
+      "sustain_modifier": 7,
       "tea_type": "청차"
     },
     {
+      "carry_uses": 3,
+      "drink_seconds": 2.2,
       "id": "tea_17",
       "ki_recovery": 36,
       "name": "별밤 숙차",
+      "notion_id": "3ce37369-9e66-8105-a0e6-f267e57a8171",
+      "recovery_mode": "progressive",
+      "special_effect": "밤에 마시면 기운 유지 보정이 추가로 높아진다.",
       "status": "확정",
+      "sustain_modifier": 14,
       "tea_type": "흑차"
     },
     {
+      "carry_uses": 4,
+      "drink_seconds": 1.4,
       "id": "tea_8",
       "ki_recovery": 28,
       "name": "들녘 덖음차",
+      "notion_id": "3ce37369-9e66-8105-921f-e12ef9123f5d",
+      "recovery_mode": "instant",
+      "special_effect": "빠르고 단순한 기본 회복차.",
       "status": "확정",
+      "sustain_modifier": 0,
       "tea_type": "녹차"
     },
     {
+      "carry_uses": 4,
+      "drink_seconds": 1.8,
       "id": "tea_9",
       "ki_recovery": 32,
       "name": "산안개 청차",
+      "notion_id": "3ce37369-9e66-81d4-b2c4-eebec0f16bc1",
+      "recovery_mode": "instant",
+      "special_effect": "기운 유지가 조금 길어지는 균형형 청차.",
       "status": "확정",
+      "sustain_modifier": 6,
       "tea_type": "청차"
     },
     {
@@ -124,8 +203,10 @@
       "ki_recovery": 32,
       "memory": true,
       "name": "요괴 다인의 노목 백차",
+      "notion_id": "3cd37369-9e66-81e2-9545-f1b7ec231384",
       "origin": "열대우림의 오래된 차나무 숲",
-      "status": "초안",
+      "special_effect": "즉시 회복은 느리지만 요술 사용 뒤에도 기운 회복이 길게 이어진다. 오래된 기억 연출과 연결된다.",
+      "status": "확정",
       "tea_type": "백차"
     }
   ],

@@ -32,6 +32,8 @@ var drink_base_seconds := 0.0
 var tea_definitions: Dictionary = {}
 var vessel_definitions: Dictionary = {}
 var quick_slots: Array = []
+var progressive_recoveries: Array = []
+var next_ability_ki_cost_modifier_percent := 0.0
 var next_prepared_id := 1
 var next_action_id := 1
 
@@ -83,6 +85,8 @@ func configure(
 	next_prepared_id = 1
 	next_action_id = 1
 	quick_slots.clear()
+	progressive_recoveries.clear()
+	next_ability_ki_cost_modifier_percent = 0.0
 	for _index in range(quickslot_count):
 		quick_slots.append({})
 	_emit_changed()
@@ -234,7 +238,7 @@ func tick_drinking(action: Dictionary, delta_seconds: float, resources = null) -
 		float(updated_action.drink_seconds),
 		float(updated_action.elapsed_seconds) + delta_seconds
 	)
-	if float(updated_action.elapsed_seconds) < float(updated_action.drink_seconds):
+	if float(updated_action.elapsed_seconds) + 0.000001 < float(updated_action.drink_seconds):
 		return {"ok": true, "completed": false, "action": updated_action}
 	return complete_drinking(updated_action, resources)
 
@@ -306,6 +310,47 @@ func interrupt_drinking(action: Dictionary, reason := "hit") -> Dictionary:
 	drink_interrupted.emit(_duplicate_dictionary(interrupted_action))
 	return {"ok": true, "action": interrupted_action, "consumed": false}
 
+func tick_effects(delta_seconds: float, resources = null) -> Dictionary:
+	if delta_seconds < 0.0 or not is_finite(delta_seconds):
+		return _fail_and_emit(_fail("invalid_delta", "Tea effect delta must be non-negative."))
+	if progressive_recoveries.is_empty() or delta_seconds == 0.0:
+		return {"ok": true, "ki_recovered": 0, "active_count": progressive_recoveries.size(), "changed": false}
+	if resources == null or not resources.has_method("recover_ki"):
+		return _fail_and_emit(_fail("invalid_resources", "Progressive tea recovery requires a resource model with recover_ki."))
+
+	var recovered_total := 0
+	var remaining: Array = []
+	for raw_recovery in progressive_recoveries:
+		var recovery: Dictionary = _duplicate_dictionary(raw_recovery)
+		var duration := float(recovery.duration_seconds)
+		recovery.elapsed_seconds = min(duration, float(recovery.elapsed_seconds) + delta_seconds)
+		var scheduled_total := int(round(float(recovery.total_ki) * float(recovery.elapsed_seconds) / duration))
+		var scheduled_delta := maxi(0, scheduled_total - int(recovery.applied_ki))
+		if scheduled_delta > 0:
+			recovered_total += int(resources.recover_ki(scheduled_delta))
+		recovery.applied_ki = scheduled_total
+		if float(recovery.elapsed_seconds) < duration:
+			remaining.append(recovery)
+	progressive_recoveries = remaining
+	_emit_changed()
+	return {
+		"ok": true,
+		"ki_recovered": recovered_total,
+		"active_count": progressive_recoveries.size(),
+		"changed": true
+	}
+
+func next_ability_ki_cost_multiplier() -> float:
+	return maxf(0.0, 1.0 - next_ability_ki_cost_modifier_percent / 100.0)
+
+func consume_next_ability_ki_cost_modifier() -> float:
+	var consumed := next_ability_ki_cost_modifier_percent
+	if consumed == 0.0:
+		return 0.0
+	next_ability_ki_cost_modifier_percent = 0.0
+	_emit_changed()
+	return consumed
+
 func to_snapshot() -> Dictionary:
 	var slots_snapshot: Array = []
 	for slot in quick_slots:
@@ -316,7 +361,9 @@ func to_snapshot() -> Dictionary:
 		"quickslot_count": quickslot_count,
 		"next_prepared_id": next_prepared_id,
 		"next_action_id": next_action_id,
-		"quick_slots": slots_snapshot
+		"quick_slots": slots_snapshot,
+		"progressive_recoveries": progressive_recoveries.duplicate(true),
+		"next_ability_ki_cost_modifier_percent": next_ability_ki_cost_modifier_percent
 	}
 
 func load_snapshot(snapshot: Dictionary) -> Dictionary:
@@ -337,8 +384,22 @@ func load_snapshot(snapshot: Dictionary) -> Dictionary:
 		normalized_slots.append(slot_result.slot)
 	while normalized_slots.size() < quickslot_count:
 		normalized_slots.append({})
+	var loaded_recoveries = snapshot.get("progressive_recoveries", [])
+	if typeof(loaded_recoveries) != TYPE_ARRAY:
+		return _fail("invalid_progressive_recoveries", "Tea snapshot progressive recoveries must be an array.")
+	var normalized_recoveries: Array = []
+	for raw_recovery in loaded_recoveries:
+		var recovery_result := _normalize_progressive_recovery(raw_recovery)
+		if not recovery_result.ok:
+			return recovery_result
+		normalized_recoveries.append(recovery_result.recovery)
+	var loaded_modifier = snapshot.get("next_ability_ki_cost_modifier_percent", 0.0)
+	if typeof(loaded_modifier) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(loaded_modifier)) or float(loaded_modifier) < -100.0 or float(loaded_modifier) > 100.0:
+		return _fail("invalid_sustain_modifier", "Tea snapshot ability cost modifier must be between -100 and 100.")
 
 	quick_slots = normalized_slots
+	progressive_recoveries = normalized_recoveries
+	next_ability_ki_cost_modifier_percent = float(loaded_modifier)
 	data_version = String(snapshot.get("data_version", data_version))
 	next_prepared_id = max(1, int(snapshot.get("next_prepared_id", next_prepared_id)))
 	next_action_id = max(1, int(snapshot.get("next_action_id", next_action_id)))
@@ -380,6 +441,8 @@ static func _tea_definition_from_row(row: Dictionary) -> Dictionary:
 	var sustain_result := _optional_number(row, "sustain_modifier", 0.0)
 	if not sustain_result.ok:
 		return sustain_result
+	if float(sustain_result.value) < -100.0 or float(sustain_result.value) > 100.0:
+		return _fail("invalid_sustain_modifier", "Tea sustain modifier must be between -100 and 100: %s" % String(row.get("id", "")))
 
 	var recovery_mode := String(row.get("recovery_mode", DEFAULT_RECOVERY_MODE))
 	if not VALID_RECOVERY_MODES.has(recovery_mode):
@@ -404,6 +467,7 @@ static func _tea_definition_from_row(row: Dictionary) -> Dictionary:
 		"serving_size": serving_result.value,
 		"recovery_mode": recovery_mode,
 		"condition_key": String(row.get("condition_key", "")),
+		"special_effect": String(row.get("special_effect", "")),
 		"requires_brewing_location": bool(row.get("requires_brewing_location", false)),
 		"sustain_modifier": sustain_result.value,
 		"memory": bool(row.get("memory", false)),
@@ -478,6 +542,7 @@ func _build_prepared_tea(tea_id: String, modifier_query: Dictionary, context: Di
 		"serving_size": int(tea.serving_size),
 		"recovery_mode": tea.recovery_mode,
 		"condition_key": tea.condition_key,
+		"special_effect": tea.special_effect,
 		"sustain_modifier": sustain_modifier,
 		"core_tea_ware": bool(vessel.get("core_tea_ware", false)),
 		"core_tea_ware_order": int(vessel.get("core_tea_ware_order", 0)),
@@ -520,7 +585,8 @@ func _apply_effect(prepared: Dictionary, context, resources) -> Dictionary:
 		"condition_passed": true,
 		"ki_recovered": 0,
 		"ki_recovery_requested": int(prepared.ki_recovery),
-		"sustain_modifier": float(prepared.sustain_modifier)
+		"sustain_modifier": float(prepared.sustain_modifier),
+		"special_effect": String(prepared.get("special_effect", ""))
 	}
 	if bool(prepared.get("memory", false)):
 		effect["memory"] = {
@@ -537,6 +603,22 @@ func _apply_effect(prepared: Dictionary, context, resources) -> Dictionary:
 		return {"ok": true, "effect": effect}
 	if resources != null and not resources.has_method("recover_ki"):
 		return _fail("invalid_resources", "Tea effect requires a resource model with recover_ki.")
+
+	if float(prepared.sustain_modifier) != 0.0:
+		next_ability_ki_cost_modifier_percent = float(prepared.sustain_modifier)
+		effect["next_ability_ki_cost_modifier_percent"] = next_ability_ki_cost_modifier_percent
+	if String(prepared.recovery_mode) == RECOVERY_PROGRESSIVE:
+		var recovery := {
+			"tea_id": String(prepared.tea_id),
+			"total_ki": int(prepared.ki_recovery),
+			"applied_ki": 0,
+			"elapsed_seconds": 0.0,
+			"duration_seconds": float(prepared.drink_seconds)
+		}
+		if int(recovery.total_ki) > 0:
+			progressive_recoveries.append(recovery)
+		effect["pending_ki_recovery"] = int(recovery.total_ki)
+		return {"ok": true, "effect": effect}
 
 	var recovered := int(prepared.ki_recovery)
 	if resources != null:
@@ -582,6 +664,26 @@ func _normalize_snapshot_slot(raw_slot) -> Dictionary:
 	if remaining_uses <= 0:
 		return _fail("invalid_remaining_uses", "Prepared tea snapshot remaining uses must be positive.")
 	return {"ok": true, "slot": _duplicate_dictionary(raw_slot)}
+
+func _normalize_progressive_recovery(raw_recovery) -> Dictionary:
+	if typeof(raw_recovery) != TYPE_DICTIONARY:
+		return _fail("invalid_progressive_recovery", "Progressive tea recovery must be a dictionary.")
+	var tea_id := String(raw_recovery.get("tea_id", ""))
+	if not tea_definitions.has(tea_id):
+		return _fail("unknown_tea", "Progressive recovery references unknown tea: %s" % tea_id)
+	for field in ["total_ki", "applied_ki"]:
+		var value = raw_recovery.get(field)
+		if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)) or float(value) != floor(float(value)) or int(value) < 0:
+			return _fail("invalid_progressive_recovery", "Progressive recovery field must be a non-negative integer: %s" % field)
+	var elapsed = raw_recovery.get("elapsed_seconds")
+	var duration = raw_recovery.get("duration_seconds")
+	if typeof(elapsed) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(elapsed)) or float(elapsed) < 0.0:
+		return _fail("invalid_progressive_recovery", "Progressive recovery elapsed time is invalid.")
+	if typeof(duration) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(duration)) or float(duration) <= 0.0 or float(elapsed) > float(duration):
+		return _fail("invalid_progressive_recovery", "Progressive recovery duration is invalid.")
+	if int(raw_recovery.applied_ki) > int(raw_recovery.total_ki):
+		return _fail("invalid_progressive_recovery", "Progressive recovery applied amount exceeds its total.")
+	return {"ok": true, "recovery": _duplicate_dictionary(raw_recovery)}
 
 func _validate_action(action: Dictionary) -> Dictionary:
 	if action.get("completed", false):
