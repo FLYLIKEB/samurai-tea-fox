@@ -195,9 +195,6 @@ func _terrain_source_id(terrain_id: String) -> String:
 	return String(TERRAIN_SOURCE_IDS.get(terrain_id, terrain_id))
 
 func _terrain_source_id_for_cell(terrain: Dictionary, position: Vector2i, world_data: Dictionary) -> String:
-	var explicit := String(terrain.get("projection_source_id", terrain.get("render_id", "")))
-	if not explicit.is_empty():
-		return _terrain_source_id(explicit)
 	var terrain_id := String(terrain.get("id", ""))
 	if terrain_id == "common_bridge":
 		return _bridge_source_id(position, world_data)

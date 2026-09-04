@@ -1694,7 +1694,6 @@ func _ensure_current_dungeon_entered() -> Dictionary:
 				dungeon_cell,
 				"dungeon_wall" if blocked else "dungeon_floor",
 				not blocked,
-				DUNGEON_TILESET_SOURCE_ID,
 				_dungeon_atlas_coords_for_cell(dungeon_cell, Vector2i(layout.width, layout.height))
 			)
 	var reserved_enemy_cells := {Vector2i(7, 2): true, Vector2i(9, 5): true, Vector2i(5, 7): true, Vector2i(10, 7): true}
@@ -2152,7 +2151,8 @@ func _ensure_saved_world_has_teleport_landmark() -> bool:
 			world_data.add_required_landmark(WorldData.LANDMARK_TELEPORT_ZONE, id, cell, metadata)
 			generated_world["world_data"] = world_data.to_dictionary()
 			generated_world["landmarks"] = world_data.get_required_landmarks()
-			generated_world["renderer_input"] = WorldRendererProjection.new().project(generated_world["world_data"], biome_progression_state.to_projection())
+			var projection: Dictionary = biome_progression_state.to_projection() if biome_progression_state != null else {}
+			generated_world["renderer_input"] = WorldRendererProjection.new().project(generated_world["world_data"], projection)
 			_dungeon_debug("기존 세이브에 텔레포트 추가: id=%s cell=%s" % [id, cell])
 			return true
 	return false
@@ -2313,6 +2313,8 @@ func _register_terrain_tree_gatherables(definition_ids: Dictionary) -> Dictionar
 			continue
 		var position := _vector_from_dictionary(cell.get("position", {}))
 		var node_id := _terrain_tree_gatherable_id(position)
+		if world_data.get_reservation(node_id).is_empty():
+			continue
 		if not definition_ids.has(node_id):
 			continue
 		if not acquisition_service.gatherable_for(node_id).is_empty():
@@ -2343,7 +2345,7 @@ func _mountain_mineral_gatherable_definitions() -> Array:
 			"policy": AcquisitionService.POLICY_DIRECT,
 			"material_tag": "stone",
 			"required_tool_item_id": "stone_axe",
-			"depleted_terrain": {"id": WorldGenerator.TERRAIN_MOUNTAIN_SLOPE, "render_id": WorldGenerator.RENDER_MOUNTAIN_SLOPE, "walkable": true}
+			"depleted_terrain": {"id": WorldGenerator.TERRAIN_MOUNTAIN_SLOPE, "walkable": true}
 		})
 	return definitions
 
@@ -2369,15 +2371,15 @@ func _tree_harvest_profile_for_cell(cell: Dictionary) -> Dictionary:
 	var terrain_id := String(terrain.get("id", ""))
 	match terrain_id:
 		WorldGenerator.TERRAIN_FOREST:
-			return {"id": WorldGenerator.TERRAIN_GRASS, "render_id": WorldGenerator.RENDER_GRASS, "walkable": true}
+			return {"id": WorldGenerator.TERRAIN_GRASS, "walkable": true}
 		WorldGenerator.TERRAIN_MOUNTAIN_CONIFER:
-			return {"id": WorldGenerator.TERRAIN_GRASS, "render_id": WorldGenerator.RENDER_GRASS, "walkable": true}
+			return {"id": WorldGenerator.TERRAIN_GRASS, "walkable": true}
 		WorldGenerator.TERRAIN_WASTELAND_DEAD_TREE:
-			return {"id": WorldGenerator.TERRAIN_GRASS, "render_id": WorldGenerator.RENDER_GRASS, "walkable": true}
+			return {"id": WorldGenerator.TERRAIN_GRASS, "walkable": true}
 		WorldGenerator.TERRAIN_SNOWFIELD_PINE:
-			return {"id": WorldGenerator.TERRAIN_GRASS, "render_id": WorldGenerator.RENDER_GRASS, "walkable": true}
+			return {"id": WorldGenerator.TERRAIN_GRASS, "walkable": true}
 		WorldGenerator.TERRAIN_RAINFOREST_JUNGLE, WorldGenerator.TERRAIN_RAINFOREST_AGARWOOD:
-			return {"id": WorldGenerator.TERRAIN_GRASS, "render_id": WorldGenerator.RENDER_GRASS, "walkable": true}
+			return {"id": WorldGenerator.TERRAIN_GRASS, "walkable": true}
 		_:
 			return {}
 

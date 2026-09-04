@@ -282,8 +282,7 @@ func _apply_depleted_terrain(definition: Dictionary, position: Vector2i) -> void
 	world_data.set_terrain(
 		position,
 		String(terrain.get("id", "ground")),
-		bool(terrain.get("walkable", true)),
-		String(terrain.get("render_id", terrain.get("id", "ground")))
+		bool(terrain.get("walkable", true))
 	)
 
 func _deliver_grant(grant: Dictionary, position: Vector2i, source: Dictionary) -> Dictionary:

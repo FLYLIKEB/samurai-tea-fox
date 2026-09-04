@@ -83,7 +83,7 @@ func _disconnected_required_landmarks(asserts) -> void:
 
 func _renderer_projection_boundaries(asserts) -> void:
 	var world := WorldData.new(3, 2, "grass", true)
-	world.set_terrain(Vector2i(0, 0), "dungeon_floor", true, "terrain_dungeon_mossy_dojo_tileset", Vector2i(3, 5))
+	world.set_terrain(Vector2i(0, 0), "dungeon_floor", true, Vector2i(3, 5))
 	world.reserve_facility("drying_rack", Vector2i(1, 0), Vector2i(1, 2), true)
 	world.add_required_landmark(WorldData.LANDMARK_ENTRY, "entry_0", Vector2i(0, 0))
 	world.add_required_landmark(WorldData.LANDMARK_TELEPORT_ZONE, "teleport_0", Vector2i(2, 1), {"biome_id": "common_region"})
