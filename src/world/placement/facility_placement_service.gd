@@ -65,6 +65,7 @@ func can_place_facility(facility_item_id: String, world_data, origin: Vector2i, 
 		"owner_id": _owner_id(facility_item_id, origin, context),
 		"origin": _position_dictionary(origin),
 		"footprint_size": {"x": size.x, "y": size.y},
+		"footprint_cells": _position_dictionaries(_footprint_cells(origin, size)),
 		"workspace_cells": _workspace_cells(world_data, origin, size, context)
 	}
 
@@ -72,14 +73,33 @@ func place_facility(facility_item_id: String, world_data, origin: Vector2i, cont
 	var validation := can_place_facility(facility_item_id, world_data, origin, context)
 	if not validation.ok:
 		return _fail_and_emit(validation)
-	var size := Vector2i(int(validation.footprint_size.x), int(validation.footprint_size.y))
+	return place_validated_facility(validation, world_data, context)
+
+func place_validated_facility(placement_result: Dictionary, world_data, context := {}) -> Dictionary:
+	if not bool(placement_result.get("ok", false)):
+		return _fail_and_emit(placement_result)
+	if world_data == null or not world_data.has_method("reserve_facility"):
+		return _fail_and_emit(_fail("invalid_world_data", "Facility placement requires WorldData occupancy API."))
+	var facility_item_id := String(placement_result.get("facility_item_id", ""))
+	var origin := _vector_from_value(placement_result.get("origin", {}))
+	var size := Vector2i(
+		int(placement_result.get("footprint_size", {}).get("x", DEFAULT_FOOTPRINT.x)),
+		int(placement_result.get("footprint_size", {}).get("y", DEFAULT_FOOTPRINT.y))
+	)
+	if facility_item_id.is_empty() or not _is_valid_cached_result(placement_result, facility_item_id, origin, size):
+		return _fail_and_emit(_fail("invalid_placement_result", "Facility placement requires a validated placement result."))
+	var current_validation := can_place_facility(facility_item_id, world_data, origin, context)
+	if not current_validation.ok:
+		return _fail_and_emit(current_validation)
+	if not _same_validated_placement(placement_result, current_validation):
+		return _fail_and_emit(_fail("stale_placement_result", "Facility placement result no longer matches current world state."))
 	var metadata := _duplicate_dictionary(_context_value(context, "metadata", {}))
 	metadata["facility_item_id"] = facility_item_id
-	metadata["footprint_size"] = validation.footprint_size
-	var reserved: Dictionary = world_data.reserve_facility(String(validation.owner_id), origin, size, true, metadata)
+	metadata["footprint_size"] = placement_result.footprint_size
+	var reserved: Dictionary = world_data.reserve_facility(String(placement_result.owner_id), origin, size, true, metadata)
 	if not reserved.ok:
 		return _fail_and_emit(reserved)
-	var result := _duplicate_dictionary(validation)
+	var result := _duplicate_dictionary(placement_result)
 	result["reservation"] = reserved.reservation
 	facility_placed.emit(_duplicate_dictionary(result))
 	return result
@@ -267,6 +287,29 @@ static func _footprint_cells(origin: Vector2i, size: Vector2i) -> Array:
 		for x in range(origin.x, origin.x + size.x):
 			cells.append(Vector2i(x, y))
 	return cells
+
+static func _position_dictionaries(cells: Array) -> Array:
+	var result: Array = []
+	for cell in cells:
+		result.append(_position_dictionary(Vector2i(cell)))
+	return result
+
+static func _is_valid_cached_result(placement_result: Dictionary, facility_item_id: String, origin: Vector2i, size: Vector2i) -> bool:
+	if String(placement_result.get("facility_item_id", "")) != facility_item_id:
+		return false
+	if not placement_result.has("owner_id") or String(placement_result.owner_id).is_empty():
+		return false
+	if size.x <= 0 or size.y <= 0:
+		return false
+	var expected_cells := _position_dictionaries(_footprint_cells(origin, size))
+	return placement_result.get("footprint_cells", []) == expected_cells
+
+static func _same_validated_placement(left: Dictionary, right: Dictionary) -> bool:
+	return String(left.get("facility_item_id", "")) == String(right.get("facility_item_id", "")) \
+		and String(left.get("owner_id", "")) == String(right.get("owner_id", "")) \
+		and left.get("origin", {}) == right.get("origin", {}) \
+		and left.get("footprint_size", {}) == right.get("footprint_size", {}) \
+		and left.get("footprint_cells", []) == right.get("footprint_cells", [])
 
 static func _vector_from_value(value) -> Vector2i:
 	if typeof(value) == TYPE_VECTOR2I:

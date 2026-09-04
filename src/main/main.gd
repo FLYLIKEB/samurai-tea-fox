@@ -184,6 +184,7 @@ var _pending_pointer_interaction_target_id := ""
 var _pending_pointer_interaction_cell := Vector2i.ZERO
 var _pending_facility_placement: Dictionary = {}
 var _pending_facility_origin := Vector2i(-1, -1)
+var _pending_facility_result: Dictionary = {}
 var _pending_facility_rotation := 0
 var _facility_placement_preview: FacilityPlacementPreview
 var _preview_asset_catalog := AssetCatalog.new()
@@ -3231,6 +3232,7 @@ func _craft_recipe_or_begin_facility_placement(recipe_id: String) -> Dictionary:
 		"metadata": _player_facility_metadata(result_item_id)
 	}
 	_pending_facility_origin = Vector2i(-1, -1)
+	_pending_facility_result.clear()
 	_pending_facility_rotation = 0
 	_clear_pointer_movement()
 	_clear_facility_placement_preview()
@@ -3282,6 +3284,10 @@ func _pending_facility_validation(origin: Vector2i) -> Dictionary:
 func _select_pending_facility_at(origin: Vector2i) -> void:
 	_pending_facility_origin = origin
 	var validation := _pending_facility_validation(origin)
+	if bool(validation.get("ok", false)):
+		_pending_facility_result = validation.duplicate(true)
+	else:
+		_pending_facility_result.clear()
 	_update_facility_placement_preview(validation)
 	if game_hud != null:
 		game_hud.update_facility_placement_controls(
@@ -3300,16 +3306,15 @@ func _rotate_pending_facility() -> bool:
 	return true
 
 func _confirm_pending_facility() -> bool:
-	if not has_pending_facility_placement() or _pending_facility_origin.x < 0:
+	if not has_pending_facility_placement() or _pending_facility_origin.x < 0 or _pending_facility_result.is_empty():
 		return false
-	var validation := _pending_facility_validation(_pending_facility_origin)
-	if not bool(validation.get("ok", false)):
+	if not bool(_pending_facility_result.get("ok", false)):
 		_select_pending_facility_at(_pending_facility_origin)
 		return false
-	_place_pending_facility_at(_pending_facility_origin)
-	return true
+	var placed := _place_pending_facility(_pending_facility_result)
+	return bool(placed.get("ok", false))
 
-func _place_pending_facility_at(origin: Vector2i) -> Dictionary:
+func _place_pending_facility(placement_result: Dictionary) -> Dictionary:
 	if not has_pending_facility_placement():
 		return {"ok": false, "reason": "no_pending_facility_placement"}
 	var recipe_id := String(_pending_facility_placement.get("recipe_id", ""))
@@ -3322,10 +3327,11 @@ func _place_pending_facility_at(origin: Vector2i) -> Dictionary:
 		"rotation_quarter_turns": _pending_facility_rotation,
 		"metadata": _pending_facility_placement.get("metadata", {}).duplicate(true)
 	}
-	var placed: Dictionary = facility_placement_service.place_facility(
-		facility_item_id,
+	if String(placement_result.get("facility_item_id", "")) != facility_item_id:
+		return _facility_placement_failed("invalid_placement_result")
+	var placed: Dictionary = facility_placement_service.place_validated_facility(
+		placement_result,
 		world_data,
-		origin,
 		placement_context
 	)
 	if not placed.ok:
@@ -3341,6 +3347,7 @@ func _place_pending_facility_at(origin: Vector2i) -> Dictionary:
 	crafted["placement"] = placed.duplicate(true)
 	_pending_facility_placement.clear()
 	_pending_facility_origin = Vector2i(-1, -1)
+	_pending_facility_result.clear()
 	_pending_facility_rotation = 0
 	_clear_facility_placement_preview()
 	if game_hud != null:
@@ -3356,6 +3363,7 @@ func _place_pending_facility_at(origin: Vector2i) -> Dictionary:
 	return crafted
 
 func _facility_placement_failed(reason: String) -> Dictionary:
+	_pending_facility_result.clear()
 	if game_hud != null:
 		game_hud.update_facility_placement_controls(false, _facility_placement_reason(reason))
 	return {"ok": false, "reason": reason, "placement_pending": true}
@@ -3378,6 +3386,7 @@ func _cancel_pending_facility_placement() -> bool:
 		return false
 	_pending_facility_placement.clear()
 	_pending_facility_origin = Vector2i(-1, -1)
+	_pending_facility_result.clear()
 	_pending_facility_rotation = 0
 	_clear_facility_placement_preview()
 	if game_hud != null:
