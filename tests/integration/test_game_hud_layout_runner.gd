@@ -86,6 +86,21 @@ func _assert_layout_for_viewport(viewport_name: String, viewport_size: Vector2i)
 			_failures.append("%s missing action menu scroll" % viewport_name)
 		elif scroll.custom_minimum_size.y > _rect(hud.get_node("Root/ActionMenuPanel")).size.y:
 			_failures.append("%s action menu scroll exceeds panel height" % viewport_name)
+	hud.show_narrative_dialogue({
+		"event_id": "repeat_dialogue_check",
+		"node_id": "portrait_layout",
+		"speaker_id": "CHR-9",
+		"text": "떠돌이 차 상인의 초상화가 화면 안에서 읽힌다.",
+		"options": [{"id": "continue", "display_text": "계속"}]
+	})
+	await process_frame
+	hud._apply_safe_area_layout()
+	await process_frame
+	_assert_visible_rect_inside(viewport_name, hud, "Root/NarrativeOverlay/NarrativePanel", viewport_size)
+	_assert_visible_rect_inside(viewport_name, hud, "Root/NarrativeOverlay/LeftPortraitFrame", viewport_size)
+	_assert_visible_rect_inside(viewport_name, hud, "Root/NarrativeOverlay/LeftPortrait", viewport_size)
+	_assert_no_overlap(viewport_name, hud, "Root/NarrativeOverlay/LeftPortraitFrame", "Root/NarrativeOverlay/NarrativePanel")
+	_assert_no_overlap(viewport_name, hud, "Root/NarrativeOverlay/LeftPortraitFrame", "Root/NarrativeOverlay/RightPortraitFrame")
 	viewport.queue_free()
 	await process_frame
 

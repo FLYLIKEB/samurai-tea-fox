@@ -218,6 +218,7 @@ func run(asserts) -> void:
 	_assert_safe_area_layout_uses_viewport_top(asserts)
 	_assert_status_toasts_use_event_models_icons_and_queue_limits(asserts)
 	_assert_narrative_dialogue_emits_option_commands(asserts)
+	_assert_major_character_portraits_follow_speaker_ids(asserts)
 
 func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:
 	var hud := _configured_hud()
@@ -563,6 +564,40 @@ func _assert_narrative_dialogue_emits_option_commands(asserts) -> void:
 	asserts.true_value((hud.get_node_or_null("Root/StatusPanel") as Control).visible, "normal status HUD is restored after prologue")
 	asserts.false_value((hud.get_node_or_null("Root/MenuPanel") as Control).visible, "prologue restore does not reopen a hidden fast menu")
 	hud.free()
+
+func _assert_major_character_portraits_follow_speaker_ids(asserts) -> void:
+	var expected := {
+		"CHR-2": "chr_2_wasteland_daimyo_96x96.png",
+		"CHR-3": "chr_3_furuta_oribe_96x96.png",
+		"CHR-4": "chr_4_snow_monk_96x96.png",
+		"CHR-5": "chr_5_sen_rikyu_96x96.png",
+		"CHR-6": "chr_6_yokai_tea_master_96x96.png",
+		"CHR-7": "chr_7_mountain_potter_96x96.png",
+		"CHR-8": "chr_8_muchau_96x96.png",
+		"CHR-9": "chr_9_wandering_tea_merchant_96x96.png",
+	}
+	for speaker_id in expected.keys():
+		var hud := _configured_hud()
+		asserts.true_value(hud.show_narrative_dialogue({
+			"event_id": "repeat_dialogue_check",
+			"node_id": "speaker_portrait",
+			"speaker_id": speaker_id,
+			"text": "초상화 연결 확인",
+			"options": [{"id": "continue", "display_text": "계속"}]
+		}), "%s narrative dialogue opens" % speaker_id)
+		asserts.true_value(_tree_uses_texture(hud.get_node_or_null("Root/NarrativeOverlay/LeftPortrait"), String(expected[speaker_id])), "%s uses the mapped portrait" % speaker_id)
+		asserts.false_value((hud.get_node_or_null("Root/NarrativeOverlay/RightPortrait") as Control).visible, "%s non-prologue dialogue keeps the partner portrait hidden" % speaker_id)
+		hud.free()
+	var fallback_hud := _configured_hud()
+	asserts.true_value(fallback_hud.show_narrative_dialogue({
+		"event_id": "repeat_dialogue_check",
+		"node_id": "unknown_speaker",
+		"speaker_id": "CHR-UNKNOWN",
+		"text": "알 수 없는 화자",
+		"options": []
+	}), "unknown speaker dialogue still opens")
+	asserts.false_value((fallback_hud.get_node_or_null("Root/NarrativeOverlay/LeftPortrait") as Control).visible, "unknown speaker hides the missing portrait instead of showing a broken texture")
+	fallback_hud.free()
 
 func _configured_hud() -> GameHud:
 	var hud := GameHud.new()

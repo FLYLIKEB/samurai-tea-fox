@@ -2307,23 +2307,39 @@ func _apply_safe_area_layout() -> void:
 		_narrative_background.offset_top = 0
 		_narrative_background.offset_right = 0
 		_narrative_background.offset_bottom = 0
+	var narrative_panel_size := _control_layout_size(_panels.narrative as Control) if _panels.narrative is Control else NARRATIVE_PANEL_SIZE
+	var narrative_panel_top := viewport_size.y - margin.w - NARRATIVE_PANEL_BOTTOM_OFFSET - narrative_panel_size.y
+	var portrait_frame_edge := minf(
+		NARRATIVE_PORTRAIT_FRAME_SIZE.x,
+		maxf(56.0, narrative_panel_top - (margin.y + 44.0) - HUD_EDGE_GAP)
+	)
+	var portrait_frame_size := Vector2(portrait_frame_edge, portrait_frame_edge)
+	var portrait_inset := minf(NARRATIVE_PORTRAIT_INSET, portrait_frame_edge * 0.08)
+	var portrait_size := Vector2(
+		maxf(1.0, portrait_frame_edge - portrait_inset * 2.0),
+		maxf(1.0, portrait_frame_edge - portrait_inset * 2.0)
+	)
 	var portrait_y := maxf(
 		margin.y + 44.0,
-		viewport_size.y - margin.w - NARRATIVE_PANEL_BOTTOM_OFFSET - NARRATIVE_PANEL_SIZE.y - NARRATIVE_PORTRAIT_FRAME_SIZE.y + 16.0
+		narrative_panel_top - portrait_frame_size.y - HUD_EDGE_GAP
 	)
 	var left_frame_position := Vector2(margin.x + 24.0, portrait_y)
-	var right_frame_position := Vector2(viewport_size.x - margin.z - NARRATIVE_PORTRAIT_FRAME_SIZE.x - 24.0, portrait_y)
+	var right_frame_position := Vector2(viewport_size.x - margin.z - portrait_frame_size.x - 24.0, portrait_y)
 	if _narrative_left_portrait != null:
-		_narrative_left_portrait.size = NARRATIVE_PORTRAIT_SIZE
-		_narrative_left_portrait.position = left_frame_position + Vector2.ONE * NARRATIVE_PORTRAIT_INSET
+		_narrative_left_portrait.custom_minimum_size = portrait_size
+		_narrative_left_portrait.size = portrait_size
+		_narrative_left_portrait.position = left_frame_position + Vector2.ONE * portrait_inset
 	if _narrative_left_portrait_frame != null:
-		_narrative_left_portrait_frame.size = NARRATIVE_PORTRAIT_FRAME_SIZE
+		_narrative_left_portrait_frame.custom_minimum_size = portrait_frame_size
+		_narrative_left_portrait_frame.size = portrait_frame_size
 		_narrative_left_portrait_frame.position = left_frame_position
 	if _narrative_right_portrait != null:
-		_narrative_right_portrait.size = NARRATIVE_PORTRAIT_SIZE
-		_narrative_right_portrait.position = right_frame_position + Vector2.ONE * NARRATIVE_PORTRAIT_INSET
+		_narrative_right_portrait.custom_minimum_size = portrait_size
+		_narrative_right_portrait.size = portrait_size
+		_narrative_right_portrait.position = right_frame_position + Vector2.ONE * portrait_inset
 	if _narrative_right_portrait_frame != null:
-		_narrative_right_portrait_frame.size = NARRATIVE_PORTRAIT_FRAME_SIZE
+		_narrative_right_portrait_frame.custom_minimum_size = portrait_frame_size
+		_narrative_right_portrait_frame.size = portrait_frame_size
 		_narrative_right_portrait_frame.position = right_frame_position
 	_place_panel(_panels.status, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y))
 	_place_panel(_panels.map, Control.PRESET_TOP_RIGHT, Vector2(-margin.z, margin.y))
@@ -2366,6 +2382,7 @@ func _apply_safe_area_layout() -> void:
 	_place_panel(_panels.action, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w))
 	_resize_action_menu_panel(viewport_size, margin, top_stack_bottom)
 	_place_action_menu_panel(viewport_size, margin, top_stack_bottom)
+	_resize_narrative_panel(viewport_size, margin)
 	_place_panel(_panels.narrative, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w - NARRATIVE_PANEL_BOTTOM_OFFSET))
 	_place_panel(_facility_placement_panel, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w - 8.0))
 
@@ -2402,6 +2419,21 @@ func _resize_action_menu_panel(viewport_size: Vector2, margin: Vector4, top_stac
 	action_menu_panel.size = panel_size
 	if _action_menu_scroll != null:
 		_action_menu_scroll.custom_minimum_size = Vector2(panel_size.x - 12.0, maxf(44.0, panel_size.y - 12.0))
+
+func _resize_narrative_panel(viewport_size: Vector2, margin: Vector4) -> void:
+	var narrative_panel := _panels.get("narrative") as Control
+	if narrative_panel == null:
+		return
+	var available_width := maxf(1.0, viewport_size.x - margin.x - margin.z)
+	var panel_width := minf(NARRATIVE_PANEL_SIZE.x, available_width)
+	panel_width = maxf(240.0, panel_width)
+	if panel_width > available_width:
+		panel_width = available_width
+	var panel_size := Vector2(panel_width, NARRATIVE_PANEL_SIZE.y)
+	narrative_panel.custom_minimum_size = panel_size
+	narrative_panel.size = panel_size
+	if _labels.has("narrative_text") and _labels.narrative_text is Control:
+		(_labels.narrative_text as Control).custom_minimum_size = Vector2(maxf(120.0, panel_width - 32.0), 38.0)
 
 func _place_action_menu_panel(viewport_size: Vector2, margin: Vector4, top_stack_bottom: float) -> void:
 	var action_menu_panel := _panels.get("action_menu") as Control
