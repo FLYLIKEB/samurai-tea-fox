@@ -95,12 +95,8 @@ KIND_FALLBACKS = {
 }
 
 MONSTER_OVERRIDES = {
-    "monster_16": "monster_mountain_boar_front_idle",
-    "monster_17": "monster_ash_crow_flock_front_idle",
     "monster_18": "monster_abandoned_mine_samurai_front_idle",
     "monster_19": "monster_road_bandit_front_idle",
-    "monster_20": "monster_frost_lantern_yokai_front_idle",
-    "monster_21": "monster_agarwood_thief_front_idle",
 }
 
 

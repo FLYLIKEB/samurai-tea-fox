@@ -4086,6 +4086,42 @@
       "rgba_sha256": "sha256:3fa4d8fb5d59321624bc6d58b8637f996d76ac5016e6493034645c294502d10c"
     },
     {
+      "path": "assets/sprites/characters/monsters/monster_16/paddy_boar_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:f354b7781c96ba7394773d59535b6cf96483f40f56185a96b4a239f64f32ed92",
+      "rgba_sha256": "sha256:a535a46c3a3cda01ddfb585ed31dd887920f7603a96723600c3e9088b253f53f"
+    },
+    {
+      "path": "assets/sprites/characters/monsters/monster_17/cliff_eagle_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:384910640ac7dc11a4642fcf605d23bd9d798fecbd61fab21d7a2d064a586829",
+      "rgba_sha256": "sha256:4a8f3b8db15f035d5d6d4f73db8899369304723e584690575495c90d7952d0d6"
+    },
+    {
+      "path": "assets/sprites/characters/monsters/monster_20/snow_burrow_rabbit_yokai_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:b1d129a7c0bc15bf92edda75e1ae129cd55620a7605bd56f3ca7f36e8d5b9061",
+      "rgba_sha256": "sha256:cf11f036417082ab17170e22dd50a06cef1a70db21076c03c003f455caf61db0"
+    },
+    {
+      "path": "assets/sprites/characters/monsters/monster_21/incense_moth_yokai_front_idle_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:15c8a3f7a99b1fceb88e1f194dc115decd3218401e1751c375b945970c7b6f10",
+      "rgba_sha256": "sha256:cac66a385aa451f24789a3f303f5b1eebb3cfde2a633473bd03bf4158b747c1d"
+    },
+    {
       "path": "assets/sprites/characters/monsters/moss_tree_yokai/moss_tree_yokai_front_idle_32x32.png",
       "width": 32,
       "height": 32,
