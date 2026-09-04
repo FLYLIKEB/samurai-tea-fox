@@ -45,23 +45,37 @@ ITEM_OVERRIDES = {
 }
 
 DEDICATED_ITEM_ICONS = {
+    "ash_stained_iron_kettle": "item_ash_stained_iron_kettle_icon",
     "bandage": "item_cloth_bandage_icon",
+    "black_bamboo_tea_scoop": "item_black_bamboo_tea_scoop_icon",
     "charcoal": "item_charcoal_icon",
     "clay": "item_clay_icon",
     "cloth": "item_cloth_scraps_icon",
     "conifer_wood": "item_conifer_wood_icon",
     "copper_ore": "item_copper_ore_icon",
+    "humble_clay_bowl": "item_humble_clay_bowl_icon",
     "incense_sticks": "item_incense_sticks_icon",
+    "insulated_tea_bottle": "item_insulated_tea_bottle_icon",
     "iron_ore": "item_iron_ore_icon",
+    "iron_kettle": "item_iron_kettle_icon",
     "item_5": "item_agarwood_icon",
     "item_28": "item_iron_scrap_icon",
     "item_29": "item_reversal_knot_icon",
     "item_33": "item_coin_icon",
+    "mountain_iron_dagger": "item_mountain_iron_dagger_icon",
     "old_wood": "item_old_wood_icon",
+    "old_incense_box": "item_old_incense_box_icon",
+    "oribe_green_glazed_bowl": "item_oribe_green_glazed_bowl_icon",
+    "portable_brazier": "item_portable_brazier_icon",
     "rare_wood": "item_rare_wood_icon",
+    "repair_hammer": "item_repair_hammer_icon",
+    "short_travel_sword": "item_short_travel_sword_icon",
     "snowfield_mineral": "item_snowfield_mineral_icon",
     "stone": "item_stone_icon",
+    "unbroken_failure": "item_unbroken_failure_icon",
+    "war_tea_caddy": "item_war_tea_caddy_icon",
     "wood": "item_wood_icon",
+    "wood_incense_burner": "item_wood_incense_burner_icon",
 }
 
 KIND_FALLBACKS = {
