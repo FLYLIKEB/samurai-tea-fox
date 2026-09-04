@@ -11937,6 +11937,52 @@
       "source_sha256": "sha256:8f3be98bc29d7c9fb6c85c5eb9b6881120386c84f9aae9f54b21bfd3f464e283",
       "rgba_sha256": "sha256:984f462efff887b7718a0b0949d42b81e399976672d2b2683c1efcaa36d7f386",
       "runtime_scale": 1
+    },
+    {
+      "id": "item_mountain_kiln_object_64",
+      "name": "산중 가마 64x64 오브젝트",
+      "status": "완료",
+      "kind": "runtime_png",
+      "path": "res://assets/sprites/objects/crafting/mountain_kiln_64x64.png",
+      "width": 64,
+      "height": 64,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 64,
+        "frame_height": 64
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "runtime_scale": 1,
+      "source_sha256": "sha256:ea67a51920c6745c0dd263d6bf773758f237b54a86f166226044dcdf2d3d17d4",
+      "rgba_sha256": "sha256:a8f6175965ade481538b559ca62271553944782c25e66bea8c7892a52f6e7c8b"
+    },
+    {
+      "id": "item_wooden_workbench_object_64",
+      "name": "목재 작업대 64x64 오브젝트",
+      "status": "완료",
+      "kind": "runtime_png",
+      "path": "res://assets/sprites/objects/crafting/wooden_workbench_64x64.png",
+      "width": 64,
+      "height": 64,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 64,
+        "frame_height": 64
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "runtime_scale": 1,
+      "source_sha256": "sha256:17a4a751cea61887343509f0f41b76f43bba90bb13d0274a5a581c72a9866fe0",
+      "rgba_sha256": "sha256:929711e64439986b552c0c29fbdd35ad4856c506cb55582e1536b3334b790912"
     }
   ]
 }

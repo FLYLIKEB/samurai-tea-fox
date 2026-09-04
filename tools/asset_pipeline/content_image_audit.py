@@ -62,6 +62,7 @@ DEDICATED_ITEM_ICONS = {
     "item_28": "item_iron_scrap_icon",
     "item_29": "item_reversal_knot_icon",
     "item_33": "item_coin_icon",
+    "mountain_kiln": "item_mountain_kiln_object_64",
     "mountain_iron_dagger": "item_mountain_iron_dagger_icon",
     "old_wood": "item_old_wood_icon",
     "old_incense_box": "item_old_incense_box_icon",
@@ -76,6 +77,7 @@ DEDICATED_ITEM_ICONS = {
     "war_tea_caddy": "item_war_tea_caddy_icon",
     "wood": "item_wood_icon",
     "wood_incense_burner": "item_wood_incense_burner_icon",
+    "wooden_workbench": "item_wooden_workbench_object_64",
 }
 
 KIND_FALLBACKS = {
