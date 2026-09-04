@@ -27,6 +27,7 @@ const MetaCodexCommandRuntime = preload("res://src/meta/meta_codex_command_runti
 const BiomeProgressionState = preload("res://src/world/biome/biome_progression_state.gd")
 const DungeonInstanceState = preload("res://src/dungeon/dungeon_instance_state.gd")
 const RunState = preload("res://src/save/run_state.gd")
+const RunRuntimeStateBinder = preload("res://src/save/run_runtime_state_binder.gd")
 const SenRikyuPhaseOneRuntime = preload("res://src/dungeon/sen_rikyu_phase_one_runtime.gd")
 const SenRikyuPhaseTwoRuntime = preload("res://src/dungeon/sen_rikyu_phase_two_runtime.gd")
 const SenRikyuPhaseThreeRuntime = preload("res://src/dungeon/sen_rikyu_phase_three_runtime.gd")
@@ -158,6 +159,7 @@ var ending_route_runtime
 var acquisition_service
 var dungeon_runtime
 var run_lifecycle_service
+var run_runtime_state_binder := RunRuntimeStateBinder.new()
 var biome_progression_state
 var save_store = SaveStore.new()
 var run_state: RunState
@@ -1048,68 +1050,10 @@ func movement_command_for_current_inputs(desktop_command) -> GameCommand:
 func restore_run_state(state) -> Dictionary:
 	if not state is RunState:
 		return {"ok": false, "reason": "invalid_run_state", "error": "Main runtime requires a RunState."}
-	var inventory_before: Dictionary = inventory.to_snapshot() if inventory != null else {}
-	var equipment_before: Dictionary = equipment.to_snapshot() if equipment != null else {}
-	var tea_before: Dictionary = tea_service.to_snapshot() if tea_service != null else {}
-	var consumables_before: Dictionary = consumable_service.to_snapshot() if consumable_service != null else {}
-	var acquisitions_before: Dictionary = acquisition_service.to_snapshot() if acquisition_service != null else {}
-	if inventory != null and not state.inventory.is_empty():
-		var inventory_result: Dictionary = inventory.load_snapshot(state.inventory)
-		if not inventory_result.ok:
-			return inventory_result
-	if acquisition_service != null and not state.acquisitions.is_empty():
-		var acquisition_result: Dictionary = acquisition_service.load_snapshot(state.acquisitions)
-		if not acquisition_result.ok:
-			if inventory != null and not inventory_before.is_empty():
-				inventory.load_snapshot(inventory_before)
-			if equipment != null and not equipment_before.is_empty():
-				equipment.load_snapshot(equipment_before)
-			if not acquisitions_before.is_empty():
-				acquisition_service.load_snapshot(acquisitions_before)
-			return acquisition_result
-	if equipment != null and not state.equipment.is_empty():
-		var equipment_result: Dictionary = equipment.load_snapshot(state.equipment)
-		if not equipment_result.ok:
-			if inventory != null and not inventory_before.is_empty():
-				inventory.load_snapshot(inventory_before)
-			return equipment_result
-	if tea_service != null and not state.tea.is_empty():
-		var tea_load_result: Dictionary = tea_service.load_snapshot(state.tea)
-		if not tea_load_result.ok:
-			if inventory != null and not inventory_before.is_empty():
-				inventory.load_snapshot(inventory_before)
-			if equipment != null and not equipment_before.is_empty():
-				equipment.load_snapshot(equipment_before)
-			if not tea_before.is_empty():
-				tea_service.load_snapshot(tea_before)
-			return tea_load_result
-	if consumable_service != null and not state.consumables.is_empty():
-		var consumable_load_result: Dictionary = consumable_service.load_snapshot(state.consumables)
-		if not consumable_load_result.ok:
-			if inventory != null and not inventory_before.is_empty():
-				inventory.load_snapshot(inventory_before)
-			if equipment != null and not equipment_before.is_empty():
-				equipment.load_snapshot(equipment_before)
-			if not tea_before.is_empty():
-				tea_service.load_snapshot(tea_before)
-			if not consumables_before.is_empty():
-				consumable_service.load_snapshot(consumables_before)
-			if not acquisitions_before.is_empty():
-				acquisition_service.load_snapshot(acquisitions_before)
-			return consumable_load_result
+	var hydrate_result: Dictionary = run_runtime_state_binder.hydrate_from_run_state(state, _run_runtime_state_entries())
+	if not hydrate_result.ok:
+		return hydrate_result
 	run_state = state
-	if inventory != null:
-		run_state.inventory = inventory.to_snapshot()
-	if equipment != null:
-		run_state.equipment = equipment.to_snapshot()
-	if tea_service != null:
-		run_state.tea = tea_service.to_snapshot()
-	if consumable_service != null:
-		_sync_consumable_runtime_state()
-	if time_state != null:
-		run_state.time = time_state.to_snapshot()
-	if acquisition_service != null and not _in_dungeon_map:
-		run_state.acquisitions = acquisition_service.to_snapshot()
 	_configure_game_hud()
 	return {"ok": true}
 
@@ -1126,29 +1070,20 @@ func _on_hud_movement_button_changed(direction: Vector2i) -> void:
 func snapshot_run_state() -> Dictionary:
 	if run_state == null:
 		run_state = RunState.new()
-	if inventory != null:
-		run_state.inventory = inventory.to_snapshot()
 	if player != null:
 		var player_resources = player.get("resources")
 		if player_resources != null and player_resources.has_method("to_dictionary"):
 			run_state.player_resources = player_resources.to_dictionary()
-	if acquisition_service != null and not _in_dungeon_map:
-		run_state.acquisitions = acquisition_service.to_snapshot()
 	if not _in_dungeon_map and combat_dummy != null and is_instance_valid(combat_dummy):
 		run_state.overworld_enemy_state = _snapshot_overworld_enemy_state()
-	if memory_tea_cutscene_runtime != null:
-		run_state.memory_tea_cutscene = memory_tea_cutscene_runtime.to_snapshot()
-	if tea_service != null:
-		run_state.tea = tea_service.to_snapshot()
-	if consumable_service != null:
-		_sync_consumable_runtime_state()
-	if time_state != null:
-		run_state.time = time_state.to_snapshot()
 	if player != null and _in_dungeon_map:
 		_sync_dungeon_runtime_save_state()
 	elif player != null:
 		var cell := _player_world_cell()
 		run_state.player_cell = {"x": cell.x, "y": cell.y}
+	var snapshot_result: Dictionary = run_runtime_state_binder.snapshot_to_run_state(run_state, _run_runtime_state_entries())
+	if not snapshot_result.ok:
+		push_error(snapshot_result.error)
 	return run_state.to_dictionary()
 
 func load_or_create_run_state() -> Dictionary:
@@ -1364,34 +1299,16 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	var final_room_result: Dictionary = FinalRoomStateBuilder.from_catalog(loaded_catalog)
 	if not final_room_result.ok:
 		return final_room_result
+	if run_runtime_state_binder == null:
+		run_runtime_state_binder = RunRuntimeStateBinder.new()
 	inventory = inventory_result.inventory
-	if run_state != null and not run_state.inventory.is_empty():
-		var inventory_load_result: Dictionary = inventory.load_snapshot(run_state.inventory)
-		if not inventory_load_result.ok:
-			return inventory_load_result
 	equipment = equipment_result.equipment
-	if run_state != null and not run_state.equipment.is_empty():
-		var equipment_load_result: Dictionary = equipment.load_snapshot(run_state.equipment)
-		if not equipment_load_result.ok:
-			return equipment_load_result
 	tea_service = tea_result.tea_service
 	_active_tea_drink_action = {}
 	time_state = TimeState.new(time_config_result.config) if time_config_result.ok else null
-	if time_state != null and run_state != null and not run_state.time.is_empty():
-		var time_load_result: Dictionary = time_state.load_snapshot(run_state.time)
-		if not time_load_result.ok:
-			return time_load_result
-	if run_state != null and not run_state.tea.is_empty():
-		var tea_load_result: Dictionary = tea_service.load_snapshot(run_state.tea)
-		if not tea_load_result.ok:
-			return tea_load_result
 	crafting_service = crafting_result.crafting_service
 	facility_placement_service = facility_placement_result.facility_placement_service
 	consumable_service = consumable_result.consumable_service if consumable_result.ok else null
-	if consumable_service != null and run_state != null and not run_state.consumables.is_empty():
-		var consumable_load_result: Dictionary = consumable_service.load_snapshot(run_state.consumables)
-		if not consumable_load_result.ok:
-			return consumable_load_result
 	core_tea_ware_collection = core_tea_ware_result.collection
 	final_room_state_builder = final_room_result.builder
 	sen_rikyu_phase_one_runtime = null
@@ -1437,10 +1354,10 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	var memory_runtime_result: Dictionary = memory_tea_cutscene_runtime.configure(loaded_catalog.data_version)
 	if not memory_runtime_result.ok:
 		return memory_runtime_result
-	if run_state != null and not run_state.memory_tea_cutscene.is_empty():
-		var memory_load_result: Dictionary = memory_tea_cutscene_runtime.load_snapshot(run_state.memory_tea_cutscene)
-		if not memory_load_result.ok:
-			return memory_load_result
+	if run_state != null:
+		var hydrate_result: Dictionary = run_runtime_state_binder.hydrate_from_run_state(run_state, _run_runtime_state_entries())
+		if not hydrate_result.ok:
+			return hydrate_result
 	narrative_runtime = NarrativeRuntime.new()
 	var narrative_result: Dictionary = narrative_runtime.from_catalog(loaded_catalog)
 	if not narrative_result.ok:
@@ -3619,16 +3536,16 @@ func _selected_inventory_slot_index() -> int:
 func _sync_inventory_runtime_state() -> void:
 	if run_state == null:
 		run_state = RunState.new()
-	if inventory != null:
-		run_state.inventory = inventory.to_snapshot()
-	if equipment != null:
-		run_state.equipment = equipment.to_snapshot()
+	var result: Dictionary = run_runtime_state_binder.snapshot_to_run_state(run_state, _run_runtime_state_entries())
+	if not result.ok:
+		push_error(result.error)
 
 func _sync_tea_runtime_state() -> void:
 	if run_state == null:
 		run_state = RunState.new()
-	if tea_service != null:
-		run_state.tea = tea_service.to_snapshot()
+	var result: Dictionary = run_runtime_state_binder.snapshot_to_run_state(run_state, _run_runtime_state_entries())
+	if not result.ok:
+		push_error(result.error)
 
 func tea_brewing_read_model() -> Dictionary:
 	if tea_brewing_command_runtime == null:
@@ -3640,10 +3557,20 @@ func tea_brewing_read_model() -> Dictionary:
 func _sync_consumable_runtime_state() -> void:
 	if run_state == null:
 		run_state = RunState.new()
-	if consumable_service != null:
-		var snapshot: Dictionary = consumable_service.to_snapshot()
-		var active_action: Dictionary = snapshot.get("active_action", {})
-		run_state.consumables = snapshot if not active_action.is_empty() else {}
+	var result: Dictionary = run_runtime_state_binder.snapshot_to_run_state(run_state, _run_runtime_state_entries())
+	if not result.ok:
+		push_error(result.error)
+
+func _run_runtime_state_entries() -> Array:
+	return [
+		{"field": "inventory", "runtime": inventory},
+		{"field": "equipment", "runtime": equipment},
+		{"field": "tea", "runtime": tea_service},
+		{"field": "consumables", "runtime": consumable_service, "clear_when_empty_key": "active_action"},
+		{"field": "time", "runtime": time_state},
+		{"field": "acquisitions", "runtime": acquisition_service, "active": not _in_dungeon_map},
+		{"field": "memory_tea_cutscene", "runtime": memory_tea_cutscene_runtime}
+	]
 
 func meta_codex_read_model() -> Dictionary:
 	if meta_codex_command_runtime == null:

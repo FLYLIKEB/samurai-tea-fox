@@ -44,6 +44,7 @@ const TESTS := [
 	preload("res://tests/unit/test_sen_rikyu_phase_two_runtime.gd"),
 	preload("res://tests/unit/test_sen_rikyu_phase_three_runtime.gd"),
 	preload("res://tests/unit/test_run_lifecycle_service.gd"),
+	preload("res://tests/unit/test_run_runtime_state_binder.gd"),
 	preload("res://tests/unit/test_save_codec.gd"),
 	preload("res://tests/unit/test_save_store.gd"),
 	preload("res://tests/unit/test_biome_progression.gd"),
