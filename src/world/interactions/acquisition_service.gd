@@ -2,6 +2,7 @@ extends RefCounted
 class_name AcquisitionService
 
 const GameCommand = preload("res://src/core/commands/game_command.gd")
+const DropEvaluator = preload("res://src/enemy/drop_evaluator.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 
 const SNAPSHOT_SCHEMA_VERSION := 1
@@ -142,7 +143,7 @@ func gather(node_id: String) -> Dictionary:
 	acquisition_completed.emit(completed.duplicate(true))
 	return completed
 
-func process_drop_request(event: Dictionary, position := Vector2i.ZERO) -> Dictionary:
+func process_drop_request(event: Dictionary, position := Vector2i.ZERO, evaluation_context := {}) -> Dictionary:
 	if String(event.get("type", "")) != "monster_drop_requested":
 		return _fail_and_emit(_fail("invalid_drop_event", "Expected monster_drop_requested event."))
 	var monster_id := String(event.get("definition_id", event.get("monster_id", "")))
@@ -159,8 +160,10 @@ func process_drop_request(event: Dictionary, position := Vector2i.ZERO) -> Dicti
 	var pickup_ids_before: Array = pickups.keys()
 	var next_pickup_id_before := next_pickup_id
 	var results: Array = []
+	var drop_context: Dictionary = evaluation_context.duplicate(true) if evaluation_context is Dictionary else {}
+	drop_context["request_id"] = request_id
 	for grant in drop_definitions[monster_id].grants:
-		var resolved: Dictionary = _resolve_drop_grant(grant, event, request_id)
+		var resolved: Dictionary = DropEvaluator.evaluate(grant, drop_context)
 		if not resolved.ok:
 			return _fail_and_emit(resolved)
 		if not resolved.included:
@@ -468,6 +471,8 @@ func _normalize_grant(row, target_inventory) -> Dictionary:
 		return _fail("invalid_chance", "Acquisition chance must be between zero and one.")
 	if condition.is_empty() or drop_id.is_empty():
 		return _fail("invalid_drop_rule", "Acquisition drop id and condition must be non-empty.")
+	if not DropEvaluator.SUPPORTED_CONDITIONS.has(condition):
+		return _fail("unsupported_drop_condition", "Unsupported drop condition: %s" % condition)
 	if policy != POLICY_DIRECT and policy != POLICY_PICKUP:
 		return _fail("invalid_policy", "Acquisition policy must be direct or pickup.")
 	return {"ok": true, "grant": {
@@ -480,36 +485,6 @@ func _normalize_grant(row, target_inventory) -> Dictionary:
 		"condition": condition,
 		"policy": policy
 	}}
-
-func _resolve_drop_grant(grant: Dictionary, event: Dictionary, request_id: String) -> Dictionary:
-	if not _drop_condition_matches(grant.condition, event):
-		return {"ok": true, "included": false}
-	var seed_key := "%s|%s" % [request_id, grant.drop_id]
-	if _stable_unit_interval(seed_key + "|chance") >= float(grant.chance):
-		return {"ok": true, "included": false}
-	var quantity := int(grant.min_quantity)
-	var quantity_span := int(grant.max_quantity) - quantity + 1
-	if quantity_span > 1:
-		quantity += int(floor(_stable_unit_interval(seed_key + "|quantity") * quantity_span))
-	return {"ok": true, "included": true, "grant": {
-		"item_id": grant.item_id,
-		"quantity": quantity,
-		"policy": grant.policy
-	}}
-
-func _drop_condition_matches(condition: String, event: Dictionary) -> bool:
-	if condition == "항상":
-		return true
-	if String(event.get("condition", "")) == condition:
-		return true
-	var conditions = event.get("conditions", [])
-	return typeof(conditions) == TYPE_ARRAY and conditions.has(condition)
-
-func _stable_unit_interval(key: String) -> float:
-	var hash_value := 2166136261
-	for byte in key.to_utf8_buffer():
-		hash_value = ((hash_value ^ int(byte)) * 16777619) & 0x7fffffff
-	return float(hash_value % 1000000) / 1000000.0
 
 func _normalize_gatherable_snapshot(rows) -> Dictionary:
 	if typeof(rows) != TYPE_ARRAY:

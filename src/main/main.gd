@@ -1691,7 +1691,7 @@ func _enter_dungeon_map(layout: WorldData, definition: Dictionary, is_new_entry 
 		var dungeon_definitions := []
 		for node in _dungeon_resources:
 			dungeon_definitions.append({"id": String(node.id), "item_id": String(node.get("resource_id", "iron_ore")), "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT})
-		var dungeon_acquisition_result: Dictionary = acquisition_service.configure(inventory, world_data, dungeon_definitions, [])
+		var dungeon_acquisition_result: Dictionary = acquisition_service.configure(inventory, world_data, dungeon_definitions, _generated_drop_definitions())
 		if not dungeon_acquisition_result.ok:
 			_dungeon_debug("광석 상호작용 설정 실패: %s" % dungeon_acquisition_result)
 		else:
@@ -2096,7 +2096,7 @@ func _generated_drop_definitions() -> Array:
 func _connect_acquisition_combat_source(source) -> Dictionary:
 	if source == null or not source.has_signal("drop_requested"):
 		return {"ok": false, "reason": "invalid_drop_source", "error": "Combat source must expose drop_requested."}
-	var callback := Callable(self, "_on_combat_drop_requested")
+	var callback := Callable(self, "_on_combat_drop_requested").bind(source)
 	if not source.is_connected("drop_requested", callback):
 		source.connect("drop_requested", callback)
 	return {"ok": true}
@@ -2133,22 +2133,22 @@ func _on_acquisition_completed(result: Dictionary) -> void:
 	if game_hud != null:
 		game_hud.show_status_toast("%s을(를) 얻었다!" % item_name)
 
-func _on_combat_drop_requested(event: Dictionary) -> void:
+func _on_combat_drop_requested(event: Dictionary, source = null) -> void:
 	if acquisition_service == null:
 		return
-	# Dungeon acquisition is intentionally configured with resource nodes only.
-	# Dungeon combatants may still emit the shared monster-drop hook, but their
-	# overworld drop definitions must not be treated as a dungeon configuration error.
-	if _in_dungeon_map:
-		return
 	var normalized := event.duplicate(true)
-	if not normalized.has("position") and combat_dummy != null:
-		var drop_cell := world_cell_from_world_position(combat_dummy.global_position)
+	var drop_source = source if source is Node2D and is_instance_valid(source) else combat_dummy
+	if not normalized.has("position") and drop_source is Node2D and is_instance_valid(drop_source):
+		var drop_cell := world_cell_from_world_position(drop_source.global_position)
 		normalized.position = {
 			"x": drop_cell.x,
 			"y": drop_cell.y
 		}
-	var result: Dictionary = acquisition_service.process_drop_request(normalized)
+	var evaluation_context := {
+		"run_seed": int(run_state.seed) if run_state != null else FRESH_RUN_SEED,
+		"time_phase": String(time_state.phase) if time_state != null else ""
+	}
+	var result: Dictionary = acquisition_service.process_drop_request(normalized, Vector2i.ZERO, evaluation_context)
 	if not result.ok:
 		push_error(result.error)
 

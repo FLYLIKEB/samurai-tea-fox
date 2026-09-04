@@ -18,6 +18,7 @@ const TESTS := [
 	preload("res://tests/unit/test_turn_time_progression.gd"),
 	preload("res://tests/unit/test_combat_state.gd"),
 	preload("res://tests/unit/test_monster_runtime.gd"),
+	preload("res://tests/unit/test_drop_evaluator.gd"),
 	preload("res://tests/unit/test_monster_behavior.gd"),
 	preload("res://tests/unit/test_ability_runtime.gd"),
 	preload("res://tests/unit/test_inventory_model.gd"),
@@ -54,6 +55,7 @@ const TESTS := [
 	preload("res://tests/unit/test_acquisition_service.gd"),
 	preload("res://tests/unit/test_main_vertical_slice_runtime.gd"),
 	preload("res://tests/unit/test_main_acquisition_runtime.gd"),
+	preload("res://tests/unit/test_main_drop_runtime.gd"),
 	preload("res://tests/unit/test_pointer_combat_input.gd"),
 	preload("res://tests/unit/test_world_generation.gd")
 ]
