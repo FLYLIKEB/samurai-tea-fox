@@ -97,6 +97,10 @@ func _assert_dungeon_combatants_do_not_cross_world_boundary(asserts, catalog: Da
 	if not combat.ok or not world.ok:
 		_free_combat_runtime(main, player, overworld_dummy)
 		return
+	main.generated_world["monster_spawn_pool"] = {"entries": [
+		{"id": "pool_wild_dog", "monster_id": "wild_dog"},
+		{"id": "pool_road_bandit", "monster_id": "road_bandit"}
+	]}
 	overworld_dummy.global_position = main.world_position_for_cell_center(Vector2i(3, 1))
 	var original_combat_id: String = overworld_dummy.get_combat_id()
 	var original_hp: int = overworld_dummy.current_hp()
@@ -111,6 +115,16 @@ func _assert_dungeon_combatants_do_not_cross_world_boundary(asserts, catalog: Da
 	asserts.false_value(overworld_dummy.visible, "overworld monster is suspended while inside the dungeon")
 	var dungeon_enemies: Array = main._dungeon_enemy_nodes.duplicate()
 	asserts.equal(dungeon_enemies.size(), 4, "dungeon owns four independent combatant nodes")
+	var first_regular_enemy := dungeon_enemies[0] as CombatDummy
+	var second_regular_enemy := dungeon_enemies[1] as CombatDummy
+	asserts.true_value(first_regular_enemy != null, "dungeon first regular enemy is a combat dummy")
+	asserts.true_value(second_regular_enemy != null, "dungeon second regular enemy is a combat dummy")
+	if first_regular_enemy != null:
+		asserts.equal(first_regular_enemy.monster_id, "wild_dog", "dungeon first regular enemy comes from the generated spawn pool")
+		asserts.equal(first_regular_enemy.sprite_asset_id, "monster_wild_dog_front_idle", "dungeon first regular enemy sprite follows its monster content image")
+	if second_regular_enemy != null:
+		asserts.equal(second_regular_enemy.monster_id, "road_bandit", "dungeon second regular enemy comes from the generated spawn pool")
+		asserts.equal(second_regular_enemy.sprite_asset_id, "monster_road_bandit_front_idle", "dungeon second regular enemy sprite follows its monster content image")
 	main._enemy_turn_queued = true
 	main._return_from_dungeon_map()
 	asserts.false_value(main._in_dungeon_map, "direct dungeon exit returns to overworld mode")

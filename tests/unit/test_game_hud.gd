@@ -206,6 +206,8 @@ class FakeCatalog:
 
 func run(asserts) -> void:
 	_assert_read_model_uses_runtime_and_balance_sources(asserts)
+	_assert_inventory_item_icons_use_content_image_map(asserts)
+	_assert_crafting_result_icons_use_content_image_map(asserts)
 	_assert_status_resources_use_visual_meters(asserts)
 	_assert_resource_details_open_without_emitting_movement(asserts)
 	_assert_time_uses_circular_dial(asserts)
@@ -219,6 +221,24 @@ func run(asserts) -> void:
 	_assert_status_toasts_use_event_models_icons_and_queue_limits(asserts)
 	_assert_narrative_dialogue_emits_option_commands(asserts)
 	_assert_major_character_portraits_follow_speaker_ids(asserts)
+
+func _assert_inventory_item_icons_use_content_image_map(asserts) -> void:
+	var hud := _configured_hud()
+	asserts.equal(
+		hud._inventory_item_icon_reference({"item_id": "wood", "kind": "재료"}),
+		"item_wood_icon",
+		"inventory item icons resolve the dedicated content image before generic fallbacks"
+	)
+	hud.free()
+
+func _assert_crafting_result_icons_use_content_image_map(asserts) -> void:
+	var hud := _configured_hud()
+	asserts.equal(
+		hud._crafting_result_icon_reference({"recipe_id": "stone_axe", "category": "도구", "result": {"item_id": "wooden_workbench", "name": "목재 작업대"}}),
+		"item_wooden_workbench_object_64",
+		"crafting result icons resolve the dedicated content image before fixture icons"
+	)
+	hud.free()
 
 func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:
 	var hud := _configured_hud()

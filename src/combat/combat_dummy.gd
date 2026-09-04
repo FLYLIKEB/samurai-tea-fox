@@ -50,6 +50,7 @@ var _grid_world_origin := Vector2.ZERO
 var _grid_tile_size := TILE_SIZE_PIXELS
 var walk_animator := DirectionalWalkAnimator.new()
 var _walk_animator_ready := false
+var _resolved_sprite_asset_id := ""
 var _grid_step_active := false
 var _grid_step_tween: Tween
 var _damage_popup: Label
@@ -86,6 +87,7 @@ func configure_combat(catalog, attack_target = null, config = null, spawn_contex
 	_attack_cooldown_remaining = attack_period_seconds
 	target = attack_target
 	_update_health_bar()
+	_apply_sprite()
 	return {
 		"ok": true,
 		"monster_id": combatant.definition_id,
@@ -285,6 +287,7 @@ func _apply_sprite() -> void:
 	if texture == null:
 		push_warning("Combat dummy sprite missing: %s" % resolved_sprite_asset_id)
 		return
+	_resolved_sprite_asset_id = resolved_sprite_asset_id
 	sprite.texture = texture
 	sprite.z_index = 1
 	# Overworld enemies can override with explicit sprite ids; otherwise this uses
@@ -298,6 +301,12 @@ func _resolve_sprite_asset_id(asset_catalog: AssetCatalog) -> String:
 	if not sprite_asset_id.is_empty():
 		if sprite_asset_id != "monster_foxfire_front_idle" and asset_catalog.has(sprite_asset_id):
 			return sprite_asset_id
+
+	var map_result: Dictionary = asset_catalog.load_content_image_map()
+	if bool(map_result.get("ok", false)):
+		var content_sprite_asset_id := asset_catalog.content_asset_id("monsters", monster_id)
+		if not content_sprite_asset_id.is_empty():
+			return content_sprite_asset_id
 
 	var monster_sprite_asset_id := "monster_%s_front_idle" % monster_id
 	if asset_catalog.has(monster_sprite_asset_id):
