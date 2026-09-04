@@ -76,7 +76,14 @@ func run(asserts) -> void:
 	main.combat_dummy.global_position = main.world_position_for_cell_center(Vector2i(3, 1))
 
 	var first_resource: Dictionary = main.generated_world.resource_nodes[0]
+	var elapsed_before_invalid_interact: float = main.time_state.phase_elapsed_seconds
+	asserts.false_value(main.submit_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": "missing_resource"})), "invalid interact is rejected")
+	asserts.equal(main.time_state.phase_elapsed_seconds, elapsed_before_invalid_interact, "failed interact does not advance time")
+	asserts.false_value(main._enemy_turn_queued, "failed interact does not queue enemy turn")
+	var elapsed_before_resource: float = main.time_state.phase_elapsed_seconds
 	asserts.true_value(main.submit_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": first_resource.id})), "slice gathers a generated common resource")
+	asserts.equal(main.time_state.phase_elapsed_seconds, elapsed_before_resource + main._time_seconds_per_turn(), "accepted interact advances exactly one turn")
+	asserts.true_value(main._enemy_turn_queued, "accepted interact queues enemy turn through the result router")
 	asserts.true_value(main.inventory.get_total_quantity(String(first_resource.resource_id)) > 0, "gathered resource enters inventory")
 
 	asserts.true_value(main.inventory.add_item("tea_11", 1).ok, "slice can stock a confirmed conditional tea leaf")
