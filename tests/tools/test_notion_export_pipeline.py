@@ -579,6 +579,15 @@ class NotionExportPipelineTests(unittest.TestCase):
             self.assertEqual(validated["profile"], "confirmed-test")
 
     def test_meta_unlock_contract_accepts_canonical_fields(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        field_map = schema["datasets"]["meta_unlocks"]["notion"]["field_map"]
+        self.assertEqual(field_map["표준 조건 유형"], "condition_event")
+        self.assertEqual(field_map["조건 대상"], "condition_target")
+        self.assertEqual(field_map["표준 조건 연산자"], "condition_operator")
+        self.assertEqual(field_map["표준 보상 유형"], "reward_kind")
+        self.assertEqual(field_map["보상 대상"], "reward_target")
+        self.assertNotIn("조건 연산자", field_map)
+
         capture = self._minimal_meta_unlock_capture()
         snapshot = self.pipeline.build_snapshots(capture, "confirmed-test")["meta_unlocks"]
         item = snapshot["items"][0]
