@@ -42,6 +42,8 @@ var _hit_effect_remaining := 0.0
 var _grid_target_position := Vector2.ZERO
 var _grid_source_position := Vector2.ZERO
 var _grid_source_cell := Vector2i.ZERO
+var _grid_current_cell := Vector2i.ZERO
+var _grid_current_cell_valid := false
 var _grid_step_direction := Vector2.ZERO
 var _grid_world_data = null
 var _grid_world_origin := Vector2.ZERO
@@ -207,6 +209,11 @@ func attack_target(attack_target, hit_invulnerability_seconds := 0.0) -> int:
 func current_hp() -> int:
 	return combatant.hp if combatant != null else 0
 
+func current_grid_cell() -> Vector2i:
+	if _grid_current_cell_valid:
+		return _grid_current_cell
+	return _grid_cell_for_position(global_position)
+
 func is_grid_step_active() -> bool:
 	return _grid_step_active
 
@@ -218,6 +225,8 @@ func take_turn(turn_target = null) -> Dictionary:
 		var defeated_result := {"ok": false, "reason": "defeated"}
 		turn_finished.emit(defeated_result.duplicate(true))
 		return defeated_result
+	if _grid_step_active:
+		return {"ok": true, "action": "wait", "reason": "grid_step_active", "cell": current_grid_cell()}
 	var resolved_target = turn_target if turn_target != null else target
 	if resolved_target == null:
 		_snap_to_grid_center()
@@ -235,7 +244,7 @@ func take_turn(turn_target = null) -> Dictionary:
 	var move_result := {
 		"ok": true,
 		"action": "move" if moved else "wait",
-		"cell": _grid_cell_for_position(global_position)
+		"cell": current_grid_cell()
 	}
 	turn_finished.emit(move_result.duplicate(true))
 	return move_result
@@ -336,6 +345,8 @@ func _move_one_grid_cell_toward(target_position: Vector2) -> bool:
 		grid_step_blocked.emit(_grid_source_cell, _grid_cell_for_position(_grid_target_position))
 		return false
 	_update_walk_animation(direction, true)
+	_grid_current_cell = to_cell
+	_grid_current_cell_valid = true
 	_grid_step_active = true
 	if _grid_step_tween != null and _grid_step_tween.is_valid():
 		_grid_step_tween.kill()
@@ -347,11 +358,12 @@ func _move_one_grid_cell_toward(target_position: Vector2) -> bool:
 
 func _finish_grid_step_tween() -> void:
 	_grid_step_active = false
+	global_position = _grid_position_for_cell_center(_grid_current_cell)
 	_update_walk_animation(
 		Vector2i(int(round(_grid_step_direction.x)), int(round(_grid_step_direction.y))),
 		false,
 	)
-	grid_step_finished.emit(_grid_cell_for_position(global_position))
+	grid_step_finished.emit(current_grid_cell())
 
 func _apply_grid_knockback(direction: Vector2, tile_count: int) -> bool:
 	if tile_count <= 0:
@@ -373,7 +385,9 @@ func _apply_grid_knockback(direction: Vector2, tile_count: int) -> bool:
 	return true
 
 func _snap_to_grid_center() -> void:
-	global_position = _grid_position_for_cell_center(_grid_cell_for_position(global_position))
+	_grid_current_cell = _grid_cell_for_position(global_position)
+	_grid_current_cell_valid = true
+	global_position = _grid_position_for_cell_center(_grid_current_cell)
 
 func _grid_cell_for_position(world_position: Vector2) -> Vector2i:
 	var local_position := world_position - _grid_world_origin
