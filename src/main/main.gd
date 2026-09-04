@@ -128,6 +128,7 @@ const LARGE_HOUSE_DUNGEON_OWNER_IDS := [
 @onready var player = $Player
 @onready var combat_dummy = $CombatDummy
 @onready var world_visuals: Node2D = $WorldVisuals
+@onready var world_tone_overlay = $WorldToneOverlay
 @onready var game_hud = $GameHud
 
 var catalog
@@ -3698,6 +3699,7 @@ func _on_hud_mobile_command_issued(command) -> void:
 	submit_mobile_action_command(command)
 
 func _configure_game_hud() -> void:
+	_configure_world_tone_overlay()
 	if game_hud == null:
 		return
 	_connect_hud_commands()
@@ -3724,6 +3726,10 @@ func _configure_game_hud() -> void:
 		"biome_map_previews": _biome_map_previews
 	})
 	_maybe_show_run_start_event()
+
+func _configure_world_tone_overlay() -> void:
+	if world_tone_overlay != null and world_tone_overlay.has_method("configure"):
+		world_tone_overlay.configure(time_state)
 
 func first_run_prologue_read_model(meta_state = null) -> Dictionary:
 	if narrative_runtime == null:

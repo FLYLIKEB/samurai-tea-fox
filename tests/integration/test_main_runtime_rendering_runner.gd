@@ -101,9 +101,22 @@ func run() -> void:
 	_assert_stale_full_death_retry_preserves_newer_run(main)
 
 	var hud := main.get_node_or_null("GameHud")
+	var tone_overlay := main.get_node_or_null("WorldToneOverlay") as CanvasLayer
+	if tone_overlay == null:
+		failures.append("main scene owns a world tone overlay")
+	else:
+		var tone_rect := tone_overlay.get_node_or_null("ToneRect") as ColorRect
+		if tone_rect == null:
+			failures.append("world tone overlay owns a full-screen tone rect")
+		elif tone_rect.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+			failures.append("world tone overlay does not block world or HUD pointer input")
+		elif tone_rect.color.a <= 0.0:
+			failures.append("world tone overlay initializes from the current time phase")
 	if hud == null:
 		failures.append("main scene owns a runtime HUD")
 	else:
+		if tone_overlay != null and tone_overlay.layer >= hud.layer:
+			failures.append("world tone overlay stays below HUD CanvasLayer")
 		if hud.has_method("narrative_dialogue_visible") and hud.narrative_dialogue_visible():
 			hud.hide_narrative_dialogue()
 			await process_frame
