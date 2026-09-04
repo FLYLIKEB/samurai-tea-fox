@@ -1261,6 +1261,68 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(common["resources"], "목재, 돌, 점토, 기본 식재료, 일반 찻잎")
         self.assertNotIn("resource_item_ids", common)
 
+    def test_dev_104_biome_generation_profile_contract_exports_machine_fields(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        biome_map = schema["datasets"]["biomes"]["notion"]["field_map"]
+        self.assertEqual(biome_map["생성 프로필 ID"], "generation_profile_id")
+        self.assertEqual(biome_map["생성 지형 ID"], "generation_terrain_ids")
+        self.assertEqual(biome_map["생성 자원 아이템 ID"], "generation_resource_item_ids")
+        self.assertEqual(biome_map["생성 자원 에셋 매핑"], "generation_resource_source_by_id")
+
+        snapshots = self.pipeline.build_snapshots(self.capture, "confirmed-test")
+        common = snapshots["biomes"]["items"][0]
+        self.assertEqual(common["generation_profile_id"], "common_region")
+        self.assertEqual(common["generation_terrain_ids"], ["common_ground", "common_grass", "common_path"])
+        self.assertEqual(common["generation_resource_item_ids"], ["clay", "wood"])
+        self.assertEqual(common["generation_resource_source_by_id"], {})
+        self.assertEqual(common["generation_minimum_facility_nodes"], 0)
+
+    def test_dev_104_biome_generation_profile_rejects_missing_or_invalid_ids(self):
+        invalid = copy.deepcopy(self.capture)
+        biome = invalid["datasets"]["biomes"]["items"][0]
+        del biome["generation_profile_id"]
+        with self.assertRaisesRegex(ExportValidationError, "common_region.*generation_profile_id"):
+            self.pipeline.build_snapshots(invalid, "confirmed-test")
+
+        invalid = copy.deepcopy(self.capture)
+        invalid["datasets"]["biomes"]["items"][0]["generation_resource_item_ids"] = "wood, Bad Resource"
+        with self.assertRaisesRegex(ExportValidationError, "common_region.*generation_resource_item_ids"):
+            self.pipeline.build_snapshots(invalid, "confirmed-test")
+
+        invalid = copy.deepcopy(self.capture)
+        biome = invalid["datasets"]["biomes"]["items"][0]
+        biome["generation_resource_source_by_id"] = "stone=small_rock_resource"
+        with self.assertRaisesRegex(ExportValidationError, "unknown resource stone"):
+            self.pipeline.build_snapshots(invalid, "confirmed-test")
+
+    def test_dev_104_generated_biomes_include_complete_profiles(self):
+        generated = ROOT / "data/generated"
+        self.pipeline.validate_directory(generated)
+
+        biomes = {
+            item["id"]: item
+            for item in json.loads((generated / "biomes.json").read_text(encoding="utf-8"))["items"]
+            if item.get("type") == "바이옴"
+        }
+        self.assertEqual(
+            sorted(biomes),
+            ["common_region", "mountain_region", "rainforest", "snowfield", "wasteland"],
+        )
+        for biome_id, biome in biomes.items():
+            self.assertEqual(biome["generation_profile_id"], biome_id)
+            self.assertTrue(biome["generation_terrain_ids"])
+            self.assertTrue(biome["generation_chunk_rule_ids"])
+            self.assertTrue(biome["generation_resource_item_ids"])
+            self.assertTrue(biome["generation_walkability_rule_ids"])
+            self.assertLessEqual(
+                biome["generation_minimum_facility_nodes"],
+                len(biome.get("generation_facility_ids", [])),
+            )
+        self.assertEqual(
+            biomes["wasteland"]["generation_resource_source_by_id"]["item_28"],
+            "asset_assets_sprites_objects_mining_iron_ore_32x32_png",
+        )
+
     def test_dev_10_generated_recipes_have_stable_unlock_biome_ids(self):
         generated = ROOT / "data/generated"
         self.pipeline.validate_directory(generated)

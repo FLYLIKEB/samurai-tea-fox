@@ -30,7 +30,22 @@
     "biomes": {
       "source": "collection://biomes",
       "items": [
-        {"id": "common_region", "name": "일반 지역", "status": "확정", "resources": "목재, 점토"}
+        {
+          "id": "common_region",
+          "name": "일반 지역",
+          "status": "확정",
+          "type": "바이옴",
+          "resources": "목재, 점토",
+          "generation_profile_id": "common_region",
+          "generation_terrain_ids": "common_ground, common_grass, common_path",
+          "generation_chunk_rule_ids": "common_grass, common_field, common_forest",
+          "generation_facility_ids": "",
+          "generation_facility_source_ids": "",
+          "generation_resource_item_ids": "clay, wood",
+          "generation_resource_source_by_id": "",
+          "generation_walkability_rule_ids": "default_walkable, water_blocked, path_walkable",
+          "generation_minimum_facility_nodes": 0
+        }
       ]
     },
     "recipes": {

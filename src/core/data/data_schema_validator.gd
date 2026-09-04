@@ -218,6 +218,8 @@ func _validate_event_conditions(event: Dictionary, node: Dictionary, option: Dic
 	return {"ok": true}
 
 func _validate_item_contract(dataset_name: String, item: Dictionary) -> Dictionary:
+	if dataset_name == "biomes":
+		return _validate_biome_contract(item)
 	if dataset_name == "characters":
 		if typeof(item.get("character_id")) != TYPE_STRING or not _stable_character_id(String(item.get("character_id", ""))):
 			return {"ok": false, "error": "characters item '%s' character_id must match CHR-<number>." % item.id}
@@ -249,6 +251,54 @@ func _validate_item_contract(dataset_name: String, item: Dictionary) -> Dictiona
 	if String(item.get("type", "")) != "다구" or String(item.get("equipment_slot", "")) != "다구":
 		return {"ok": true}
 	return _validate_attachment_stage_data(item)
+
+func _validate_biome_contract(item: Dictionary) -> Dictionary:
+	if String(item.get("type", "")) != "바이옴":
+		return {"ok": true}
+	var biome_id := String(item.get("id", ""))
+	if String(item.get("generation_profile_id", "")) != biome_id:
+		return {"ok": false, "error": "biomes item '%s' generation_profile_id must match biome id." % biome_id}
+	for field in ["generation_terrain_ids", "generation_chunk_rule_ids", "generation_resource_item_ids", "generation_walkability_rule_ids"]:
+		var result := _validate_stable_id_array(item, field, true)
+		if not result.ok:
+			return result
+	for field in ["generation_facility_ids", "generation_facility_source_ids"]:
+		var result := _validate_stable_id_array(item, field, false)
+		if not result.ok:
+			return result
+	if item.get("generation_facility_ids", []).size() != item.get("generation_facility_source_ids", []).size():
+		return {"ok": false, "error": "biomes item '%s' generation facility IDs and source IDs must align." % biome_id}
+	var minimum = item.get("generation_minimum_facility_nodes")
+	if typeof(minimum) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(minimum)) or float(minimum) != floor(float(minimum)) or int(minimum) < 0:
+		return {"ok": false, "error": "biomes item '%s' generation_minimum_facility_nodes must be a non-negative integer." % biome_id}
+	if int(minimum) > item.get("generation_facility_ids", []).size():
+		return {"ok": false, "error": "biomes item '%s' generation_minimum_facility_nodes exceeds facility IDs." % biome_id}
+	var mapping = item.get("generation_resource_source_by_id", {})
+	if typeof(mapping) != TYPE_DICTIONARY:
+		return {"ok": false, "error": "biomes item '%s' generation_resource_source_by_id must be an object." % biome_id}
+	var resource_ids := {}
+	for resource_id in item.get("generation_resource_item_ids", []):
+		resource_ids[String(resource_id)] = true
+	for resource_id in mapping:
+		if not resource_ids.has(String(resource_id)):
+			return {"ok": false, "error": "biomes item '%s' generation_resource_source_by_id references unknown resource '%s'." % [biome_id, resource_id]}
+		if not _stable_id(String(mapping[resource_id])):
+			return {"ok": false, "error": "biomes item '%s' generation_resource_source_by_id must contain stable source ids." % biome_id}
+	return {"ok": true}
+
+func _validate_stable_id_array(item: Dictionary, field: String, require_non_empty: bool) -> Dictionary:
+	var value = item.get(field)
+	if typeof(value) != TYPE_ARRAY or (require_non_empty and value.is_empty()):
+		return {"ok": false, "error": "biomes item '%s' %s must be a non-empty array." % [item.id, field]}
+	var seen := {}
+	for entry in value:
+		var id := String(entry)
+		if typeof(entry) != TYPE_STRING or not _stable_id(id):
+			return {"ok": false, "error": "biomes item '%s' %s must contain stable ids." % [item.id, field]}
+		if seen.has(id):
+			return {"ok": false, "error": "biomes item '%s' %s contains duplicate id '%s'." % [item.id, field, id]}
+		seen[id] = true
+	return {"ok": true}
 
 func _validate_monster_contract(item: Dictionary) -> Dictionary:
 	if not item.has("day_night"):

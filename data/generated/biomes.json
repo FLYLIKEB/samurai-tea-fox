@@ -1,5 +1,5 @@
 {
-  "content_hash": "d832d96900caf95bb2a6d8d39c0e7d854e3541f9b3d0d525e66df778a21b5194",
+  "content_hash": "2e53763b22ea490c843502ae3f10a06b9de6532487acccbce2ac21b1cc93a245",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -16,6 +16,42 @@
       "core_dungeon_concept": "버려진 목조 저택 / 산사 / 폐쇄된 창고형 다실",
       "difficulty": 1,
       "facilities": "우물, 찻집, 작은 사당, 민가, 시장",
+      "generation_chunk_rule_ids": [
+        "common_grass",
+        "common_field",
+        "common_forest",
+        "common_path",
+        "common_water",
+        "common_ground"
+      ],
+      "generation_facility_ids": [],
+      "generation_facility_source_ids": [],
+      "generation_minimum_facility_nodes": 0,
+      "generation_profile_id": "common_region",
+      "generation_resource_item_ids": [
+        "clay",
+        "stone",
+        "wood"
+      ],
+      "generation_resource_source_by_id": {
+        "stone": "small_rock_resource"
+      },
+      "generation_terrain_ids": [
+        "common_ground",
+        "common_grass",
+        "common_path",
+        "common_field",
+        "common_forest",
+        "common_water",
+        "common_bridge"
+      ],
+      "generation_walkability_rule_ids": [
+        "default_walkable",
+        "water_blocked",
+        "path_walkable",
+        "bridge_walkable",
+        "shore_walkable"
+      ],
       "id": "common_region",
       "name": "일반 지역",
       "notion_id": "3cd37369-9e66-81e3-8710-cca04b283c19",
@@ -41,6 +77,52 @@
       "core_dungeon_concept": "폐광 / 산속 요새",
       "difficulty": 2,
       "facilities": "광산, 산사, 폐광, 산중 찻집",
+      "generation_chunk_rule_ids": [
+        "mountain_trail",
+        "rock_field",
+        "cliff_pass",
+        "conifer_forest",
+        "valley_water",
+        "cave_ground"
+      ],
+      "generation_facility_ids": [
+        "mountain_mine",
+        "mountain_temple",
+        "mountain_abandoned_mine",
+        "mountain_tea_house"
+      ],
+      "generation_facility_source_ids": [
+        "asset_assets_sprites_objects_mining_rock_cave_entrance_1x2_64x32_png",
+        "asset_assets_sprites_objects_structures_shrine_torii_gate_2x2_64x64_png",
+        "asset_assets_sprites_objects_mining_timber_support_1x2_32x64_png",
+        "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png"
+      ],
+      "generation_minimum_facility_nodes": 4,
+      "generation_profile_id": "mountain_region",
+      "generation_resource_item_ids": [
+        "iron_ore",
+        "stone",
+        "wood"
+      ],
+      "generation_resource_source_by_id": {
+        "stone": "asset_assets_tiles_terrain_mountain_mountain_rock_01_32x32_png"
+      },
+      "generation_terrain_ids": [
+        "mountain_slope",
+        "mountain_path",
+        "mountain_cliff",
+        "mountain_rock",
+        "mountain_conifer_forest",
+        "mountain_valley_water",
+        "mountain_cave_ground"
+      ],
+      "generation_walkability_rule_ids": [
+        "default_walkable",
+        "water_blocked",
+        "path_walkable",
+        "bridge_as_path",
+        "shore_walkable"
+      ],
       "id": "mountain_region",
       "name": "산악 지역",
       "notion_id": "3cd37369-9e66-812e-ae5e-e9537dd42f89",
@@ -56,6 +138,55 @@
       "core_dungeon_concept": "숲속 목조 다실 미궁 / 수몰 유적 / 향목 사원",
       "difficulty": 5,
       "facilities": "차 재배지, 강변 취락, 숲속 다실, 향 문화 공간",
+      "generation_chunk_rule_ids": [
+        "dense_jungle_vine_path",
+        "wide_river_bank",
+        "swamp_boundary",
+        "tea_cultivation",
+        "agarwood_grove",
+        "river_bypass"
+      ],
+      "generation_facility_ids": [
+        "rainforest_tea_cultivation",
+        "rainforest_riverside_village",
+        "rainforest_forest_tea_room",
+        "rainforest_incense_space"
+      ],
+      "generation_facility_source_ids": [
+        "asset_assets_sprites_objects_crafting_tea_leaf_worktable_32x32_png",
+        "asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png",
+        "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png",
+        "asset_assets_sprites_objects_shrine_props_incense_burner_32x32_png"
+      ],
+      "generation_minimum_facility_nodes": 4,
+      "generation_profile_id": "rainforest",
+      "generation_resource_item_ids": [
+        "clay",
+        "item_5",
+        "wood"
+      ],
+      "generation_resource_source_by_id": {
+        "clay": "asset_assets_sprites_objects_natural_props_reed_clump_32x32_png",
+        "item_5": "terrain_tree_round_32x32",
+        "wood": "terrain_tree_round_32x32"
+      },
+      "generation_terrain_ids": [
+        "rainforest_jungle",
+        "rainforest_swamp",
+        "rainforest_river",
+        "rainforest_vine_path",
+        "rainforest_tea_field",
+        "rainforest_agarwood_grove",
+        "rainforest_river_bank"
+      ],
+      "generation_walkability_rule_ids": [
+        "default_walkable",
+        "river_blocked",
+        "swamp_blocked",
+        "path_walkable",
+        "bridge_as_river_bank",
+        "shore_walkable"
+      ],
       "id": "rainforest",
       "name": "열대우림",
       "notion_id": "3cd37369-9e66-8180-ac81-d0cfd1419055",
@@ -71,6 +202,52 @@
       "core_dungeon_concept": "얼어붙은 사찰 / 설산 다실 / 빙결 광산",
       "difficulty": 4,
       "facilities": "산장, 온천, 설원 사당, 얼어붙은 광산",
+      "generation_chunk_rule_ids": [
+        "snow_path_crossing",
+        "frozen_river_edge",
+        "pine_silence",
+        "ice_wall_pass",
+        "safe_clearing",
+        "snowy_mountain_path"
+      ],
+      "generation_facility_ids": [
+        "snowfield_lodge",
+        "snowfield_hot_spring",
+        "snowfield_shrine",
+        "snowfield_frozen_mine"
+      ],
+      "generation_facility_source_ids": [
+        "asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png",
+        "asset_assets_sprites_objects_shrine_props_stone_water_basin_32x32_png",
+        "asset_assets_sprites_objects_structures_shrine_torii_gate_2x2_64x64_png",
+        "asset_assets_sprites_objects_mining_rock_cave_entrance_1x2_64x32_png"
+      ],
+      "generation_minimum_facility_nodes": 4,
+      "generation_profile_id": "snowfield",
+      "generation_resource_item_ids": [
+        "conifer_wood",
+        "snowfield_mineral",
+        "wood"
+      ],
+      "generation_resource_source_by_id": {
+        "wood": "terrain_tree_pine_32x32"
+      },
+      "generation_terrain_ids": [
+        "snowfield_snow",
+        "snowfield_snow_path",
+        "snowfield_ice",
+        "snowfield_ice_edge",
+        "snowfield_pine",
+        "snowfield_ice_wall",
+        "snowfield_safe_clearing"
+      ],
+      "generation_walkability_rule_ids": [
+        "default_walkable",
+        "ice_blocked",
+        "path_walkable",
+        "bridge_ice_edge_walkable",
+        "shore_walkable"
+      ],
       "id": "snowfield",
       "name": "설원",
       "notion_id": "3cd37369-9e66-811d-beee-f5918618a0d9",
@@ -86,6 +263,53 @@
       "core_dungeon_concept": "폐성 / 버려진 군영 / 불탄 사찰",
       "difficulty": 3,
       "facilities": "폐촌, 버려진 초소, 무너진 다실, 전쟁터 흔적",
+      "generation_chunk_rule_ids": [
+        "dry_detour",
+        "asymmetric_ruin",
+        "long_detour",
+        "dead_end",
+        "dry_river_bypass",
+        "battlefield_trace"
+      ],
+      "generation_facility_ids": [
+        "wasteland_abandoned_village",
+        "wasteland_abandoned_outpost",
+        "wasteland_ruined_tea_room",
+        "wasteland_battlefield_trace"
+      ],
+      "generation_facility_source_ids": [
+        "asset_assets_sprites_objects_structures_small_storage_shed_64x64_png",
+        "asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png",
+        "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png",
+        "asset_assets_tiles_terrain_desert_bone_scatter_32x32_png"
+      ],
+      "generation_minimum_facility_nodes": 4,
+      "generation_profile_id": "wasteland",
+      "generation_resource_item_ids": [
+        "charcoal",
+        "item_28",
+        "old_wood",
+        "wood"
+      ],
+      "generation_resource_source_by_id": {
+        "item_28": "asset_assets_sprites_objects_mining_iron_ore_32x32_png"
+      },
+      "generation_terrain_ids": [
+        "wasteland_dry_soil",
+        "wasteland_cracked_ground",
+        "wasteland_detour_path",
+        "wasteland_ruin",
+        "wasteland_dead_tree",
+        "wasteland_dry_river",
+        "wasteland_camp_trace"
+      ],
+      "generation_walkability_rule_ids": [
+        "default_walkable",
+        "dry_river_blocked",
+        "path_walkable",
+        "bridge_as_path",
+        "shore_walkable"
+      ],
       "id": "wasteland",
       "name": "황무지",
       "notion_id": "3cd37369-9e66-8189-a4ec-cb938e60d163",
