@@ -12123,6 +12123,52 @@
       "rgba_sha256": "sha256:929711e64439986b552c0c29fbdd35ad4856c506cb55582e1536b3334b790912"
     },
     {
+      "id": "item_blacksmith_forge_object_64",
+      "name": "대장간 64x64 오브젝트",
+      "status": "완료",
+      "kind": "runtime_png",
+      "path": "res://assets/sprites/objects/crafting/blacksmith_forge_64x64.png",
+      "width": 64,
+      "height": 64,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 64,
+        "frame_height": 64
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "runtime_scale": 1,
+      "source_sha256": "sha256:e92e7cd0f9e5ec08f451f312410088dd22ab245879dfae9e276861d9340c08c2",
+      "rgba_sha256": "sha256:6b2565d4ef88ecfebfe81d38298e5eab3403a8283e23b0c4f9c67816b2dc9a26"
+    },
+    {
+      "id": "item_metal_workbench_object_64",
+      "name": "금속 가공대 64x64 오브젝트",
+      "status": "완료",
+      "kind": "runtime_png",
+      "path": "res://assets/sprites/objects/crafting/metal_workbench_64x64.png",
+      "width": 64,
+      "height": 64,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 64,
+        "frame_height": 64
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "runtime_scale": 1,
+      "source_sha256": "sha256:41adebe9af69932f4499e319db96bb419c2c9a4518165ec28fb2178d8d551be1",
+      "rgba_sha256": "sha256:720eb9523bec51cdf99c6420a661488b9e524a163e981e1d993dbbc69a331edf"
+    },
+    {
       "id": "item_traveler_quilted_clothes_icon",
       "name": "여행자의 누비옷 아이콘",
       "status": "완료",

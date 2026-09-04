@@ -47,6 +47,7 @@ ITEM_OVERRIDES = {
 DEDICATED_ITEM_ICONS = {
     "ash_stained_iron_kettle": "item_ash_stained_iron_kettle_icon",
     "bandage": "item_cloth_bandage_icon",
+    "blacksmith_forge": "item_blacksmith_forge_object_64",
     "black_bamboo_tea_scoop": "item_black_bamboo_tea_scoop_icon",
     "charcoal": "item_charcoal_icon",
     "clay": "item_clay_icon",
@@ -62,6 +63,7 @@ DEDICATED_ITEM_ICONS = {
     "item_28": "item_iron_scrap_icon",
     "item_29": "item_reversal_knot_icon",
     "item_33": "item_coin_icon",
+    "metal_workbench": "item_metal_workbench_object_64",
     "mountain_kiln": "item_mountain_kiln_object_64",
     "mountain_iron_dagger": "item_mountain_iron_dagger_icon",
     "mountain_wind_layered_clothes": "item_mountain_wind_layered_clothes_icon",

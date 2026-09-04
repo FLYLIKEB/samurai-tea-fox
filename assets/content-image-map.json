@@ -2,17 +2,16 @@
   "audit": {
     "art_review_required": 39,
     "by_resolution": {
-      "dedicated_item_icon": 36,
-      "kind_fallback_exception": 2,
+      "dedicated_item_icon": 38,
       "monster_id_convention": 21,
       "semantic_existing_asset": 1
     },
-    "dedicated_asset_missing": 2,
+    "dedicated_asset_missing": 0,
     "items": 39,
     "missing_or_broken": 0,
     "monsters": 21,
     "path_integrity_missing_or_broken": 0,
-    "runtime_approved": 57,
+    "runtime_approved": 59,
     "runtime_target_rows": 60
   },
   "content": {
@@ -76,22 +75,22 @@
       },
       {
         "art_review_required": true,
-        "asset_id": "asset_assets_ui_icons_atlas_low_table_png",
+        "asset_id": "item_blacksmith_forge_object_64",
         "asset_status": "완료",
         "content_id": "blacksmith_forge",
         "dataset": "items",
-        "dedicated_asset_missing": true,
-        "exception_reason": "No item-specific exported image field exists; use the type fallback until art review creates a dedicated row.",
-        "height": 53,
+        "dedicated_asset_missing": false,
+        "exception_reason": "",
+        "height": 64,
         "kind": "도구",
         "name": "대장간",
-        "path": "res://assets/ui/icons/atlas/low_table.png",
-        "resolution": "kind_fallback_exception",
-        "rgba_sha256": "sha256:2f33abb97332ab15f9c8aa55108d3fb24f92c28c06af91f431ee7b5b4eee3a9e",
-        "runtime_approved": false,
-        "source_sha256": "sha256:564abfad73437827d2ae734f056a02998dbbb7e7ccfa57fb45f25e79f6f5aa68",
+        "path": "res://assets/sprites/objects/crafting/blacksmith_forge_64x64.png",
+        "resolution": "dedicated_item_icon",
+        "rgba_sha256": "sha256:6b2565d4ef88ecfebfe81d38298e5eab3403a8283e23b0c4f9c67816b2dc9a26",
+        "runtime_approved": true,
+        "source_sha256": "sha256:e92e7cd0f9e5ec08f451f312410088dd22ab245879dfae9e276861d9340c08c2",
         "status": "초안",
-        "width": 60
+        "width": 64
       },
       {
         "art_review_required": true,
@@ -361,22 +360,22 @@
       },
       {
         "art_review_required": true,
-        "asset_id": "asset_assets_ui_icons_atlas_low_table_png",
+        "asset_id": "item_metal_workbench_object_64",
         "asset_status": "완료",
         "content_id": "metal_workbench",
         "dataset": "items",
-        "dedicated_asset_missing": true,
-        "exception_reason": "No item-specific exported image field exists; use the type fallback until art review creates a dedicated row.",
-        "height": 53,
+        "dedicated_asset_missing": false,
+        "exception_reason": "",
+        "height": 64,
         "kind": "도구",
         "name": "금속 가공대",
-        "path": "res://assets/ui/icons/atlas/low_table.png",
-        "resolution": "kind_fallback_exception",
-        "rgba_sha256": "sha256:2f33abb97332ab15f9c8aa55108d3fb24f92c28c06af91f431ee7b5b4eee3a9e",
-        "runtime_approved": false,
-        "source_sha256": "sha256:564abfad73437827d2ae734f056a02998dbbb7e7ccfa57fb45f25e79f6f5aa68",
+        "path": "res://assets/sprites/objects/crafting/metal_workbench_64x64.png",
+        "resolution": "dedicated_item_icon",
+        "rgba_sha256": "sha256:720eb9523bec51cdf99c6420a661488b9e524a163e981e1d993dbbc69a331edf",
+        "runtime_approved": true,
+        "source_sha256": "sha256:41adebe9af69932f4499e319db96bb419c2c9a4518165ec28fb2178d8d551be1",
         "status": "초안",
-        "width": 60
+        "width": 64
       },
       {
         "art_review_required": true,
@@ -1162,7 +1161,7 @@
     ]
   },
   "content_hashes": {
-    "asset_manifest": "sha256:3d510e87d38b367093b32df9621a8001757547d5cf40410b5c5ba9b07a6a67de",
+    "asset_manifest": "sha256:04b68be3a90abc8250a374124d98ba09e8e69fc5e9aadf90aa6e415c44a74557",
     "items": "947bca5285dc32a8f702af9fa76293b79ed49e028c8ac2f9e4beb069b01d9f37",
     "monsters": "b44646c65fca8a73ef29d0e908991986c7eb3387626b4bdb5f506919b1e28e9f"
   },

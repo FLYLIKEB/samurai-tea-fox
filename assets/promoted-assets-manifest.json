@@ -1293,6 +1293,15 @@
       "rgba_sha256": "sha256:e48f3c80ee5a6ffbddf5317ebc3253d2ab5f3717427fda6e8ebab14c9765c38d"
     },
     {
+      "path": "assets/sprites/objects/crafting/blacksmith_forge_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": true,
+      "source_sha256": "sha256:e92e7cd0f9e5ec08f451f312410088dd22ab245879dfae9e276861d9340c08c2",
+      "rgba_sha256": "sha256:6b2565d4ef88ecfebfe81d38298e5eab3403a8283e23b0c4f9c67816b2dc9a26"
+    },
+    {
       "path": "assets/sprites/objects/crafting/mortar_pestle_stone_32x32.png",
       "width": 32,
       "height": 32,
@@ -1309,6 +1318,15 @@
       "alpha_empty": true,
       "source_sha256": "sha256:398d1ffded4ea5be25a3175b333c12dc6eef22af6b543a173971ce6be2cbf669",
       "rgba_sha256": "sha256:f9f849496a7551d41bfd8204e96ead7ec162ea7b5406827ef1d5fa86b3420a7a"
+    },
+    {
+      "path": "assets/sprites/objects/crafting/metal_workbench_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": true,
+      "source_sha256": "sha256:41adebe9af69932f4499e319db96bb419c2c9a4518165ec28fb2178d8d551be1",
+      "rgba_sha256": "sha256:720eb9523bec51cdf99c6420a661488b9e524a163e981e1d993dbbc69a331edf"
     },
     {
       "path": "assets/sprites/objects/crafting/mountain_kiln_64x64.png",
