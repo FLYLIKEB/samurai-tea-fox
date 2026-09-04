@@ -2,18 +2,18 @@
   "audit": {
     "art_review_required": 45,
     "by_resolution": {
-      "dedicated_item_icon": 31,
+      "dedicated_item_icon": 33,
       "kind_fallback_exception": 5,
       "monster_id_convention": 15,
       "monster_variant_fallback_exception": 6,
-      "semantic_existing_asset": 3
+      "semantic_existing_asset": 1
     },
     "dedicated_asset_missing": 11,
     "items": 39,
     "missing_or_broken": 0,
     "monsters": 21,
     "path_integrity_missing_or_broken": 0,
-    "runtime_approved": 46,
+    "runtime_approved": 48,
     "runtime_target_rows": 60
   },
   "content": {
@@ -400,22 +400,22 @@
       },
       {
         "art_review_required": true,
-        "asset_id": "asset_assets_sprites_objects_crafting_kiln_32x32_png",
+        "asset_id": "item_mountain_kiln_object_64",
         "asset_status": "완료",
         "content_id": "mountain_kiln",
         "dataset": "items",
         "dedicated_asset_missing": false,
         "exception_reason": "",
-        "height": 32,
+        "height": 64,
         "kind": "도구",
         "name": "산중 가마",
-        "path": "res://assets/sprites/objects/crafting/kiln_32x32.png",
-        "resolution": "semantic_existing_asset",
-        "rgba_sha256": "sha256:d248d0dee5b3f7484db10b256e82360ea8ca446f6866390ce891271cab9675e8",
-        "runtime_approved": false,
-        "source_sha256": "sha256:a486e71819fa091740e8634d7a25252e078ba7a2835e11e268b7aff2520a54ad",
+        "path": "res://assets/sprites/objects/crafting/mountain_kiln_64x64.png",
+        "resolution": "dedicated_item_icon",
+        "rgba_sha256": "sha256:a8f6175965ade481538b559ca62271553944782c25e66bea8c7892a52f6e7c8b",
+        "runtime_approved": true,
+        "source_sha256": "sha256:ea67a51920c6745c0dd263d6bf773758f237b54a86f166226044dcdf2d3d17d4",
         "status": "초안",
-        "width": 32
+        "width": 64
       },
       {
         "art_review_required": true,
@@ -742,22 +742,22 @@
       },
       {
         "art_review_required": true,
-        "asset_id": "asset_assets_sprites_objects_crafting_workbench_32x32_png",
+        "asset_id": "item_wooden_workbench_object_64",
         "asset_status": "완료",
         "content_id": "wooden_workbench",
         "dataset": "items",
         "dedicated_asset_missing": false,
         "exception_reason": "",
-        "height": 32,
+        "height": 64,
         "kind": "도구",
         "name": "목재 작업대",
-        "path": "res://assets/sprites/objects/crafting/workbench_32x32.png",
-        "resolution": "semantic_existing_asset",
-        "rgba_sha256": "sha256:ef59f3dd19e90181000dc7b2b8a190e3c2aaa7826fa44ceb70472b3ddfe13577",
-        "runtime_approved": false,
-        "source_sha256": "sha256:a3978d3bdfcdd5e8a4b8e0ce39f48b494be2cc4a32453061407d964ab5861d14",
+        "path": "res://assets/sprites/objects/crafting/wooden_workbench_64x64.png",
+        "resolution": "dedicated_item_icon",
+        "rgba_sha256": "sha256:929711e64439986b552c0c29fbdd35ad4856c506cb55582e1536b3334b790912",
+        "runtime_approved": true,
+        "source_sha256": "sha256:17a4a751cea61887343509f0f41b76f43bba90bb13d0274a5a581c72a9866fe0",
         "status": "초안",
-        "width": 32
+        "width": 64
       }
     ],
     "monsters": [
@@ -1163,7 +1163,7 @@
     ]
   },
   "content_hashes": {
-    "asset_manifest": "sha256:4b61bda16738ac48050efbf746d5654369bcb47dcdb84a321c2909268dddc1d4",
+    "asset_manifest": "sha256:3ec76260b614b6af1e60f0d736c9865db2dd85105ef6460da1ee5294c3ab1890",
     "items": "947bca5285dc32a8f702af9fa76293b79ed49e028c8ac2f9e4beb069b01d9f37",
     "monsters": "b44646c65fca8a73ef29d0e908991986c7eb3387626b4bdb5f506919b1e28e9f"
   },

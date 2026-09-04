@@ -18,13 +18,13 @@ class ContentImageAuditTests(unittest.TestCase):
         self.assertEqual(payload["audit"]["path_integrity_missing_or_broken"], 0)
         self.assertEqual(payload["audit"]["dedicated_asset_missing"], 11)
         self.assertEqual(payload["audit"]["art_review_required"], 45)
-        self.assertEqual(payload["audit"]["runtime_approved"], 46)
-        self.assertEqual(payload["audit"]["by_resolution"]["dedicated_item_icon"], 31)
+        self.assertEqual(payload["audit"]["runtime_approved"], 48)
+        self.assertEqual(payload["audit"]["by_resolution"]["dedicated_item_icon"], 33)
         self.assertIn("semantic_existing_asset", payload["audit"]["by_resolution"])
         self.assertEqual(payload["audit"]["by_resolution"]["kind_fallback_exception"], 5)
         self.assertEqual(payload["audit"]["by_resolution"]["monster_id_convention"], 15)
         self.assertEqual(payload["audit"]["by_resolution"]["monster_variant_fallback_exception"], 6)
-        self.assertEqual(payload["audit"]["by_resolution"]["semantic_existing_asset"], 3)
+        self.assertEqual(payload["audit"]["by_resolution"]["semantic_existing_asset"], 1)
 
     def test_written_map_is_current(self):
         payload, _detail = build(ROOT)
