@@ -94,10 +94,7 @@ KIND_FALLBACKS = {
     "향": "asset_assets_sprites_objects_shrine_props_incense_burner_32x32_png",
 }
 
-MONSTER_OVERRIDES = {
-    "monster_18": "monster_abandoned_mine_samurai_front_idle",
-    "monster_19": "monster_road_bandit_front_idle",
-}
+MONSTER_OVERRIDES = {}
 
 
 def read_json(path: Path) -> dict[str, Any]:

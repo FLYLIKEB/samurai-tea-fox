@@ -150,6 +150,24 @@ class AssetPipelineTests(unittest.TestCase):
         }
         self.assert_invalid("frame grid width does not match")
 
+    def test_single_front_character_sprite_may_be_32x64(self):
+        from PIL import Image
+
+        Image.new("RGBA", (32, 64), (0, 0, 0, 0)).save(self.root / "assets/sprites/valid.png")
+        self.manifest["assets"][0].update({"width": 32, "height": 64})
+        self.manifest["assets"][0]["frame_grid"] = {
+            "columns": 1,
+            "rows": 1,
+            "frame_width": 32,
+            "frame_height": 64,
+        }
+        self.write_manifest()
+        (self.root / "assets/asset-manifest.json").write_text(
+            json.dumps(self.manifest, ensure_ascii=False), encoding="utf-8"
+        )
+        result = self.validate()
+        self.assertEqual(result, {"asset_count": 1, "resource_count": 0})
+
     def test_png_without_alpha_fails(self):
         shutil.copy(FIXTURES / "opaque_rgb_32x32.png", self.root / "assets/sprites/valid.png")
         self.assert_invalid("must provide an alpha channel")
