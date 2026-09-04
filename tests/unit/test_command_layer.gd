@@ -68,8 +68,38 @@ func run(asserts) -> void:
 	asserts.false_value(dispatcher.dispatch("attack"), "non-command value is rejected")
 	asserts.equal(received.size(), 1, "dispatcher emits exactly one valid command")
 	asserts.equal(received[0], attack, "dispatcher preserves command identity")
+	_assert_command_result_policy(asserts, dispatcher)
 	_assert_menu_shortcut_keys_are_unique(asserts)
 	_assert_attack_uses_e_shortcut(asserts)
+
+func _assert_command_result_policy(asserts, dispatcher: CommandDispatcher) -> void:
+	var attack := GameCommand.new(GameCommand.Type.ATTACK, Vector2i.RIGHT)
+	var accepted_attack: Dictionary = dispatcher.result_for(attack, true)
+	asserts.true_value(accepted_attack.accepted, "accepted attack remains accepted")
+	asserts.true_value(accepted_attack.consumes_turn, "accepted attack consumes a turn")
+	asserts.true_value(accepted_attack.queues_enemy_turn, "accepted attack queues one enemy turn")
+	asserts.false_value(accepted_attack.feedback_beep, "player combat feedback is owned by combat signals")
+
+	var failed_attack: Dictionary = dispatcher.result_for(attack, false)
+	asserts.false_value(failed_attack.accepted, "failed attack remains rejected")
+	asserts.false_value(failed_attack.consumes_turn, "failed command never consumes a turn")
+	asserts.false_value(failed_attack.queues_enemy_turn, "failed command never queues an enemy turn")
+	asserts.false_value(failed_attack.feedback_beep, "failed command never gets success feedback")
+
+	var tea: Dictionary = dispatcher.result_for(GameCommand.new(GameCommand.Type.DRINK_TEA), true)
+	asserts.true_value(tea.consumes_turn, "accepted tea start consumes one turn")
+	asserts.true_value(tea.queues_enemy_turn, "accepted tea start queues enemy turn")
+	asserts.true_value(tea.feedback_beep, "accepted tea start has success feedback")
+
+	var inventory: Dictionary = dispatcher.result_for(GameCommand.new(GameCommand.Type.INVENTORY_NAVIGATE), true)
+	asserts.false_value(inventory.consumes_turn, "inventory navigation is not a turn")
+	asserts.false_value(inventory.queues_enemy_turn, "inventory navigation does not queue enemies")
+	asserts.true_value(inventory.feedback_beep, "accepted inventory command has feedback")
+
+	var placement_recipe: Dictionary = dispatcher.result_for(GameCommand.new(GameCommand.Type.CRAFT_RECIPE), true, {"placement_pending": true})
+	asserts.true_value(placement_recipe.accepted, "facility placement request is accepted")
+	asserts.false_value(placement_recipe.consumes_turn, "pending facility placement does not consume a turn yet")
+	asserts.false_value(placement_recipe.queues_enemy_turn, "pending facility placement does not queue enemies")
 
 func _assert_platform_commands_match(asserts, desktop: DesktopCommandAdapter, mobile: MobileCommandAdapter, action: String) -> void:
 	var payload := {"kind": "test", "tab": "items", "biome_id": "forest"}

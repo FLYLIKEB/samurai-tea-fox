@@ -4,6 +4,7 @@ const DataCatalog = preload("res://src/core/data/data_catalog.gd")
 const RuntimeConstants = preload("res://src/core/config/runtime_constants.gd")
 const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
 const CoreTeaWareCollection = preload("res://src/dungeon/core_tea_ware_collection.gd")
+const CommandDispatcher = preload("res://src/core/commands/command_dispatcher.gd")
 const DesktopCommandAdapter = preload("res://src/core/commands/desktop_command_adapter.gd")
 const DungeonRuntime = preload("res://src/dungeon/dungeon_runtime.gd")
 const FinalRoomStateBuilder = preload("res://src/meta/final_room_state_builder.gd")
@@ -174,6 +175,7 @@ var _in_dungeon_map := false
 var _dungeon_resources: Array = []
 var _dungeon_enemy_nodes: Array = []
 var _desktop_adapter := DesktopCommandAdapter.new()
+var _command_dispatcher := CommandDispatcher.new()
 var _movement_selector := MovementCommandSelector.new()
 var _has_pointer_move_target := false
 var _pointer_move_target_world := Vector2.ZERO
@@ -922,142 +924,114 @@ func submit_action_command(command) -> bool:
 		return false
 	if _dungeon_boss_action_locked(command):
 		return false
+	var result: Dictionary = _execute_action_command(command)
+	_apply_action_command_result(result)
+	return bool(result.get("accepted", false))
+
+func _execute_action_command(command: GameCommand) -> Dictionary:
 	match command.type:
 		GameCommand.Type.NARRATIVE_SELECT_OPTION:
-			var narrative_accepted := _handle_narrative_option_command(command)
-			if narrative_accepted:
-				_play_feedback_beep()
-			return narrative_accepted
+			return _command_dispatcher.result_for(command, _handle_narrative_option_command(command))
 		GameCommand.Type.INTERACT:
 			var target_id := String(command.payload.get("target_id", ""))
 			if target_id.is_empty():
-				return submit_player_interaction(command.direction)
+				return _command_dispatcher.result_for(command, submit_player_interaction(command.direction), {"consumes_turn": false, "queues_enemy_turn": false})
 			if _is_landmark_target(target_id):
 				var landmark_accepted := _handle_landmark_interaction(target_id)
 				if landmark_accepted:
 					_play_sfx_event(SfxEventRouter.EVENT_INTERACT_SUCCESS, {"target_id": target_id}, "landmark:%s" % target_id)
-				return landmark_accepted
+				return _command_dispatcher.result_for(command, landmark_accepted, {"consumes_turn": false, "queues_enemy_turn": false, "interact_failure_sfx": false})
 			var accepted: bool = acquisition_service != null and bool(acquisition_service.handle_command(command).ok)
-			if accepted:
-				_advance_time_for_turn()
-				_queue_enemy_turn_after_player_action()
-			else:
-				_play_sfx_event(SfxEventRouter.EVENT_INTERACT_FAIL, {"target_id": target_id}, "interact_failed:%s" % target_id)
-			return accepted
+			return _command_dispatcher.result_for(command, accepted)
 		GameCommand.Type.DRINK_TEA:
-			var accepted: bool = _handle_tea_command(command)
-			if accepted:
-				_advance_time_for_turn()
-				_play_feedback_beep()
-				_queue_enemy_turn_after_player_action()
-			return accepted
+			return _command_dispatcher.result_for(command, _handle_tea_command(command))
 		GameCommand.Type.USE_CONSUMABLE:
-			var accepted: bool = _handle_consumable_command(command)
-			if accepted:
-				_advance_time_for_turn()
-				_play_feedback_beep()
-			return accepted
+			return _command_dispatcher.result_for(command, _handle_consumable_command(command))
 		GameCommand.Type.SLEEP:
-			var accepted: bool = _handle_sleep_command()
-			if accepted:
-				_play_feedback_beep()
-			return accepted
+			return _command_dispatcher.result_for(command, _handle_sleep_command())
 		GameCommand.Type.COMPLETE_DUNGEON:
-			var accepted: bool = _handle_complete_dungeon_command(command)
-			if accepted:
-				_play_feedback_beep()
-			return accepted
+			return _command_dispatcher.result_for(command, _handle_complete_dungeon_command(command))
 		GameCommand.Type.REPAIR_TELEPORT, GameCommand.Type.ADVANCE_BIOME:
-			var accepted: bool = _handle_biome_progression_command(command)
-			if accepted:
-				_play_feedback_beep()
-			return accepted
+			return _command_dispatcher.result_for(command, _handle_biome_progression_command(command))
 		GameCommand.Type.TRAVEL_TO_BIOME:
-			var accepted: bool = _travel_to_biome(String(command.payload.get("biome_id", "")), String(command.payload.get("travel_mode", "teleport")))
-			if accepted:
-				_play_feedback_beep()
-			return accepted
+			return _command_dispatcher.result_for(command, _travel_to_biome(String(command.payload.get("biome_id", "")), String(command.payload.get("travel_mode", "teleport"))))
 		GameCommand.Type.FACILITY_ROTATE:
-			return _rotate_pending_facility()
+			return _command_dispatcher.result_for(command, _rotate_pending_facility())
 		GameCommand.Type.FACILITY_CONFIRM:
-			return _confirm_pending_facility()
+			return _command_dispatcher.result_for(command, _confirm_pending_facility())
 		GameCommand.Type.FACILITY_CANCEL:
-			return _cancel_pending_facility_placement()
+			return _command_dispatcher.result_for(command, _cancel_pending_facility_placement())
 		GameCommand.Type.OPEN_TEA_BREWING:
 			var accepted: bool = game_hud != null and game_hud.show_tea_brewing_menu()
 			if accepted:
 				_play_sfx_event(SfxEventRouter.EVENT_UI_MENU_OPEN, {"menu_id": "tea_brewing"}, "menu:tea_brewing")
-			return accepted
+			return _command_dispatcher.result_for(command, accepted)
 		GameCommand.Type.TEA_BREW_SELECT_LEAF, GameCommand.Type.TEA_BREW_SELECT_VESSEL, GameCommand.Type.TEA_BREW_SELECT_SLOT, GameCommand.Type.TEA_BREW_NAVIGATE, GameCommand.Type.BREW_TEA:
-			var accepted: bool = _handle_tea_brewing_command(command)
-			if accepted:
-				_play_feedback_beep()
-			return accepted
+			return _command_dispatcher.result_for(command, _handle_tea_brewing_command(command))
 		GameCommand.Type.OPEN_META_CODEX:
 			var accepted: bool = game_hud != null and game_hud.show_meta_codex_menu()
 			if accepted:
 				_play_sfx_event(SfxEventRouter.EVENT_UI_MENU_OPEN, {"menu_id": "meta_codex"}, "menu:meta_codex")
-			return accepted
+			return _command_dispatcher.result_for(command, accepted)
 		GameCommand.Type.META_CODEX_SET_TAB, GameCommand.Type.META_CODEX_SET_FILTER, GameCommand.Type.META_CODEX_SELECT_DETAIL, GameCommand.Type.META_CODEX_NAVIGATE:
-			var accepted: bool = _handle_meta_codex_command(command)
-			if accepted:
-				_play_feedback_beep()
-			return accepted
+			return _command_dispatcher.result_for(command, _handle_meta_codex_command(command))
 		GameCommand.Type.OPEN_INVENTORY:
 			var accepted: bool = game_hud != null and game_hud.show_inventory_menu()
 			if accepted:
 				_play_sfx_event(SfxEventRouter.EVENT_UI_MENU_OPEN, {"menu_id": "inventory"}, "menu:inventory")
-			return accepted
+			return _command_dispatcher.result_for(command, accepted)
 		GameCommand.Type.OPEN_CRAFTING:
 			_configure_game_hud()
 			var accepted: bool = game_hud != null and game_hud.show_crafting_menu()
 			if accepted:
 				_play_sfx_event(SfxEventRouter.EVENT_UI_MENU_OPEN, {"menu_id": "crafting"}, "menu:crafting")
-			return accepted
+			return _command_dispatcher.result_for(command, accepted)
 		GameCommand.Type.OPEN_FACILITIES:
 			_configure_game_hud()
 			var accepted: bool = game_hud != null and game_hud.show_facilities_menu()
 			if accepted:
 				_play_sfx_event(SfxEventRouter.EVENT_UI_MENU_OPEN, {"menu_id": "facilities"}, "menu:facilities")
-			return accepted
+			return _command_dispatcher.result_for(command, accepted)
 		GameCommand.Type.OPEN_MAP:
 			var accepted: bool = game_hud != null and game_hud.show_map_menu()
 			if accepted:
 				_play_sfx_event(SfxEventRouter.EVENT_UI_MENU_OPEN, {"menu_id": "map"}, "menu:map")
-			return accepted
+			return _command_dispatcher.result_for(command, accepted)
 		GameCommand.Type.HIDE_MENU:
 			var placement_cancelled := _cancel_pending_facility_placement()
 			var accepted: bool = (game_hud != null and game_hud.hide_menu()) or placement_cancelled
 			if accepted:
 				_play_sfx_event(SfxEventRouter.EVENT_UI_MENU_CLOSE, {"placement_cancelled": placement_cancelled}, "menu:hide")
-			return accepted
+			return _command_dispatcher.result_for(command, accepted)
 		GameCommand.Type.CRAFT_RECIPE:
 			var accepted: bool = _handle_craft_recipe_command(command)
-			if accepted and not has_pending_facility_placement():
-				_advance_time_for_turn()
-				_play_feedback_beep()
-				_queue_enemy_turn_after_player_action()
-			return accepted
+			return _command_dispatcher.result_for(command, accepted, {"placement_pending": accepted and has_pending_facility_placement()})
 		GameCommand.Type.INVENTORY_SET_FILTER, GameCommand.Type.INVENTORY_SORT, GameCommand.Type.INVENTORY_SELECT_SLOT, GameCommand.Type.INVENTORY_NAVIGATE, GameCommand.Type.EQUIP_INVENTORY_SLOT, GameCommand.Type.UNEQUIP_SLOT, GameCommand.Type.USE_INVENTORY_SLOT:
-			var accepted: bool = _handle_inventory_command(command)
-			if accepted:
-				_play_feedback_beep()
-			return accepted
+			return _command_dispatcher.result_for(command, _handle_inventory_command(command))
 		_:
 			if _sen_rikyu_phase_two_accepts_command(command):
 				var accepted: bool = _handle_sen_rikyu_phase_two_action(command)
-				if accepted:
-					_advance_time_for_turn()
-					_play_feedback_beep()
-					_queue_enemy_turn_after_player_action()
-				return accepted
+				return _command_dispatcher.result_for(command, accepted, {"consumes_turn": true, "queues_enemy_turn": true, "feedback_beep": true})
 			var accepted: bool = player != null and player.submit_command(command)
-			if accepted and command.type == GameCommand.Type.CAST_ABILITY:
-				_sync_tea_runtime_state()
-			if accepted and _is_turn_advancing_player_action(command):
-				_advance_time_for_turn()
-				_queue_enemy_turn_after_player_action()
-			return accepted
+			return _command_dispatcher.result_for(command, accepted)
+
+func _apply_action_command_result(result: Dictionary) -> void:
+	if result.is_empty():
+		return
+	var command = result.get("command")
+	if bool(result.get("interact_failure_sfx", false)) and command is GameCommand:
+		var target_id := String(command.payload.get("target_id", ""))
+		_play_sfx_event(SfxEventRouter.EVENT_INTERACT_FAIL, {"target_id": target_id}, "interact_failed:%s" % target_id)
+	if not bool(result.get("accepted", false)):
+		return
+	if bool(result.get("sync_tea_runtime", false)):
+		_sync_tea_runtime_state()
+	if bool(result.get("consumes_turn", false)):
+		_advance_time_for_turn()
+	if bool(result.get("feedback_beep", false)):
+		_play_feedback_beep()
+	if bool(result.get("queues_enemy_turn", false)):
+		_queue_enemy_turn_after_player_action()
 
 func movement_command_for_current_inputs(desktop_command) -> GameCommand:
 	if desktop_command is GameCommand and desktop_command.type == GameCommand.Type.MOVE and desktop_command.direction != Vector2i.ZERO:
@@ -2582,23 +2556,11 @@ func _save_progress_after_turn() -> void:
 	if not bool(result.get("ok", false)):
 		push_error(String(result.get("error", "Failed to save run progress.")))
 
-func _is_turn_advancing_player_action(command) -> bool:
-	if not command is GameCommand:
-		return false
-	return [
-		GameCommand.Type.ATTACK,
-		GameCommand.Type.DODGE,
-		GameCommand.Type.CAST_ABILITY,
-		GameCommand.Type.USE_CONSUMABLE,
-		GameCommand.Type.COMPLETE_DUNGEON,
-		GameCommand.Type.REPAIR_TELEPORT,
-		GameCommand.Type.ADVANCE_BIOME
-	].has(command.type)
-
 func _advance_time_for_turn() -> void:
-	if time_state == null or player == null or player.resources == null:
+	var player_resources = player.get("resources") if player != null else null
+	if time_state == null or player_resources == null:
 		return
-	time_state.tick(_time_seconds_per_turn(), player.resources)
+	time_state.tick(_time_seconds_per_turn(), player_resources)
 
 func _time_seconds_per_turn() -> float:
 	return RuntimeConstants.float_value("game.turn_seconds")
