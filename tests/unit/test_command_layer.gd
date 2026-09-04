@@ -46,12 +46,16 @@ func run(asserts) -> void:
 	asserts.equal(desktop.command_for_action("complete_dungeon").type, GameCommand.Type.COMPLETE_DUNGEON, "desktop dungeon completion maps to shared command")
 	asserts.equal(mobile.command_for_button("repair_teleport").type, GameCommand.Type.REPAIR_TELEPORT, "mobile teleport repair maps to shared command")
 
-	for action in ["attack", "dodge", "drink_tea", "sleep", "open_tea_brewing", "tea_brew_select_leaf", "tea_brew_select_vessel", "tea_brew_select_slot", "tea_brew_next_leaf", "tea_brew_previous_leaf", "tea_brew_next_vessel", "tea_brew_previous_vessel", "tea_brew_next_slot", "tea_brew_previous_slot", "brew_tea", "open_meta_codex", "meta_codex_set_tab", "meta_codex_set_filter", "meta_codex_select_detail", "meta_codex_next", "meta_codex_previous", "use_consumable", "cast_ability", "interact", "open_inventory", "open_crafting", "open_facilities", "open_map", "complete_dungeon", "repair_teleport", "advance_biome", "inventory_sort", "inventory_select", "inventory_next", "inventory_previous", "equip_inventory_slot", "use_inventory_slot"]:
-		var desktop_command = desktop.command_for_action(action, Vector2i.LEFT, 2)
-		var mobile_command = mobile.command_for_button(action, Vector2i.LEFT, 2)
-		asserts.equal(desktop_command.type, mobile_command.type, "%s type matches across platforms" % action)
-		asserts.equal(desktop_command.direction, mobile_command.direction, "%s direction matches across platforms" % action)
-		asserts.equal(desktop_command.slot, mobile_command.slot, "%s slot matches across platforms" % action)
+	for action in ["attack", "dodge", "drink_tea", "sleep", "open_tea_brewing", "tea_brew_select_leaf", "tea_brew_select_vessel", "tea_brew_select_slot", "tea_brew_next_leaf", "tea_brew_previous_leaf", "tea_brew_next_vessel", "tea_brew_previous_vessel", "tea_brew_next_slot", "tea_brew_previous_slot", "brew_tea", "open_meta_codex", "meta_codex_set_tab", "meta_codex_set_filter", "meta_codex_select_detail", "meta_codex_next", "meta_codex_previous", "use_consumable", "cast_ability", "interact", "open_inventory", "open_crafting", "open_facilities", "open_map", "complete_dungeon", "repair_teleport", "advance_biome", "inventory_filter", "inventory_sort", "inventory_select", "inventory_next", "inventory_previous", "equip_inventory_slot", "use_inventory_slot", "facility_rotate", "facility_confirm", "facility_cancel"]:
+		_assert_platform_commands_match(asserts, desktop, mobile, action)
+
+	asserts.equal(desktop.command_for_action("inventory_use_selected", Vector2i.LEFT, 2).type, GameCommand.Type.USE_INVENTORY_SLOT, "desktop inventory use alias is preserved")
+	asserts.equal(desktop.command_for_action("inventory_equip_selected", Vector2i.LEFT, 2).type, GameCommand.Type.EQUIP_INVENTORY_SLOT, "desktop inventory equip alias is preserved")
+	asserts.equal(desktop.command_for_action("inventory_filter_all").payload, {"kind": "all"}, "desktop inventory all filter payload is preserved")
+	asserts.equal(desktop.command_for_action("inventory_filter_consumable").payload, {"kind": "소모품"}, "desktop inventory consumable filter payload is preserved")
+	asserts.equal(desktop.command_for_action("inventory_filter_equipment").payload, {"kind": "무기"}, "desktop inventory equipment filter payload is preserved")
+	asserts.equal(mobile.command_for_button("inventory_use_selected"), null, "desktop-only inventory use alias is not a mobile button")
+	asserts.equal(mobile.command_for_button("inventory_filter_all"), null, "desktop-only inventory filter alias is not a mobile button")
 
 	asserts.equal(mobile.command_for_button("unknown"), null, "unknown mobile command is rejected")
 	asserts.equal(desktop.command_for_action("unknown"), null, "unknown desktop command is rejected")
@@ -66,6 +70,15 @@ func run(asserts) -> void:
 	asserts.equal(received[0], attack, "dispatcher preserves command identity")
 	_assert_menu_shortcut_keys_are_unique(asserts)
 	_assert_attack_uses_e_shortcut(asserts)
+
+func _assert_platform_commands_match(asserts, desktop: DesktopCommandAdapter, mobile: MobileCommandAdapter, action: String) -> void:
+	var payload := {"kind": "test", "tab": "items", "biome_id": "forest"}
+	var desktop_command = desktop.command_for_action(action, Vector2i.LEFT, 2, payload)
+	var mobile_command = mobile.command_for_button(action, Vector2i.LEFT, 2, payload)
+	asserts.equal(desktop_command.type, mobile_command.type, "%s type matches across platforms" % action)
+	asserts.equal(desktop_command.direction, mobile_command.direction, "%s direction matches across platforms" % action)
+	asserts.equal(desktop_command.slot, mobile_command.slot, "%s slot matches across platforms" % action)
+	asserts.equal(desktop_command.payload, mobile_command.payload, "%s payload matches across platforms" % action)
 
 func _assert_attack_uses_e_shortcut(asserts) -> void:
 	var text := FileAccess.get_file_as_string("res://project.godot")
