@@ -40,6 +40,7 @@ func run(asserts) -> void:
 	_assert_four_fixture_types_share_interact_contract(asserts)
 	_assert_inventory_full_preserves_pickup(asserts)
 	_assert_monster_drop_uses_stable_definition(asserts)
+	_assert_conditional_drop_uses_evaluator_context(asserts)
 	_assert_run_save_round_trip_preserves_world_state(asserts)
 	_assert_invalid_definitions_are_atomic(asserts)
 	_assert_generated_resource_reservation_can_be_adopted(asserts)
@@ -113,6 +114,21 @@ func _assert_monster_drop_uses_stable_definition(asserts) -> void:
 	var duplicate: Dictionary = service.process_drop_request(event)
 	asserts.false_value(duplicate.ok, "duplicate monster drop request is rejected")
 	asserts.equal(duplicate.reason, "drop_already_processed", "duplicate drop uses stable reason")
+
+func _assert_conditional_drop_uses_evaluator_context(asserts) -> void:
+	var runtime := _runtime(6, Vector2i(4, 2))
+	var dropped: Dictionary = runtime.service.process_drop_request({
+		"type": "monster_drop_requested",
+		"combat_id": "conditional_01",
+		"definition_id": "conditional_drop"
+	}, Vector2i.ZERO, {"run_seed": 42, "time_phase": "day"})
+	asserts.true_value(dropped.ok, "acquisition evaluates conditional grants before delivery")
+	asserts.equal(dropped.grants.size(), 2, "day evaluation includes always and day grants only")
+	asserts.equal(dropped.grants[0].drop_id, "conditional_always", "always grant preserves its stable drop id")
+	asserts.equal(dropped.grants[1].drop_id, "conditional_day", "day grant preserves its stable drop id")
+	asserts.equal(runtime.inventory.get_total_quantity("wood"), 1, "always grant uses direct inventory delivery")
+	asserts.equal(runtime.inventory.get_total_quantity("clay"), 2, "day grant quantity uses its configured range")
+	asserts.equal(runtime.inventory.get_total_quantity("fixture_ore_item"), 0, "night grant is not delivered during day")
 
 func _assert_run_save_round_trip_preserves_world_state(asserts) -> void:
 	var first := _runtime(1, Vector2i(4, 2))
@@ -243,6 +259,11 @@ func _drop_definitions() -> Array:
 		{"monster_id": "multi_drop", "grants": [
 			{"item_id": "wood", "quantity": 1, "policy": "direct"},
 			{"item_id": "clay", "quantity": 1, "policy": "pickup"}
+		]},
+		{"monster_id": "conditional_drop", "grants": [
+			{"drop_id": "conditional_always", "item_id": "wood", "quantity": 1, "chance": 1.0, "condition": "항상", "policy": "direct"},
+			{"drop_id": "conditional_day", "item_id": "clay", "min_quantity": 2, "max_quantity": 2, "chance": 1.0, "condition": "낮", "policy": "direct"},
+			{"drop_id": "conditional_night", "item_id": "fixture_ore_item", "quantity": 1, "chance": 1.0, "condition": "밤", "policy": "direct"}
 		]}
 	]
 

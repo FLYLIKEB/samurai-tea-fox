@@ -17,6 +17,7 @@ def canonical_json_bytes(value: Any) -> bytes:
 
 
 class ExportPipeline:
+    DROP_CONDITIONS = {"항상", "낮", "밤"}
     EVENT_REPLAY_POLICIES = {"once", "repeat"}
     EVENT_RESULT_TYPES = {"set_run_flag", "grant_item", "apply_choice"}
     BOSS_TEA_CONDITION_TYPES = {"always", "prepared_tea", "run_flag", "run_not_flag", "current_biome", "has_item"}
@@ -252,6 +253,11 @@ class ExportPipeline:
         if bool(item_id) == bool(tea_id):
             raise ExportValidationError(
                 f"drops item {drop_id}: exactly one of item_id or tea_id is required"
+            )
+        condition = row.get("condition")
+        if condition not in self.DROP_CONDITIONS:
+            raise ExportValidationError(
+                f"drops item {drop_id}: unsupported condition {condition}"
             )
         minimum = row.get("min_quantity")
         maximum = row.get("max_quantity")
