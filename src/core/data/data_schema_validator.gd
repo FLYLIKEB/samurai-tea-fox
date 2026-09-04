@@ -4,6 +4,7 @@ class_name DataSchemaValidator
 const BOSS_TEA_CONDITION_TYPES := ["always", "prepared_tea", "run_flag", "run_not_flag", "current_biome", "has_item"]
 const BOSS_TEA_HOOK_GROUPS := ["common", "peaceful_tea_ceremony", "mixed", "combat_started"]
 const BOSS_TEA_HOOK_CHANNELS := ["memory", "weakness", "dialogue"]
+const DROP_CONDITIONS := ["항상", "낮", "밤"]
 
 func validate_export_file(value, path: String) -> Dictionary:
 	if typeof(value) != TYPE_DICTIONARY:
@@ -321,6 +322,9 @@ func _validate_drop_contract(item: Dictionary) -> Dictionary:
 	var has_tea := not String(item.get("tea_id", "")).is_empty()
 	if has_item == has_tea:
 		return {"ok": false, "error": "drops item '%s' requires exactly one of item_id or tea_id." % item.id}
+	var condition := String(item.get("condition", ""))
+	if not DROP_CONDITIONS.has(condition):
+		return {"ok": false, "error": "drops item '%s' has unsupported condition '%s'." % [item.id, condition]}
 	for field in ["min_quantity", "max_quantity"]:
 		var value = item.get(field)
 		if typeof(value) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(value)) or float(value) != floor(float(value)):

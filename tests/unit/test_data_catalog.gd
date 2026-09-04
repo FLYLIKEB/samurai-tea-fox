@@ -202,6 +202,28 @@ func run(asserts) -> void:
 	})
 	asserts.false_value(invalid_drop.ok, "drop definitions reject ambiguous item and tea targets")
 
+	var invalid_drop_condition := validator.validate_catalog({
+		"monsters": [{"id": "road_bandit"}],
+		"items": [{"id": "item_33"}],
+		"drops": [{"id": "drop_weather", "monster_id": "road_bandit", "item_id": "item_33", "condition": "비", "min_quantity": 1, "max_quantity": 1, "chance": 1.0}]
+	}, {
+		"monsters": {"required_fields": ["id"]},
+		"items": {"required_fields": ["id"]},
+		"drops": {"required_fields": ["id"], "relations": {"monster_id": "monsters", "item_id": "items"}}
+	})
+	asserts.false_value(invalid_drop_condition.ok, "drop definitions reject conditions outside always, day, and night")
+
+	var invalid_drop_quantity := validator.validate_catalog({
+		"monsters": [{"id": "road_bandit"}],
+		"items": [{"id": "item_33"}],
+		"drops": [{"id": "drop_bad_range", "monster_id": "road_bandit", "item_id": "item_33", "condition": "항상", "min_quantity": 3, "max_quantity": 2, "chance": 1.0}]
+	}, {
+		"monsters": {"required_fields": ["id"]},
+		"items": {"required_fields": ["id"]},
+		"drops": {"required_fields": ["id"], "relations": {"monster_id": "monsters", "item_id": "items"}}
+	})
+	asserts.false_value(invalid_drop_quantity.ok, "drop definitions reject reversed quantity ranges")
+
 	var short_attachment_description_result := validator.validate_catalog({
 		"items": [{
 			"id": "short_attachment_bowl",

@@ -242,6 +242,17 @@ class NotionExportPipelineTests(unittest.TestCase):
         with self.assertRaisesRegex(ExportValidationError, "drops.*drop_1.*item_id.*missing_item"):
             self.pipeline.build_snapshots(broken_relation, "confirmed-test")
 
+        unsupported_condition = copy.deepcopy(capture)
+        unsupported_condition["datasets"]["drops"]["items"][0]["condition"] = "비"
+        with self.assertRaisesRegex(ExportValidationError, "drop_1.*unsupported condition"):
+            self.pipeline.build_snapshots(unsupported_condition, "confirmed-test")
+
+        reversed_quantity = copy.deepcopy(capture)
+        reversed_quantity["datasets"]["drops"]["items"][0]["min_quantity"] = 4
+        reversed_quantity["datasets"]["drops"]["items"][0]["max_quantity"] = 2
+        with self.assertRaisesRegex(ExportValidationError, "drop_1.*quantity range"):
+            self.pipeline.build_snapshots(reversed_quantity, "confirmed-test")
+
     def test_missing_required_field_fails_with_dataset_and_item_context(self):
         invalid = copy.deepcopy(self.capture)
         wood = next(item for item in invalid["datasets"]["items"]["items"] if item["id"] == "wood")
