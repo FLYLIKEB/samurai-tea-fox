@@ -248,9 +248,47 @@ func _validate_item_contract(dataset_name: String, item: Dictionary) -> Dictiona
 		return _validate_tea_contract(item)
 	if dataset_name != "items":
 		return {"ok": true}
+	var facility_result := _validate_facility_interaction_data(item)
+	if not facility_result.ok:
+		return facility_result
 	if String(item.get("type", "")) != "다구" or String(item.get("equipment_slot", "")) != "다구":
 		return {"ok": true}
 	return _validate_attachment_stage_data(item)
+
+func _validate_facility_interaction_data(item: Dictionary) -> Dictionary:
+	if item.has("facility_capabilities"):
+		var capabilities = item.facility_capabilities
+		if typeof(capabilities) != TYPE_ARRAY or capabilities.is_empty():
+			return {"ok": false, "error": "items item '%s' facility_capabilities must be a non-empty stable id array." % item.id}
+		var seen := {}
+		for capability in capabilities:
+			var capability_id := String(capability)
+			if typeof(capability) != TYPE_STRING or not _stable_id(capability_id):
+				return {"ok": false, "error": "items item '%s' facility_capabilities must contain stable ids." % item.id}
+			if seen.has(capability_id):
+				return {"ok": false, "error": "items item '%s' facility_capabilities contains duplicate id '%s'." % [item.id, capability_id]}
+			seen[capability_id] = true
+	if not item.has("facility_interactions"):
+		return {"ok": true}
+	var interactions = item.facility_interactions
+	if typeof(interactions) != TYPE_DICTIONARY or interactions.is_empty():
+		return {"ok": false, "error": "items item '%s' facility_interactions must be a non-empty object." % item.id}
+	for capability in interactions:
+		var capability_id := String(capability)
+		if not _stable_id(capability_id):
+			return {"ok": false, "error": "items item '%s' facility_interactions keys must be stable ids." % item.id}
+		if item.has("facility_capabilities") and not item.facility_capabilities.has(capability_id):
+			return {"ok": false, "error": "items item '%s' facility_interactions references undeclared capability '%s'." % [item.id, capability_id]}
+		var metadata = interactions[capability]
+		if typeof(metadata) != TYPE_DICTIONARY:
+			return {"ok": false, "error": "items item '%s' facility interaction '%s' must be an object." % [item.id, capability_id]}
+		var front_direction := String(metadata.get("front_direction", "south"))
+		if front_direction not in ["north", "east", "south", "west"]:
+			return {"ok": false, "error": "items item '%s' facility interaction '%s' front_direction must be cardinal." % [item.id, capability_id]}
+		var tile_index = metadata.get("tile_index", 0)
+		if typeof(tile_index) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(tile_index)) or float(tile_index) != floor(float(tile_index)) or int(tile_index) < 0:
+			return {"ok": false, "error": "items item '%s' facility interaction '%s' tile_index must be a non-negative integer." % [item.id, capability_id]}
+	return {"ok": true}
 
 func _validate_biome_contract(item: Dictionary) -> Dictionary:
 	if String(item.get("type", "")) != "바이옴":

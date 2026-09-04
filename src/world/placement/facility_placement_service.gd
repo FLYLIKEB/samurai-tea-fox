@@ -96,6 +96,7 @@ func place_validated_facility(placement_result: Dictionary, world_data, context 
 	var metadata := _duplicate_dictionary(_context_value(context, "metadata", {}))
 	metadata["facility_item_id"] = facility_item_id
 	metadata["footprint_size"] = placement_result.footprint_size
+	metadata["rotation_quarter_turns"] = int(_context_value(context, "rotation_quarter_turns", metadata.get("rotation_quarter_turns", 0)))
 	var reserved: Dictionary = world_data.reserve_facility(String(placement_result.owner_id), origin, size, true, metadata)
 	if not reserved.ok:
 		return _fail_and_emit(reserved)
@@ -141,6 +142,50 @@ func facility_item_ids_near(world_data, position: Vector2i, max_distance := -1) 
 				break
 	ids.sort()
 	return ids
+
+func facility_interaction_at(world_data, position: Vector2i, capability_id: String) -> Dictionary:
+	if world_data == null or not world_data.has_method("to_dictionary") or not world_data.has_method("contains") or not world_data.has_method("is_walkable"):
+		return _fail("invalid_world_data", "Facility interaction requires WorldData occupancy API.")
+	var requested_capability_id := String(capability_id)
+	if requested_capability_id.is_empty():
+		return _fail("missing_capability", "Facility interaction requires a capability id.")
+	if not world_data.contains(position):
+		return {"ok": false, "reason": "interaction_tile_out_of_bounds", "position": _position_dictionary(position)}
+
+	var saw_capable_facility := false
+	var saw_matching_blocked_tile := false
+	for reservation in world_data.to_dictionary().get("reservations", []):
+		if typeof(reservation) != TYPE_DICTIONARY or String(reservation.get("kind", "")) != "facility":
+			continue
+		var metadata: Dictionary = reservation.get("metadata", {})
+		var facility_item_id := String(metadata.get("facility_item_id", ""))
+		var definition: Dictionary = facility_definitions.get(facility_item_id, {})
+		if not _definition_has_capability(definition, requested_capability_id):
+			continue
+		saw_capable_facility = true
+		var interaction_result := _interaction_cell_for_reservation(reservation, definition, requested_capability_id)
+		if not interaction_result.ok:
+			continue
+		var interaction_cell: Vector2i = interaction_result.cell
+		if interaction_cell != position:
+			continue
+		if not world_data.is_walkable(interaction_cell):
+			saw_matching_blocked_tile = true
+			continue
+		return {
+			"ok": true,
+			"capability_id": requested_capability_id,
+			"facility_item_id": facility_item_id,
+			"owner_id": String(reservation.get("owner_id", "")),
+			"origin": reservation.get("origin", {}).duplicate(true),
+			"footprint_size": reservation.get("size", {}).duplicate(true),
+			"interaction_cell": _position_dictionary(interaction_cell)
+		}
+	if saw_matching_blocked_tile:
+		return {"ok": false, "reason": "interaction_tile_blocked", "position": _position_dictionary(position)}
+	if saw_capable_facility:
+		return {"ok": false, "reason": "facility_interaction_out_of_position", "position": _position_dictionary(position), "capability_id": requested_capability_id}
+	return {"ok": false, "reason": "missing_facility_capability", "position": _position_dictionary(position), "capability_id": requested_capability_id}
 
 func facility_for(facility_item_id: String) -> Dictionary:
 	return _duplicate_dictionary(facility_definitions.get(facility_item_id, {}))
@@ -310,6 +355,46 @@ static func _same_validated_placement(left: Dictionary, right: Dictionary) -> bo
 		and left.get("origin", {}) == right.get("origin", {}) \
 		and left.get("footprint_size", {}) == right.get("footprint_size", {}) \
 		and left.get("footprint_cells", []) == right.get("footprint_cells", [])
+
+static func _definition_has_capability(definition: Dictionary, capability_id: String) -> bool:
+	var capabilities = definition.get("facility_capabilities", [])
+	return typeof(capabilities) == TYPE_ARRAY and capabilities.has(capability_id)
+
+static func _interaction_cell_for_reservation(reservation: Dictionary, definition: Dictionary, capability_id: String) -> Dictionary:
+	var interactions = definition.get("facility_interactions", {})
+	var metadata: Dictionary = interactions.get(capability_id, {}) if typeof(interactions) == TYPE_DICTIONARY else {}
+	var origin := _vector_from_value(reservation.get("origin", {}))
+	var size := Vector2i(
+		int(reservation.get("size", {}).get("x", DEFAULT_FOOTPRINT.x)),
+		int(reservation.get("size", {}).get("y", DEFAULT_FOOTPRINT.y))
+	)
+	if size.x <= 0 or size.y <= 0:
+		return _fail("invalid_facility_footprint", "Facility interaction requires a positive footprint.")
+	var direction := _rotate_cardinal_direction(
+		String(metadata.get("front_direction", "south")),
+		int(reservation.get("metadata", {}).get("rotation_quarter_turns", 0))
+	)
+	var tile_index := maxi(0, int(metadata.get("tile_index", 0)))
+	var cell := origin
+	match direction:
+		"north":
+			cell = Vector2i(origin.x + mini(tile_index, size.x - 1), origin.y - 1)
+		"south":
+			cell = Vector2i(origin.x + mini(tile_index, size.x - 1), origin.y + size.y)
+		"west":
+			cell = Vector2i(origin.x - 1, origin.y + mini(tile_index, size.y - 1))
+		"east":
+			cell = Vector2i(origin.x + size.x, origin.y + mini(tile_index, size.y - 1))
+		_:
+			return _fail("invalid_interaction_direction", "Facility interaction direction must be cardinal.")
+	return {"ok": true, "cell": cell, "direction": direction}
+
+static func _rotate_cardinal_direction(direction: String, quarter_turns: int) -> String:
+	var directions := ["north", "east", "south", "west"]
+	var index := directions.find(direction)
+	if index < 0:
+		return direction
+	return directions[(index + (quarter_turns % 4) + 4) % 4]
 
 static func _vector_from_value(value) -> Vector2i:
 	if typeof(value) == TYPE_VECTOR2I:
