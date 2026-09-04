@@ -58,6 +58,7 @@ func run(asserts) -> void:
 	_assert_generated_definitions_load(asserts)
 	_assert_spawn_factory_uses_same_runtime_for_two_monsters(asserts)
 	_assert_data_snapshot_changes_runtime_stats(asserts)
+	_assert_combat_dummy_refreshes_sprite_after_reconfigure(asserts)
 	_assert_damage_stagger_death_and_drop_hooks(asserts)
 	_assert_damage_ignores_dead_and_zero_applied_hits(asserts)
 	_assert_spawn_factory_accepts_pool_behavior_variant(asserts)
@@ -108,6 +109,19 @@ func _assert_data_snapshot_changes_runtime_stats(asserts) -> void:
 		asserts.equal(changed_result.monster.hp_max, 88, "changed data snapshot alters runtime HP")
 		asserts.equal(changed_result.monster.attack, 13, "changed data snapshot alters runtime attack")
 		asserts.equal(changed_result.monster.movement_speed, 1.9, "changed data snapshot alters runtime movement")
+
+func _assert_combat_dummy_refreshes_sprite_after_reconfigure(asserts) -> void:
+	var dummy := CombatDummy.new()
+	var sprite := Sprite2D.new()
+	dummy.sprite = sprite
+	dummy.monster_id = "road_bandit"
+	dummy._apply_sprite()
+	asserts.equal(dummy._resolved_sprite_asset_id, "monster_road_bandit_front_idle", "dummy starts with the road bandit sprite")
+	dummy.monster_id = "wild_dog"
+	var configured: Dictionary = dummy.configure_combat(_runtime_catalog(), null, _test_combat_config())
+	asserts.true_value(configured.ok, "dummy reconfigures as wild dog")
+	asserts.equal(dummy._resolved_sprite_asset_id, "monster_wild_dog_front_idle", "dummy refreshes the sprite after monster reconfigure")
+	dummy.free()
 
 func _assert_damage_stagger_death_and_drop_hooks(asserts) -> void:
 	var spawn_result: Dictionary = MonsterSpawnFactory.new(_runtime_catalog()).spawn("wild_dog", {"combat_id": "wild_dog_test"})

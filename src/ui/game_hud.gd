@@ -2265,6 +2265,9 @@ func _crafting_result_icon_reference(row_model: Dictionary) -> String:
 	return _item_icon_reference(item_id, kind, result.merged(definition, false))
 
 func _item_icon_reference(item_id: String, kind: String, definition: Dictionary) -> String:
+	var content_reference := _content_icon_reference("items", item_id, {})
+	if not content_reference.is_empty():
+		return content_reference
 	for key in ["icon_asset_id", "icon", "asset_id", "sprite_asset_id", "source_id"]:
 		var reference := String(definition.get(key, ""))
 		if not reference.is_empty():

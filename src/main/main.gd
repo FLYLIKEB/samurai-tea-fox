@@ -186,6 +186,7 @@ var _pending_facility_rotation := 0
 var _facility_placement_preview: FacilityPlacementPreview
 var _preview_asset_catalog := AssetCatalog.new()
 var _preview_asset_catalog_ready := false
+var _preview_content_image_map_ready := false
 var _feedback_player: AudioStreamPlayer
 var _feedback_playback: AudioStreamGeneratorPlayback
 var feedback_beep_count := 0
@@ -1966,10 +1967,11 @@ func _spawn_dungeon_combatants(allow_default_spawn := false) -> void:
 	_clear_dungeon_combatants(false)
 	if _overworld_combat_dummy == null or not _overworld_combat_dummy.has_method("configure_combat"):
 		return
+	var regular_monster_ids := _dungeon_regular_monster_ids(3)
 	var specs := [
-		{"id": "dungeon_enemy_0", "cell": Vector2i(7, 2), "monster_id": "road_bandit", "sprite_id": "monster_foxfire_front_idle"},
-		{"id": "dungeon_enemy_1", "cell": Vector2i(9, 5), "monster_id": "road_bandit", "sprite_id": "monster_foxfire_front_idle"},
-		{"id": "dungeon_enemy_2", "cell": Vector2i(5, 7), "monster_id": "road_bandit", "sprite_id": "monster_foxfire_front_idle"},
+		{"id": "dungeon_enemy_0", "cell": Vector2i(7, 2), "monster_id": regular_monster_ids[0], "sprite_id": _monster_sprite_asset_id(String(regular_monster_ids[0]))},
+		{"id": "dungeon_enemy_1", "cell": Vector2i(9, 5), "monster_id": regular_monster_ids[1], "sprite_id": _monster_sprite_asset_id(String(regular_monster_ids[1]))},
+		{"id": "dungeon_enemy_2", "cell": Vector2i(5, 7), "monster_id": regular_monster_ids[2], "sprite_id": _monster_sprite_asset_id(String(regular_monster_ids[2]))},
 		{"id": DUNGEON_BOSS_OWNER_ID, "cell": Vector2i(10, 7), "monster_id": "road_bandit", "sprite_id": "asset_assets_sprites_characters_bosses_chr_6_yokai_tea_master_yokai_tea_master_front_32x32_png", "boss": true}
 	]
 	var saved_states: Dictionary = run_state.dungeon_runtime_state.get("enemy_states", {}) if run_state != null else {}
@@ -2013,6 +2015,34 @@ func _spawn_dungeon_combatants(allow_default_spawn := false) -> void:
 		_dungeon_enemy_nodes.append(enemy)
 		_dungeon_debug("실제 던전 몬스터 생성: id=%s ok=%s" % [spec.id, configured.get("ok", false)])
 	combat_dummy = _dungeon_enemy_nodes.back() if not _dungeon_enemy_nodes.is_empty() else _overworld_combat_dummy
+
+func _dungeon_regular_monster_ids(count: int) -> Array:
+	var ids: Array = []
+	var source_world: Dictionary = _overworld_generated_world if not _overworld_generated_world.is_empty() else generated_world
+	var pool: Dictionary = source_world.get("monster_spawn_pool", {})
+	var entries = pool.get("entries", [])
+	if entries is Array:
+		for entry in entries:
+			if not entry is Dictionary:
+				continue
+			var monster_id := String(entry.get("monster_id", ""))
+			if monster_id.is_empty() or ids.has(monster_id):
+				continue
+			if catalog != null and catalog.has_method("find_by_id") and catalog.find_by_id("monsters", monster_id).is_empty():
+				continue
+			ids.append(monster_id)
+	if ids.is_empty():
+		ids.append("road_bandit")
+	var source_count := ids.size()
+	while ids.size() < count:
+		ids.append(ids[ids.size() % source_count])
+	return ids.slice(0, count)
+
+func _monster_sprite_asset_id(monster_id: String) -> String:
+	var sprite_id := _content_image_asset_id("monsters", monster_id)
+	if not sprite_id.is_empty():
+		return sprite_id
+	return "monster_%s_front_idle" % monster_id
 
 func _clear_dungeon_combatants(restore_overworld := true) -> void:
 	for enemy in _dungeon_enemy_nodes:
@@ -3420,6 +3450,19 @@ func _facility_preview_texture() -> Texture2D:
 	var metadata: Dictionary = _pending_facility_placement.get("metadata", {})
 	return _preview_asset_catalog.load_texture_reference(String(metadata.get("source_id", "")))
 
+func _content_image_asset_id(dataset: String, content_id: String) -> String:
+	if not _preview_asset_catalog_ready:
+		var manifest_result: Dictionary = _preview_asset_catalog.load_manifest()
+		if not bool(manifest_result.get("ok", false)):
+			return ""
+		_preview_asset_catalog_ready = true
+	if not _preview_content_image_map_ready:
+		var map_result: Dictionary = _preview_asset_catalog.load_content_image_map()
+		if not bool(map_result.get("ok", false)):
+			return ""
+		_preview_content_image_map_ready = true
+	return _preview_asset_catalog.content_asset_id(dataset, content_id)
+
 func _clear_facility_placement_preview() -> void:
 	if _facility_placement_preview != null:
 		_facility_placement_preview.clear()
@@ -3433,8 +3476,10 @@ func _facility_footprint_for_pending_facility() -> Vector2i:
 
 func _player_facility_metadata(facility_item_id: String) -> Dictionary:
 	var definition: Dictionary = facility_placement_service.facility_for(facility_item_id)
-	var source_id := ""
+	var source_id := _content_image_asset_id("items", facility_item_id)
 	for key in ["source_id", "sprite_asset_id", "asset_id", "icon_asset_id", "icon"]:
+		if not source_id.is_empty():
+			break
 		source_id = String(definition.get(key, ""))
 		if not source_id.is_empty():
 			break

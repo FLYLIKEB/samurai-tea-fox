@@ -12,6 +12,7 @@ class TestPlayer:
 	extends Node2D
 
 func run(asserts) -> void:
+	_assert_player_facility_metadata_uses_content_image_map(asserts)
 	var runtime := Main.new()
 	var player := TestPlayer.new()
 	var world := WorldData.new(7, 7, "grass", true)
@@ -56,7 +57,8 @@ func run(asserts) -> void:
 	asserts.equal(inventory.get_total_quantity("wood"), 6, "invalid placement does not consume materials")
 
 	var selected_install_cell := Vector2i(4, 3)
-	asserts.true_value(runtime.submit_pointer_interaction(runtime.world_position_for_cell_center(selected_install_cell)), "a valid placement click installs at the selected tile")
+	asserts.true_value(runtime.submit_pointer_interaction(runtime.world_position_for_cell_center(selected_install_cell)), "a valid placement click selects the install tile")
+	asserts.true_value(runtime.submit_action_command(GameCommand.new(GameCommand.Type.FACILITY_CONFIRM)), "confirming placement installs at the selected tile")
 	asserts.false_value(runtime.has_pending_facility_placement(), "successful placement leaves placement mode")
 	asserts.equal(inventory.get_total_quantity("wooden_workbench"), 0, "installed facility is not stored in inventory")
 	asserts.equal(runtime.run_state.placed_facilities.size(), 1, "installed facility is recorded in run state")
@@ -81,6 +83,15 @@ func run(asserts) -> void:
 	asserts.equal(placement.facility_item_ids_near(restored_world, selected_install_cell), ["wooden_workbench"], "restored facility keeps its selected position and proximity behavior")
 
 	player.free()
+	runtime.free()
+
+func _assert_player_facility_metadata_uses_content_image_map(asserts) -> void:
+	var runtime := Main.new()
+	var placement := FacilityPlacementService.new()
+	asserts.true_value(placement.configure(_item_definitions()).ok, "facility metadata placement fixture configures")
+	runtime.facility_placement_service = placement
+	var metadata: Dictionary = runtime._player_facility_metadata("wooden_workbench")
+	asserts.equal(metadata.source_id, "item_wooden_workbench_object_64", "player facility metadata uses the dedicated content image")
 	runtime.free()
 
 func _item_definitions() -> Dictionary:
