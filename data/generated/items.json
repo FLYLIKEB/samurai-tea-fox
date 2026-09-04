@@ -1,8 +1,9 @@
 {
-  "content_hash": "2341e92f64e2d221c2afc30056b06b9222b324e3105ad2dd76fa587b76e8299c",
-  "data_version": "notion-2026-09-01",
+  "content_hash": "947bca5285dc32a8f702af9fa76293b79ed49e028c8ac2f9e4beb069b01d9f37",
+  "data_version": "notion-2026-09-04",
   "items": [
     {
+      "acquisition": "설원 바이옴 승려 해결 보상",
       "attachment_description_keys": [
         "items.ash_stained_iron_kettle.attachment.stage_0",
         "items.ash_stained_iron_kettle.attachment.stage_1",
@@ -13,103 +14,349 @@
         3,
         7
       ],
+      "biome_ids": [
+        "snowfield"
+      ],
       "core_tea_ware": true,
       "core_tea_ware_order": 4,
       "craftable": false,
+      "effect": "장착 시 차 한 잔의 기운 회복량이 8 증가한다. 지워버리려 한 감정의 흔적을 재처럼 남긴 철솥.",
       "effect_type": "차 운용",
       "effect_value": 8,
       "equipment_slot": "다구",
       "grade": "명물",
       "id": "ash_stained_iron_kettle",
+      "ki_recovery": 8,
       "max_stack": 1,
       "name": "재 묻은 철솥",
+      "notion_id": "3cd37369-9e66-819a-8964-f7691e0925aa",
       "status": "확정",
       "type": "다구"
     },
     {
+      "acquisition": "기초 제작·상점·도적 드롭",
+      "biome_ids": [
+        "common_region",
+        "wasteland"
+      ],
+      "core_tea_ware": false,
       "craftable": true,
+      "effect": "전투 중 사용해 HP 25 회복. 사용 중 피격되면 취소되며 차와 별개인 응급처치 수단이다.",
       "effect_type": "HP 회복",
       "effect_value": 25,
+      "equipment_slot": "",
       "grade": "일반",
       "id": "bandage",
       "max_stack": 5,
-      "name": "붕대",
-      "status": "테스트",
+      "name": "천 붕대",
+      "notion_id": "3ce37369-9e66-816f-a132-f31f75388fd0",
+      "status": "확정",
       "type": "소모품",
       "use_seconds": 1
     },
     {
+      "acquisition": "센리큐 관련 후반 단서",
+      "core_tea_ware": false,
       "craftable": false,
+      "effect": "초반의 이름 없는 노다인과 센리큐를 이어 주는 사용감과 문양의 단서. 최종 다실에서 의미가 뒤집힌다.",
       "grade": "명물",
       "id": "black_bamboo_tea_scoop",
       "name": "검은 대나무 찻숟가락",
+      "notion_id": "3cd37369-9e66-8195-9a30-fba347f853c9",
       "status": "초안",
       "type": "다구"
     },
     {
+      "core_tea_ware": false,
       "craftable": false,
       "grade": "일반",
-      "id": "clay",
-      "name": "점토",
+      "id": "blacksmith_forge",
+      "max_stack": 1,
+      "name": "대장간",
+      "notion_id": "3d137369-9e66-815c-b598-dbe8155f4df2",
+      "status": "초안",
+      "type": "도구"
+    },
+    {
+      "acquisition": "황무지의 불탄 마을·군영",
+      "biome_ids": [
+        "wasteland"
+      ],
+      "core_tea_ware": false,
+      "craftable": false,
+      "effect": "가마·화로의 연료와 재활용 제작에 쓰인다.",
+      "grade": "일반",
+      "id": "charcoal",
+      "max_stack": 20,
+      "name": "숯",
+      "notion_id": "3cd37369-9e66-8173-a5f0-e060800393a6",
       "status": "확정",
       "type": "재료"
     },
     {
+      "acquisition": "일반 지역의 강가·농경지",
+      "biome_ids": [
+        "common_region"
+      ],
+      "core_tea_ware": false,
       "craftable": false,
+      "effect": "흙사발·향로·다구 제작 재료.",
       "grade": "일반",
-      "id": "cloth",
-      "max_stack": 20,
-      "name": "천",
-      "status": "테스트",
+      "id": "clay",
+      "name": "점토",
+      "notion_id": "3cd37369-9e66-817e-922d-dd33df35f817",
+      "status": "확정",
       "type": "재료"
     },
     {
+      "acquisition": "도적·상자·상점",
+      "biome_ids": [
+        "common_region",
+        "wasteland"
+      ],
+      "core_tea_ware": false,
+      "craftable": false,
+      "effect": "붕대와 가벼운 방어구 제작에 쓰는 범용 직물 재료.",
+      "effect_type": "기타",
+      "equipment_slot": "",
+      "grade": "일반",
+      "id": "cloth",
+      "max_stack": 30,
+      "name": "천 조각",
+      "notion_id": "3ce37369-9e66-81f0-a2d4-c3923da3a1b3",
+      "status": "확정",
+      "type": "재료"
+    },
+    {
+      "acquisition": "설원 침엽수림",
+      "biome_ids": [
+        "snowfield"
+      ],
+      "core_tea_ware": false,
+      "craftable": false,
+      "effect": "설원용 도구와 다구의 손잡이·받침 제작 재료.",
+      "grade": "일반",
+      "id": "conifer_wood",
+      "max_stack": 20,
+      "name": "침엽수 목재",
+      "notion_id": "3cd37369-9e66-8135-b97b-ea6b84d0c5db",
+      "status": "확정",
+      "type": "재료"
+    },
+    {
+      "acquisition": "산악 지역 광맥",
+      "biome_ids": [
+        "mountain_region"
+      ],
+      "core_tea_ware": false,
+      "craftable": false,
+      "effect": "차솥·도구의 금속 부품 제작 재료.",
+      "grade": "일반",
+      "id": "copper_ore",
+      "max_stack": 20,
+      "name": "구리광석",
+      "notion_id": "3cd37369-9e66-811c-b017-eb6621d0d9ed",
+      "status": "확정",
+      "type": "재료"
+    },
+    {
+      "acquisition": "목재 작업대 제작",
+      "biome_ids": [
+        "common_region"
+      ],
       "core_tea_ware": false,
       "craftable": true,
+      "effect": "기본 다완. 별도 능력치 보너스 없이 오래 사용할수록 애착 문구만 변한다.",
       "grade": "일반",
       "id": "humble_clay_bowl",
       "max_stack": 1,
       "name": "소박한 흙사발",
+      "notion_id": "3cd37369-9e66-810d-b2e3-eda1ebba7f21",
       "status": "초안",
       "type": "다구"
     },
     {
-      "id": "item_28",
-      "name": "철 조각",
+      "acquisition": "제작 또는 차 상인",
+      "biome_ids": [
+        "rainforest"
+      ],
+      "core_tea_ware": false,
+      "craftable": true,
+      "effect": "다실·거점의 분위기와 의식 연출에 쓰는 향. 전투 효과 없음.",
+      "grade": "고급",
+      "id": "incense_sticks",
+      "max_stack": 10,
+      "name": "선향",
+      "notion_id": "3cd37369-9e66-8197-9738-ecb1f6820b87",
+      "status": "확정",
+      "type": "향"
+    },
+    {
+      "acquisition": "설원 던전 클리어 후 제작",
+      "biome_ids": [
+        "snowfield"
+      ],
+      "core_tea_ware": false,
+      "craftable": true,
+      "effect": "설원에서도 차 준비 리듬을 유지하게 하는 다구. 별도 체온 스탯은 만들지 않는다.",
+      "grade": "고급",
+      "id": "insulated_tea_bottle",
+      "max_stack": 1,
+      "name": "보온 차병",
+      "notion_id": "3cd37369-9e66-8166-85cf-c61258c020ec",
+      "status": "초안",
+      "type": "다구"
+    },
+    {
+      "acquisition": "산중 가마 제작",
+      "biome_ids": [
+        "mountain_region"
+      ],
+      "core_tea_ware": false,
+      "craftable": true,
+      "effect": "차를 안정적으로 준비하는 금속 다구. 화려한 버프 대신 차 준비의 기본 성능을 높인다.",
+      "grade": "고급",
+      "id": "iron_kettle",
+      "max_stack": 1,
+      "name": "철 차솥",
+      "notion_id": "3cd37369-9e66-817a-9afa-c9e25cd49c1a",
+      "status": "초안",
+      "type": "다구"
+    },
+    {
+      "acquisition": "산악 지역 광산·폐광",
+      "biome_ids": [
+        "mountain_region"
+      ],
+      "core_tea_ware": false,
+      "craftable": false,
+      "effect": "금속 가공의 기본 재료.",
+      "grade": "일반",
+      "id": "iron_ore",
+      "max_stack": 20,
+      "name": "철광석",
+      "notion_id": "3cd37369-9e66-8115-b205-fc8492bbcd0c",
       "status": "확정",
       "type": "재료"
     },
     {
+      "acquisition": "황무지 전쟁터·폐성",
+      "biome_ids": [
+        "wasteland"
+      ],
+      "core_tea_ware": false,
       "craftable": false,
+      "effect": "버려진 장비를 분해해 얻는 재활용 금속.",
+      "grade": "일반",
+      "id": "item_28",
+      "name": "철 조각",
+      "notion_id": "3cd37369-9e66-81f4-b415-f186b43ae89a",
+      "status": "확정",
+      "type": "재료"
+    },
+    {
+      "acquisition": "희귀 밤 이벤트·정예 요괴·보스 보상 후보",
+      "core_tea_ware": false,
+      "craftable": false,
+      "effect": "치명 피해 시 자동 소모되어 현재 방에서 HP 35%로 1회 부활하고 2초간 피격 무적을 얻는다. 없으면 런이 종료된다.",
       "effect_type": "부활",
+      "effect_value": 0.35,
+      "equipment_slot": "",
       "grade": "희귀",
       "id": "item_29",
       "max_owned": 1,
       "max_stack": 1,
-      "name": "부활 차씨",
+      "name": "되돌림 매듭",
+      "notion_id": "3cd37369-9e66-81fb-ab62-e082acdccbde",
       "status": "확정",
-      "type": "소모품"
+      "type": "부활 아이템",
+      "use_seconds": 0
     },
     {
-      "id": "item_32",
-      "name": "천 조각",
-      "status": "확정"
-    },
-    {
+      "acquisition": "몬스터 드롭·상자·퀘스트",
+      "core_tea_ware": false,
+      "craftable": false,
+      "effect": "홍국 전역에서 사용하는 단일 화폐. 전투 능력치는 없다.",
+      "effect_type": "기타",
+      "equipment_slot": "",
+      "grade": "일반",
       "id": "item_33",
+      "max_stack": 999,
       "name": "동전",
-      "status": "확정"
+      "notion_id": "3ce37369-9e66-81d2-bb71-e90b844fe65d",
+      "status": "확정",
+      "type": "재료"
     },
     {
+      "acquisition": "열대우림 향목 지대·요괴 다인의 숲",
+      "biome_ids": [
+        "rainforest"
+      ],
+      "core_tea_ware": false,
+      "craftable": false,
+      "effect": "향 문화용 희귀 향재. 전투 자원을 직접 올리지 않는다.",
+      "grade": "희귀",
       "id": "item_5",
       "name": "침향",
+      "notion_id": "3cd37369-9e66-811a-9067-d29c5359b149",
       "status": "확정",
       "type": "향"
     },
     {
       "core_tea_ware": false,
       "craftable": false,
+      "grade": "일반",
+      "id": "metal_workbench",
+      "max_stack": 1,
+      "name": "금속 가공대",
+      "notion_id": "3d137369-9e66-81d5-9014-edfff4ace97c",
+      "status": "초안",
+      "type": "도구"
+    },
+    {
+      "acquisition": "산악 던전 클리어 후 제작",
+      "attack_speed": 1,
+      "base_damage": 18,
+      "biome_ids": [
+        "mountain_region"
+      ],
+      "core_tea_ware": false,
+      "craftable": true,
+      "effect": "산악 금속 가공으로 만든 가벼운 검. 추가 게이지 없이 기본 검술을 강화하는 상위 장비.",
+      "effect_type": "공격",
+      "effect_value": 18,
+      "equipment_slot": "무기",
+      "grade": "고급",
+      "id": "mountain_iron_dagger",
+      "max_stack": 1,
+      "name": "산철 단도",
+      "notion_id": "3cd37369-9e66-81fd-bd62-f871992e565a",
+      "range": 1.15,
+      "status": "초안",
+      "type": "무기"
+    },
+    {
+      "acquisition": "산악 던전 클리어 후 제작",
+      "biome_ids": [
+        "mountain_region"
+      ],
+      "core_tea_ware": false,
+      "craftable": true,
+      "effect": "배치형 다구 제작 시설. 점토·광물 기반 상위 다구 제작을 연다.",
+      "grade": "고급",
+      "id": "mountain_kiln",
+      "max_stack": 1,
+      "name": "산중 가마",
+      "notion_id": "3cd37369-9e66-8107-8e52-ffcf1237456e",
+      "status": "초안",
+      "type": "도구"
+    },
+    {
+      "acquisition": "산악 제작법",
+      "core_tea_ware": false,
+      "craftable": true,
       "defense": 7,
+      "effect": "산악 이후 제작 가능한 겹옷. 이동 조작을 바꾸지 않고 피격 피해만 줄인다.",
       "effect_type": "방어",
       "effect_value": 7,
       "equipment_slot": "방어구",
@@ -117,10 +364,12 @@
       "id": "mountain_wind_layered_clothes",
       "max_stack": 1,
       "name": "산바람 겹옷",
+      "notion_id": "3ce37369-9e66-8120-be35-d4208f14f2b4",
       "status": "확정",
       "type": "방어구"
     },
     {
+      "acquisition": "열대우림 바이옴 요괴 다인 해결 보상",
       "attachment_description_keys": [
         "items.old_incense_box.attachment.stage_0",
         "items.old_incense_box.attachment.stage_1",
@@ -131,9 +380,13 @@
         3,
         7
       ],
+      "biome_ids": [
+        "rainforest"
+      ],
       "core_tea_ware": true,
       "core_tea_ware_order": 5,
       "craftable": false,
+      "effect": "장착 시 밤 동안 心 감소율이 15% 낮아진다. 오래된 향의 기억이 마음의 흔들림을 붙잡는다.",
       "effect_type": "차 운용",
       "effect_value": 15,
       "equipment_slot": "다구",
@@ -141,10 +394,28 @@
       "id": "old_incense_box",
       "max_stack": 1,
       "name": "오래된 향합",
+      "notion_id": "3cd37369-9e66-8174-9a67-d77cf77f0b5d",
       "status": "확정",
       "type": "다구"
     },
     {
+      "acquisition": "황무지 폐가·무너진 다실",
+      "biome_ids": [
+        "wasteland"
+      ],
+      "core_tea_ware": false,
+      "craftable": false,
+      "effect": "새것보다 불규칙하지만 수선·재활용 제작에 적합하다.",
+      "grade": "일반",
+      "id": "old_wood",
+      "max_stack": 20,
+      "name": "오래된 목재",
+      "notion_id": "3cd37369-9e66-81af-a6fe-c64aa1290268",
+      "status": "확정",
+      "type": "재료"
+    },
+    {
+      "acquisition": "일반 바이옴 후루타 오리베 해결 보상",
       "attachment_description_keys": [
         "items.oribe_green_glazed_bowl.attachment.stage_0",
         "items.oribe_green_glazed_bowl.attachment.stage_1",
@@ -155,9 +426,13 @@
         3,
         7
       ],
+      "biome_ids": [
+        "common_region"
+      ],
       "core_tea_ware": true,
       "core_tea_ware_order": 1,
       "craftable": false,
+      "effect": "장착 시 차의 기운 유지 보정 효과가 10% 증가한다.",
       "effect_type": "차 운용",
       "effect_value": 10,
       "equipment_slot": "다구",
@@ -165,14 +440,68 @@
       "id": "oribe_green_glazed_bowl",
       "max_stack": 1,
       "name": "오리베 녹유 찻사발",
+      "notion_id": "3cd37369-9e66-8118-bafd-d9b769cd4740",
       "status": "확정",
       "type": "다구"
     },
     {
-      "attack_speed": 1,
-      "base_damage": 14,
+      "acquisition": "황무지 수선 계열 제작",
+      "biome_ids": [
+        "wasteland"
+      ],
+      "core_tea_ware": false,
+      "craftable": true,
+      "effect": "야영 가능한 안전 지점에서 차를 준비할 수 있게 하는 휴대 도구.",
+      "grade": "고급",
+      "id": "portable_brazier",
+      "max_stack": 1,
+      "name": "휴대 화로",
+      "notion_id": "3cd37369-9e66-817e-a171-eeaccecdf142",
+      "status": "초안",
+      "type": "도구"
+    },
+    {
+      "acquisition": "열대우림의 오래된 숲",
+      "biome_ids": [
+        "rainforest"
+      ],
       "core_tea_ware": false,
       "craftable": false,
+      "effect": "향로·차통 등 후반 목공 다구 제작 재료.",
+      "grade": "고급",
+      "id": "rare_wood",
+      "max_stack": 20,
+      "name": "희귀 목재",
+      "notion_id": "3cd37369-9e66-81ac-a147-d9fb0f3825e8",
+      "status": "확정",
+      "type": "재료"
+    },
+    {
+      "acquisition": "황무지 던전 클리어 후 제작",
+      "biome_ids": [
+        "wasteland"
+      ],
+      "core_tea_ware": false,
+      "craftable": true,
+      "effect": "버려진 재료와 파손된 시설을 다시 쓰기 위한 수선 도구.",
+      "grade": "고급",
+      "id": "repair_hammer",
+      "max_stack": 1,
+      "name": "수선 망치",
+      "notion_id": "3cd37369-9e66-81d3-8ab2-eba41cf2013e",
+      "status": "초안",
+      "type": "도구"
+    },
+    {
+      "acquisition": "런 시작 기본 장비",
+      "attack_speed": 1,
+      "base_damage": 14,
+      "biome_ids": [
+        "common_region"
+      ],
+      "core_tea_ware": false,
+      "craftable": false,
+      "effect": "기본 시작 무기. 현재 기운 배율을 적용해 피해를 계산한다.",
       "effect_type": "공격",
       "effect_value": 14,
       "equipment_slot": "무기",
@@ -180,14 +509,17 @@
       "id": "short_travel_sword",
       "max_stack": 1,
       "name": "짧은 여행검",
+      "notion_id": "3cd37369-9e66-81a1-a3c6-e9ab956881d9",
       "range": 1.15,
       "status": "확정",
       "type": "무기"
     },
     {
+      "acquisition": "설원 제작법",
       "core_tea_ware": false,
-      "craftable": false,
+      "craftable": true,
       "defense": 10,
+      "effect": "설원의 대나무 섬유와 직물을 덧댄 후반 방어구. 체온 스탯은 추가하지 않는다.",
       "effect_type": "방어",
       "effect_value": 10,
       "equipment_slot": "방어구",
@@ -195,31 +527,59 @@
       "id": "snow_bamboo_overcoat",
       "max_stack": 1,
       "name": "설죽 덧옷",
+      "notion_id": "3ce37369-9e66-81c1-95f2-ff952c156d7d",
       "status": "확정",
       "type": "방어구"
     },
     {
+      "acquisition": "설산 광산·빙벽 주변",
+      "biome_ids": [
+        "snowfield"
+      ],
+      "core_tea_ware": false,
       "craftable": false,
-      "grade": "일반",
-      "id": "stone",
-      "name": "돌",
+      "effect": "설원 후반 제작에 쓰이는 단단한 광물.",
+      "grade": "고급",
+      "id": "snowfield_mineral",
+      "max_stack": 20,
+      "name": "설원 광물",
+      "notion_id": "3cd37369-9e66-813f-a38d-d75ef82efe8c",
       "status": "확정",
       "type": "재료"
     },
     {
+      "acquisition": "일반 지역의 하천·바위지대",
+      "biome_ids": [
+        "common_region"
+      ],
+      "core_tea_ware": false,
+      "craftable": false,
+      "effect": "기초 제작과 시설 배치에 쓰는 재료.",
+      "grade": "일반",
+      "id": "stone",
+      "name": "돌",
+      "notion_id": "3cd37369-9e66-81df-b6b9-c0fdf547e204",
+      "status": "확정",
+      "type": "재료"
+    },
+    {
+      "core_tea_ware": false,
       "craftable": true,
       "grade": "일반",
       "id": "stone_axe",
       "max_owned": 1,
       "max_stack": 1,
       "name": "돌도끼",
+      "notion_id": "3d137369-9e66-81dc-926f-cfff17fbb39a",
       "status": "확정",
       "type": "도구"
     },
     {
+      "acquisition": "런 시작 기본 장비",
       "core_tea_ware": false,
       "craftable": false,
       "defense": 4,
+      "effect": "가볍고 수선하기 쉬운 시작 방어구.",
       "effect_type": "방어",
       "effect_value": 4,
       "equipment_slot": "방어구",
@@ -227,10 +587,12 @@
       "id": "traveler_quilted_clothes",
       "max_stack": 1,
       "name": "여행자의 누비옷",
+      "notion_id": "3ce37369-9e66-813c-87de-d8c7b58f9fb3",
       "status": "확정",
       "type": "방어구"
     },
     {
+      "acquisition": "산악 바이옴 도공 해결 보상",
       "attachment_description_keys": [
         "items.unbroken_failure.attachment.stage_0",
         "items.unbroken_failure.attachment.stage_1",
@@ -241,9 +603,13 @@
         3,
         7
       ],
+      "biome_ids": [
+        "mountain_region"
+      ],
       "core_tea_ware": true,
       "core_tea_ware_order": 2,
       "craftable": false,
+      "effect": "장착 시 차 우리기 시간이 15% 감소한다. 실패작의 비대칭을 그대로 살린 차호 역할.",
       "effect_type": "차 운용",
       "effect_value": 15,
       "equipment_slot": "다구",
@@ -251,10 +617,12 @@
       "id": "unbroken_failure",
       "max_stack": 1,
       "name": "깨지지 않은 실패작",
+      "notion_id": "3cd37369-9e66-8168-b836-c6001cca6a3a",
       "status": "확정",
       "type": "다구"
     },
     {
+      "acquisition": "황무지 바이옴 다이묘 해결 보상",
       "attachment_description_keys": [
         "items.war_tea_caddy.attachment.stage_0",
         "items.war_tea_caddy.attachment.stage_1",
@@ -265,9 +633,13 @@
         3,
         7
       ],
+      "biome_ids": [
+        "wasteland"
+      ],
       "core_tea_ware": true,
       "core_tea_ware_order": 3,
       "craftable": false,
+      "effect": "장착 시 각 차의 휴대 가능 횟수가 1회 증가한다. 권력의 소유물을 나눔의 도구로 바꾼 차입.",
       "effect_type": "차 운용",
       "effect_value": 1,
       "equipment_slot": "다구",
@@ -275,181 +647,53 @@
       "id": "war_tea_caddy",
       "max_stack": 1,
       "name": "전란의 차입",
+      "notion_id": "3cd37369-9e66-817d-bcd6-fd69529a88a5",
       "status": "확정",
       "type": "다구"
     },
     {
+      "acquisition": "일반 지역의 숲·폐목재",
+      "biome_ids": [
+        "common_region"
+      ],
+      "core_tea_ware": false,
       "craftable": false,
+      "effect": "기초 제작 재료.",
       "grade": "일반",
       "id": "wood",
       "name": "목재",
+      "notion_id": "3cd37369-9e66-81ef-bda7-d89370229f2d",
       "status": "확정",
       "type": "재료"
     },
     {
-      "craftable": false,
-      "grade": "일반",
-      "id": "iron_ore",
-      "max_stack": 20,
-      "name": "철광석",
-      "status": "초안",
-      "type": "재료"
-    },
-    {
-      "craftable": false,
-      "grade": "일반",
-      "id": "copper_ore",
-      "max_stack": 20,
-      "name": "구리광석",
-      "status": "초안",
-      "type": "재료"
-    },
-    {
-      "craftable": false,
-      "grade": "일반",
-      "id": "snowfield_mineral",
-      "max_stack": 20,
-      "name": "설원 광물",
-      "status": "초안",
-      "type": "재료"
-    },
-    {
-      "craftable": false,
-      "grade": "일반",
-      "id": "conifer_wood",
-      "max_stack": 20,
-      "name": "침엽수 목재",
-      "status": "초안",
-      "type": "재료"
-    },
-    {
-      "craftable": false,
-      "grade": "일반",
-      "id": "rare_wood",
-      "max_stack": 20,
-      "name": "희귀 목재",
-      "status": "초안",
-      "type": "재료"
-    },
-    {
-      "craftable": false,
-      "grade": "일반",
-      "id": "old_wood",
-      "max_stack": 20,
-      "name": "오래된 목재",
-      "status": "초안",
-      "type": "재료"
-    },
-    {
-      "craftable": false,
-      "grade": "일반",
-      "id": "charcoal",
-      "max_stack": 20,
-      "name": "숯",
-      "status": "초안",
-      "type": "재료"
-    },
-    {
+      "acquisition": "열대우림 제작",
+      "biome_ids": [
+        "rainforest"
+      ],
+      "core_tea_ware": false,
       "craftable": true,
-      "grade": "일반",
-      "id": "incense_sticks",
-      "max_stack": 10,
-      "name": "선향",
-      "status": "초안",
-      "type": "향"
-    },
-    {
-      "craftable": true,
-      "grade": "일반",
-      "id": "insulated_tea_bottle",
-      "max_stack": 1,
-      "name": "보온 차병",
-      "status": "초안",
-      "type": "다구"
-    },
-    {
-      "craftable": true,
-      "grade": "일반",
-      "id": "iron_kettle",
-      "max_stack": 1,
-      "name": "철 차솥",
-      "status": "초안",
-      "type": "다구"
-    },
-    {
-      "base_damage": 18,
-      "craftable": true,
-      "equipment_slot": "무기",
-      "attack_speed": 1,
-      "effect_type": "공격",
-      "effect_value": 18,
-      "grade": "일반",
-      "id": "mountain_iron_dagger",
-      "max_stack": 1,
-      "name": "산철 단도",
-      "range": 1.15,
-      "status": "초안",
-      "type": "무기"
-    },
-    {
-      "craftable": true,
-      "grade": "일반",
-      "id": "mountain_kiln",
-      "max_stack": 1,
-      "name": "산중 가마",
-      "status": "초안",
-      "type": "도구"
-    },
-    {
-      "craftable": true,
-      "grade": "일반",
-      "id": "portable_brazier",
-      "max_stack": 1,
-      "name": "휴대 화로",
-      "status": "초안",
-      "type": "도구"
-    },
-    {
-      "craftable": true,
-      "grade": "일반",
-      "id": "repair_hammer",
-      "max_stack": 1,
-      "name": "수선 망치",
-      "status": "초안",
-      "type": "도구"
-    },
-    {
-      "craftable": true,
-      "grade": "일반",
+      "effect": "침향·선향을 피우는 향로. 다실의 분위기와 기억 연출에 사용하며 전투 버프는 최소화한다.",
+      "grade": "고급",
       "id": "wood_incense_burner",
       "max_stack": 1,
       "name": "목향 향로",
+      "notion_id": "3cd37369-9e66-81af-aa2b-c710526e3875",
       "status": "초안",
       "type": "다구"
     },
     {
-      "craftable": false,
-      "grade": "일반",
-      "id": "metal_workbench",
-      "max_stack": 1,
-      "name": "금속 가공대",
-      "status": "초안",
-      "type": "도구"
-    },
-    {
-      "craftable": false,
-      "grade": "일반",
-      "id": "blacksmith_forge",
-      "max_stack": 1,
-      "name": "대장간",
-      "status": "초안",
-      "type": "도구"
-    },
-    {
+      "acquisition": "일반 지역 던전 해금 후 제작",
+      "biome_ids": [
+        "common_region"
+      ],
+      "core_tea_ware": false,
       "craftable": true,
+      "effect": "배치형 기초 제작 시설. 기본 다구·도구 제작을 연다.",
       "grade": "일반",
       "id": "wooden_workbench",
       "name": "목재 작업대",
+      "notion_id": "3cd37369-9e66-81c5-89bf-c2a50231a98d",
       "status": "초안",
       "type": "도구"
     }

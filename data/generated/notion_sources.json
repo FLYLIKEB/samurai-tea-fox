@@ -1,5 +1,5 @@
 {
-  "data_version": "notion-2026-09-01",
+  "data_version": "notion-2026-09-04",
   "source": "무차우: 한 잔의 도 — 게임 컨셉 바이블",
   "sources": {
     "balance": "collection://dd8249a2-14e5-4a96-b26d-77ce33fdc43c",
@@ -16,6 +16,6 @@
     "choices": "collection://943e27c2-91e1-40ec-a5e9-30ef62737a40",
     "characters": "collection://86d9c16b-e60e-4434-9c84-26b4b00d16c8",
     "events": "collection://671bff29-b822-4706-87b2-64fc4cff057d",
-    "bosses": "collection://cd97553c-f51f-44fe-9604-c257cc9d9342"
+    "bosses": "collection://7bd9f233-5ff4-40aa-ad2a-08d146ea1475"
   }
 }

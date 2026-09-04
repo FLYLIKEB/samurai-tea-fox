@@ -1,6 +1,6 @@
 {
-  "content_hash": "1443e08aa5f57fe42d9257c7809000d167a3051f59143e40389a8ee453a86bb1",
-  "data_version": "notion-2026-09-01",
+  "content_hash": "04cd9a7548c2cb00eaff422e341383fdb6f80c76214b23973e692c080ddcbddb",
+  "data_version": "notion-2026-09-04",
   "items": [
     {
       "biome_id": "wasteland",
@@ -8,9 +8,10 @@
       "id": "sample_ash_warden",
       "max_hp": 180,
       "name": "잿빛 문지기 (런타임 샘플)",
+      "notion_id": "3d137369-9e66-811d-8a90-cebf2731e2ec",
       "phases": [
         {
-          "health_ratio_threshold": 1.0,
+          "health_ratio_threshold": 1,
           "id": "watch",
           "patterns": [
             {
@@ -33,7 +34,7 @@
             },
             {
               "id": "iron_guard",
-              "interval_seconds": 1.0,
+              "interval_seconds": 1,
               "summon_monster_ids": []
             }
           ]
@@ -60,19 +61,20 @@
       "id": "sample_bamboo_guardian",
       "max_hp": 120,
       "name": "대나무 수문장 (런타임 샘플)",
+      "notion_id": "3d137369-9e66-8154-95a7-dd525e608a1f",
       "phases": [
         {
-          "health_ratio_threshold": 1.0,
+          "health_ratio_threshold": 1,
           "id": "opening",
           "patterns": [
             {
               "id": "sweeping_strike",
-              "interval_seconds": 1.0,
+              "interval_seconds": 1,
               "summon_monster_ids": []
             },
             {
               "id": "bandit_call",
-              "interval_seconds": 2.0,
+              "interval_seconds": 2,
               "summon_monster_ids": [
                 "road_bandit"
               ]
@@ -114,14 +116,15 @@
       "id": "sen_rikyu_phase_2",
       "max_hp": 240,
       "name": "센리큐 Phase 2 — 검 전투",
+      "notion_id": "3d137369-9e66-8181-a166-e1c97f9697bb",
       "phases": [
         {
-          "health_ratio_threshold": 1.0,
+          "health_ratio_threshold": 1,
           "id": "measured_draw",
           "patterns": [
             {
               "id": "single_cut",
-              "interval_seconds": 1.0,
+              "interval_seconds": 1,
               "summon_monster_ids": []
             },
             {
@@ -142,7 +145,7 @@
             },
             {
               "id": "memory_foxfire_call",
-              "interval_seconds": 2.0,
+              "interval_seconds": 2,
               "summon_monster_ids": [
                 "foxfire"
               ]
@@ -165,5 +168,5 @@
   ],
   "profile": "confirmed-test",
   "schema_version": 1,
-  "source": "collection://cd97553c-f51f-44fe-9604-c257cc9d9342"
+  "source": "collection://7bd9f233-5ff4-40aa-ad2a-08d146ea1475"
 }

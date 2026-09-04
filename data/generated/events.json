@@ -1,6 +1,6 @@
 {
-  "content_hash": "c73a34e41ab9f6a73ea8477319de76dbc21a17b17678c875c749b7557a3b350b",
-  "data_version": "notion-2026-09-01",
+  "content_hash": "783e33dea845cfd4b3c34fbc509df206492f99fa09dc252d3772f1068542194b",
+  "data_version": "notion-2026-09-04",
   "items": [
     {
       "ending_conditions": [
@@ -34,6 +34,10 @@
           "speaker_id": "CHR-5",
           "text": "기억차의 메아리가 마지막 장면에 여우불의 증언을 더한다."
         }
+      ],
+      "notion_id": "3d137369-9e66-81cc-890d-e11abd8a932d",
+      "notion_ids": [
+        "3d137369-9e66-81cc-890d-e11abd8a932d"
       ],
       "priority": 50,
       "replay_policy": "repeat",
@@ -77,6 +81,10 @@
           "text": "명물 다기와 철학의 흔적이 남은 싸움을 정리한다."
         }
       ],
+      "notion_id": "3d137369-9e66-8114-ae2d-df6e8cdee6b0",
+      "notion_ids": [
+        "3d137369-9e66-8114-ae2d-df6e8cdee6b0"
+      ],
       "priority": 80,
       "replay_policy": "repeat",
       "start_node_id": "result",
@@ -109,6 +117,10 @@
           "speaker_id": "CHR-5",
           "text": "모든 흔적이 사라진 뒤에도 무차우는 다시 길 위에 선다."
         }
+      ],
+      "notion_id": "3d137369-9e66-812b-81dd-de420961a886",
+      "notion_ids": [
+        "3d137369-9e66-812b-81dd-de420961a886"
       ],
       "priority": 0,
       "replay_policy": "repeat",
@@ -155,9 +167,85 @@
           "text": "살아남은 인연과 기억차가 다음 다실을 잇는다."
         }
       ],
+      "notion_id": "3d137369-9e66-81d9-ad6f-eb2626e232a7",
+      "notion_ids": [
+        "3d137369-9e66-81d9-ad6f-eb2626e232a7"
+      ],
       "priority": 100,
       "replay_policy": "repeat",
       "start_node_id": "result",
+      "status": "확정"
+    },
+    {
+      "id": "first_run_prologue",
+      "name": "첫 실행 프롤로그 — 백국의 작별과 홍국의 첫 잔",
+      "nodes": [
+        {
+          "id": "father_farewell",
+          "options": [
+            {
+              "completes_event": false,
+              "conditions": [],
+              "display_text": "고개를 끄덕인다",
+              "id": "accept_farewell",
+              "next_node_id": "muchau_question",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-1",
+          "text": "물이 끓기 전에 서두르지 마라. 길도 차도, 네가 닿을 때 비로소 한 번의 자리가 된단다."
+        },
+        {
+          "id": "muchau_question",
+          "options": [
+            {
+              "completes_event": false,
+              "conditions": [],
+              "display_text": "홍국으로 향한다",
+              "id": "cross_sea",
+              "next_node_id": "border_cup",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "차를 마시는 것이 어떻게 하나의 도가 될 수 있을까?"
+        },
+        {
+          "id": "border_cup",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "첫 길을 걷는다",
+              "id": "begin_road",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "first_run_prologue_completed",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "차를 알고 싶다면 사람을 만나거라."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81dd-aff1-cfc84aee72f6",
+      "notion_ids": [
+        "3d137369-9e66-811c-a2a8-f55235245cf7",
+        "3d137369-9e66-813b-a218-c2047aa28f47",
+        "3d137369-9e66-81dd-aff1-cfc84aee72f6"
+      ],
+      "replay_policy": "once",
+      "run_start": {
+        "father_physical_actor": false,
+        "max_run_count": 0,
+        "min_run_count": 0,
+        "presentation_kind": "father_farewell_then_border_cup",
+        "priority": 100
+      },
+      "start_node_id": "father_farewell",
       "status": "확정"
     },
     {
@@ -208,8 +296,53 @@
           "text": "신사 지기가 오늘 길에 남은 향을 묻는다."
         }
       ],
+      "notion_id": "3d137369-9e66-8194-a30c-de577b3b548a",
+      "notion_ids": [
+        "3d137369-9e66-8152-9140-df1be4791227",
+        "3d137369-9e66-8194-a30c-de577b3b548a"
+      ],
       "replay_policy": "repeat",
       "start_node_id": "start",
+      "status": "확정"
+    },
+    {
+      "id": "repeat_run_father_dream",
+      "name": "반복 런 시작 — 아버지의 다시 떠나는 꿈",
+      "nodes": [
+        {
+          "id": "father_dream",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "찻물에 비친 얼굴을 바라본다",
+              "id": "wake_to_border_cup",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "repeat_run_father_dream_seen",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-1",
+          "text": "또 길을 나서는구나. 괜찮다. 같은 물을 다시 끓여도 오늘의 한 잔은 전과 같지 않으니."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81b0-8a27-c18655211c2e",
+      "notion_ids": [
+        "3d137369-9e66-81b0-8a27-c18655211c2e"
+      ],
+      "replay_policy": "once",
+      "run_start": {
+        "father_physical_actor": false,
+        "max_run_count": 4,
+        "min_run_count": 1,
+        "presentation_kind": "father_dream",
+        "priority": 90
+      },
+      "start_node_id": "father_dream",
       "status": "확정"
     },
     {
@@ -285,6 +418,12 @@
           "text": "주인은 여행길의 첫 물맛을 잊지 말라고 말한다."
         }
       ],
+      "notion_id": "3d137369-9e66-81b1-a526-c068dd7de45f",
+      "notion_ids": [
+        "3d137369-9e66-8113-ab1c-efd6dfada017",
+        "3d137369-9e66-8177-9007-de350a72fd29",
+        "3d137369-9e66-81b1-a526-c068dd7de45f"
+      ],
       "replay_policy": "once",
       "start_node_id": "start",
       "status": "확정"
@@ -299,12 +438,12 @@
             {
               "completes_event": false,
               "conditions": [],
-              "display_text": "마지막 차를 함께 마신다",
-              "id": "share_last_tea",
-              "next_node_id": "shared_dialogue",
+              "display_text": "마지막 차를 거절한다",
+              "id": "refuse_last_tea",
+              "next_node_id": "refused_dialogue",
               "results": [
                 {
-                  "id": "sen_rikyu_phase1_shared_tea",
+                  "id": "sen_rikyu_phase1_refused_tea",
                   "type": "set_run_flag"
                 }
               ]
@@ -312,12 +451,12 @@
             {
               "completes_event": false,
               "conditions": [],
-              "display_text": "마지막 차를 거절한다",
-              "id": "refuse_last_tea",
-              "next_node_id": "refused_dialogue",
+              "display_text": "마지막 차를 함께 마신다",
+              "id": "share_last_tea",
+              "next_node_id": "shared_dialogue",
               "results": [
                 {
-                  "id": "sen_rikyu_phase1_refused_tea",
+                  "id": "sen_rikyu_phase1_shared_tea",
                   "type": "set_run_flag"
                 }
               ]
@@ -349,6 +488,19 @@
             },
             {
               "completes_event": true,
+              "conditions": [],
+              "display_text": "dialogue.sen_rikyu.phase1.shared_plain",
+              "id": "shared_plain",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "sen_rikyu_phase1_dialogue_plain",
+                  "type": "set_run_flag"
+                }
+              ]
+            },
+            {
+              "completes_event": true,
               "conditions": [
                 {
                   "type": "meta_run_count_at_least",
@@ -361,19 +513,6 @@
               "results": [
                 {
                   "id": "sen_rikyu_phase1_dialogue_repetition",
-                  "type": "set_run_flag"
-                }
-              ]
-            },
-            {
-              "completes_event": true,
-              "conditions": [],
-              "display_text": "dialogue.sen_rikyu.phase1.shared_plain",
-              "id": "shared_plain",
-              "next_node_id": "",
-              "results": [
-                {
-                  "id": "sen_rikyu_phase1_dialogue_plain",
                   "type": "set_run_flag"
                 }
               ]
@@ -405,6 +544,19 @@
             },
             {
               "completes_event": true,
+              "conditions": [],
+              "display_text": "dialogue.sen_rikyu.phase1.refused_plain",
+              "id": "refused_plain",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "sen_rikyu_phase1_dialogue_refused_plain",
+                  "type": "set_run_flag"
+                }
+              ]
+            },
+            {
+              "completes_event": true,
               "conditions": [
                 {
                   "type": "meta_run_count_at_least",
@@ -420,164 +572,25 @@
                   "type": "set_run_flag"
                 }
               ]
-            },
-            {
-              "completes_event": true,
-              "conditions": [],
-              "display_text": "dialogue.sen_rikyu.phase1.refused_plain",
-              "id": "refused_plain",
-              "next_node_id": "",
-              "results": [
-                {
-                  "id": "sen_rikyu_phase1_dialogue_refused_plain",
-                  "type": "set_run_flag"
-                }
-              ]
             }
           ],
           "speaker_id": "CHR-5",
           "text": "노다인은 이름을 밝힌다. 센리큐는 비운 찻잔 대신 네가 남긴 침묵을 바라본다."
         }
       ],
+      "notion_id": "3d137369-9e66-81b9-b25f-dedb3d3e149d",
+      "notion_ids": [
+        "3d137369-9e66-810d-bc09-c007d5719793",
+        "3d137369-9e66-816e-8600-fe237dd97cb7",
+        "3d137369-9e66-8170-a08a-d77041cf688a",
+        "3d137369-9e66-81b5-b927-f4eda0beb3ac",
+        "3d137369-9e66-81b9-b25f-dedb3d3e149d",
+        "3d137369-9e66-81bb-a7a4-cfca02dbcf79",
+        "3d137369-9e66-81c8-a680-e0c2230f3d15",
+        "3d137369-9e66-81ce-99c1-e7c10f87b8aa"
+      ],
       "replay_policy": "once",
       "start_node_id": "start",
-      "status": "확정"
-    },
-    {
-      "id": "first_run_prologue",
-      "name": "첫 실행 프롤로그 — 백국의 작별과 홍국의 첫 잔",
-      "nodes": [
-        {
-          "id": "father_farewell",
-          "options": [
-            {
-              "completes_event": false,
-              "conditions": [],
-              "display_text": "고개를 끄덕인다",
-              "id": "accept_farewell",
-              "next_node_id": "muchau_question",
-              "results": []
-            }
-          ],
-          "speaker_id": "CHR-1",
-          "text": "물이 끓기 전에 서두르지 마라. 길도 차도, 네가 닿을 때 비로소 한 번의 자리가 된단다."
-        },
-        {
-          "id": "muchau_question",
-          "options": [
-            {
-              "completes_event": false,
-              "conditions": [],
-              "display_text": "홍국으로 향한다",
-              "id": "cross_sea",
-              "next_node_id": "border_cup",
-              "results": []
-            }
-          ],
-          "speaker_id": "CHR-8",
-          "text": "차를 마시는 것이 어떻게 하나의 도가 될 수 있을까?"
-        },
-        {
-          "id": "border_cup",
-          "options": [
-            {
-              "completes_event": true,
-              "conditions": [],
-              "display_text": "첫 길을 걷는다",
-              "id": "begin_road",
-              "next_node_id": "",
-              "results": [
-                {
-                  "id": "first_run_prologue_completed",
-                  "type": "set_run_flag"
-                }
-              ]
-            }
-          ],
-          "speaker_id": "CHR-5",
-          "text": "차를 알고 싶다면 사람을 만나거라."
-        }
-      ],
-      "replay_policy": "once",
-      "run_start": {
-        "father_physical_actor": false,
-        "max_run_count": 0,
-        "min_run_count": 0,
-        "presentation_kind": "father_farewell_then_border_cup",
-        "priority": 100
-      },
-      "start_node_id": "father_farewell",
-      "status": "확정"
-    },
-    {
-      "id": "repeat_run_father_dream",
-      "name": "반복 런 시작 — 아버지의 다시 떠나는 꿈",
-      "nodes": [
-        {
-          "id": "father_dream",
-          "options": [
-            {
-              "completes_event": true,
-              "conditions": [],
-              "display_text": "찻물에 비친 얼굴을 바라본다",
-              "id": "wake_to_border_cup",
-              "next_node_id": "",
-              "results": [
-                {
-                  "id": "repeat_run_father_dream_seen",
-                  "type": "set_run_flag"
-                }
-              ]
-            }
-          ],
-          "speaker_id": "CHR-1",
-          "text": "또 길을 나서는구나. 괜찮다. 같은 물을 다시 끓여도 오늘의 한 잔은 전과 같지 않으니."
-        }
-      ],
-      "replay_policy": "once",
-      "run_start": {
-        "father_physical_actor": false,
-        "max_run_count": 4,
-        "min_run_count": 1,
-        "presentation_kind": "father_dream",
-        "priority": 90
-      },
-      "start_node_id": "father_dream",
-      "status": "확정"
-    },
-    {
-      "id": "veteran_run_father_memory",
-      "name": "반복 런 시작 — 다섯 번을 넘긴 향의 기억",
-      "nodes": [
-        {
-          "id": "father_scent_memory",
-          "options": [
-            {
-              "completes_event": true,
-              "conditions": [],
-              "display_text": "향이 사라지기 전에 길을 잡는다",
-              "id": "follow_scent_to_border_cup",
-              "next_node_id": "",
-              "results": [
-                {
-                  "id": "veteran_run_father_memory_seen",
-                  "type": "set_run_flag"
-                }
-              ]
-            }
-          ],
-          "speaker_id": "CHR-1",
-          "text": "이제는 길보다 네 표정을 먼저 보게 되는구나. 그 사람도 전부 기억하고 있을 테니, 네가 무엇을 반복하지 않을지만 정해라."
-        }
-      ],
-      "replay_policy": "once",
-      "run_start": {
-        "father_physical_actor": false,
-        "min_run_count": 5,
-        "presentation_kind": "father_scent_memory",
-        "priority": 110
-      },
-      "start_node_id": "father_scent_memory",
       "status": "확정"
     },
     {
@@ -605,8 +618,1518 @@
           "text": "센리큐는 여행의 흔적이 모인 마지막 일격을 받아들인다."
         }
       ],
+      "notion_id": "3d137369-9e66-8144-82c8-f51e944a5fac",
+      "notion_ids": [
+        "3d137369-9e66-8144-82c8-f51e944a5fac"
+      ],
       "replay_policy": "once",
       "start_node_id": "result",
+      "status": "확정"
+    },
+    {
+      "id": "story_b01_01",
+      "name": "일반 지역 — 지워진 짐꾼의 이름",
+      "nodes": [
+        {
+          "id": "dlg_b01_001",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b01_001",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "차를 들여온 사람의 등은 닳았는데 이름은 없네."
+        }
+      ],
+      "notion_id": "3d137369-9e66-815f-bc36-e45616b2a4ee",
+      "notion_ids": [
+        "3d137369-9e66-815f-bc36-e45616b2a4ee"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b01_001",
+      "status": "확정"
+    },
+    {
+      "id": "story_b01_02",
+      "name": "일반 지역 — 오리베가 보관한 잔",
+      "nodes": [
+        {
+          "id": "dlg_b01_002",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b01_002",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "father_clue_oribe_cup",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-3",
+          "text": "네 아버지는 백 년 전에도 어제도 같은 얼굴로 이 잔을 두고 갔다."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81d9-bae7-f06229da7d6d",
+      "notion_ids": [
+        "3d137369-9e66-81d9-bae7-f06229da7d6d"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b01_002",
+      "status": "확정"
+    },
+    {
+      "id": "story_b01_03",
+      "name": "일반 지역 — 전통에 대한 질문",
+      "nodes": [
+        {
+          "id": "dlg_b01_003",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b01_003",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "오래됐다는 사실과 옳다는 판단은 같은 말이 아니에요."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81af-ae87-d893bb458058",
+      "notion_ids": [
+        "3d137369-9e66-81af-ae87-d893bb458058"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b01_003",
+      "status": "확정"
+    },
+    {
+      "id": "story_b01_c",
+      "name": "일반 지역 — 오리베 전투 해결",
+      "nodes": [
+        {
+          "id": "dlg_b01_004c",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b01_004c",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "oribe_defeated",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-3",
+          "text": "검은 반듯해도 네 질문은 비뚤어져 있군. 마음에 든다."
+        }
+      ],
+      "notion_id": "3d137369-9e66-819e-9c9e-f70f5719b956",
+      "notion_ids": [
+        "3d137369-9e66-819e-9c9e-f70f5719b956"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b01_004c",
+      "status": "확정"
+    },
+    {
+      "id": "story_b01_out",
+      "name": "일반 지역 — 산의 도공",
+      "nodes": [
+        {
+          "id": "dlg_b01_005",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b01_005",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-3",
+          "text": "산의 도공은 네 아버지 잔을 깨지 못해 아직 화가 나 있다."
+        }
+      ],
+      "notion_id": "3d137369-9e66-815c-83ef-f1f989d37e8b",
+      "notion_ids": [
+        "3d137369-9e66-815c-83ef-f1f989d37e8b"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b01_005",
+      "status": "확정"
+    },
+    {
+      "id": "story_b01_p",
+      "name": "일반 지역 — 오리베 다도 해결",
+      "nodes": [
+        {
+          "id": "dlg_b01_004p",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b01_004p",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "oribe_shared_tea",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-3",
+          "text": "네 아버지는 흠이 있어야 시간이 머문다 했지."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81d3-b40d-fa947c8cc67a",
+      "notion_ids": [
+        "3d137369-9e66-81d3-b40d-fa947c8cc67a"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b01_004p",
+      "status": "확정"
+    },
+    {
+      "id": "story_b02_01",
+      "name": "산악 — 누군가의 매일을 살린 실패작",
+      "nodes": [
+        {
+          "id": "dlg_b02_001",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b02_001",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "실패작이라고 부른 잔이 누군가의 매일을 살리고 있어."
+        }
+      ],
+      "notion_id": "3d137369-9e66-811a-a826-d72b9bcc76a4",
+      "notion_ids": [
+        "3d137369-9e66-811a-a826-d72b9bcc76a4"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b02_001",
+      "status": "확정"
+    },
+    {
+      "id": "story_b02_02",
+      "name": "산악 — 푸른 여우불 유약의 글씨",
+      "nodes": [
+        {
+          "id": "dlg_b02_002",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b02_002",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "father_clue_blue_fox_glaze",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-1",
+          "text": "부서진 것은 끝난 것이 아니다."
+        }
+      ],
+      "notion_id": "3d137369-9e66-813a-b9e9-fda45fb83e94",
+      "notion_ids": [
+        "3d137369-9e66-813a-b9e9-fda45fb83e94"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b02_002",
+      "status": "확정"
+    },
+    {
+      "id": "story_b02_03",
+      "name": "산악 — 도공의 두 가르침",
+      "nodes": [
+        {
+          "id": "dlg_b02_003",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b02_003",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-7",
+          "text": "네 아버지는 흠을 남기라 했다. 선생은 덜어내라 했다. 어느 쪽이 길이지?"
+        }
+      ],
+      "notion_id": "3d137369-9e66-81a0-88b9-f32cf9ab67be",
+      "notion_ids": [
+        "3d137369-9e66-81a0-88b9-f32cf9ab67be"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b02_003",
+      "status": "확정"
+    },
+    {
+      "id": "story_b02_p",
+      "name": "산악 — 도공 다도 해결",
+      "nodes": [
+        {
+          "id": "dlg_b02_004p",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b02_004p",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "potter_saved_work",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "완벽하지 않아서 두 손이 필요해졌어요."
+        }
+      ],
+      "notion_id": "3d137369-9e66-8141-a63d-c4961c6186b7",
+      "notion_ids": [
+        "3d137369-9e66-8141-a63d-c4961c6186b7"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b02_004p",
+      "status": "확정"
+    },
+    {
+      "id": "story_b03_01",
+      "name": "황무지 — 기록되지 않은 굶주림",
+      "nodes": [
+        {
+          "id": "dlg_b03_001",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b03_001",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "전쟁 기록에는 성을 지킨 날이 적혀 있는데, 이 사람들이 굶은 날은 없네."
+        }
+      ],
+      "notion_id": "3d137369-9e66-8112-9ff7-f6c8836fc6b3",
+      "notion_ids": [
+        "3d137369-9e66-8112-9ff7-f6c8836fc6b3"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b03_001",
+      "status": "확정"
+    },
+    {
+      "id": "story_b03_03",
+      "name": "황무지 — 빼앗긴 항로 조각",
+      "nodes": [
+        {
+          "id": "dlg_b03_002",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b03_002",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "father_route_fragment_revealed",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-2",
+          "text": "그 여우는 차가 사람보다 오래 남아서는 안 된다고 했지. 그래서 그의 지도를 빼앗았다."
+        }
+      ],
+      "notion_id": "3d137369-9e66-8146-9c83-f47e3a8d28e5",
+      "notion_ids": [
+        "3d137369-9e66-8146-9c83-f47e3a8d28e5"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b03_002",
+      "status": "확정"
+    },
+    {
+      "id": "story_b03_p",
+      "name": "황무지 — 다이묘 다도 해결",
+      "nodes": [
+        {
+          "id": "dlg_b03_003p",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b03_003p",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "daimyo_relinquished_tea",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "명물이라면 가장 높은 자리가 아니라 가장 많은 손을 기억해야 해요."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81df-a082-e0619f3d02b1",
+      "notion_ids": [
+        "3d137369-9e66-81df-a082-e0619f3d02b1"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b03_003p",
+      "status": "확정"
+    },
+    {
+      "id": "story_b04_01",
+      "name": "설원 — 규격화된 평화",
+      "nodes": [
+        {
+          "id": "dlg_b04_001",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b04_001",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "전쟁은 끝났는데 문은 더 많아졌네."
+        }
+      ],
+      "notion_id": "3d137369-9e66-8183-8776-d4094b3a8811",
+      "notion_ids": [
+        "3d137369-9e66-8183-8776-d4094b3a8811"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b04_001",
+      "status": "확정"
+    },
+    {
+      "id": "story_b04_03",
+      "name": "설원 — 철솥에 드러난 글씨",
+      "nodes": [
+        {
+          "id": "dlg_b04_002",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b04_002",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "father_clue_warm_inscription",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-1",
+          "text": "비움은 돌아올 자리를 남기는 일."
+        }
+      ],
+      "notion_id": "3d137369-9e66-813e-af9b-fda8e5057b1b",
+      "notion_ids": [
+        "3d137369-9e66-813e-af9b-fda8e5057b1b"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b04_002",
+      "status": "확정"
+    },
+    {
+      "id": "story_b04_out",
+      "name": "설원 — 향이 나는 숲",
+      "nodes": [
+        {
+          "id": "dlg_b04_004",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b04_004",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-4",
+          "text": "그 여우는 시간을 거슬러 향이 나는 숲으로 갔다."
+        }
+      ],
+      "notion_id": "3d137369-9e66-813e-aa77-f9e262bcba4b",
+      "notion_ids": [
+        "3d137369-9e66-813e-aa77-f9e262bcba4b"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b04_004",
+      "status": "확정"
+    },
+    {
+      "id": "story_b04_p",
+      "name": "설원 — 승려 다도 해결",
+      "nodes": [
+        {
+          "id": "dlg_b04_003p",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b04_003p",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "monk_reaccepted_feeling",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "빈자리는 없앤 사람의 자리가 아니라, 돌아올 사람의 자리예요."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81af-b416-ff3ae06d3f6e",
+      "notion_ids": [
+        "3d137369-9e66-81af-b416-ff3ae06d3f6e"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b04_003p",
+      "status": "확정"
+    },
+    {
+      "id": "story_b05_01",
+      "name": "열대우림 — 상품이 된 차",
+      "nodes": [
+        {
+          "id": "dlg_b05_001",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b05_001",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "빠르게 많이 만들수록, 누가 만들었는지는 더 작게 적히는군."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81d6-8a98-d227a4069af6",
+      "notion_ids": [
+        "3d137369-9e66-81d6-8a98-d227a4069af6"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b05_001",
+      "status": "확정"
+    },
+    {
+      "id": "story_b05_03",
+      "name": "열대우림 — 아버지의 마지막 향",
+      "nodes": [
+        {
+          "id": "dlg_b05_002",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b05_002",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "father_clue_last_scent",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-6",
+          "text": "네 아버지는 숲을 구하러 온 게 아니다. 숲과 사람을 따로 셀 수 없다고 말하러 왔다."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81ec-a437-f59751494db5",
+      "notion_ids": [
+        "3d137369-9e66-81ec-a437-f59751494db5"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b05_002",
+      "status": "확정"
+    },
+    {
+      "id": "story_b05_c",
+      "name": "열대우림 — 요괴 다인 전투 해결",
+      "nodes": [
+        {
+          "id": "dlg_b05_003c",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b05_003c",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "yokai_defeated",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-6",
+          "text": "힘으로 얻은 기억도 네가 책임져야 할 기억이다."
+        }
+      ],
+      "notion_id": "3d137369-9e66-8118-8cf7-c153bbbdae1c",
+      "notion_ids": [
+        "3d137369-9e66-8118-8cf7-c153bbbdae1c"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b05_003c",
+      "status": "확정"
+    },
+    {
+      "id": "story_b05_out",
+      "name": "열대우림 — 마지막 다실 좌표",
+      "nodes": [
+        {
+          "id": "dlg_b05_004",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_b05_004",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "아버지는 나를 기다리는 게 아니라 시간이 무너지지 않게 버티고 있어."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81fd-884b-d65007f73339",
+      "notion_ids": [
+        "3d137369-9e66-81fd-884b-d65007f73339"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_b05_004",
+      "status": "확정"
+    },
+    {
+      "id": "story_fin_00",
+      "name": "마지막 다실 — 다섯 흔적",
+      "nodes": [
+        {
+          "id": "dlg_fin_000",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_fin_000",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "기억만으로는 문이 열리지 않아. 이번 길에서 만난 흔적을 함께 가져가야 해."
+        }
+      ],
+      "notion_id": "3d137369-9e66-8130-9e4c-e790b4ca80c0",
+      "notion_ids": [
+        "3d137369-9e66-8130-9e4c-e790b4ca80c0"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_fin_000",
+      "status": "확정"
+    },
+    {
+      "id": "story_fin_01",
+      "name": "마지막 다실 — 빈 여섯 번째 자리",
+      "nodes": [
+        {
+          "id": "dlg_fin_001a",
+          "options": [
+            {
+              "completes_event": false,
+              "conditions": [],
+              "display_text": "계속",
+              "id": "continue_dlg_fin_001a",
+              "next_node_id": "dlg_fin_001b",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "왔구나."
+        },
+        {
+          "id": "dlg_fin_001b",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_fin_001b",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "아버지는 어디 있죠?"
+        }
+      ],
+      "notion_id": "3d137369-9e66-8177-a564-e91168a9307b",
+      "notion_ids": [
+        "3d137369-9e66-8177-a564-e91168a9307b",
+        "3d137369-9e66-81ac-aa6e-dd69793da2a5"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_fin_001a",
+      "status": "확정"
+    },
+    {
+      "id": "story_fin_02",
+      "name": "마지막 다실 — 센리큐 정체 공개",
+      "nodes": [
+        {
+          "id": "dlg_fin_002",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_fin_002",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "그 여우는 시간을 놓지 않았고, 너는 흔적을 놓지 않았지. 둘 다 내 다회를 오래 흔들었다."
+        }
+      ],
+      "notion_id": "3d137369-9e66-813e-b54f-cbb2f096fb19",
+      "notion_ids": [
+        "3d137369-9e66-813e-b54f-cbb2f096fb19"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_fin_002",
+      "status": "확정"
+    },
+    {
+      "id": "story_fin_02_c",
+      "name": "마지막 다실 — 전투 선택 회수",
+      "nodes": [
+        {
+          "id": "dlg_10",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_10",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "모든 문을 스스로 부수고 들어왔구나. 그렇다면 마지막 문도 같은 방식으로 열 수 있다고 믿겠지."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81e6-915c-c92806541dd8",
+      "notion_ids": [
+        "3d137369-9e66-81e6-915c-c92806541dd8"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_10",
+      "status": "확정"
+    },
+    {
+      "id": "story_fin_02_p",
+      "name": "마지막 다실 — 평화 선택 회수",
+      "nodes": [
+        {
+          "id": "dlg_9",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_9",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "여러 사람을 데리고 여기까지 왔구나. 보이지 않는 자리를 남기는 일은 내 계획에 없었는데."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81c7-b600-fa434031f9e0",
+      "notion_ids": [
+        "3d137369-9e66-81c7-b600-fa434031f9e0"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_9",
+      "status": "확정"
+    },
+    {
+      "id": "story_fin_03",
+      "name": "마지막 다실 — 완벽한 정통의 논리",
+      "nodes": [
+        {
+          "id": "dlg_fin_003a",
+          "options": [
+            {
+              "completes_event": false,
+              "conditions": [],
+              "display_text": "계속",
+              "id": "continue_dlg_fin_003a",
+              "next_node_id": "dlg_fin_003b",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "역사는 남길 가치가 있는 것만 남겨야 한다."
+        },
+        {
+          "id": "dlg_fin_003b",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_fin_003b",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "가치를 정한 사람이 자기 이름부터 맨 위에 썼잖아요."
+        }
+      ],
+      "notion_id": "3d137369-9e66-8189-b306-d6fc023f8f43",
+      "notion_ids": [
+        "3d137369-9e66-8189-b306-d6fc023f8f43",
+        "3d137369-9e66-81ad-9c14-df5d07edb9eb"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_fin_003a",
+      "status": "확정"
+    },
+    {
+      "id": "story_fin_04",
+      "name": "마지막 다실 — 통제 거부",
+      "nodes": [
+        {
+          "id": "dlg_fin_004",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_fin_004",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "rikyu_refuse_control",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "아버지를 잊어서 편해지는 답은 필요 없어."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81cd-a4bc-e9043ecee2dd",
+      "notion_ids": [
+        "3d137369-9e66-81cd-a4bc-e9043ecee2dd"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_fin_004",
+      "status": "확정"
+    },
+    {
+      "id": "story_fin_05",
+      "name": "마지막 다실 — 선택의 귀환",
+      "nodes": [
+        {
+          "id": "dlg_fin_005",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_fin_005",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "네가 남긴 역사가 네게 돌아온다."
+        }
+      ],
+      "notion_id": "3d137369-9e66-8103-a79b-d88a06c1d690",
+      "notion_ids": [
+        "3d137369-9e66-8103-a79b-d88a06c1d690"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_fin_005",
+      "status": "확정"
+    },
+    {
+      "id": "story_fin_06",
+      "name": "마지막 다실 — 아버지의 마지막 가르침",
+      "nodes": [
+        {
+          "id": "dlg_fin_006",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_fin_006",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-1",
+          "text": "내 답을 찾지 말고, 네가 누구와 마실지 정해라."
+        }
+      ],
+      "notion_id": "3d137369-9e66-8111-a9b7-e8cc5c97bb20",
+      "notion_ids": [
+        "3d137369-9e66-8111-a9b7-e8cc5c97bb20"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_fin_006",
+      "status": "확정"
+    },
+    {
+      "id": "story_fin_a",
+      "name": "마지막 다실 — 통제의 제안",
+      "nodes": [
+        {
+          "id": "dlg_fin_a",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_fin_a",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "아버지를 찾는 고통도 지워 주마."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81bf-aa5d-c2e3e280ba05",
+      "notion_ids": [
+        "3d137369-9e66-81bf-aa5d-c2e3e280ba05"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_fin_a",
+      "status": "확정"
+    },
+    {
+      "id": "story_fin_ep",
+      "name": "진엔딩 에필로그 — 앞으로 흐르는 물",
+      "nodes": [
+        {
+          "id": "dlg_12",
+          "options": [
+            {
+              "completes_event": false,
+              "conditions": [],
+              "display_text": "계속",
+              "id": "continue_dlg_12",
+              "next_node_id": "dlg_fin_ep2",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-1",
+          "text": "이번 물은 앞으로 흐르는구나. 잘 다녀왔다."
+        },
+        {
+          "id": "dlg_fin_ep2",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_fin_ep2",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "다녀온 게 아니에요. 이제 찾으러 가는 거예요."
+        }
+      ],
+      "notion_id": "3d137369-9e66-816c-b580-dbd27ca5633d",
+      "notion_ids": [
+        "3d137369-9e66-8153-9cf2-edfccb5c5594",
+        "3d137369-9e66-816c-b580-dbd27ca5633d"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_12",
+      "status": "확정"
+    },
+    {
+      "id": "story_fin_t",
+      "name": "마지막 다실 — 함께 마시는 결론",
+      "nodes": [
+        {
+          "id": "dlg_fin_t1",
+          "options": [
+            {
+              "completes_event": false,
+              "conditions": [],
+              "display_text": "계속",
+              "id": "continue_dlg_fin_t1",
+              "next_node_id": "dlg_fin_t2",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "역사는 당신이 고른 명물이 아니에요. 이 잔을 만든 사람, 빼앗긴 사람, 다시 나눈 사람이 모두 함께 있어야 해요."
+        },
+        {
+          "id": "dlg_fin_t2",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_fin_t2",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "rikyu_share_final_cup",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "완성되지 않았기에 끝낼 수 있는 한 차례라…."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81e6-9f10-e3f4258be466",
+      "notion_ids": [
+        "3d137369-9e66-8132-9d6c-ee7986100f88",
+        "3d137369-9e66-81e6-9f10-e3f4258be466"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_fin_t1",
+      "status": "확정"
+    },
+    {
+      "id": "story_pro_01",
+      "name": "프롤로그 — 식지 않은 주전자",
+      "nodes": [
+        {
+          "id": "dlg_pro_000",
+          "options": [
+            {
+              "completes_event": false,
+              "conditions": [],
+              "display_text": "계속",
+              "id": "continue_dlg_pro_000",
+              "next_node_id": "dlg_pro_001",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "아버지?"
+        },
+        {
+          "id": "dlg_pro_001",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_pro_001",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "prologue_house_started",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "물은 아직 뜨거운데."
+        }
+      ],
+      "notion_id": "3d137369-9e66-8126-baf5-e816cf2bde7e",
+      "notion_ids": [
+        "3d137369-9e66-8126-baf5-e816cf2bde7e",
+        "3d137369-9e66-812b-a0ef-c27748409da8"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_pro_000",
+      "status": "확정"
+    },
+    {
+      "id": "story_pro_02",
+      "name": "프롤로그 — 서로 다른 시대의 흙",
+      "nodes": [
+        {
+          "id": "dlg_pro_002",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_pro_002",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "father_clue_soils",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "한 사람이 하루에 묻힐 흙이 아니야. 계절도 서로 달라."
+        }
+      ],
+      "notion_id": "3d137369-9e66-810c-9459-c21bbf374b07",
+      "notion_ids": [
+        "3d137369-9e66-810c-9459-c21bbf374b07"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_pro_002",
+      "status": "확정"
+    },
+    {
+      "id": "story_pro_03",
+      "name": "프롤로그 — 아버지의 과거 목소리",
+      "nodes": [
+        {
+          "id": "dlg_1",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_1",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-1",
+          "text": "물이 끓기 전에 서두르지 마라. 길도 차도, 네가 닿을 때 비로소 한 번의 자리가 된단다."
+        }
+      ],
+      "notion_id": "3d137369-9e66-815e-a6f4-e01e7f4fe01b",
+      "notion_ids": [
+        "3d137369-9e66-815e-a6f4-e01e7f4fe01b"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_1",
+      "status": "확정"
+    },
+    {
+      "id": "story_pro_04",
+      "name": "프롤로그 — 오래된 지도와 오늘의 잉크",
+      "nodes": [
+        {
+          "id": "dlg_pro_004",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_pro_004",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "father_route_map",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "지도는 오래됐는데 잉크는 오늘 묻었어. 아버지는 과거를 따라간 건가?"
+        }
+      ],
+      "notion_id": "3d137369-9e66-8108-9ce8-e5ef8b1523f8",
+      "notion_ids": [
+        "3d137369-9e66-8108-9ce8-e5ef8b1523f8"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_pro_004",
+      "status": "확정"
+    },
+    {
+      "id": "story_pro_05",
+      "name": "프롤로그 — 늙지 않는 아버지",
+      "nodes": [
+        {
+          "id": "dlg_pro_005a",
+          "options": [
+            {
+              "completes_event": false,
+              "conditions": [],
+              "display_text": "계속",
+              "id": "continue_dlg_pro_005a",
+              "next_node_id": "dlg_pro_005b",
+              "results": []
+            }
+          ],
+          "speaker_id": "NPC-BAEK-ELDER-01",
+          "text": "네 아버지는 내가 어릴 때도 지금 얼굴이었지."
+        },
+        {
+          "id": "dlg_pro_005b",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_pro_005b",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "father_immortality_hint",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "그럼 사라진 건 처음이 아니군요. 돌아오지 않은 게 처음일 뿐."
+        }
+      ],
+      "notion_id": "3d137369-9e66-8114-a611-eefe024256f4",
+      "notion_ids": [
+        "3d137369-9e66-8114-a611-eefe024256f4",
+        "3d137369-9e66-8142-8484-cf352f9d60ec"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_pro_005a",
+      "status": "확정"
+    },
+    {
+      "id": "story_pro_06",
+      "name": "프롤로그 — 찻길 수첩의 첫 질문",
+      "nodes": [
+        {
+          "id": "dlg_pro_006",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_pro_006",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "tea_road_notebook_unlocked",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "NOTEBOOK",
+          "text": "사람은 왜 떠난 시간을 이야기로 남길까?"
+        }
+      ],
+      "notion_id": "3d137369-9e66-81d4-b1aa-c7747b60ef74",
+      "notion_ids": [
+        "3d137369-9e66-81d4-b1aa-c7747b60ef74"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_pro_006",
+      "status": "확정"
+    },
+    {
+      "id": "story_pro_07",
+      "name": "프롤로그 — 이름 없는 노다인",
+      "nodes": [
+        {
+          "id": "dlg_4",
+          "options": [
+            {
+              "completes_event": false,
+              "conditions": [],
+              "display_text": "계속",
+              "id": "continue_dlg_4",
+              "next_node_id": "dlg_pro_007b",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "먼 길을 왔구나. 이름은 나중에 물어도 된다."
+        },
+        {
+          "id": "dlg_pro_007b",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_pro_007b",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-8",
+          "text": "제 이름 말고, 아버지 이름을 물으러 왔어요."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81b3-9b5e-f0d479205926",
+      "notion_ids": [
+        "3d137369-9e66-813b-afc0-fef140335552",
+        "3d137369-9e66-81b3-9b5e-f0d479205926"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_4",
+      "status": "확정"
+    },
+    {
+      "id": "story_pro_08",
+      "name": "프롤로그 — 홍국 국경의 첫 잔",
+      "nodes": [
+        {
+          "id": "dlg_pro_008",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_pro_008",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "hongguk_border_tea_after_first_cup",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "그 여우를 찾으려면 그가 만난 시대의 사람들을 만나 보아라."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81cd-aab8-f9923dd837e2",
+      "notion_ids": [
+        "3d137369-9e66-81cd-aab8-f9923dd837e2"
+      ],
+      "replay_policy": "once",
+      "start_node_id": "dlg_pro_008",
+      "status": "확정"
+    },
+    {
+      "id": "story_pro_r_father_early",
+      "name": "반복 런 — 아버지의 이른 기억",
+      "nodes": [
+        {
+          "id": "dlg_2",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_2",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-1",
+          "text": "또 길을 나서는구나. 괜찮다. 같은 물을 다시 끓여도 오늘의 한 잔은 전과 같지 않으니."
+        }
+      ],
+      "notion_id": "3d137369-9e66-8174-b84e-c694d0868f45",
+      "notion_ids": [
+        "3d137369-9e66-8174-b84e-c694d0868f45"
+      ],
+      "replay_policy": "repeat",
+      "start_node_id": "dlg_2",
+      "status": "확정"
+    },
+    {
+      "id": "story_pro_r_father_late",
+      "name": "반복 런 — 아버지의 깊어진 기억",
+      "nodes": [
+        {
+          "id": "dlg_3",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_3",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-1",
+          "text": "이제는 길보다 네 표정을 먼저 보게 되는구나. 그 사람도 전부 기억하고 있을 테니, 네가 무엇을 반복하지 않을지만 정해라."
+        }
+      ],
+      "notion_id": "3d137369-9e66-8152-89c6-ed4918f06b26",
+      "notion_ids": [
+        "3d137369-9e66-8152-89c6-ed4918f06b26"
+      ],
+      "replay_policy": "repeat",
+      "start_node_id": "dlg_3",
+      "status": "확정"
+    },
+    {
+      "id": "story_pro_r_rikyu_first_death",
+      "name": "반복 런 — 센리큐의 첫 죽음 기억",
+      "nodes": [
+        {
+          "id": "dlg_5",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_5",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "이번에는 잔을 놓치지 않았으면 좋겠구나. 지난번에는 너무 빨리 식었으니."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81f3-9003-f78f3138e202",
+      "notion_ids": [
+        "3d137369-9e66-81f3-9003-f78f3138e202"
+      ],
+      "replay_policy": "repeat",
+      "start_node_id": "dlg_5",
+      "status": "확정"
+    },
+    {
+      "id": "story_pro_r_rikyu_late",
+      "name": "반복 런 — 센리큐의 누적 기억",
+      "nodes": [
+        {
+          "id": "dlg_6",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "닫기",
+              "id": "complete_dlg_6",
+              "next_node_id": "",
+              "results": []
+            }
+          ],
+          "speaker_id": "CHR-5",
+          "text": "네가 어느 길에서 돌아왔는지는 묻지 않으마. 다만 네 손이 전보다 조금 덜 떨리는군."
+        }
+      ],
+      "notion_id": "3d137369-9e66-810f-aae4-d832eacb425e",
+      "notion_ids": [
+        "3d137369-9e66-810f-aae4-d832eacb425e"
+      ],
+      "replay_policy": "repeat",
+      "start_node_id": "dlg_6",
+      "status": "확정"
+    },
+    {
+      "id": "veteran_run_father_memory",
+      "name": "반복 런 시작 — 다섯 번을 넘긴 향의 기억",
+      "nodes": [
+        {
+          "id": "father_scent_memory",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "향이 사라지기 전에 길을 잡는다",
+              "id": "follow_scent_to_border_cup",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "veteran_run_father_memory_seen",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-1",
+          "text": "이제는 길보다 네 표정을 먼저 보게 되는구나. 그 사람도 전부 기억하고 있을 테니, 네가 무엇을 반복하지 않을지만 정해라."
+        }
+      ],
+      "notion_id": "3d137369-9e66-81f8-9725-f0d867e42354",
+      "notion_ids": [
+        "3d137369-9e66-81f8-9725-f0d867e42354"
+      ],
+      "replay_policy": "once",
+      "run_start": {
+        "father_physical_actor": false,
+        "min_run_count": 5,
+        "presentation_kind": "father_scent_memory",
+        "priority": 110
+      },
+      "start_node_id": "father_scent_memory",
       "status": "확정"
     }
   ],

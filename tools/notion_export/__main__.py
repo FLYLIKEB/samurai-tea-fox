@@ -50,9 +50,14 @@ def main() -> int:
             token = os.environ.get(args.token_env, "")
             client = NotionClient(token)
             id_map = json.loads(args.id_map.read_text(encoding="utf-8"))
+            runtime_datasets = {
+                name: config
+                for name, config in schema["datasets"].items()
+                if config.get("runtime", True)
+            }
             rows_by_dataset = {
                 name: [client.flatten_page(page) for page in client.query_data_source(config["notion"]["source"])]
-                for name, config in schema["datasets"].items()
+                for name, config in runtime_datasets.items()
             }
             builder = CaptureBuilder(schema, id_map)
             capture = builder.build_from_rows(rows_by_dataset, args.data_version)

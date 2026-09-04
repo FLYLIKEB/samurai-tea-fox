@@ -22,7 +22,7 @@ ITEM_OVERRIDES = {
     "iron_ore": "asset_assets_sprites_objects_mining_iron_ore_32x32_png",
     "item_28": "asset_assets_sprites_objects_mining_iron_ore_32x32_png",
     "item_29": "asset_assets_ui_icons_atlas_leaf_resource_png",
-    "item_32": "asset_assets_ui_icons_atlas_crate_png",
+    "cloth": "asset_assets_ui_icons_atlas_crate_png",
     "item_33": "asset_assets_ui_icons_atlas_coin_disc_png",
     "item_5": "asset_assets_sprites_objects_shrine_props_incense_burner_32x32_png",
     "mountain_iron_dagger": "asset_assets_ui_icons_atlas_sword_png",
@@ -73,6 +73,15 @@ KIND_FALLBACKS = {
     "시설": "asset_assets_sprites_objects_crafting_workbench_32x32_png",
     "재료": "asset_assets_ui_icons_atlas_crate_png",
     "향": "asset_assets_sprites_objects_shrine_props_incense_burner_32x32_png",
+}
+
+MONSTER_OVERRIDES = {
+    "monster_16": "monster_mountain_boar_front_idle",
+    "monster_17": "monster_ash_crow_flock_front_idle",
+    "monster_18": "monster_abandoned_mine_samurai_front_idle",
+    "monster_19": "monster_road_bandit_front_idle",
+    "monster_20": "monster_frost_lantern_yokai_front_idle",
+    "monster_21": "monster_agarwood_thief_front_idle",
 }
 
 
@@ -143,13 +152,28 @@ def item_entry(item: dict[str, Any], assets: dict[str, dict[str, Any]]) -> dict[
 
 def monster_entry(monster: dict[str, Any], assets: dict[str, dict[str, Any]]) -> dict[str, Any]:
     monster_id = str(monster["id"])
-    result = asset_record(f"monster_{monster_id}_front_idle", assets)
-    result.update({"resolution": "monster_id_convention", "exception_reason": "", "dedicated_asset_missing": False})
+    asset_id = MONSTER_OVERRIDES.get(
+        monster_id,
+        f"monster_{monster_id}_front_idle",
+    )
+    result = asset_record(asset_id, assets)
+    if monster_id in MONSTER_OVERRIDES:
+        result.update({
+            "resolution": "monster_variant_fallback_exception",
+            "exception_reason": "No dedicated monster asset exists; keep the closest existing variant for review only.",
+            "dedicated_asset_missing": True,
+        })
+    else:
+        result.update({
+            "resolution": "monster_id_convention",
+            "exception_reason": "",
+            "dedicated_asset_missing": False,
+        })
     return result
 
 
 def content_entry(dataset: str, row: dict[str, Any], image: dict[str, Any]) -> dict[str, Any]:
-    art_review_required = dataset == "items"
+    art_review_required = dataset == "items" or image.get("dedicated_asset_missing") is True
     return {
         "dataset": dataset,
         "content_id": row["id"],
@@ -211,7 +235,7 @@ def build(root: Path) -> tuple[dict[str, Any], dict[str, Any]]:
         mapped_monsters.append(content_entry("monsters", monster, image))
     payload = {
         "schema_version": 1,
-        "data_version": "notion-2026-09-01",
+        "data_version": items["data_version"],
         "source": {
             "items": items["source"],
             "monsters": monsters["source"],

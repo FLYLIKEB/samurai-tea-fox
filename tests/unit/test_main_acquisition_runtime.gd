@@ -127,7 +127,7 @@ func run(asserts) -> void:
 	asserts.true_value(tea_runtime.result.ok, "tea command fixture configures")
 	asserts.true_value(tea_runtime.main.inventory.add_item("tea_8", 1).ok, "generated tea leaf can be stocked for command routing")
 	asserts.true_value(tea_runtime.main.inventory.add_item("humble_clay_bowl", 1).ok, "generated tea vessel can be stocked for command routing")
-	asserts.true_value(tea_runtime.main.tea_service.brew("tea_8", "humble_clay_bowl", tea_runtime.main.inventory, 0).ok, "prepared tea can occupy quickslot 0")
+	asserts.true_value(tea_runtime.main.tea_service.brew("tea_8", "humble_clay_bowl", tea_runtime.main.inventory, 0, {"has_brewing_location": true}).ok, "prepared tea can occupy quickslot 0")
 	asserts.true_value(tea_runtime.main.submit_desktop_action_command("drink_tea", Vector2i.ZERO, 0), "desktop tea command routes into TeaService")
 	asserts.true_value(tea_runtime.main.tea_service.has_prepared_tea(0), "routed tea command waits for the exported drinking time")
 	asserts.true_value(tea_runtime.main.tick_tea_runtime(1.4).ok, "routed tea command advances to completion")

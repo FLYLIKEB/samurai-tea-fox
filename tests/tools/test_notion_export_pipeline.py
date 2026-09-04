@@ -58,7 +58,11 @@ class NotionExportPipelineTests(unittest.TestCase):
         schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
         ability_notion = schema["datasets"]["abilities"]["notion"]
         self.assertEqual(ability_notion["field_map"]["지속시간(초)"], "duration_seconds")
-        self.assertEqual(ability_notion["field_map"]["상태효과"], "status_effect")
+        self.assertEqual(
+            ability_notion["field_map"]["런타임 상태효과 ID"],
+            "status_effect",
+        )
+        self.assertNotIn("상태효과", ability_notion["field_map"])
         self.assertIn("duration_seconds", schema["datasets"]["abilities"]["required_fields"])
 
         snapshots = self.pipeline.build_snapshots(self.capture, "confirmed-test")
@@ -221,7 +225,7 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(runtime_ids["3ce37369-9e66-8168-b78c-db667f533c7d"], "drop_1")
         self.assertEqual(runtime_ids["3ce37369-9e66-810a-8d02-d63e441bbfb6"], "drop_2")
         self.assertEqual(runtime_ids["3ce37369-9e66-81d2-bb71-e90b844fe65d"], "item_33")
-        self.assertEqual(runtime_ids["3ce37369-9e66-81f0-a2d4-c3923da3a1b3"], "item_32")
+        self.assertEqual(runtime_ids["3ce37369-9e66-81f0-a2d4-c3923da3a1b3"], "cloth")
         rows = {
             "monsters": [{
                 "_notion_id": "monster-road-bandit",
@@ -622,6 +626,134 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(item["reward_kind"], "discovered_record")
         self.assertEqual(item["reward_quantity"], 1)
 
+    def test_event_capture_groups_actual_dialogue_line_rows(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        event_notion = schema["datasets"]["events"]["notion"]
+        self.assertEqual(event_notion["capture_mode"], "event_lines")
+        self.assertEqual(event_notion["stable_id_field"], "런타임 이벤트 ID")
+        self.assertEqual(event_notion["ignored_statuses"], ["검토 필요"])
+
+        rows = {
+            "events": [
+                {
+                    "_notion_id": "line-1",
+                    "캐릭터": "아버지",
+                    "상태": "확정",
+                    "런타임 이벤트 ID": "father_memory",
+                    "이벤트 이름": "아버지의 기억",
+                    "재실행 정책": "repeat",
+                    "시작 노드": True,
+                    "노드 ID": "start",
+                    "라인 순서": 1,
+                    "본문 KO": "물을 올려라.",
+                    "화자 ID": "CHR-1",
+                    "선택 ID": "remember",
+                    "선택 문구": "기억한다",
+                    "조건 JSON": "`[]`",
+                    "결과 JSON": "`[{\"type\":\"set_run_flag\",\"id\":\"father_remembered\"}]`",
+                    "다음 노드 ID": "",
+                    "이벤트 완료": True,
+                },
+                {
+                    "_notion_id": "line-2",
+                    "캐릭터": "아버지",
+                    "상태": "확정",
+                    "런타임 이벤트 ID": "father_memory",
+                    "이벤트 이름": "아버지의 기억",
+                    "재실행 정책": "repeat",
+                    "시작 노드": False,
+                    "노드 ID": "start",
+                    "라인 순서": 1,
+                    "본문 KO": "물을 올려라.",
+                    "화자 ID": "CHR-1",
+                    "선택 ID": "leave",
+                    "선택 문구": "떠난다",
+                    "조건 JSON": "[]",
+                    "결과 JSON": "[]",
+                    "다음 노드 ID": "",
+                    "이벤트 완료": True,
+                },
+                {
+                    "_notion_id": "draft-package",
+                    "캐릭터": "확장 대사 묶음",
+                    "상태": "검토 필요",
+                    "런타임 이벤트 ID": "",
+                },
+            ]
+        }
+
+        capture = CaptureBuilder(schema).build_from_rows(rows, "notion-live-test")
+        event = capture["datasets"]["events"]["items"][0]
+
+        self.assertEqual(event["id"], "father_memory")
+        self.assertEqual(event["name"], "아버지의 기억")
+        self.assertEqual(event["status"], "확정")
+        self.assertEqual(event["replay_policy"], "repeat")
+        self.assertEqual(event["start_node_id"], "start")
+        self.assertEqual(event["nodes"][0]["speaker_id"], "CHR-1")
+        self.assertEqual(
+            [option["id"] for option in event["nodes"][0]["options"]],
+            ["leave", "remember"],
+        )
+        self.assertEqual(
+            event["nodes"][0]["options"][1]["results"][0]["id"],
+            "father_remembered",
+        )
+
+    def test_event_capture_rejects_missing_runtime_id_outside_explicit_ignored_status(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        rows = {
+            "events": [{
+                "_notion_id": "broken-line",
+                "상태": "확정",
+                "런타임 이벤트 ID": "",
+            }]
+        }
+
+        with self.assertRaisesRegex(ExportValidationError, "missing runtime event id"):
+            CaptureBuilder(schema).build_from_rows(rows, "notion-live-test")
+
+    def test_boss_capture_accepts_authoritative_json_definition_row(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        boss_notion = schema["datasets"]["bosses"]["notion"]
+        self.assertEqual(boss_notion["capture_mode"], "json_object")
+        self.assertEqual(boss_notion["json_field"], "정의 JSON")
+        definition = {
+            "id": "sample_guardian",
+            "name": "샘플 수문장",
+            "status": "테스트",
+            "dungeon_id": "dungeon_4",
+            "biome_id": "common_region",
+            "max_hp": 120,
+            "phases": [{
+                "id": "opening",
+                "health_ratio_threshold": 1.0,
+                "patterns": [{"id": "strike", "interval_seconds": 1.0, "summon_monster_ids": []}],
+            }],
+            "resolution_types": ["combat"],
+            "reward_item_ids": [],
+            "progression_unlock_ids": [],
+            "summon_monster_ids": [],
+        }
+        rows = {"bosses": [{
+            "_notion_id": "boss-page",
+            "이름": "샘플 수문장",
+            "설정 상태": "테스트",
+            "보스 ID": "sample_guardian",
+            "정의 JSON": json.dumps(definition, ensure_ascii=False),
+        }]}
+
+        capture = CaptureBuilder(schema).build_from_rows(rows, "notion-live-test")
+        boss = capture["datasets"]["bosses"]["items"][0]
+
+        self.assertEqual(boss["id"], "sample_guardian")
+        self.assertEqual(boss["notion_id"], "boss-page")
+        self.assertEqual(boss["phases"], definition["phases"])
+
+        rows["bosses"][0]["정의 JSON"] = "{invalid"
+        with self.assertRaisesRegex(ExportValidationError, "bosses.*invalid 정의 JSON"):
+            CaptureBuilder(schema).build_from_rows(rows, "notion-live-test")
+
     def test_meta_unlock_contract_rejects_unknown_types_and_operator(self):
         for field, value, message in (
             ("condition_event", "unknown_condition", "invalid condition_event"),
@@ -799,6 +931,66 @@ class NotionExportPipelineTests(unittest.TestCase):
         )
         self.assertNotIn("tea_recovery_bonus", item)
 
+    def test_item_export_normalizes_notion_none_equipment_slot(self):
+        capture = {
+            "schema_version": 1,
+            "data_version": "item-slot-fixture-v1",
+            "datasets": {
+                "items": {
+                    "source": self.pipeline.schema["datasets"]["items"]["notion"]["source"],
+                    "items": [{
+                        "id": "bandage",
+                        "name": "천 붕대",
+                        "status": "확정",
+                        "type": "소모품",
+                        "equipment_slot": "없음",
+                        "use_seconds": 1,
+                    }],
+                }
+            },
+        }
+
+        item = self.pipeline.build_snapshots(capture, "confirmed-test")["items"]["items"][0]
+
+        self.assertEqual(item["equipment_slot"], "")
+
+    def test_item_export_maps_notion_consumable_use_seconds(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+
+        self.assertEqual(
+            schema["datasets"]["items"]["notion"]["field_map"]["사용시간(초)"],
+            "use_seconds",
+        )
+
+    def test_runtime_item_types_require_their_runtime_fields(self):
+        invalid_weapon = copy.deepcopy(self.capture)
+        weapon = next(
+            item for item in invalid_weapon["datasets"]["items"]["items"]
+            if item["id"] == "oribe_bowl"
+        )
+        weapon.update({"type": "무기", "equipment_slot": "무기", "base_damage": 14, "attack_speed": 1})
+        with self.assertRaisesRegex(ExportValidationError, "oribe_bowl.*range"):
+            self.pipeline.build_snapshots(invalid_weapon, "confirmed-test")
+
+        invalid_consumable = copy.deepcopy(self.capture)
+        consumable = next(
+            item for item in invalid_consumable["datasets"]["items"]["items"]
+            if item["id"] == "oribe_bowl"
+        )
+        consumable.update({"type": "소모품", "equipment_slot": "", "use_seconds": 0})
+        with self.assertRaisesRegex(ExportValidationError, "oribe_bowl.*use_seconds"):
+            self.pipeline.build_snapshots(invalid_consumable, "confirmed-test")
+
+    def test_recipes_require_complete_runtime_result_contract(self):
+        snapshots = self.pipeline.build_snapshots(self.capture, "confirmed-test")
+        recipe = snapshots["recipes"]["items"][0]
+        self.assertEqual(recipe["result_quantity"], 1)
+
+        invalid = copy.deepcopy(self.capture)
+        invalid["datasets"]["recipes"]["items"][0]["materials_note"] = ""
+        with self.assertRaisesRegex(ExportValidationError, "recipes.*materials_note"):
+            self.pipeline.build_snapshots(invalid, "confirmed-test")
+
     def test_equipment_tea_ware_attachment_fields_accept_flattened_notion_strings(self):
         flattened = copy.deepcopy(self.capture)
         item = next(item for item in flattened["datasets"]["items"]["items"] if item["id"] == "oribe_bowl")
@@ -925,7 +1117,7 @@ class NotionExportPipelineTests(unittest.TestCase):
 
         self.assertEqual(abilities["ember"]["duration_seconds"], 0)
         self.assertEqual(abilities["ember"]["status_effect"], "")
-        self.assertEqual(abilities["water_shadow"]["duration_seconds"], 0)
+        self.assertEqual(abilities["water_shadow"]["duration_seconds"], 0.2)
         self.assertEqual(abilities["water_shadow"]["status_effect"], "")
 
     def test_dev_6_time_and_sleep_balance_exports_are_present(self):
@@ -942,32 +1134,32 @@ class NotionExportPipelineTests(unittest.TestCase):
                 "notion_id": "3ce37369-9e66-8142-bdd7-e6eaff3fe967",
                 "unit": "초",
                 "value": 300,
-                "description": "낮 상태의 프로토타입 지속시간",
-                "formula_note": "낮에는 心 감소가 없다. DEV-6 프로토타입 시간대 전이값.",
+                "description": "낮 상태의 프로토타입 시뮬레이션 지속시간",
+                "formula_note": "wall-clock과 무관한 시뮬레이션 시간이다. 성공한 턴 소비 command의 turn cost만 누적되며 낮에는 心 감소가 없다.",
             },
             "dusk_phase_duration_seconds": {
                 "name": "해질녘 지속시간",
                 "notion_id": "3ce37369-9e66-8137-8069-e0b914681ae1",
                 "unit": "초",
                 "value": 120,
-                "description": "해질녘 상태의 프로토타입 지속시간",
-                "formula_note": "DEV-6 프로토타입 시간대 전이값.",
+                "description": "해질녘 상태의 프로토타입 시뮬레이션 지속시간",
+                "formula_note": "wall-clock과 무관한 시뮬레이션 시간이다. 성공한 턴 소비 command의 turn cost만 누적된다.",
             },
             "night_phase_duration_seconds": {
                 "name": "밤 지속시간",
                 "notion_id": "3ce37369-9e66-8191-91c3-c04612c42293",
                 "unit": "초",
                 "value": 240,
-                "description": "밤 상태의 프로토타입 지속시간",
-                "formula_note": "DEV-6 프로토타입 시간대 전이값.",
+                "description": "밤 상태의 프로토타입 시뮬레이션 지속시간",
+                "formula_note": "wall-clock과 무관한 시뮬레이션 시간이다. 성공한 턴 소비 command의 turn cost만 누적된다.",
             },
             "late_night_phase_duration_seconds": {
                 "name": "심야 지속시간",
                 "notion_id": "3ce37369-9e66-817b-a89d-e63126a7d7e3",
                 "unit": "초",
                 "value": 180,
-                "description": "심야 상태의 프로토타입 지속시간",
-                "formula_note": "완료 후 낮으로 순환한다. DEV-6 프로토타입 시간대 전이값.",
+                "description": "심야 상태의 프로토타입 시뮬레이션 지속시간",
+                "formula_note": "wall-clock과 무관한 시뮬레이션 시간이다. 성공한 턴 소비 command의 turn cost만 누적되며 완료 후 낮으로 순환한다.",
             },
             "dusk_kokoro_decay_per_second": {
                 "name": "해질녘 心 감소율",
@@ -975,7 +1167,7 @@ class NotionExportPipelineTests(unittest.TestCase):
                 "unit": "point/초",
                 "value": 0.02,
                 "description": "해질녘부터 적용되는 心 감소율",
-                "formula_note": "낮 0 < 해질녘 < 밤 < 심야 순으로 증가한다.",
+                "formula_note": "`초`는 wall-clock이 아닌 시뮬레이션 시간 단위다. 낮 0 < 해질녘 < 밤 < 심야 순으로 증가한다.",
             },
             "night_kokoro_decay_per_second": {
                 "name": "밤 心 감소율",
@@ -983,7 +1175,7 @@ class NotionExportPipelineTests(unittest.TestCase):
                 "unit": "point/초",
                 "value": 0.05,
                 "description": "밤의 心 감소율",
-                "formula_note": "낮 0 < 해질녘 < 밤 < 심야 순으로 증가한다.",
+                "formula_note": "`초`는 wall-clock이 아닌 시뮬레이션 시간 단위다. 낮 0 < 해질녘 < 밤 < 심야 순으로 증가한다.",
             },
             "late_night_kokoro_decay_per_second": {
                 "name": "심야 心 감소율",
@@ -991,7 +1183,7 @@ class NotionExportPipelineTests(unittest.TestCase):
                 "unit": "point/초",
                 "value": 0.1,
                 "description": "심야의 心 감소율",
-                "formula_note": "낮 0 < 해질녘 < 밤 < 심야 순으로 증가한다.",
+                "formula_note": "`초`는 wall-clock이 아닌 시뮬레이션 시간 단위다. 낮 0 < 해질녘 < 밤 < 심야 순으로 증가한다.",
             },
             "safe_sleep_hp_recovery_ratio": {
                 "name": "안전 수면 HP 회복 비율",

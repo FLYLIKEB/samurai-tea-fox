@@ -199,11 +199,94 @@ class ExportPipeline:
         if dataset_name == "teas":
             self._validate_tea_contract(row)
             return
+        if dataset_name == "recipes":
+            self._validate_recipe_contract(row)
+            return
         if dataset_name != "items":
             return
+        self._validate_item_contract(row)
         if row.get("type") != "다구" or row.get("equipment_slot") != "다구":
             return
         self._validate_attachment_stage_data(row)
+
+    def _validate_item_contract(self, row: dict[str, Any]) -> None:
+        item_id = row.get("id", "")
+        for field in ("max_stack", "max_owned"):
+            value = row.get(field)
+            if value is not None and (
+                not isinstance(value, int) or isinstance(value, bool) or value <= 0
+            ):
+                raise ExportValidationError(
+                    f"items item {item_id}: {field} must be a positive integer"
+                )
+
+        item_type = row.get("type")
+        if item_type == "무기":
+            self._validate_equipment_item(row, "무기", ("base_damage", "attack_speed", "range"))
+        elif item_type == "방어구":
+            self._validate_equipment_item(row, "방어구", ("defense",))
+        elif item_type == "소모품":
+            self._validate_positive_number(row, "use_seconds", "items", item_id)
+
+    def _validate_equipment_item(
+        self,
+        row: dict[str, Any],
+        expected_slot: str,
+        numeric_fields: tuple[str, ...],
+    ) -> None:
+        item_id = row.get("id", "")
+        if row.get("equipment_slot") != expected_slot:
+            raise ExportValidationError(
+                f"items item {item_id}: equipment_slot must be {expected_slot}"
+            )
+        for field in numeric_fields:
+            self._validate_positive_number(row, field, "items", item_id)
+
+    def _validate_recipe_contract(self, row: dict[str, Any]) -> None:
+        recipe_id = row.get("id", "")
+        required_fields = set(
+            self._dataset_config("recipes").get("required_fields", [])
+        )
+        for field in ("result_item_id", "facility", "materials_note"):
+            if field not in required_fields:
+                continue
+            value = row.get(field)
+            if not isinstance(value, str) or not value.strip():
+                raise ExportValidationError(
+                    f"recipes item {recipe_id}: {field} must be a non-empty string"
+                )
+        result_item_id = row.get("result_item_id")
+        if result_item_id is not None and not re.fullmatch(
+            self.schema["stable_id_pattern"], result_item_id
+        ):
+            raise ExportValidationError(
+                f"recipes item {recipe_id}: result_item_id must be a stable id"
+            )
+        if "result_quantity" not in required_fields:
+            return
+        quantity = row.get("result_quantity")
+        if not isinstance(quantity, int) or isinstance(quantity, bool) or quantity <= 0:
+            raise ExportValidationError(
+                f"recipes item {recipe_id}: result_quantity must be a positive integer"
+            )
+
+    @staticmethod
+    def _validate_positive_number(
+        row: dict[str, Any],
+        field: str,
+        dataset_name: str,
+        item_id: str,
+    ) -> None:
+        value = row.get(field)
+        if (
+            not isinstance(value, (int, float))
+            or isinstance(value, bool)
+            or not math.isfinite(float(value))
+            or float(value) <= 0.0
+        ):
+            raise ExportValidationError(
+                f"{dataset_name} item {item_id}: {field} must be a positive number"
+            )
 
     def _validate_tea_contract(self, row: dict[str, Any]) -> None:
         tea_id = row.get("id", "")
@@ -865,6 +948,9 @@ def normalize_structured_fields(dataset_name: str, row: dict[str, Any]) -> dict[
         }.get(normalized["recovery_mode"], normalized["recovery_mode"])
     if dataset_name != "items":
         return normalized
+
+    if normalized.get("equipment_slot") == "없음":
+        normalized["equipment_slot"] = ""
 
     if "attachment_stage_thresholds" in normalized:
         normalized["attachment_stage_thresholds"] = _normalize_attachment_stage_thresholds(
