@@ -108,7 +108,7 @@ func gather(node_id: String) -> Dictionary:
 	var result: Dictionary
 	if definition.policy == POLICY_PICKUP:
 		world_data.release_footprint(node_id)
-		result = _spawn_pickup(definition.item_id, definition.quantity, position, {"source_kind": GATHERABLE_KIND, "source_id": node_id})
+		result = _spawn_pickup(definition.item_id, definition.quantity, position, {"source_kind": GATHERABLE_KIND, "source_id": node_id, "material_tag": String(definition.get("material_tag", ""))})
 		if not result.ok:
 			_restore_gatherable_reservation(node)
 			return _fail_and_emit(result)
@@ -118,7 +118,7 @@ func gather(node_id: String) -> Dictionary:
 			if String(result.get("reason", "")) != "inventory_full":
 				return _fail_and_emit(result)
 			world_data.release_footprint(node_id)
-			result = _spawn_pickup(definition.item_id, definition.quantity, position, {"source_kind": GATHERABLE_KIND, "source_id": node_id})
+			result = _spawn_pickup(definition.item_id, definition.quantity, position, {"source_kind": GATHERABLE_KIND, "source_id": node_id, "material_tag": String(definition.get("material_tag", ""))})
 			if not result.ok:
 				_restore_gatherable_reservation(node)
 				return _fail_and_emit(result)
@@ -136,6 +136,7 @@ func gather(node_id: String) -> Dictionary:
 		"quantity": definition.quantity,
 		"position": _position_dictionary(position),
 		"required_tool_item_id": String(definition.get("required_tool_item_id", "")),
+		"material_tag": String(definition.get("material_tag", "")),
 		"delivery": result.get("delivery", POLICY_DIRECT),
 		"pickup_id": result.get("pickup_id", "")
 	}
@@ -431,6 +432,7 @@ func _index_gatherable_definitions(rows: Array, target_inventory) -> Dictionary:
 			"quantity": grant_result.grant.quantity,
 			"policy": grant_result.grant.policy,
 			"required_tool_item_id": required_tool_item_id,
+			"material_tag": String(row.get("material_tag", row.get("interaction_tag", ""))),
 			"depleted_terrain": row.get("depleted_terrain", {}).duplicate(true) if row.get("depleted_terrain", {}) is Dictionary else {}
 		}
 	return {"ok": true, "definitions": definitions}

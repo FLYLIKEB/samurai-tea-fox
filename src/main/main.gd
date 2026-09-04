@@ -1644,7 +1644,7 @@ func _ensure_current_dungeon_entered() -> Dictionary:
 		var source_id := DUNGEON_STONE_SOURCE_ID if is_stone else DUNGEON_IRON_SOURCE_ID
 		var reservation := layout.reserve_entity(resource_id, resource_cell, Vector2i.ONE, true, {"source_id": source_id, "interaction_kind": AcquisitionService.GATHERABLE_KIND, "definition_id": resource_id})
 		if reservation.ok:
-			_dungeon_resources.append({"id": resource_id, "resource_id": item_id, "position": {"x": resource_cell.x, "y": resource_cell.y}, "source_id": source_id})
+			_dungeon_resources.append({"id": resource_id, "resource_id": item_id, "position": {"x": resource_cell.x, "y": resource_cell.y}, "source_id": source_id, "material_tag": "stone"})
 			resource_index += 1
 	for enemy in [{"id": "dungeon_enemy_0", "cell": Vector2i(7, 2)}, {"id": "dungeon_enemy_1", "cell": Vector2i(9, 5)}, {"id": "dungeon_enemy_2", "cell": Vector2i(5, 7)}, {"id": "dungeon_boss", "cell": Vector2i(10, 7)}]:
 		layout.reserve_entity(String(enemy.id), enemy.cell, Vector2i.ONE, false, {"role": "boss" if enemy.id == "dungeon_boss" else "dungeon_enemy"})
@@ -1729,7 +1729,7 @@ func _enter_dungeon_map(layout: WorldData, definition: Dictionary, is_new_entry 
 		acquisition_service = AcquisitionService.new()
 		var dungeon_definitions := []
 		for node in _dungeon_resources:
-			dungeon_definitions.append({"id": String(node.id), "item_id": String(node.get("resource_id", "iron_ore")), "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT})
+			dungeon_definitions.append({"id": String(node.id), "item_id": String(node.get("resource_id", "iron_ore")), "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT, "material_tag": String(node.get("material_tag", ""))})
 		var dungeon_acquisition_result: Dictionary = acquisition_service.configure(inventory, world_data, dungeon_definitions, _generated_drop_definitions())
 		if not dungeon_acquisition_result.ok:
 			_dungeon_debug("광석 상호작용 설정 실패: %s" % dungeon_acquisition_result)
@@ -2007,7 +2007,7 @@ func _confirmed_generated_resource_definitions(resource_nodes: Array) -> Array:
 		var item: Dictionary = catalog.find_by_id("items", resource_id)
 		if String(item.get("status", "")) != "확정" or not _is_generated_resource_item_type(String(item.get("type", ""))):
 			continue
-		definitions.append({"id": resource_id, "item_id": resource_id, "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT})
+		definitions.append({"id": resource_id, "item_id": resource_id, "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT, "material_tag": String(node.get("material_tag", ""))})
 		seen[resource_id] = true
 	return definitions
 
@@ -2029,6 +2029,7 @@ func _terrain_tree_gatherable_definitions() -> Array:
 			"item_id": "wood",
 			"quantity": 1,
 			"policy": AcquisitionService.POLICY_DIRECT,
+			"material_tag": "wood",
 			"required_tool_item_id": TREE_HARVEST_TOOL_ITEM_ID,
 			"depleted_terrain": tree_profile
 		})
@@ -2071,6 +2072,7 @@ func _mountain_mineral_gatherable_definitions() -> Array:
 			"item_id": item_id,
 			"quantity": 1,
 			"policy": AcquisitionService.POLICY_DIRECT,
+			"material_tag": "stone",
 			"required_tool_item_id": "stone_axe",
 			"depleted_terrain": {"id": WorldGenerator.TERRAIN_MOUNTAIN_SLOPE, "render_id": WorldGenerator.RENDER_MOUNTAIN_SLOPE, "walkable": true}
 		})

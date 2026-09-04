@@ -64,6 +64,10 @@ func _assert_four_fixture_types_share_interact_contract(asserts) -> void:
 		var command := GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": fixture.node_id})
 		var gathered: Dictionary = service.handle_command(command)
 		asserts.true_value(gathered.ok, "fixture gathers through common INTERACT command")
+		if fixture.definition_id == "fixture_tree_common":
+			asserts.equal(gathered.material_tag, "wood", "gather result preserves explicit wood material tag")
+		elif fixture.definition_id == "fixture_ore_mountain":
+			asserts.equal(gathered.material_tag, "stone", "gather result preserves explicit stone material tag")
 		asserts.true_value(service.gatherable_for(fixture.node_id).depleted, "successful gather depletes fixture node")
 		var duplicate: Dictionary = service.handle_command(command)
 		asserts.false_value(duplicate.ok, "depleted fixture cannot grant twice")
@@ -244,9 +248,9 @@ func _inventory(slot_count: int) -> InventoryModel:
 
 func _gatherable_definitions() -> Array:
 	return [
-		{"id": "fixture_tree_common", "item_id": "wood", "quantity": 1, "policy": "direct"},
-		{"id": "fixture_tree_requires_axe", "item_id": "wood", "quantity": 1, "policy": "direct", "required_tool_item_id": "stone_axe", "depleted_terrain": {"id": "common_grass", "render_id": "terrain_plains_grass_ground_01", "walkable": true}},
-		{"id": "fixture_ore_mountain", "item_id": "fixture_ore_item", "quantity": 1, "policy": "direct"},
+		{"id": "fixture_tree_common", "item_id": "wood", "quantity": 1, "policy": "direct", "material_tag": "wood"},
+		{"id": "fixture_tree_requires_axe", "item_id": "wood", "quantity": 1, "policy": "direct", "material_tag": "wood", "required_tool_item_id": "stone_axe", "depleted_terrain": {"id": "common_grass", "render_id": "terrain_plains_grass_ground_01", "walkable": true}},
+		{"id": "fixture_ore_mountain", "item_id": "fixture_ore_item", "quantity": 1, "policy": "direct", "material_tag": "stone"},
 		{"id": "fixture_clay_common", "item_id": "clay", "quantity": 1, "policy": "pickup"},
 		{"id": "fixture_tea_leaf_common", "item_id": "fixture_tea_leaf_item", "quantity": 1, "policy": "direct"}
 	]
