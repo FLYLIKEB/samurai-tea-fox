@@ -99,7 +99,9 @@ func cast(slot: int, context: Dictionary) -> Dictionary:
 		return effect_result
 
 	cooldown_remaining[definition.id] = definition.cooldown_seconds
+	var tea_modifier := _consume_tea_cost_modifier(context)
 	effect_result["ki_cost"] = int(cast_check.ki_cost)
+	effect_result["tea_ki_cost_modifier_percent"] = tea_modifier
 	effect_result["cooldown_seconds"] = definition.cooldown_seconds
 	effect_result["range_tiles"] = definition.range_tiles
 	ability_cast.emit(effect_result)
@@ -119,7 +121,16 @@ func effective_ki_cost(definition, context: Dictionary) -> int:
 	var time_state = context.get("time_state")
 	if time_state != null and time_state.has_method("ability_cost_multiplier_for"):
 		multiplier = float(time_state.ability_cost_multiplier_for(context.get("resources")))
+	var tea_effect_query = context.get("tea_effect_query")
+	if tea_effect_query != null and tea_effect_query.has_method("next_ability_ki_cost_multiplier"):
+		multiplier *= maxf(0.0, float(tea_effect_query.next_ability_ki_cost_multiplier()))
 	return int(ceil(definition.ki_cost * multiplier))
+
+func _consume_tea_cost_modifier(context: Dictionary) -> float:
+	var tea_effect_query = context.get("tea_effect_query")
+	if tea_effect_query == null or not tea_effect_query.has_method("consume_next_ability_ki_cost_modifier"):
+		return 0.0
+	return float(tea_effect_query.consume_next_ability_ki_cost_modifier())
 
 func definition_for_slot(slot: int) -> Dictionary:
 	return _ability_for_slot(slot)

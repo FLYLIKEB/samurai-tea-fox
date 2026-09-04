@@ -191,6 +191,7 @@ var _start_mode := START_MODE_RESUME
 var _force_first_run_prologue := false
 var _death_transition_active := false
 var _loading_label: Label
+var _active_tea_drink_action: Dictionary = {}
 
 func _ready() -> void:
 	_create_loading_overlay()
@@ -317,7 +318,7 @@ func _configure_combat_lifecycle() -> Dictionary:
 	if not dummy_combat_result.ok:
 		return dummy_combat_result
 	if player.has_method("configure_ability_context"):
-		player.configure_ability_context(self, time_state, self)
+		player.configure_ability_context(self, time_state, self, tea_service)
 		var ability_result := _equip_default_playable_ability()
 		if not ability_result.ok:
 			return ability_result
@@ -387,6 +388,7 @@ func _configure_world_for_current_run() -> Dictionary:
 func _physics_process(_delta: float) -> void:
 	if _death_transition_active:
 		return
+	tick_tea_runtime(_delta)
 	_update_dungeon_sign_visibility()
 	if has_pending_facility_placement():
 		return
@@ -943,6 +945,8 @@ func submit_action_command(command) -> bool:
 					_queue_enemy_turn_after_player_action()
 				return accepted
 			var accepted: bool = player != null and player.submit_command(command)
+			if accepted and command.type == GameCommand.Type.CAST_ABILITY:
+				_sync_tea_runtime_state()
 			if accepted and _is_turn_advancing_player_action(command):
 				_advance_time_for_turn()
 				_queue_enemy_turn_after_player_action()
@@ -1287,6 +1291,7 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 		if not equipment_load_result.ok:
 			return equipment_load_result
 	tea_service = tea_result.tea_service
+	_active_tea_drink_action = {}
 	time_state = TimeState.new(time_config_result.config) if time_config_result.ok else null
 	if time_state != null and run_state != null and not run_state.time.is_empty():
 		var time_load_result: Dictionary = time_state.load_snapshot(run_state.time)
@@ -1452,9 +1457,13 @@ func _handle_sen_rikyu_phase_two_action(command: GameCommand) -> bool:
 				"resources": player.resources,
 				"tail_query": player.ability_tail_query,
 				"time_state": player.ability_time_state,
+				"tea_effect_query": tea_service,
 				"direction": Vector2(command.direction).normalized() if command.direction != Vector2i.ZERO else Vector2.RIGHT
 			}
-			return bool(sen_rikyu_phase_two_runtime.cast_player_ability(player.ability_runtime, command.slot, context).ok)
+			var cast_result: Dictionary = sen_rikyu_phase_two_runtime.cast_player_ability(player.ability_runtime, command.slot, context)
+			if cast_result.ok:
+				_sync_tea_runtime_state()
+			return bool(cast_result.ok)
 	return false
 
 func record_boss_core_tea_ware_rewards(resolution_event: Dictionary) -> Dictionary:
@@ -2723,17 +2732,46 @@ func _is_available_acquisition_target(target_id: String) -> bool:
 	return not acquisition_service.pickup_for(target_id).is_empty()
 
 func _handle_tea_command(command: GameCommand) -> bool:
-	if tea_service == null:
+	if tea_service == null or not _active_tea_drink_action.is_empty():
 		return false
-	var start_result: Dictionary = tea_service.start_drinking(maxi(command.slot, 0))
+	var conditions := {}
+	var player_resources = player.get("resources") if player != null else null
+	if player_resources != null:
+		conditions["low_kokoro"] = player_resources.is_kokoro_low()
+	var start_result: Dictionary = tea_service.start_drinking(maxi(command.slot, 0), {"conditions": conditions})
 	if not start_result.ok:
 		return false
-	var resources = player.resources if player != null else null
-	var completed: Dictionary = tea_service.complete_drinking(start_result.action, resources)
-	_sync_tea_runtime_state()
-	if completed.ok:
+	_active_tea_drink_action = start_result.action
+	return true
+
+func is_tea_drink_active() -> bool:
+	return not _active_tea_drink_action.is_empty()
+
+func tick_tea_runtime(delta_seconds: float) -> Dictionary:
+	if tea_service == null:
+		return {"ok": true, "changed": false}
+	var resources = player.get("resources") if player != null else null
+	var effect_tick: Dictionary = tea_service.tick_effects(delta_seconds, resources)
+	if not effect_tick.ok:
+		return effect_tick
+	var changed := bool(effect_tick.get("changed", false))
+	var drink_completed := false
+	if not _active_tea_drink_action.is_empty():
+		var drink_tick: Dictionary = tea_service.tick_drinking(_active_tea_drink_action, delta_seconds, resources)
+		if not drink_tick.ok:
+			return drink_tick
+		if bool(drink_tick.get("consumed", false)):
+			_active_tea_drink_action = {}
+			changed = true
+			drink_completed = true
+		else:
+			_active_tea_drink_action = drink_tick.action
+	if changed:
+		_sync_tea_runtime_state()
+	if drink_completed:
 		save_current_run()
-	return bool(completed.ok)
+		_configure_game_hud()
+	return {"ok": true, "changed": changed, "active": is_tea_drink_active()}
 
 func _handle_consumable_command(command: GameCommand) -> bool:
 	if consumable_service == null or inventory == null or player == null or player.resources == null:

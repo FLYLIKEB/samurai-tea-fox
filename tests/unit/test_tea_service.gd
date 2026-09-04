@@ -26,7 +26,7 @@ func run(asserts) -> void:
 	_assert_generated_catalog_configures_tea_service(asserts)
 	_assert_brewing_creates_prepared_tea_from_inventory(asserts)
 	_assert_drink_action_consumes_only_on_completion(asserts)
-	_assert_progressive_and_conditional_effects_share_completion_contract(asserts)
+	_assert_progressive_recovery_ticks_and_conditional_recovery_gates(asserts)
 	_assert_default_drink_signals_remain_immediate(asserts)
 	_assert_vessel_modifiers_are_data_driven(asserts)
 	_assert_snapshot_round_trips_prepared_tea(asserts)
@@ -44,6 +44,14 @@ func _assert_generated_catalog_configures_tea_service(asserts) -> void:
 	asserts.equal(service.quickslot_count, 2, "tea quickslot count comes from balance data")
 	asserts.equal(service.drink_base_seconds, 1.2, "tea base drink time comes from balance data")
 	asserts.true_value(service.tea_definitions.has("father_spring_pan_fired_tea"), "tea definitions come from generated tea data")
+	asserts.true_value(service.tea_definitions.has("tea_14"), "all canonical tea rows are exported")
+	asserts.equal(service.tea_definitions["tea_8"].drink_seconds, 1.4, "tea drink time comes from generated definition")
+	asserts.equal(service.tea_definitions["tea_8"].carry_uses, 4, "tea carry uses come from generated definition")
+	asserts.equal(service.tea_definitions["tea_10"].recovery_mode, TeaService.RECOVERY_PROGRESSIVE, "Korean Notion recovery mode is normalized for runtime")
+	asserts.equal(service.tea_definitions["tea_11"].recovery_mode, TeaService.RECOVERY_CONDITIONAL, "conditional recovery mode is exported")
+	asserts.false_value(service.tea_definitions["tea_11"].special_effect.is_empty(), "structured special-effect description reaches the runtime definition")
+	asserts.equal(service.tea_definitions["father_spring_pan_fired_tea"].drink_seconds, 0.0, "missing drink time keeps the base-time fallback")
+	asserts.equal(service.tea_definitions["father_spring_pan_fired_tea"].carry_uses, TeaService.DEFAULT_CARRY_USES, "missing carry uses keeps the one-use fallback")
 	asserts.true_value(service.vessel_definitions.has("humble_clay_bowl"), "vessel definitions come from item data")
 
 func _assert_brewing_creates_prepared_tea_from_inventory(asserts) -> void:
@@ -99,13 +107,16 @@ func _assert_drink_action_consumes_only_on_completion(asserts) -> void:
 	asserts.true_value(complete.consumed, "completion consumes prepared tea")
 	asserts.false_value(service.has_prepared_tea(0), "completed single-use tea leaves quickslot empty")
 	asserts.equal(complete.effect.ki_recovered, 18, "completion applies ki recovery")
+	asserts.equal(complete.effect.special_effect, "다음 요술 소모 완화", "completion exposes the data-driven special-effect description")
 	asserts.equal(resources.ki, 38, "tea recovers ki on completion")
 	asserts.equal(resources.hp, 13, "tea never recovers HP")
 
-func _assert_progressive_and_conditional_effects_share_completion_contract(asserts) -> void:
+func _assert_progressive_recovery_ticks_and_conditional_recovery_gates(asserts) -> void:
 	var service: TeaService = _fixture_service()
 	var inventory: InventoryModel = _fixture_inventory()
 	var resources := PlayerResources.new(20, 100, 10, 3)
+	resources.apply_damage(7)
+	var hp_before := resources.hp
 	asserts.true_value(resources.spend_ki(80), "ki can be lowered")
 	asserts.true_value(inventory.add_item("slow_tea", 1).ok, "progressive tea add succeeds")
 	asserts.true_value(inventory.add_item("focus_tea", 2).ok, "conditional tea add succeeds")
@@ -116,7 +127,16 @@ func _assert_progressive_and_conditional_effects_share_completion_contract(asser
 	var progressive_complete: Dictionary = service.complete_drinking(progressive_start.action, resources)
 	asserts.true_value(progressive_complete.ok, "progressive tea completes with shared action contract")
 	asserts.equal(progressive_complete.effect.mode, TeaService.RECOVERY_PROGRESSIVE, "progressive mode is preserved in effect")
-	asserts.equal(progressive_complete.effect.ki_recovered, 12, "progressive tea recovers configured ki on completion")
+	asserts.equal(progressive_complete.effect.ki_recovered, 0, "progressive tea does not collapse into immediate recovery")
+	asserts.equal(progressive_complete.effect.pending_ki_recovery, 12, "progressive tea queues configured recovery")
+	asserts.equal(resources.ki, 20, "progressive tea waits for effect ticks")
+	var first_tick: Dictionary = service.tick_effects(0.75, resources)
+	asserts.equal(first_tick.ki_recovered, 6, "half the data-driven duration recovers half the queued ki")
+	asserts.equal(resources.ki, 26, "first progressive tick updates ki")
+	var second_tick: Dictionary = service.tick_effects(0.75, resources)
+	asserts.equal(second_tick.ki_recovered, 6, "final progressive tick recovers the remainder")
+	asserts.equal(resources.ki, 32, "progressive recovery reaches its configured total")
+	asserts.equal(resources.hp, hp_before, "progressive tea never recovers HP")
 
 	asserts.true_value(service.brew("focus_tea", "plain_bowl", inventory, 0).ok, "conditional tea brews")
 	var conditional_fail_start: Dictionary = service.start_drinking(0, {"low_ki": false})
@@ -131,6 +151,7 @@ func _assert_progressive_and_conditional_effects_share_completion_contract(asser
 	var conditional_pass: Dictionary = service.complete_drinking(conditional_pass_start.action, resources)
 	asserts.true_value(conditional_pass.effect.condition_passed, "nested condition context is accepted")
 	asserts.equal(conditional_pass.effect.ki_recovered, 20, "passed condition recovers configured ki")
+	asserts.equal(resources.hp, hp_before, "conditional tea never recovers HP")
 
 func _assert_default_drink_signals_remain_immediate(asserts) -> void:
 	var service: TeaService = _fixture_service()
@@ -169,7 +190,7 @@ func _assert_vessel_modifiers_are_data_driven(asserts) -> void:
 	asserts.equal(brewed.prepared_tea.ki_recovery, 25, "vessel recovery multiplier and bonus apply from data")
 	asserts.equal(brewed.prepared_tea.remaining_uses, 3, "vessel carry bonus applies from data")
 	asserts.equal(brewed.prepared_tea.drink_seconds, 0.7, "vessel drink time modifiers apply from data")
-	asserts.equal(brewed.prepared_tea.sustain_modifier, 0.35, "tea and vessel sustain modifiers add from data")
+	asserts.equal(brewed.prepared_tea.sustain_modifier, 15.0, "tea and vessel sustain modifiers add from data")
 	asserts.false_value(brewed.prepared_tea.core_tea_ware, "non-core vessel stays non-core in prepared tea")
 
 	asserts.true_value(inventory.add_item("green_tea", 1).ok, "tea add succeeds for modifier query")
@@ -189,15 +210,26 @@ func _assert_vessel_modifiers_are_data_driven(asserts) -> void:
 func _assert_snapshot_round_trips_prepared_tea(asserts) -> void:
 	var service: TeaService = _fixture_service()
 	var inventory: InventoryModel = _fixture_inventory()
+	var resources := PlayerResources.new(20, 100, 10, 3)
+	resources.spend_ki(80)
 	asserts.true_value(inventory.add_item("green_tea", 1).ok, "tea add succeeds")
 	asserts.true_value(inventory.add_item("travel_bottle", 1).ok, "vessel add succeeds")
 	asserts.true_value(service.brew("green_tea", "travel_bottle", inventory, 0).ok, "brew succeeds")
+	var instant_start: Dictionary = service.start_drinking(0)
+	asserts.true_value(service.complete_drinking(instant_start.action, resources).ok, "instant tea activates its one-shot modifier")
+	asserts.true_value(inventory.add_item("slow_tea", 1).ok, "progressive tea add succeeds")
+	asserts.true_value(inventory.add_item("plain_bowl", 1).ok, "plain bowl add succeeds")
+	asserts.true_value(service.brew("slow_tea", "plain_bowl", inventory, 1).ok, "progressive tea brews for snapshot")
+	var progressive_start: Dictionary = service.start_drinking(1)
+	asserts.true_value(service.complete_drinking(progressive_start.action, resources).ok, "progressive tea queues for snapshot")
 	var snapshot: Dictionary = service.to_snapshot()
 
 	var loaded: TeaService = _fixture_service()
 	var load_result: Dictionary = loaded.load_snapshot(snapshot)
 	asserts.true_value(load_result.ok, "tea snapshot reload succeeds")
 	asserts.equal(loaded.to_snapshot(), snapshot, "tea snapshot round-trip preserves prepared slots")
+	asserts.equal(loaded.progressive_recoveries.size(), 1, "tea snapshot preserves queued progressive recovery")
+	asserts.equal(loaded.next_ability_ki_cost_multiplier(), 0.85, "tea snapshot preserves the next ability modifier")
 
 func _assert_invalid_data_and_combos_are_rejected_atomically(asserts) -> void:
 	var invalid_catalog: Dictionary = TeaService.from_catalog(FakeCatalog.new({
@@ -206,6 +238,18 @@ func _assert_invalid_data_and_combos_are_rejected_atomically(asserts) -> void:
 		"teas": [{"id": "bad_tea", "name": "나쁜 차", "status": "테스트", "ki_recovery": 1.5}]
 	}))
 	asserts.false_value(invalid_catalog.ok, "fractional tea recovery is rejected")
+	var invalid_mode: Dictionary = TeaService.from_catalog(FakeCatalog.new({
+		"balance": _balance_rows(),
+		"items": [{"id": "plain_bowl", "name": "그릇", "status": "테스트", "type": "다구"}],
+		"teas": [{"id": "bad_mode", "name": "나쁜 방식", "status": "테스트", "ki_recovery": 1, "recovery_mode": "burst"}]
+	}))
+	asserts.false_value(invalid_mode.ok, "unknown recovery mode is rejected")
+	var invalid_sustain: Dictionary = TeaService.from_catalog(FakeCatalog.new({
+		"balance": _balance_rows(),
+		"items": [{"id": "plain_bowl", "name": "그릇", "status": "테스트", "type": "다구"}],
+		"teas": [{"id": "bad_sustain", "name": "나쁜 유지", "status": "테스트", "ki_recovery": 1, "sustain_modifier": 101}]
+	}))
+	asserts.false_value(invalid_sustain.ok, "out-of-range sustain modifier is rejected")
 
 	var service: TeaService = _fixture_service()
 	var inventory: InventoryModel = _fixture_inventory()
@@ -274,7 +318,7 @@ func _item_rows() -> Array:
 			"carry_use_bonus": 2,
 			"drink_seconds_multiplier": 0.5,
 			"drink_seconds_bonus": 0.1,
-			"sustain_modifier": 0.25,
+			"sustain_modifier": 5.0,
 			"core_tea_ware": false
 		},
 		{"id": "stone", "name": "돌", "status": "테스트", "type": "재료", "max_stack": 10}
@@ -282,7 +326,7 @@ func _item_rows() -> Array:
 
 func _tea_rows() -> Array:
 	return [
-		{"id": "green_tea", "name": "녹차", "status": "테스트", "ki_recovery": 18, "sustain_modifier": 0.1, "max_stack": 4},
+		{"id": "green_tea", "name": "녹차", "status": "테스트", "ki_recovery": 18, "sustain_modifier": 10.0, "special_effect": "다음 요술 소모 완화", "max_stack": 4},
 		{"id": "slow_tea", "name": "느린 차", "status": "테스트", "ki_recovery": 12, "recovery_mode": "progressive", "drink_seconds": 1.5, "max_stack": 4},
 		{"id": "focus_tea", "name": "집중 차", "status": "테스트", "ki_recovery": 20, "recovery_mode": "conditional", "condition_key": "low_ki", "max_stack": 4},
 		{"id": "two_leaf_tea", "name": "두 잎 차", "status": "테스트", "ki_recovery": 10, "serving_size": 2, "max_stack": 4},
