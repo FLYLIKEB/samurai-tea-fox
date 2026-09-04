@@ -15,6 +15,7 @@ const MapReadModelBuilder = preload("res://src/world/map/map_read_model_builder.
 const MovementCommandSelector = preload("res://src/core/commands/movement_command_selector.gd")
 const MemoryTeaCutsceneRuntime = preload("res://src/narrative/memory_tea_cutscene_runtime.gd")
 const NarrativeRuntime = preload("res://src/narrative/narrative_runtime.gd")
+const RunStartEventSelector = preload("res://src/narrative/run_start_event_selector.gd")
 const EndingRouteRuntime = preload("res://src/meta/ending_route_runtime.gd")
 const PlayerMovementState = preload("res://src/player/player_movement_state.gd")
 const TeaBrewingCommandRuntime = preload("res://src/tea/tea_brewing_command_runtime.gd")
@@ -148,6 +149,7 @@ var sen_rikyu_phase_two_runtime
 var sen_rikyu_phase_three_runtime
 var memory_tea_cutscene_runtime
 var narrative_runtime
+var run_start_event_selector
 var ending_route_runtime
 var acquisition_service
 var dungeon_runtime
@@ -255,7 +257,7 @@ func _ready() -> void:
 			if not cheat_save_result.ok:
 				push_error(cheat_save_result.error)
 				return
-		_maybe_show_first_run_prologue()
+		_maybe_show_run_start_event()
 		_clear_loading_overlay()
 
 func _create_loading_overlay() -> void:
@@ -1361,6 +1363,10 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	var narrative_result: Dictionary = narrative_runtime.from_catalog(loaded_catalog)
 	if not narrative_result.ok:
 		return narrative_result
+	run_start_event_selector = RunStartEventSelector.new()
+	var start_selector_result: Dictionary = run_start_event_selector.configure(loaded_catalog)
+	if not start_selector_result.ok:
+		return start_selector_result
 	return {"ok": true}
 
 func final_room_gate_query() -> Dictionary:
@@ -3605,7 +3611,7 @@ func _configure_game_hud() -> void:
 		"world_origin": _runtime_world_origin(),
 		"biome_map_previews": _biome_map_previews
 	})
-	_maybe_show_first_run_prologue()
+	_maybe_show_run_start_event()
 
 func first_run_prologue_read_model(meta_state = null) -> Dictionary:
 	if narrative_runtime == null:
@@ -3617,10 +3623,27 @@ func first_run_prologue_read_model(meta_state = null) -> Dictionary:
 		return {"ok": false, "reason": "not_first_run", "error": "First-run prologue only opens before any completed run."}
 	return narrative_runtime.read_model_for_event(FIRST_RUN_PROLOGUE_EVENT_ID, run_state, meta)
 
-func _maybe_show_first_run_prologue() -> Dictionary:
+func start_run_event_read_model(meta_state = null) -> Dictionary:
+	if narrative_runtime == null or run_start_event_selector == null:
+		return {"ok": false, "reason": "missing_narrative_runtime", "error": "Run-start narrative runtime is not configured."}
+	if run_state == null:
+		run_state = RunState.new()
+	var meta = meta_state if meta_state != null else _current_meta_state_snapshot()
+	var selected: Dictionary = run_start_event_selector.select_event(run_state, meta, _force_first_run_prologue)
+	if not selected.ok:
+		return selected
+	var model_result: Dictionary = narrative_runtime.read_model_for_event(String(selected.event_id), run_state, meta)
+	if not model_result.ok:
+		return model_result
+	model_result.read_model["presentation_kind"] = String(selected.get("presentation_kind", "dialogue"))
+	model_result.read_model["father_physical_actor"] = bool(selected.get("father_physical_actor", false))
+	model_result.read_model["meta_run_count"] = int(selected.get("meta_run_count", 0))
+	return model_result
+
+func _maybe_show_run_start_event() -> Dictionary:
 	if game_hud == null or narrative_runtime == null:
-		return {"ok": false, "reason": "missing_presentation", "error": "Prologue presentation is not ready."}
-	var model_result := first_run_prologue_read_model()
+		return {"ok": false, "reason": "missing_presentation", "error": "Run-start presentation is not ready."}
+	var model_result := start_run_event_read_model()
 	if not model_result.ok:
 		if game_hud.has_method("hide_narrative_dialogue"):
 			game_hud.hide_narrative_dialogue()
@@ -3629,6 +3652,9 @@ func _maybe_show_first_run_prologue() -> Dictionary:
 	_active_narrative_node_id = String(model_result.read_model.node_id)
 	game_hud.show_narrative_dialogue(model_result.read_model)
 	return {"ok": true, "read_model": model_result.read_model}
+
+func _maybe_show_first_run_prologue() -> Dictionary:
+	return _maybe_show_run_start_event()
 
 func _handle_narrative_option_command(command: GameCommand) -> bool:
 	if narrative_runtime == null or run_state == null:
