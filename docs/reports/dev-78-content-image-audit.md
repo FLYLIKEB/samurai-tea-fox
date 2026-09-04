@@ -8,9 +8,9 @@
 - 아이템·다구: 39개
 - 몬스터·요괴: 21개
 - 파일 경로 무결성 누락/깨짐: 0개
-- 전용 에셋 미해결: 8개
-- 사람 아트 검수 필요: 45개
-- 런타임 승인 매핑: 51개
+- 전용 에셋 미해결: 0개
+- 사람 아트 검수 필요: 39개
+- 런타임 승인 매핑: 59개
 
 `missing_or_broken`/`path_integrity_missing_or_broken`은 현재 연결된 manifest asset ID와 PNG 파일 경로의 무결성 지표다. 전용 에셋 완료 지표가 아니며, 미검수 아이템 매핑은 `runtime_approved=false`로 런타임 조회에서 제외한다.
 
@@ -25,7 +25,7 @@
 | `ash_stained_iron_kettle` | 재 묻은 철솥 | 다구 | dedicated_item_icon | True | False | `item_ash_stained_iron_kettle_icon` | `res://assets/sprites/items/ash_stained_iron_kettle_32x32.png` |  |
 | `bandage` | 천 붕대 | 소모품 | dedicated_item_icon | True | False | `item_cloth_bandage_icon` | `res://assets/sprites/items/cloth_bandage_32x32.png` |  |
 | `black_bamboo_tea_scoop` | 검은 대나무 찻숟가락 | 다구 | dedicated_item_icon | True | False | `item_black_bamboo_tea_scoop_icon` | `res://assets/sprites/items/black_bamboo_tea_scoop_32x32.png` |  |
-| `blacksmith_forge` | 대장간 | 도구 | kind_fallback_exception | False | True | `asset_assets_ui_icons_atlas_low_table_png` | `res://assets/ui/icons/atlas/low_table.png` | No item-specific exported image field exists; use the type fallback until art review creates a dedicated row. |
+| `blacksmith_forge` | 대장간 | 도구 | dedicated_item_icon | True | False | `item_blacksmith_forge_object_64` | `res://assets/sprites/objects/crafting/blacksmith_forge_64x64.png` |  |
 | `charcoal` | 숯 | 재료 | dedicated_item_icon | True | False | `item_charcoal_icon` | `res://assets/sprites/items/charcoal_32x32.png` |  |
 | `clay` | 점토 | 재료 | dedicated_item_icon | True | False | `item_clay_icon` | `res://assets/sprites/items/clay_32x32.png` |  |
 | `cloth` | 천 조각 | 재료 | dedicated_item_icon | True | False | `item_cloth_scraps_icon` | `res://assets/sprites/items/cloth_scraps_32x32.png` |  |
@@ -40,7 +40,7 @@
 | `item_29` | 되돌림 매듭 | 부활 아이템 | dedicated_item_icon | True | False | `item_reversal_knot_icon` | `res://assets/sprites/items/reversal_knot_32x32.png` |  |
 | `item_33` | 동전 | 재료 | dedicated_item_icon | True | False | `item_coin_icon` | `res://assets/sprites/items/coin_32x32.png` |  |
 | `item_5` | 침향 | 향 | dedicated_item_icon | True | False | `item_agarwood_icon` | `res://assets/sprites/items/agarwood_32x32.png` |  |
-| `metal_workbench` | 금속 가공대 | 도구 | kind_fallback_exception | False | True | `asset_assets_ui_icons_atlas_low_table_png` | `res://assets/ui/icons/atlas/low_table.png` | No item-specific exported image field exists; use the type fallback until art review creates a dedicated row. |
+| `metal_workbench` | 금속 가공대 | 도구 | dedicated_item_icon | True | False | `item_metal_workbench_object_64` | `res://assets/sprites/objects/crafting/metal_workbench_64x64.png` |  |
 | `mountain_iron_dagger` | 산철 단도 | 무기 | dedicated_item_icon | True | False | `item_mountain_iron_dagger_icon` | `res://assets/sprites/items/mountain_iron_dagger_32x32.png` |  |
 | `mountain_kiln` | 산중 가마 | 도구 | dedicated_item_icon | True | False | `item_mountain_kiln_object_64` | `res://assets/sprites/objects/crafting/mountain_kiln_64x64.png` |  |
 | `mountain_wind_layered_clothes` | 산바람 겹옷 | 방어구 | dedicated_item_icon | True | False | `item_mountain_wind_layered_clothes_icon` | `res://assets/sprites/items/mountain_wind_layered_clothes_32x32.png` |  |
@@ -72,12 +72,12 @@
 | `empty_armor_yokai` | 빈 갑주 요괴 | 요괴 | monster_id_convention | True | False | `monster_empty_armor_yokai_front_idle` | `res://assets/sprites/characters/monsters/empty_armor_yokai/empty_armor_yokai_front_idle_32x32.png` |  |
 | `foxfire` | 여우불 | 요괴 | monster_id_convention | True | False | `monster_foxfire_front_idle` | `res://assets/sprites/characters/monsters/foxfire/foxfire_front_idle_32x32.png` |  |
 | `frost_lantern_yokai` | 서리등불 요괴 | 요괴 | monster_id_convention | True | False | `monster_frost_lantern_yokai_front_idle` | `res://assets/sprites/characters/monsters/frost_lantern_yokai/frost_lantern_yokai_front_idle_32x32.png` |  |
-| `monster_16` | 논두렁 멧돼지 | 야생동물 | monster_variant_fallback_exception | False | True | `monster_mountain_boar_front_idle` | `res://assets/sprites/characters/monsters/mountain_boar/mountain_boar_front_idle_32x32.png` | No dedicated monster asset exists; keep the closest existing variant for review only. |
-| `monster_17` | 절벽 독수리 | 야생동물 | monster_variant_fallback_exception | False | True | `monster_ash_crow_flock_front_idle` | `res://assets/sprites/characters/monsters/ash_crow_flock/ash_crow_flock_front_idle_32x32.png` | No dedicated monster asset exists; keep the closest existing variant for review only. |
-| `monster_18` | 모래갑옷 무사 | 도적·무사 | monster_variant_fallback_exception | False | True | `monster_abandoned_mine_samurai_front_idle` | `res://assets/sprites/characters/monsters/abandoned_mine_samurai/abandoned_mine_samurai_front_idle_32x32.png` | No dedicated monster asset exists; keep the closest existing variant for review only. |
-| `monster_19` | 바람굶주린 도적 | 도적·무사 | monster_variant_fallback_exception | False | True | `monster_road_bandit_front_idle` | `res://assets/sprites/characters/monsters/road_bandit/road_bandit_front_idle_32x32.png` | No dedicated monster asset exists; keep the closest existing variant for review only. |
-| `monster_20` | 눈굴 토끼요괴 | 요괴 | monster_variant_fallback_exception | False | True | `monster_frost_lantern_yokai_front_idle` | `res://assets/sprites/characters/monsters/frost_lantern_yokai/frost_lantern_yokai_front_idle_32x32.png` | No dedicated monster asset exists; keep the closest existing variant for review only. |
-| `monster_21` | 향먹는 나방 | 요괴 | monster_variant_fallback_exception | False | True | `monster_agarwood_thief_front_idle` | `res://assets/sprites/characters/monsters/agarwood_thief/agarwood_thief_front_idle_32x32.png` | No dedicated monster asset exists; keep the closest existing variant for review only. |
+| `monster_16` | 논두렁 멧돼지 | 야생동물 | monster_id_convention | True | False | `monster_monster_16_front_idle` | `res://assets/sprites/characters/monsters/monster_16/paddy_boar_front_idle_32x32.png` |  |
+| `monster_17` | 절벽 독수리 | 야생동물 | monster_id_convention | True | False | `monster_monster_17_front_idle` | `res://assets/sprites/characters/monsters/monster_17/cliff_eagle_front_idle_32x32.png` |  |
+| `monster_18` | 모래갑옷 무사 | 도적·무사 | monster_id_convention | True | False | `monster_monster_18_front_idle` | `res://assets/sprites/characters/monsters/monster_18/sand_armor_samurai_front_idle_32x64.png` |  |
+| `monster_19` | 바람굶주린 도적 | 도적·무사 | monster_id_convention | True | False | `monster_monster_19_front_idle` | `res://assets/sprites/characters/monsters/monster_19/wind_starved_bandit_front_idle_32x64.png` |  |
+| `monster_20` | 눈굴 토끼요괴 | 요괴 | monster_id_convention | True | False | `monster_monster_20_front_idle` | `res://assets/sprites/characters/monsters/monster_20/snow_burrow_rabbit_yokai_front_idle_32x32.png` |  |
+| `monster_21` | 향먹는 나방 | 요괴 | monster_id_convention | True | False | `monster_monster_21_front_idle` | `res://assets/sprites/characters/monsters/monster_21/incense_moth_yokai_front_idle_32x32.png` |  |
 | `moss_tree_yokai` | 이끼쓴 나무요괴 | 요괴 | monster_id_convention | True | False | `monster_moss_tree_yokai_front_idle` | `res://assets/sprites/characters/monsters/moss_tree_yokai/moss_tree_yokai_front_idle_32x32.png` |  |
 | `mountain_boar` | 산멧돼지 | 야생동물 | monster_id_convention | True | False | `monster_mountain_boar_front_idle` | `res://assets/sprites/characters/monsters/mountain_boar/mountain_boar_front_idle_32x32.png` |  |
 | `road_bandit` | 노상 도적 | 도적·무사 | monster_id_convention | True | False | `monster_road_bandit_front_idle` | `res://assets/sprites/characters/monsters/road_bandit/road_bandit_front_idle_32x32.png` |  |

@@ -16,16 +16,24 @@ class ContentImageAuditTests(unittest.TestCase):
         self.assertEqual(payload["audit"]["monsters"], 21)
         self.assertEqual(payload["audit"]["missing_or_broken"], 0)
         self.assertEqual(payload["audit"]["path_integrity_missing_or_broken"], 0)
-        self.assertEqual(payload["audit"]["dedicated_asset_missing"], 2)
+        self.assertEqual(payload["audit"]["dedicated_asset_missing"], 0)
         self.assertEqual(payload["audit"]["art_review_required"], 39)
-        self.assertEqual(payload["audit"]["runtime_approved"], 57)
-        self.assertEqual(payload["audit"]["by_resolution"]["dedicated_item_icon"], 36)
+        self.assertEqual(payload["audit"]["runtime_approved"], 59)
+        self.assertEqual(payload["audit"]["by_resolution"]["dedicated_item_icon"], 38)
         self.assertIn("semantic_existing_asset", payload["audit"]["by_resolution"])
-        self.assertEqual(payload["audit"]["by_resolution"]["kind_fallback_exception"], 2)
+        self.assertNotIn("kind_fallback_exception", payload["audit"]["by_resolution"])
         self.assertEqual(payload["audit"]["by_resolution"]["monster_id_convention"], 21)
         self.assertNotIn("monster_variant_fallback_exception", payload["audit"]["by_resolution"])
         self.assertEqual(payload["audit"]["by_resolution"]["semantic_existing_asset"], 1)
         items = {entry["content_id"]: entry for entry in payload["content"]["items"]}
+        self.assertEqual(
+            items["blacksmith_forge"]["asset_id"],
+            "item_blacksmith_forge_object_64",
+        )
+        self.assertEqual(
+            items["metal_workbench"]["asset_id"],
+            "item_metal_workbench_object_64",
+        )
         self.assertEqual(
             items["traveler_quilted_clothes"]["asset_id"],
             "item_traveler_quilted_clothes_icon",
