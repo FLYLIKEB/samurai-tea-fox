@@ -1,6 +1,7 @@
 import configparser
 import json
 from pathlib import Path
+import re
 import unittest
 
 
@@ -90,6 +91,72 @@ class ProjectContractTests(unittest.TestCase):
         )
         self.assertTrue((ROOT / "data/generated/bosses.json").is_file())
         self.assertTrue((ROOT / "data/generated/dungeons.json").is_file())
+
+    def test_notion_source_map_matches_runtime_data_catalog(self):
+        catalog_source = (
+            ROOT / "src/core/data/data_catalog.gd"
+        ).read_text(encoding="utf-8")
+        source_map = (ROOT / "docs/notion-source-map.md").read_text(encoding="utf-8")
+
+        catalog_block = re.search(
+            r"const FILES := \{(?P<body>.*?)\n\}",
+            catalog_source,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(catalog_block)
+        catalog_entries = dict(
+            re.findall(
+                r'^\s*"([^"]+)":\s*"([^"]+\.json)",?$',
+                catalog_block.group("body"),
+                re.MULTILINE,
+            )
+        )
+        catalog_files = set(catalog_entries.values())
+
+        documented_section = re.search(
+            r"## 런타임 데이터 카탈로그\n(?P<body>.*?)(?:\n## |\Z)",
+            source_map,
+            re.DOTALL,
+        )
+        self.assertIsNotNone(documented_section)
+        documented_sources = dict(
+            re.findall(
+                r"\| `data/generated/([^`]+\.json)` \| `([^`]+)` \|",
+                documented_section.group("body"),
+            )
+        )
+        documented_files = set(documented_sources)
+
+        self.assertEqual(15, len(catalog_files))
+        self.assertSetEqual(catalog_files, documented_files)
+        self.assertNotIn("art_assets.json", documented_files)
+
+        export_schema = json.loads(
+            (ROOT / "data/schemas/export_schema.json").read_text(encoding="utf-8")
+        )
+        for dataset, file_name in catalog_entries.items():
+            generated = json.loads(
+                (ROOT / "data/generated" / file_name).read_text(encoding="utf-8")
+            )
+            self.assertEqual(generated["source"], documented_sources[file_name])
+            self.assertEqual(export_schema["datasets"][dataset]["file"], file_name)
+            self.assertEqual(
+                export_schema["datasets"][dataset]["notion"]["source"],
+                documented_sources[file_name],
+            )
+
+        notion_sources = json.loads(
+            (ROOT / "data/generated/notion_sources.json").read_text(encoding="utf-8")
+        )["sources"]
+        for dataset, source in notion_sources.items():
+            self.assertIn(dataset, catalog_entries)
+            self.assertEqual(documented_sources[catalog_entries[dataset]], source)
+
+        self.assertIn(
+            "`data/generated/notion_sources.json`은 export 출처를 추적하는 "
+            "보조 source map이며 런타임 데이터셋이 아니다",
+            source_map,
+        )
 
 
 if __name__ == "__main__":
