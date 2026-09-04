@@ -644,7 +644,7 @@ func _dungeon_enemy_cell_near(origin_cell: Vector2i) -> Vector2i:
 
 func _activate_dungeon_enemy(cell: Vector2i) -> void:
 	for enemy in _combat_targets():
-		if world_cell_from_world_position(enemy.global_position) == cell:
+		if _combat_target_cell(enemy) == cell:
 			combat_dummy = enemy
 			return
 
@@ -1664,7 +1664,7 @@ func _enter_dungeon_map(layout: WorldData, definition: Dictionary, is_new_entry 
 	_overworld_generated_world = generated_world.duplicate(true)
 	_overworld_world_data_snapshot = world_data.to_dictionary() if world_data != null else {}
 	_overworld_player_cell = _player_world_cell()
-	_overworld_combat_dummy_cell = world_cell_from_world_position(combat_dummy.global_position) if combat_dummy != null else Vector2i.ZERO
+	_overworld_combat_dummy_cell = _combat_target_cell(combat_dummy) if combat_dummy != null else Vector2i.ZERO
 	_overworld_combat_dummy = combat_dummy
 	_overworld_combat_dummy_state = {}
 	if _overworld_combat_dummy != null:
@@ -2164,7 +2164,7 @@ func _on_combat_dummy_defeated(_event: Dictionary) -> void:
 func _snapshot_overworld_enemy_state() -> Dictionary:
 	if combat_dummy == null or not is_instance_valid(combat_dummy):
 		return {}
-	var cell := world_cell_from_world_position(combat_dummy.global_position)
+	var cell := _combat_target_cell(combat_dummy)
 	return {
 		"cell": {"x": cell.x, "y": cell.y},
 		"monster_id": String(combat_dummy.monster_id),
@@ -3463,7 +3463,7 @@ func _sync_dungeon_runtime_save_state() -> void:
 	for enemy in _dungeon_enemy_nodes:
 		if not is_instance_valid(enemy):
 			continue
-		var cell := world_cell_from_world_position(enemy.global_position)
+		var cell := _combat_target_cell(enemy)
 		var owner_id := String(enemy.name)
 		enemy_states[owner_id] = {
 			"cell": {"x": cell.x, "y": cell.y},
@@ -3483,6 +3483,13 @@ func _sync_dungeon_enemy_reservation(owner_id: String, cell: Vector2i, active: b
 		world_data.release_footprint(owner_id)
 	if active and world_data.contains(cell) and world_data.is_walkable(cell):
 		world_data.reserve_entity(owner_id, cell, Vector2i.ONE, false, {"role": "dungeon_enemy"})
+
+func _combat_target_cell(enemy) -> Vector2i:
+	if enemy != null and is_instance_valid(enemy) and enemy.has_method("current_grid_cell"):
+		return enemy.current_grid_cell()
+	if enemy is Node2D:
+		return world_cell_from_world_position(enemy.global_position)
+	return Vector2i.ZERO
 
 func _configure_runtime_camera() -> void:
 	if player == null or world_data == null:
