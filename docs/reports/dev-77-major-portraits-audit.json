@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "dev_id": "DEV-77",
+  "source_manifest": "assets/sprites/portraits/major/portrait-manifest.json",
+  "notion_backlog": "https://app.notion.com/p/3d0373699e66811f8b22d10e250a4905",
+  "generated_new_assets": false,
+  "portrait_count": 9,
+  "portraits": [
+    {
+      "id": "portrait_chr_1_kitsune_father",
+      "character_id": "CHR-1",
+      "path": "assets/sprites/portraits/major/chr_1_kitsune_father_96x96.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "byte_sha256": "a617b784e346428a32ca2c6a2548ca607fadaec80354e7c53f457f9f982692ef",
+      "rgba_sha256": "7153831043bde5eceb18bfed6d101572f761ef0a3b5ba2e5c03b2976fe045861"
+    },
+    {
+      "id": "portrait_chr_2_wasteland_daimyo",
+      "character_id": "CHR-2",
+      "path": "assets/sprites/portraits/major/chr_2_wasteland_daimyo_96x96.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "byte_sha256": "50d21a1445444c16a5cb7dfae7972a6e8c8f86e623d6c6702a5e8c33111f0da2",
+      "rgba_sha256": "c519840cc6fdd30ba20997a4a0535b146b96f53d74c64cb31ec88783320ea85f"
+    },
+    {
+      "id": "portrait_chr_3_furuta_oribe",
+      "character_id": "CHR-3",
+      "path": "assets/sprites/portraits/major/chr_3_furuta_oribe_96x96.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "byte_sha256": "ba1e8b0d370450769712187091b1135d00d68e3400e8a5beca65e8e2902b0ace",
+      "rgba_sha256": "4f731fbc6a32f18c192cc982e4b25e1b74751c8dd9635fccbc5a09649e05628d"
+    },
+    {
+      "id": "portrait_chr_4_snow_monk",
+      "character_id": "CHR-4",
+      "path": "assets/sprites/portraits/major/chr_4_snow_monk_96x96.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "byte_sha256": "b5fa70b9efcde6f0560d72294d03b4acdc0f228cb8c136d538a6ba5130c1af11",
+      "rgba_sha256": "b8142f15af95a11e3fa23194abafecb8903a5291716664e22e086c8e4aff35e3"
+    },
+    {
+      "id": "portrait_chr_5_sen_rikyu",
+      "character_id": "CHR-5",
+      "path": "assets/sprites/portraits/major/chr_5_sen_rikyu_96x96.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "byte_sha256": "ef75b54f58bbf9a5ae25220c62d5c3d8ad96454e11ad91d4953ca1c53ee6cc9b",
+      "rgba_sha256": "be4c6abe5dfd131dcdadb8c76e0ca6b34d4ac48c0a63dd9bc7fd44d9be357364"
+    },
+    {
+      "id": "portrait_chr_6_yokai_tea_master",
+      "character_id": "CHR-6",
+      "path": "assets/sprites/portraits/major/chr_6_yokai_tea_master_96x96.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "byte_sha256": "875f6a3bce4823c2bb43f145418e37933279a1f8400b5a03c347ea3748d6b35f",
+      "rgba_sha256": "fbb6e8d73bed41578631ec01f6dd38fa35dd1f02b2b8b7a75e2e59fe7bdf874b"
+    },
+    {
+      "id": "portrait_chr_7_mountain_potter",
+      "character_id": "CHR-7",
+      "path": "assets/sprites/portraits/major/chr_7_mountain_potter_96x96.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "byte_sha256": "7abc106b91fa020eca952abe81c9e25c73f56f129f7d42bbd9d16ac28d2cda36",
+      "rgba_sha256": "4bbd00d7826a5c07d565d265b249201babdd5c94057fe36c581c9f0b4dca46ba"
+    },
+    {
+      "id": "portrait_chr_8_muchau",
+      "character_id": "CHR-8",
+      "path": "assets/sprites/portraits/major/chr_8_muchau_96x96.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "byte_sha256": "62ceb72d72820071a4c555fd73dcb72717336c5c9a76d4fe7c3401ab9c9c5e35",
+      "rgba_sha256": "ed6d90bbaddf213546d21d6da01e91826827cd382f2313f569970b8308f1137a"
+    },
+    {
+      "id": "portrait_chr_9_wandering_tea_merchant",
+      "character_id": "CHR-9",
+      "path": "assets/sprites/portraits/major/chr_9_wandering_tea_merchant_96x96.png",
+      "size": [
+        96,
+        96
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        253
+      ],
+      "byte_sha256": "d113f016faf09fa5fb86d2e6d77f2683ddbfd9a4b1bf8da24d1399ac9b0eebb3",
+      "rgba_sha256": "a0721f1c0f32eaab2993e933974acd5a85ca65ce230762567517870102b32556"
+    }
+  ]
+}
