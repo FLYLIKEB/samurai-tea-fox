@@ -2,6 +2,7 @@ extends RefCounted
 
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
 const CombatDummy = preload("res://src/combat/combat_dummy.gd")
+const DungeonInstanceState = preload("res://src/dungeon/dungeon_instance_state.gd")
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const Main = preload("res://src/main/main.gd")
 const RunState = preload("res://src/save/run_state.gd")
@@ -27,6 +28,7 @@ func run(asserts) -> void:
 	_assert_visible_house_accepts_e_before_attack(asserts, catalog)
 	_assert_visible_house_click_queues_entry(asserts, catalog)
 	_assert_dungeon_combatants_do_not_cross_world_boundary(asserts, catalog)
+	_assert_boss_precombat_dialogue_blocks_combat_until_completion(asserts, catalog)
 	_cleanup()
 
 func _assert_visible_house_accepts_e_before_attack(asserts, catalog: DataCatalog) -> void:
@@ -45,7 +47,7 @@ func _assert_visible_house_accepts_e_before_attack(asserts, catalog: DataCatalog
 	var dungeon_terrain: Dictionary = dungeon_snapshot.cells[0].layers[WorldData.LAYER_TERRAIN]
 	asserts.equal(dungeon_terrain.render_id, Main.DUNGEON_TILESET_SOURCE_ID, "entered dungeon uses the dedicated mossy dojo tileset")
 	asserts.equal(dungeon_terrain.atlas_coords, {"x": 0, "y": 1}, "dungeon boundary selects an explicit wall tile")
-	asserts.equal(runtime.main._dungeon_resources.size(), 44, "dungeon has the expanded resource-node set")
+	asserts.equal(runtime.main._dungeon_resources.size(), 18, "dungeon has the generated resource-node set")
 	asserts.true_value(not runtime.main.acquisition_service.gatherable_for("dungeon_iron_ore_0").is_empty(), "dungeon ore is registered as gatherable")
 	var ore_cell := Vector2i(4, 3)
 	runtime.main.player.global_position = runtime.main.world_position_for_cell_center(ore_cell + Vector2i.LEFT)
@@ -127,6 +129,61 @@ func _assert_dungeon_combatants_do_not_cross_world_boundary(asserts, catalog: Da
 	var restored_position: Vector2 = overworld_dummy.global_position
 	main._run_enemy_turn_after_player_action()
 	asserts.equal(overworld_dummy.global_position, restored_position, "cancelled dungeon turn cannot move a monster after map exit")
+	_free_combat_runtime(main, player, overworld_dummy)
+
+func _assert_boss_precombat_dialogue_blocks_combat_until_completion(asserts, catalog: DataCatalog) -> void:
+	var main := Main.new()
+	var player := MovementPlayer.new()
+	var overworld_dummy := CombatDummy.new()
+	main.catalog = catalog
+	main.run_state = RunState.new()
+	main.run_state.seed = Main.DEFAULT_RUN_SEED
+	main.world_visuals = Node2D.new()
+	main.player = player
+	main.combat_dummy = overworld_dummy
+	main.save_store = SaveStore.new(RUN_PATH, META_PATH)
+	var services: Dictionary = main._configure_run_services(catalog)
+	asserts.true_value(services.ok, "boss precombat fixture configures services")
+	var combat: Dictionary = overworld_dummy.configure_combat(catalog, player, player.combat_config)
+	asserts.true_value(combat.ok, "boss precombat fixture configures base combatant")
+	if not services.ok or not combat.ok:
+		_free_combat_runtime(main, player, overworld_dummy)
+		return
+	asserts.true_value(main._ensure_playable_dungeon_runtime().ok, "boss precombat fixture configures dungeon runtime")
+	asserts.true_value(main._ensure_current_dungeon_entered().ok, "boss precombat fixture enters dungeon")
+	asserts.equal(main.dungeon_runtime.to_projection().boss_flow_state, DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_PENDING, "dungeon entry stores pre-boss dialogue pending state")
+	asserts.equal(main.dungeon_runtime.to_projection().pre_boss_dialogue_event_id, "story_b01_03", "common-region boss uses the exported confrontation event")
+	asserts.equal(main._combat_targets().size(), 3, "locked boss is excluded from combat targets while regular enemies remain")
+	var boss: Node2D = main._dungeon_boss_node()
+	asserts.true_value(boss != null, "boss node is present in dungeon map")
+	if boss == null:
+		_free_combat_runtime(main, player, overworld_dummy)
+		return
+	main.player.global_position = boss.global_position
+	asserts.false_value(main._pointer_enemy_clicked(boss.global_position), "boss dialogue cannot start while regular dungeon enemies remain")
+	for enemy in main._dungeon_enemy_nodes:
+		if enemy.name != Main.DUNGEON_BOSS_OWNER_ID:
+			enemy.visible = false
+			main.world_data.release_footprint(String(enemy.name))
+	asserts.equal(main._combat_targets().size(), 0, "all regular enemies defeated still does not expose boss before dialogue")
+	asserts.true_value(main._pointer_enemy_clicked(boss.global_position), "boss click starts pre-combat dialogue after regular combat")
+	asserts.equal(main.dungeon_runtime.to_projection().boss_flow_state, DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_ACTIVE, "boss dialogue has its own persisted active state")
+	asserts.equal(main._active_narrative_event_id, "story_b01_03", "main stores active pre-boss dialogue event for input")
+	asserts.false_value(main.submit_action_command(GameCommand.new(GameCommand.Type.ATTACK, Vector2i.RIGHT)), "attack command is blocked during pre-boss dialogue")
+	asserts.equal(boss.current_hp(), boss.combatant.hp_max, "blocked dialogue attack cannot damage the boss")
+	asserts.true_value(main.submit_action_command(GameCommand.new(
+		GameCommand.Type.NARRATIVE_SELECT_OPTION,
+		Vector2i.ZERO,
+		-1,
+		{"event_id": "story_b01_03", "node_id": "dlg_b01_003", "option_id": "complete_dlg_b01_003"}
+	)), "dialogue completion command is accepted")
+	asserts.equal(main.dungeon_runtime.to_projection().boss_flow_state, DungeonInstanceState.BOSS_FLOW_COMBAT_ACTIVE, "dialogue completion unlocks boss combat")
+	asserts.equal(main._combat_targets().size(), 1, "boss is the only combat target after pre-combat dialogue")
+	main._on_dungeon_enemy_defeated({}, boss, Main.DUNGEON_BOSS_OWNER_ID)
+	asserts.equal(main.dungeon_runtime.to_projection().lifecycle_state, DungeonInstanceState.STATE_COMPLETED, "boss defeat completes dungeon runtime")
+	asserts.equal(main.run_state.completed_runtime_dungeon_ids, ["dungeon_4"], "boss defeat records runtime dungeon completion exactly once")
+	main._on_dungeon_enemy_defeated({}, boss, Main.DUNGEON_BOSS_OWNER_ID)
+	asserts.equal(main.run_state.completed_runtime_dungeon_ids, ["dungeon_4"], "duplicate boss defeat cannot duplicate dungeon completion")
 	_free_combat_runtime(main, player, overworld_dummy)
 
 func _free_combat_runtime(main: Main, player: Node2D, overworld_dummy: CombatDummy) -> void:

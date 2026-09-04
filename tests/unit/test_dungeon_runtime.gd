@@ -21,6 +21,9 @@ func run(asserts) -> void:
 	_incomplete_progression_boundary_is_rejected(asserts)
 	_reward_failure_keeps_dungeon_retryable(asserts)
 	_progression_failure_does_not_grant_reward(asserts)
+	_boss_precombat_gate_blocks_resolution_until_dialogue_complete(asserts)
+	_boss_gate_save_round_trip_preserves_pending_active_and_combat(asserts)
+	_invalid_saved_boss_gate_is_rejected(asserts)
 
 func _lifecycle_clear_and_duplicate_guards(asserts) -> void:
 	var context := _runtime_context()
@@ -248,6 +251,90 @@ func _progression_failure_does_not_grant_reward(asserts) -> void:
 	asserts.equal(runtime.to_projection().lifecycle_state, DungeonInstanceState.STATE_ACTIVE, "progression rejection leaves the dungeon retryable")
 	asserts.false_value(context.run_state.completed_runtime_dungeon_ids.has("fixture_dungeon"), "progression rejection does not record canonical completion")
 
+func _boss_precombat_gate_blocks_resolution_until_dialogue_complete(asserts) -> void:
+	var context := _runtime_context()
+	var runtime: DungeonRuntime = context.runtime
+	var clear_events := []
+	asserts.true_value(runtime.configure(
+		context.run_state,
+		context.progression,
+		func(payload: Dictionary, _projection: Dictionary) -> bool: return bool(payload.get("objective_complete", false))
+	).ok, "boss gate fixture configures")
+	runtime.dungeon_cleared.connect(func(event: Dictionary) -> void: clear_events.append(event))
+	asserts.true_value(runtime.enter_dungeon("boss_gate_instance", _fixture_boss_definition(), WorldData.new(4, 4), _return_context()).ok, "boss gate entry accepts stable boss dialogue definition")
+	asserts.equal(runtime.to_projection().boss_flow_state, DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_PENDING, "entry records pre-boss dialogue pending state")
+	asserts.false_value(runtime.boss_combat_available(), "boss combat is unavailable before the dialogue starts")
+
+	var premature_resolution := runtime.complete_boss_encounter(_fixture_boss_resolution())
+	asserts.false_value(premature_resolution.ok, "boss resolution is blocked before dialogue completion")
+	asserts.equal(premature_resolution.reason, "invalid_boss_gate_transition", "premature boss resolution exposes stable reason")
+	asserts.equal(clear_events.size(), 0, "premature boss resolution does not clear the dungeon")
+
+	var begun := runtime.begin_boss_precombat_dialogue()
+	asserts.true_value(begun.ok, "pending boss gate can begin pre-combat dialogue")
+	asserts.equal(begun.event_id, "fixture_boss_precombat", "runtime exposes the stable dialogue event id")
+	asserts.equal(runtime.to_projection().boss_flow_state, DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_ACTIVE, "dialogue start is saved as its own state")
+	var wrong_dialogue := runtime.complete_boss_precombat_dialogue("other_event")
+	asserts.false_value(wrong_dialogue.ok, "wrong dialogue event cannot unlock boss combat")
+	asserts.equal(wrong_dialogue.reason, "invalid_pre_boss_dialogue", "wrong dialogue completion exposes stable reason")
+
+	var dialogue_done := runtime.complete_boss_precombat_dialogue("fixture_boss_precombat")
+	asserts.true_value(dialogue_done.ok, "matching dialogue completion unlocks boss combat")
+	asserts.equal(runtime.to_projection().boss_flow_state, DungeonInstanceState.BOSS_FLOW_COMBAT_ACTIVE, "dialogue completion persists boss combat state")
+	asserts.true_value(runtime.to_projection().pre_boss_dialogue_completed, "dialogue completion is persisted")
+	asserts.true_value(runtime.boss_combat_available(), "boss combat is available after the dialogue")
+
+	var completed := runtime.complete_boss_encounter(_fixture_boss_resolution())
+	asserts.true_value(completed.ok, "common boss resolution clears the dungeon after the gate opens")
+	asserts.equal(runtime.to_projection().lifecycle_state, DungeonInstanceState.STATE_COMPLETED, "boss defeat completes the dungeon lifecycle")
+	asserts.equal(runtime.to_projection().boss_flow_state, DungeonInstanceState.BOSS_FLOW_RESOLVED, "boss resolution is persisted separately")
+	asserts.equal(clear_events.size(), 1, "boss victory emits clear exactly once")
+	asserts.equal(context.run_state.completed_runtime_dungeon_ids, ["fixture_dungeon"], "boss victory records canonical dungeon completion once")
+	asserts.equal(runtime.complete_boss_encounter(_fixture_boss_resolution()).reason, "invalid_boss_gate_transition", "duplicate boss clear cannot run after dungeon completion")
+	asserts.equal(clear_events.size(), 1, "duplicate boss clear does not re-emit clear")
+
+func _boss_gate_save_round_trip_preserves_pending_active_and_combat(asserts) -> void:
+	var pending_context := _runtime_context()
+	var pending_runtime: DungeonRuntime = pending_context.runtime
+	asserts.true_value(pending_runtime.configure(pending_context.run_state, pending_context.progression, func(_payload: Dictionary, _projection: Dictionary) -> bool: return true).ok, "pending gate fixture configures")
+	asserts.true_value(pending_runtime.enter_dungeon("pending_boss_gate", _fixture_boss_definition(), WorldData.new(3, 3), _return_context()).ok, "pending gate fixture enters")
+	var pending_resumed := _resume_runtime_from_encoded_run(pending_context.run_state)
+	asserts.equal(pending_resumed.to_projection().boss_flow_state, DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_PENDING, "save resume preserves pre-dialogue pending state")
+	asserts.false_value(pending_resumed.boss_combat_available(), "pending save resume keeps boss combat locked")
+
+	var active_context := _runtime_context()
+	var active_runtime: DungeonRuntime = active_context.runtime
+	asserts.true_value(active_runtime.configure(active_context.run_state, active_context.progression, func(_payload: Dictionary, _projection: Dictionary) -> bool: return true).ok, "active dialogue fixture configures")
+	asserts.true_value(active_runtime.enter_dungeon("active_boss_gate", _fixture_boss_definition(), WorldData.new(3, 3), _return_context()).ok, "active dialogue fixture enters")
+	asserts.true_value(active_runtime.begin_boss_precombat_dialogue().ok, "active dialogue fixture starts dialogue")
+	var active_resumed := _resume_runtime_from_encoded_run(active_context.run_state)
+	asserts.equal(active_resumed.to_projection().boss_flow_state, DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_ACTIVE, "save resume preserves active pre-dialogue state")
+	asserts.false_value(active_resumed.boss_combat_available(), "active dialogue save resume keeps boss combat locked")
+
+	var combat_context := _runtime_context()
+	var combat_runtime: DungeonRuntime = combat_context.runtime
+	asserts.true_value(combat_runtime.configure(combat_context.run_state, combat_context.progression, func(_payload: Dictionary, _projection: Dictionary) -> bool: return true).ok, "boss combat fixture configures")
+	asserts.true_value(combat_runtime.enter_dungeon("combat_boss_gate", _fixture_boss_definition(), WorldData.new(3, 3), _return_context()).ok, "boss combat fixture enters")
+	asserts.true_value(combat_runtime.begin_boss_precombat_dialogue().ok, "boss combat fixture starts dialogue")
+	asserts.true_value(combat_runtime.complete_boss_precombat_dialogue("fixture_boss_precombat").ok, "boss combat fixture completes dialogue")
+	var combat_resumed := _resume_runtime_from_encoded_run(combat_context.run_state)
+	asserts.equal(combat_resumed.to_projection().boss_flow_state, DungeonInstanceState.BOSS_FLOW_COMBAT_ACTIVE, "save resume preserves boss combat state")
+	asserts.true_value(combat_resumed.boss_combat_available(), "boss combat save resume keeps boss available")
+
+func _invalid_saved_boss_gate_is_rejected(asserts) -> void:
+	var context := _runtime_context()
+	context.run_state.dungeon_runtime_state = _saved_instance(_return_context())
+	context.run_state.dungeon_runtime_state["boss_flow_state"] = DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_ACTIVE
+	context.run_state.dungeon_runtime_state["boss_id"] = "fixture_boss"
+	context.run_state.dungeon_runtime_state["boss_encounter_id"] = "saved_instance_fixture_boss"
+	var result: Dictionary = context.runtime.configure(
+		context.run_state,
+		context.progression,
+		func(_payload: Dictionary, _projection: Dictionary) -> bool: return true
+	)
+	asserts.false_value(result.ok, "saved boss gate without dialogue id is rejected")
+	asserts.equal(result.reason, "invalid_saved_dungeon_state", "invalid saved boss gate exposes stable reason")
+
 func _runtime_context() -> Dictionary:
 	var run_state := RunState.new()
 	var progression := BiomeProgressionState.new()
@@ -256,6 +343,36 @@ func _runtime_context() -> Dictionary:
 
 func _fixture_definition() -> Dictionary:
 	return {"id": "fixture_dungeon", "biome_id": "common_region"}
+
+func _fixture_boss_definition() -> Dictionary:
+	return {
+		"id": "fixture_dungeon",
+		"biome_id": "common_region",
+		"boss_id": "fixture_boss",
+		"pre_boss_dialogue_event_id": "fixture_boss_precombat"
+	}
+
+func _fixture_boss_resolution() -> Dictionary:
+	return {
+		"event_type": "boss_encounter_resolved",
+		"boss_id": "fixture_boss",
+		"encounter_id": "boss_gate_instance_fixture_boss",
+		"dungeon_id": "fixture_dungeon",
+		"biome_id": "common_region",
+		"resolution_type": "combat",
+		"choice_key": "fixture_boss_defeated",
+		"run_flag": "fixture_boss_defeated",
+		"reward_item_ids": [],
+		"progression_unlock_ids": ["common_region"]
+	}
+
+func _resume_runtime_from_encoded_run(source_run_state: RunState) -> DungeonRuntime:
+	var decoded := SaveCodec.decode_run(SaveCodec.encode_run(source_run_state.to_dictionary()))
+	var progression := BiomeProgressionState.new()
+	progression.configure(_fixture_biomes(), decoded.run_state)
+	var resumed := DungeonRuntime.new()
+	resumed.configure(decoded.run_state, progression, func(payload: Dictionary, _projection: Dictionary) -> bool: return bool(payload.get("objective_complete", false)))
+	return resumed
 
 func _return_context() -> Dictionary:
 	return {"biome_id": "common_region", "world_seed": 11037, "landmark_id": "fixture_entry"}
