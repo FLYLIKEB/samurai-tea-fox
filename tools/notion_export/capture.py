@@ -104,12 +104,27 @@ class CaptureBuilder:
         event_id: str,
         rows: list[dict[str, Any]],
     ) -> dict[str, Any]:
+        line_orders_by_node: dict[str, set[float]] = {}
+        for row in rows:
+            node_id = str(row.get("노드 ID", ""))
+            raw_line_order = row.get("라인 순서")
+            if not isinstance(raw_line_order, (int, float)) or isinstance(raw_line_order, bool):
+                raise ExportValidationError(
+                    f"{dataset_name} item {event_id}: invalid 라인 순서 for node {node_id}"
+                )
+            line_order = float(raw_line_order)
+            node_orders = line_orders_by_node.setdefault(node_id, set())
+            if line_order in node_orders:
+                raise ExportValidationError(
+                    f"{dataset_name} item {event_id}: duplicate 라인 순서 {raw_line_order} for node {node_id}"
+                )
+            node_orders.add(line_order)
+
         ordered_rows = sorted(
             rows,
             key=lambda row: (
                 self._number_or_zero(row.get("라인 순서")),
                 str(row.get("노드 ID", "")),
-                str(row.get("선택 ID", "")),
                 str(row.get("_notion_id", "")),
             ),
         )
@@ -170,8 +185,6 @@ class CaptureBuilder:
                 (self._number_or_zero(row.get("라인 순서")), node_id),
             )
 
-        for node in nodes_by_id.values():
-            node["options"].sort(key=lambda option: option["id"])
         nodes = [nodes_by_id[node_id] for node_id in sorted(nodes_by_id, key=node_order.get)]
         metadata_field = self._dataset_config(dataset_name)["notion"].get("event_metadata_field")
         metadata: dict[str, Any] = {}

@@ -663,7 +663,7 @@ class NotionExportPipelineTests(unittest.TestCase):
                     "재실행 정책": "repeat",
                     "시작 노드": False,
                     "노드 ID": "start",
-                    "라인 순서": 1,
+                    "라인 순서": 2,
                     "본문 KO": "물을 올려라.",
                     "화자 ID": "CHR-1",
                     "선택 ID": "leave",
@@ -693,12 +693,16 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(event["nodes"][0]["speaker_id"], "CHR-1")
         self.assertEqual(
             [option["id"] for option in event["nodes"][0]["options"]],
-            ["leave", "remember"],
+            ["remember", "leave"],
         )
         self.assertEqual(
-            event["nodes"][0]["options"][1]["results"][0]["id"],
+            event["nodes"][0]["options"][0]["results"][0]["id"],
             "father_remembered",
         )
+
+        rows["events"][1]["라인 순서"] = 1
+        with self.assertRaisesRegex(ExportValidationError, "duplicate 라인 순서"):
+            CaptureBuilder(schema).build_from_rows(rows, "notion-live-test")
 
     def test_event_capture_rejects_missing_runtime_id_outside_explicit_ignored_status(self):
         schema = json.loads(SCHEMA.read_text(encoding="utf-8"))

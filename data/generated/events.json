@@ -1,5 +1,5 @@
 {
-  "content_hash": "783e33dea845cfd4b3c34fbc509df206492f99fa09dc252d3772f1068542194b",
+  "content_hash": "1ee2ad94c7f7164113ae706352d499dabf553aa5131c810c9b9b8efc946ca301",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -438,12 +438,12 @@
             {
               "completes_event": false,
               "conditions": [],
-              "display_text": "마지막 차를 거절한다",
-              "id": "refuse_last_tea",
-              "next_node_id": "refused_dialogue",
+              "display_text": "마지막 차를 함께 마신다",
+              "id": "share_last_tea",
+              "next_node_id": "shared_dialogue",
               "results": [
                 {
-                  "id": "sen_rikyu_phase1_refused_tea",
+                  "id": "sen_rikyu_phase1_shared_tea",
                   "type": "set_run_flag"
                 }
               ]
@@ -451,12 +451,12 @@
             {
               "completes_event": false,
               "conditions": [],
-              "display_text": "마지막 차를 함께 마신다",
-              "id": "share_last_tea",
-              "next_node_id": "shared_dialogue",
+              "display_text": "마지막 차를 거절한다",
+              "id": "refuse_last_tea",
+              "next_node_id": "refused_dialogue",
               "results": [
                 {
-                  "id": "sen_rikyu_phase1_shared_tea",
+                  "id": "sen_rikyu_phase1_refused_tea",
                   "type": "set_run_flag"
                 }
               ]
@@ -488,19 +488,6 @@
             },
             {
               "completes_event": true,
-              "conditions": [],
-              "display_text": "dialogue.sen_rikyu.phase1.shared_plain",
-              "id": "shared_plain",
-              "next_node_id": "",
-              "results": [
-                {
-                  "id": "sen_rikyu_phase1_dialogue_plain",
-                  "type": "set_run_flag"
-                }
-              ]
-            },
-            {
-              "completes_event": true,
               "conditions": [
                 {
                   "type": "meta_run_count_at_least",
@@ -513,6 +500,19 @@
               "results": [
                 {
                   "id": "sen_rikyu_phase1_dialogue_repetition",
+                  "type": "set_run_flag"
+                }
+              ]
+            },
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "dialogue.sen_rikyu.phase1.shared_plain",
+              "id": "shared_plain",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "sen_rikyu_phase1_dialogue_plain",
                   "type": "set_run_flag"
                 }
               ]
@@ -544,19 +544,6 @@
             },
             {
               "completes_event": true,
-              "conditions": [],
-              "display_text": "dialogue.sen_rikyu.phase1.refused_plain",
-              "id": "refused_plain",
-              "next_node_id": "",
-              "results": [
-                {
-                  "id": "sen_rikyu_phase1_dialogue_refused_plain",
-                  "type": "set_run_flag"
-                }
-              ]
-            },
-            {
-              "completes_event": true,
               "conditions": [
                 {
                   "type": "meta_run_count_at_least",
@@ -569,6 +556,19 @@
               "results": [
                 {
                   "id": "sen_rikyu_phase1_dialogue_refused_repetition",
+                  "type": "set_run_flag"
+                }
+              ]
+            },
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "dialogue.sen_rikyu.phase1.refused_plain",
+              "id": "refused_plain",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "sen_rikyu_phase1_dialogue_refused_plain",
                   "type": "set_run_flag"
                 }
               ]
