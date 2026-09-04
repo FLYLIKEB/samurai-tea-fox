@@ -129,7 +129,10 @@ func run(asserts) -> void:
 	asserts.true_value(tea_runtime.main.inventory.add_item("humble_clay_bowl", 1).ok, "generated tea vessel can be stocked for command routing")
 	asserts.true_value(tea_runtime.main.tea_service.brew("tea_8", "humble_clay_bowl", tea_runtime.main.inventory, 0).ok, "prepared tea can occupy quickslot 0")
 	asserts.true_value(tea_runtime.main.submit_desktop_action_command("drink_tea", Vector2i.ZERO, 0), "desktop tea command routes into TeaService")
-	asserts.false_value(tea_runtime.main.tea_service.has_prepared_tea(0), "routed tea command consumes the prepared quickslot use")
+	asserts.true_value(tea_runtime.main.tea_service.has_prepared_tea(0), "routed tea command waits for the exported drinking time")
+	asserts.true_value(tea_runtime.main.tick_tea_runtime(1.4).ok, "routed tea command advances to completion")
+	asserts.true_value(tea_runtime.main.tea_service.has_prepared_tea(0), "routed tea command preserves remaining portable uses")
+	asserts.equal(tea_runtime.main.tea_service.get_prepared_tea(0).remaining_uses, 3, "routed tea command consumes exactly one exported carry use")
 
 	var saved_state: RunState = RunState.from_dictionary(runtime.main.snapshot_run_state())
 	var restored := _configured_runtime(catalog, saved_state)

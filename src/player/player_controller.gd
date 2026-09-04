@@ -43,6 +43,7 @@ var ability_runtime
 var ability_tail_query
 var ability_time_state
 var ability_target_query
+var ability_tea_effect_query
 var asset_catalog := AssetCatalog.new()
 var walk_animator := DirectionalWalkAnimator.new()
 var _current_sprite_asset_id := ""
@@ -195,10 +196,11 @@ func is_invulnerable() -> bool:
 func can_dodge() -> bool:
 	return combat_state != null and combat_state.is_dodge_ready()
 
-func configure_ability_context(tail_query = null, time_state = null, target_query = null) -> void:
+func configure_ability_context(tail_query = null, time_state = null, target_query = null, tea_effect_query = null) -> void:
 	ability_tail_query = tail_query
 	ability_time_state = time_state
 	ability_target_query = target_query
+	ability_tea_effect_query = tea_effect_query
 
 func equip_ability(slot: int, ability_id: String, tail_query = null) -> Dictionary:
 	if ability_runtime == null:
@@ -334,6 +336,7 @@ func _cast_ability(slot: int, direction: Vector2i) -> bool:
 		"resources": resources,
 		"tail_query": ability_tail_query,
 		"time_state": ability_time_state,
+		"tea_effect_query": ability_tea_effect_query,
 		"direction": action_direction
 	}
 	var definition_result: Dictionary = ability_runtime.definition_for_slot(slot)

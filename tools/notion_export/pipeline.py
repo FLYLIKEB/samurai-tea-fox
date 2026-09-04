@@ -23,6 +23,7 @@ class ExportPipeline:
     BOSS_TEA_CONDITION_TYPES = {"always", "prepared_tea", "run_flag", "run_not_flag", "current_biome", "has_item"}
     BOSS_TEA_HOOK_GROUPS = {"common", "peaceful_tea_ceremony", "mixed", "combat_started"}
     BOSS_TEA_HOOK_CHANNELS = {"memory", "weakness", "dialogue"}
+    TEA_RECOVERY_MODES = {"instant", "progressive", "conditional"}
 
     def __init__(self, schema: dict[str, Any]):
         self.schema = schema
@@ -182,11 +183,81 @@ class ExportPipeline:
         if dataset_name == "bosses":
             self._validate_boss_contract(row)
             return
+        if dataset_name == "teas":
+            self._validate_tea_contract(row)
+            return
         if dataset_name != "items":
             return
         if row.get("type") != "다구" or row.get("equipment_slot") != "다구":
             return
         self._validate_attachment_stage_data(row)
+
+    def _validate_tea_contract(self, row: dict[str, Any]) -> None:
+        tea_id = row.get("id", "")
+        recovery = row.get("ki_recovery")
+        if not isinstance(recovery, int) or isinstance(recovery, bool) or recovery < 0:
+            raise ExportValidationError(
+                f"teas item {tea_id}: ki_recovery must be a non-negative integer"
+            )
+        recovery_mode = row.get("recovery_mode", "instant")
+        if recovery_mode not in self.TEA_RECOVERY_MODES:
+            raise ExportValidationError(
+                f"teas item {tea_id}: invalid recovery_mode {recovery_mode}"
+            )
+        self._validate_optional_positive_number(row, "drink_seconds", tea_id)
+        self._validate_optional_positive_integer(row, "serving_size", tea_id)
+        self._validate_optional_positive_integer(row, "carry_uses", tea_id)
+        sustain = row.get("sustain_modifier")
+        if sustain is not None and (
+            not isinstance(sustain, (int, float))
+            or isinstance(sustain, bool)
+            or not math.isfinite(float(sustain))
+            or not -100.0 <= float(sustain) <= 100.0
+        ):
+            raise ExportValidationError(
+                f"teas item {tea_id}: sustain_modifier must be between -100 and 100"
+            )
+        condition_key = row.get("condition_key")
+        if condition_key not in (None, "") and (
+            not isinstance(condition_key, str)
+            or not re.fullmatch(self.schema["stable_id_pattern"], condition_key)
+        ):
+            raise ExportValidationError(
+                f"teas item {tea_id}: condition_key must be a stable id"
+            )
+        if "requires_brewing_location" in row and not isinstance(row["requires_brewing_location"], bool):
+            raise ExportValidationError(
+                f"teas item {tea_id}: requires_brewing_location must be a boolean"
+            )
+        if "special_effect" in row and not isinstance(row["special_effect"], str):
+            raise ExportValidationError(
+                f"teas item {tea_id}: special_effect must be a string"
+            )
+
+    @staticmethod
+    def _validate_optional_positive_number(row: dict[str, Any], field: str, tea_id: str) -> None:
+        value = row.get(field)
+        if value is None:
+            return
+        if (
+            not isinstance(value, (int, float))
+            or isinstance(value, bool)
+            or not math.isfinite(float(value))
+            or float(value) <= 0.0
+        ):
+            raise ExportValidationError(
+                f"teas item {tea_id}: {field} must be a positive number"
+            )
+
+    @staticmethod
+    def _validate_optional_positive_integer(row: dict[str, Any], field: str, tea_id: str) -> None:
+        value = row.get(field)
+        if value is None:
+            return
+        if not isinstance(value, int) or isinstance(value, bool) or value <= 0:
+            raise ExportValidationError(
+                f"teas item {tea_id}: {field} must be a positive integer"
+            )
 
     def _validate_character_contract(self, row: dict[str, Any]) -> None:
         character_id = row.get("character_id")
@@ -719,6 +790,12 @@ def copy_json_value(value: Any) -> Any:
 
 def normalize_structured_fields(dataset_name: str, row: dict[str, Any]) -> dict[str, Any]:
     normalized = copy_json_value(row)
+    if dataset_name == "teas" and "recovery_mode" in normalized:
+        normalized["recovery_mode"] = {
+            "즉시": "instant",
+            "점진": "progressive",
+            "조건부": "conditional",
+        }.get(normalized["recovery_mode"], normalized["recovery_mode"])
     if dataset_name != "items":
         return normalized
 

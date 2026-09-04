@@ -37,12 +37,27 @@ class TailQuery:
 		calls.append([ability_id, tail_requirement])
 		return tail_count >= tail_requirement
 
+class TeaEffectQuery:
+	extends RefCounted
+	var modifier_percent := 25.0
+	var consume_calls := 0
+
+	func next_ability_ki_cost_multiplier() -> float:
+		return maxf(0.0, 1.0 - modifier_percent / 100.0)
+
+	func consume_next_ability_ki_cost_modifier() -> float:
+		consume_calls += 1
+		var consumed := modifier_percent
+		modifier_percent = 0.0
+		return consumed
+
 func run(asserts) -> void:
 	_assert_generated_catalog_loads_ability_runtime(asserts)
 	_assert_equipping_slots_and_tail_query(asserts)
 	_assert_tail_state_drives_ability_candidates(asserts)
 	_assert_damage_sample_casts_through_common_runtime(asserts)
 	_assert_low_kokoro_cost_cooldown_and_insufficient_ki(asserts)
+	_assert_tea_sustain_modifier_reduces_one_successful_ability_cost(asserts)
 	_assert_movement_sample_uses_strategy_without_damage(asserts)
 	_assert_invalid_ability_data_and_effect_type_are_rejected(asserts)
 
@@ -200,6 +215,33 @@ func _assert_movement_sample_uses_strategy_without_damage(asserts) -> void:
 	asserts.equal(result.distance_tiles, 2.0, "movement distance uses data-driven range")
 	asserts.equal(result.direction, Vector2.LEFT, "movement direction is normalized")
 	asserts.equal(resources.ki, 88, "movement ability consumes data-driven ki cost")
+
+func _assert_tea_sustain_modifier_reduces_one_successful_ability_cost(asserts) -> void:
+	var runtime := _test_runtime()
+	var resources := PlayerResources.new(100, 100, 100, 30)
+	var tea_effects := TeaEffectQuery.new()
+	asserts.true_value(runtime.equip(0, "ember", {"tail_count": 1}).ok, "tea integration sample equips")
+	var context := {
+		"source_id": "player",
+		"resources": resources,
+		"tail_count": 1,
+		"targets": [CombatantState.new("target_1", 50, 0)],
+		"tea_effect_query": tea_effects
+	}
+	var preview: Dictionary = runtime.can_cast(0, context)
+	asserts.equal(preview.ki_cost, 11, "tea sustain percent reduces the next ability cost")
+	asserts.equal(tea_effects.consume_calls, 0, "cost previews do not consume the tea effect")
+	var cast_result: Dictionary = runtime.cast(0, context)
+	asserts.true_value(cast_result.ok, "tea-modified ability cast succeeds")
+	asserts.equal(cast_result.ki_cost, 11, "cast reports the reduced data-driven cost")
+	asserts.equal(cast_result.tea_ki_cost_modifier_percent, 25.0, "cast reports the consumed tea modifier")
+	asserts.equal(resources.ki, 89, "only the reduced ki cost is spent")
+	asserts.equal(tea_effects.consume_calls, 1, "successful cast consumes the one-shot tea effect")
+	runtime.tick(4.0)
+	var second_context := context.duplicate(true)
+	second_context["targets"] = [CombatantState.new("target_2", 50, 0)]
+	var second: Dictionary = runtime.cast(0, second_context)
+	asserts.equal(second.ki_cost, 14, "later abilities use the normal cost after the tea effect is consumed")
 
 func _assert_invalid_ability_data_and_effect_type_are_rejected(asserts) -> void:
 	var missing_definition := _ability("broken", "공격", 1, 1, 1.0, 1)

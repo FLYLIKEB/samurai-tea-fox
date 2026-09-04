@@ -68,6 +68,37 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(abilities["remaining_incense"]["duration_seconds"], 2.5)
         self.assertEqual(abilities["remaining_incense"]["status_effect"], "slow")
 
+    def test_tea_export_normalizes_recovery_modes_and_validates_optional_runtime_fields(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        rows = {
+            "teas": [{
+                "_notion_id": "tea-page",
+                "차 ID": {"prefix": "TEA", "number": 10},
+                "이름": "백설 백차",
+                "설정 상태": "확정",
+                "기운 회복": 24,
+                "마시는 시간(초)": 2.1,
+                "1회 소비량": 1,
+                "휴대 횟수": 4,
+                "회복 방식": "점진",
+                "기운 유지 보정": 12,
+                "우리기 장소 필요": True,
+                "특수 효과": "즉시량은 낮지만 기운 감소를 완만하게 한다.",
+            }]
+        }
+        capture = CaptureBuilder(schema).build_from_rows(rows, "tea-runtime-fixture-v1")
+        tea = ExportPipeline(schema).build_snapshots(capture, "confirmed-test")["teas"]["items"][0]
+        self.assertEqual(tea["recovery_mode"], "progressive")
+        self.assertEqual(tea["drink_seconds"], 2.1)
+        self.assertEqual(tea["carry_uses"], 4)
+        self.assertEqual(tea["sustain_modifier"], 12)
+        self.assertTrue(tea["requires_brewing_location"])
+
+        invalid = copy.deepcopy(capture)
+        invalid["datasets"]["teas"]["items"][0]["carry_uses"] = 0
+        with self.assertRaisesRegex(ExportValidationError, "teas.*tea_10.*carry_uses"):
+            ExportPipeline(schema).build_snapshots(invalid, "confirmed-test")
+
     def test_monster_export_preserves_runtime_stat_mapping(self):
         schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
         monster_notion = schema["datasets"]["monsters"]["notion"]
@@ -681,7 +712,7 @@ class NotionExportPipelineTests(unittest.TestCase):
         }
         capture["datasets"]["teas"] = {
             "source": "collection://teas",
-            "items": [{"id": "oribe_green_matcha", "name": "Tea", "status": "확정"}],
+            "items": [{"id": "oribe_green_matcha", "name": "Tea", "status": "확정", "ki_recovery": 0}],
         }
         boss = capture["datasets"]["bosses"]["items"][0]
         boss["resolution_types"] = ["combat", "peaceful"]
