@@ -61,9 +61,82 @@ func enter_dungeon(instance_id: String, dungeon_definition: Dictionary, layout, 
 	_instance.biome_id = biome_id
 	_instance.world_data = world_snapshot
 	_instance.return_context = return_context.duplicate(true)
+	_apply_boss_gate_from_definition(dungeon_definition)
 	_instance.lifecycle_state = DungeonInstanceState.STATE_ACTIVE
 	_persist()
 	return {"ok": true, "projection": to_projection()}
+
+func prepare_boss_encounter(boss_payload: Dictionary) -> Dictionary:
+	var transition := _require_state(DungeonInstanceState.STATE_ACTIVE, "invalid_boss_gate_transition")
+	if not transition.ok:
+		return transition
+	if _instance.boss_flow_state == DungeonInstanceState.BOSS_FLOW_COMBAT_ACTIVE:
+		return {"ok": true, "projection": to_projection(), "state": "already_combat_active"}
+	if _instance.boss_flow_state == DungeonInstanceState.BOSS_FLOW_RESOLVED:
+		return _fail("boss_already_resolved", "Boss encounter is already resolved.")
+	var boss_id := String(boss_payload.get("boss_id", _instance.boss_id))
+	var dialogue_event_id := String(boss_payload.get("pre_boss_dialogue_event_id", _instance.pre_boss_dialogue_event_id))
+	if boss_id.is_empty():
+		return _fail("missing_boss_id", "Boss gate requires a stable boss id.")
+	if dialogue_event_id.is_empty():
+		return _fail("missing_pre_boss_dialogue", "Boss gate requires a pre-combat dialogue event id from definition data.")
+	_instance.boss_id = boss_id
+	_instance.boss_encounter_id = String(boss_payload.get("encounter_id", "%s_%s" % [_instance.instance_id, boss_id]))
+	_instance.pre_boss_dialogue_event_id = dialogue_event_id
+	if _instance.boss_flow_state == DungeonInstanceState.BOSS_FLOW_NONE:
+		_instance.boss_flow_state = DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_PENDING
+	_persist()
+	return {"ok": true, "projection": to_projection()}
+
+func begin_boss_precombat_dialogue() -> Dictionary:
+	var transition := _require_state(DungeonInstanceState.STATE_ACTIVE, "invalid_boss_gate_transition")
+	if not transition.ok:
+		return transition
+	if _instance.boss_flow_state == DungeonInstanceState.BOSS_FLOW_COMBAT_ACTIVE:
+		return {"ok": true, "state": "already_completed", "projection": to_projection()}
+	if _instance.boss_flow_state == DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_ACTIVE:
+		return {
+			"ok": true,
+			"state": "already_active",
+			"event_id": _instance.pre_boss_dialogue_event_id,
+			"boss_id": _instance.boss_id,
+			"encounter_id": _instance.boss_encounter_id,
+			"projection": to_projection()
+		}
+	if _instance.boss_flow_state != DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_PENDING:
+		return _fail("invalid_boss_gate_transition", "Boss pre-combat dialogue is not pending.")
+	_instance.boss_flow_state = DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_ACTIVE
+	_persist()
+	return {
+		"ok": true,
+		"event_id": _instance.pre_boss_dialogue_event_id,
+		"boss_id": _instance.boss_id,
+		"encounter_id": _instance.boss_encounter_id,
+		"projection": to_projection()
+	}
+
+func complete_boss_precombat_dialogue(event_id := "") -> Dictionary:
+	var transition := _require_state(DungeonInstanceState.STATE_ACTIVE, "invalid_boss_gate_transition")
+	if not transition.ok:
+		return transition
+	if _instance.boss_flow_state == DungeonInstanceState.BOSS_FLOW_COMBAT_ACTIVE:
+		return {"ok": true, "state": "already_completed", "projection": to_projection()}
+	if _instance.boss_flow_state != DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_ACTIVE:
+		return _fail("invalid_boss_gate_transition", "Boss pre-combat dialogue must be active before completion.")
+	var completed_event_id := String(event_id)
+	if not completed_event_id.is_empty() and completed_event_id != _instance.pre_boss_dialogue_event_id:
+		return _fail("invalid_pre_boss_dialogue", "Completed dialogue event does not match the active boss gate.")
+	_instance.pre_boss_dialogue_completed = true
+	_instance.boss_flow_state = DungeonInstanceState.BOSS_FLOW_COMBAT_ACTIVE
+	_persist()
+	return {"ok": true, "projection": to_projection()}
+
+func boss_combat_available() -> bool:
+	if _instance == null:
+		return false
+	if _instance.boss_flow_state == DungeonInstanceState.BOSS_FLOW_NONE:
+		return true
+	return _instance.boss_flow_state == DungeonInstanceState.BOSS_FLOW_COMBAT_ACTIVE
 
 func complete_dungeon(completion_payload: Dictionary) -> Dictionary:
 	var transition := _require_state(DungeonInstanceState.STATE_ACTIVE, "invalid_completion_transition")
@@ -110,6 +183,9 @@ func complete_dungeon(completion_payload: Dictionary) -> Dictionary:
 	}
 
 func complete_boss_encounter(resolution_event: Dictionary) -> Dictionary:
+	var boss_gate := _require_boss_gate_allows_resolution()
+	if not boss_gate.ok:
+		return boss_gate
 	if String(resolution_event.get("event_type", "")) != "boss_encounter_resolved":
 		return _fail("invalid_boss_resolution", "Dungeon runtime requires the common boss resolution event.")
 	if String(resolution_event.get("dungeon_id", "")) != String(to_projection().get("dungeon_id", "")):
@@ -119,7 +195,12 @@ func complete_boss_encounter(resolution_event: Dictionary) -> Dictionary:
 		return _fail("invalid_boss_resolution", "Only combat or peaceful boss outcomes clear a dungeon.")
 	var completion_payload := resolution_event.duplicate(true)
 	completion_payload["objective_complete"] = true
-	return complete_dungeon(completion_payload)
+	var completed := complete_dungeon(completion_payload)
+	if completed.ok and _instance != null:
+		_instance.boss_flow_state = DungeonInstanceState.BOSS_FLOW_RESOLVED
+		_instance.boss_resolution_event = resolution_event.duplicate(true)
+		_persist()
+	return completed
 
 func begin_return() -> Dictionary:
 	var transition := _require_state(DungeonInstanceState.STATE_COMPLETED, "invalid_return_transition")
@@ -209,11 +290,48 @@ func _validate_hydrated_instance() -> Dictionary:
 		DungeonInstanceState.STATE_RETURNED
 	].has(_instance.lifecycle_state):
 		return _fail("invalid_saved_dungeon_state", "Saved dungeon runtime has an unknown lifecycle state.")
+	if not [
+		DungeonInstanceState.BOSS_FLOW_NONE,
+		DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_PENDING,
+		DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_ACTIVE,
+		DungeonInstanceState.BOSS_FLOW_COMBAT_ACTIVE,
+		DungeonInstanceState.BOSS_FLOW_RESOLVED
+	].has(_instance.boss_flow_state):
+		return _fail("invalid_saved_dungeon_state", "Saved dungeon runtime has an unknown boss flow state.")
+	if _instance.boss_flow_state != DungeonInstanceState.BOSS_FLOW_NONE:
+		if _instance.boss_id.is_empty() or _instance.boss_encounter_id.is_empty() or _instance.pre_boss_dialogue_event_id.is_empty():
+			return _fail("invalid_saved_dungeon_state", "Saved boss flow is missing stable ids.")
+		if _instance.pre_boss_dialogue_completed and _instance.boss_flow_state in [
+			DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_PENDING,
+			DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_ACTIVE
+		]:
+			return _fail("invalid_saved_dungeon_state", "Saved boss flow has inconsistent dialogue state.")
 	if _instance.world_data.is_empty() or not _valid_return_context(_instance.return_context, _instance.biome_id):
 		return _fail("invalid_saved_dungeon_state", "Saved dungeon runtime has invalid world or return context.")
 	if _instance.lifecycle_state != DungeonInstanceState.STATE_RETURNED \
 		and _instance.biome_id != String(_progression_state.current_biome_id()):
 		return _fail("invalid_saved_dungeon_state", "Saved dungeon runtime does not match the current progression biome.")
+	return {"ok": true}
+
+func _apply_boss_gate_from_definition(dungeon_definition: Dictionary) -> void:
+	var boss_id := String(dungeon_definition.get("boss_id", ""))
+	var dialogue_event_id := String(dungeon_definition.get("pre_boss_dialogue_event_id", ""))
+	if boss_id.is_empty() and not String(dungeon_definition.get("boss", "")).is_empty():
+		boss_id = String(dungeon_definition.get("boss"))
+	if dialogue_event_id.is_empty() or boss_id.is_empty():
+		return
+	_instance.boss_id = boss_id
+	_instance.boss_encounter_id = "%s_%s" % [_instance.instance_id, boss_id]
+	_instance.pre_boss_dialogue_event_id = dialogue_event_id
+	_instance.boss_flow_state = DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_PENDING
+
+func _require_boss_gate_allows_resolution() -> Dictionary:
+	if _instance == null:
+		return _fail("invalid_boss_gate_transition", "Dungeon lifecycle transition is not legal from the current state.")
+	if _instance.boss_flow_state == DungeonInstanceState.BOSS_FLOW_NONE:
+		return {"ok": true}
+	if _instance.boss_flow_state != DungeonInstanceState.BOSS_FLOW_COMBAT_ACTIVE:
+		return _fail("invalid_boss_gate_transition", "Boss resolution requires completed pre-combat dialogue and active boss combat.")
 	return {"ok": true}
 
 func _require_state(expected_state: String, reason: String) -> Dictionary:

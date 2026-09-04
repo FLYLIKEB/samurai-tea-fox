@@ -108,6 +108,8 @@ const DUNGEON_DEBUG_LOGGING := true
 const DUNGEON_TILESET_SOURCE_ID := "terrain_dungeon_mossy_dojo_tileset"
 const DUNGEON_IRON_SOURCE_ID := "asset_assets_sprites_objects_mining_iron_ore_32x32_png"
 const DUNGEON_STONE_SOURCE_ID := "small_rock_resource"
+const DUNGEON_BOSS_OWNER_ID := "dungeon_boss"
+const DUNGEON_PRE_BOSS_EVENT_TEMPLATE := "story_b%02d_03"
 const DUNGEON_FLOOR_ATLAS_COORDS := [
 	Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)
 ]
@@ -655,6 +657,8 @@ func _try_dungeon_interaction_from_input() -> bool:
 		return _gather_dungeon_ore(String(ore_target.target_id), ore_target.cell)
 	var enemy_cell := _dungeon_enemy_cell_near(origin_cell)
 	if enemy_cell != Vector2i(-1, -1):
+		if _is_dungeon_boss_cell(enemy_cell) and not _dungeon_boss_combat_available():
+			return _begin_dungeon_boss_precombat_dialogue()
 		_activate_dungeon_enemy(enemy_cell)
 		var direction := Vector2i(int(signf(float(enemy_cell.x - origin_cell.x))), int(signf(float(enemy_cell.y - origin_cell.y))))
 		return submit_action_command(GameCommand.new(GameCommand.Type.ATTACK, direction))
@@ -673,6 +677,10 @@ func _pointer_enemy_clicked(world_position: Vector2) -> bool:
 		if enemy.global_position.distance_to(world_position) <= hit_radius:
 			combat_dummy = enemy
 			return true
+	if _in_dungeon_map and not _dungeon_boss_combat_available():
+		var boss: Node2D = _dungeon_boss_node()
+		if boss != null and boss.global_position.distance_to(world_position) <= hit_radius:
+			return _begin_dungeon_boss_precombat_dialogue()
 	return false
 
 func _try_landmark_interaction_from_input() -> bool:
@@ -686,7 +694,7 @@ func _try_landmark_interaction_from_input() -> bool:
 func _is_dungeon_enemy_cell(cell: Vector2i) -> bool:
 	if not _in_dungeon_map or world_data == null:
 		return false
-	for owner_id in ["dungeon_enemy_0", "dungeon_enemy_1", "dungeon_enemy_2", "dungeon_boss"]:
+	for owner_id in ["dungeon_enemy_0", "dungeon_enemy_1", "dungeon_enemy_2", DUNGEON_BOSS_OWNER_ID]:
 		if owner_id in world_data.get_occupants(cell):
 			return true
 	return false
@@ -747,7 +755,7 @@ func _activate_dungeon_enemy(cell: Vector2i) -> void:
 			return
 
 func _is_dungeon_boss_cell(cell: Vector2i) -> bool:
-	return "dungeon_boss" in world_data.get_occupants(cell) if world_data != null else false
+	return DUNGEON_BOSS_OWNER_ID in world_data.get_occupants(cell) if world_data != null else false
 
 func _queue_pointer_acquisition(target_id: String, target_cell: Vector2i) -> bool:
 	if player == null:
@@ -912,6 +920,8 @@ func submit_interaction_at_world_cell(cell: Vector2i) -> bool:
 
 func submit_action_command(command) -> bool:
 	if not command is GameCommand:
+		return false
+	if _dungeon_boss_action_locked(command):
 		return false
 	match command.type:
 		GameCommand.Type.NARRATIVE_SELECT_OPTION:
@@ -1623,9 +1633,20 @@ func _combat_targets() -> Array:
 	if _in_dungeon_map:
 		for enemy in _dungeon_enemy_nodes:
 			if is_instance_valid(enemy) and enemy.visible and enemy.has_method("current_hp") and int(enemy.current_hp()) > 0:
+				if enemy.name == DUNGEON_BOSS_OWNER_ID and not _dungeon_boss_combat_available():
+					continue
 				targets.append(enemy)
 	elif combat_dummy != null and is_instance_valid(combat_dummy) and combat_dummy.visible and combat_dummy.has_method("current_hp") and int(combat_dummy.current_hp()) > 0:
 		targets.append(combat_dummy)
+	return targets
+
+func _dungeon_regular_combat_targets() -> Array:
+	var targets := []
+	if not _in_dungeon_map:
+		return targets
+	for enemy in _dungeon_enemy_nodes:
+		if is_instance_valid(enemy) and enemy.name != DUNGEON_BOSS_OWNER_ID and enemy.visible and enemy.has_method("current_hp") and int(enemy.current_hp()) > 0:
+			targets.append(enemy)
 	return targets
 
 func _ability_target_is_in_range(source, definition, direction: Vector2, target) -> bool:
@@ -1666,7 +1687,7 @@ func _ensure_playable_dungeon_runtime() -> Dictionary:
 func _dungeon_completion_objective_met(payload: Dictionary) -> bool:
 	if bool(payload.get("objective_complete", false)):
 		return true
-	return _in_dungeon_map and _combat_targets().is_empty()
+	return _in_dungeon_map and _combat_targets().is_empty() and _dungeon_boss_combat_available()
 
 func _ensure_current_dungeon_entered() -> Dictionary:
 	var projection: Dictionary = dungeon_runtime.to_projection() if dungeon_runtime != null else {}
@@ -1681,6 +1702,12 @@ func _ensure_current_dungeon_entered() -> Dictionary:
 		return {"ok": false, "reason": "missing_current_dungeon", "error": "No dungeon definition exists for the current biome."}
 	var biome_id := String(run_state.current_biome_id)
 	definition["biome_id"] = biome_id
+	var boss_definition := _current_biome_boss_definition(biome_id, String(definition.get("id", "")))
+	if not boss_definition.is_empty():
+		definition["boss_id"] = String(boss_definition.id)
+	var pre_boss_dialogue_event_id := _pre_boss_dialogue_event_id_for(definition, boss_definition)
+	if not pre_boss_dialogue_event_id.is_empty():
+		definition["pre_boss_dialogue_event_id"] = pre_boss_dialogue_event_id
 	var layout := WorldData.new(12, 9, "terrain_plains_grass_ground_01", true)
 	layout.add_required_landmark(WorldData.LANDMARK_ENTRY, "dungeon_entry", Vector2i(1, 1), {"dungeon_id": String(definition.id)})
 	_dungeon_resources.clear()
@@ -1718,8 +1745,8 @@ func _ensure_current_dungeon_entered() -> Dictionary:
 		if reservation.ok:
 			_dungeon_resources.append({"id": resource_id, "resource_id": item_id, "position": {"x": resource_cell.x, "y": resource_cell.y}, "source_id": source_id, "material_tag": "stone"})
 			resource_index += 1
-	for enemy in [{"id": "dungeon_enemy_0", "cell": Vector2i(7, 2)}, {"id": "dungeon_enemy_1", "cell": Vector2i(9, 5)}, {"id": "dungeon_enemy_2", "cell": Vector2i(5, 7)}, {"id": "dungeon_boss", "cell": Vector2i(10, 7)}]:
-		layout.reserve_entity(String(enemy.id), enemy.cell, Vector2i.ONE, false, {"role": "boss" if enemy.id == "dungeon_boss" else "dungeon_enemy"})
+	for enemy in [{"id": "dungeon_enemy_0", "cell": Vector2i(7, 2)}, {"id": "dungeon_enemy_1", "cell": Vector2i(9, 5)}, {"id": "dungeon_enemy_2", "cell": Vector2i(5, 7)}, {"id": DUNGEON_BOSS_OWNER_ID, "cell": Vector2i(10, 7)}]:
+		layout.reserve_entity(String(enemy.id), enemy.cell, Vector2i.ONE, false, {"role": "boss" if enemy.id == DUNGEON_BOSS_OWNER_ID else "dungeon_enemy"})
 	var enter_result: Dictionary = dungeon_runtime.enter_dungeon(
 		"%s_%d" % [String(definition.id), run_state.seed],
 		definition,
@@ -1763,6 +1790,99 @@ func _is_mining_target(target_id: String) -> bool:
 
 func _dungeon_runtime_is_active() -> bool:
 	return dungeon_runtime != null and String(dungeon_runtime.to_projection().get("lifecycle_state", DungeonInstanceState.STATE_OUTSIDE)) == DungeonInstanceState.STATE_ACTIVE
+
+func _dungeon_boss_combat_available() -> bool:
+	if dungeon_runtime == null:
+		return true
+	return dungeon_runtime.boss_combat_available()
+
+func _dungeon_boss_action_locked(command) -> bool:
+	if not _in_dungeon_map or _dungeon_boss_combat_available():
+		return false
+	if command.type == GameCommand.Type.NARRATIVE_SELECT_OPTION:
+		return false
+	if command.type == GameCommand.Type.INTERACT:
+		var target_id := String(command.payload.get("target_id", ""))
+		return target_id == DUNGEON_BOSS_OWNER_ID
+	return [GameCommand.Type.ATTACK, GameCommand.Type.DODGE, GameCommand.Type.CAST_ABILITY, GameCommand.Type.COMPLETE_DUNGEON].has(command.type)
+
+func _dungeon_boss_node() -> Node2D:
+	for enemy in _dungeon_enemy_nodes:
+		if is_instance_valid(enemy) and enemy.name == DUNGEON_BOSS_OWNER_ID:
+			return enemy
+	return null
+
+func _dungeon_boss_cell() -> Vector2i:
+	var boss: Node2D = _dungeon_boss_node()
+	if boss == null:
+		return Vector2i(-1, -1)
+	return world_cell_from_world_position(boss.global_position)
+
+func _dungeon_precombat_dialogue_is_active(event_id: String) -> bool:
+	if dungeon_runtime == null:
+		return false
+	var projection: Dictionary = dungeon_runtime.to_projection()
+	return String(projection.get("boss_flow_state", "")) == DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_ACTIVE \
+		and String(projection.get("pre_boss_dialogue_event_id", "")) == event_id
+
+func _restore_dungeon_boss_precombat_dialogue_if_needed() -> void:
+	if dungeon_runtime == null or narrative_runtime == null or run_state == null:
+		return
+	var projection: Dictionary = dungeon_runtime.to_projection()
+	if String(projection.get("boss_flow_state", "")) != DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_ACTIVE:
+		return
+	var event_id := String(projection.get("pre_boss_dialogue_event_id", ""))
+	if event_id.is_empty():
+		return
+	var model_result: Dictionary = narrative_runtime.read_model_for_event(event_id, run_state, _current_meta_state_snapshot())
+	if not model_result.ok:
+		_dungeon_debug("저장된 보스 전 대화 복원 실패: %s" % model_result)
+		return
+	_active_narrative_event_id = String(model_result.read_model.event_id)
+	_active_narrative_node_id = String(model_result.read_model.node_id)
+	if game_hud != null and game_hud.has_method("show_narrative_dialogue"):
+		game_hud.show_narrative_dialogue(model_result.read_model)
+
+func _begin_dungeon_boss_precombat_dialogue() -> bool:
+	if dungeon_runtime == null or narrative_runtime == null or run_state == null:
+		return false
+	if not _dungeon_regular_combat_targets().is_empty():
+		if game_hud != null and game_hud.has_method("show_command_feedback"):
+			game_hud.show_command_feedback("남은 적을 먼저 정리해야 합니다")
+		return false
+	var projection: Dictionary = dungeon_runtime.to_projection()
+	if String(projection.get("boss_flow_state", DungeonInstanceState.BOSS_FLOW_NONE)) == DungeonInstanceState.BOSS_FLOW_NONE:
+		var definition := _current_biome_dungeon_definition()
+		var biome_id := String(run_state.current_biome_id)
+		var boss_definition := _current_biome_boss_definition(biome_id, String(definition.get("id", "")))
+		var prepare_result: Dictionary = dungeon_runtime.prepare_boss_encounter({
+			"boss_id": String(boss_definition.get("id", "")),
+			"pre_boss_dialogue_event_id": _pre_boss_dialogue_event_id_for(definition, boss_definition)
+		})
+		if not prepare_result.ok:
+			_dungeon_debug("보스 전 대화 준비 실패: %s" % prepare_result)
+			if game_hud != null and game_hud.has_method("show_command_feedback"):
+				game_hud.show_command_feedback("보스 대화 데이터가 아직 연결되지 않았습니다")
+			return false
+	var begin_result: Dictionary = dungeon_runtime.begin_boss_precombat_dialogue()
+	if not begin_result.ok:
+		_dungeon_debug("보스 전 대화 시작 실패: %s" % begin_result)
+		return false
+	var event_id := String(begin_result.get("event_id", ""))
+	if event_id.is_empty():
+		return false
+	var model_result: Dictionary = narrative_runtime.read_model_for_event(event_id, run_state, _current_meta_state_snapshot())
+	if not model_result.ok:
+		_dungeon_debug("보스 전 대화 이벤트 로드 실패: %s" % model_result)
+		if game_hud != null and game_hud.has_method("show_command_feedback"):
+			game_hud.show_command_feedback("보스 대화 이벤트를 불러올 수 없습니다")
+		return false
+	_active_narrative_event_id = String(model_result.read_model.event_id)
+	_active_narrative_node_id = String(model_result.read_model.node_id)
+	if game_hud != null and game_hud.has_method("show_narrative_dialogue"):
+		game_hud.show_narrative_dialogue(model_result.read_model)
+	save_current_run()
+	return true
 
 func _dungeon_debug(message: String) -> void:
 	if DUNGEON_DEBUG_LOGGING:
@@ -1839,6 +1959,7 @@ func _enter_dungeon_map(layout: WorldData, definition: Dictionary, is_new_entry 
 	player.global_position = world_position_for_cell_center(spawn_cell)
 	_spawn_dungeon_combatants(is_new_entry)
 	_configure_game_hud()
+	_restore_dungeon_boss_precombat_dialogue_if_needed()
 	_save_progress_after_turn()
 
 func _spawn_dungeon_combatants(allow_default_spawn := false) -> void:
@@ -1849,7 +1970,7 @@ func _spawn_dungeon_combatants(allow_default_spawn := false) -> void:
 		{"id": "dungeon_enemy_0", "cell": Vector2i(7, 2), "monster_id": "road_bandit", "sprite_id": "monster_foxfire_front_idle"},
 		{"id": "dungeon_enemy_1", "cell": Vector2i(9, 5), "monster_id": "road_bandit", "sprite_id": "monster_foxfire_front_idle"},
 		{"id": "dungeon_enemy_2", "cell": Vector2i(5, 7), "monster_id": "road_bandit", "sprite_id": "monster_foxfire_front_idle"},
-		{"id": "dungeon_boss", "cell": Vector2i(10, 7), "monster_id": "road_bandit", "sprite_id": "asset_assets_sprites_characters_bosses_chr_6_yokai_tea_master_yokai_tea_master_front_32x32_png", "boss": true}
+		{"id": DUNGEON_BOSS_OWNER_ID, "cell": Vector2i(10, 7), "monster_id": "road_bandit", "sprite_id": "asset_assets_sprites_characters_bosses_chr_6_yokai_tea_master_yokai_tea_master_front_32x32_png", "boss": true}
 	]
 	var saved_states: Dictionary = run_state.dungeon_runtime_state.get("enemy_states", {}) if run_state != null else {}
 	for index in range(specs.size()):
@@ -1921,7 +2042,29 @@ func _on_dungeon_enemy_defeated(_event: Dictionary, enemy, owner_id: String) -> 
 		world_data.release_footprint(owner_id)
 	var remaining := _combat_targets().size()
 	_dungeon_debug("던전 몬스터 처치: %s, remaining=%d" % [owner_id, remaining])
-	if remaining == 0 and dungeon_runtime != null:
+	var dungeon_cleared := false
+	if owner_id == DUNGEON_BOSS_OWNER_ID and dungeon_runtime != null:
+		if not _dungeon_regular_combat_targets().is_empty():
+			_dungeon_debug("일반 몬스터가 남아 있어 보스 클리어 보류")
+			return
+		var projection: Dictionary = dungeon_runtime.to_projection()
+		var clear_result: Dictionary = dungeon_runtime.complete_boss_encounter({
+			"event_type": "boss_encounter_resolved",
+			"boss_id": String(projection.get("boss_id", "")),
+			"encounter_id": String(projection.get("boss_encounter_id", "")),
+			"dungeon_id": String(projection.get("dungeon_id", "")),
+			"biome_id": String(projection.get("biome_id", "")),
+			"resolution_type": "combat",
+			"choice_key": "dungeon_boss_defeated",
+			"run_flag": "dungeon_boss_defeated",
+			"reward_item_ids": [],
+			"progression_unlock_ids": [String(run_state.current_biome_id)]
+		})
+		_dungeon_debug("던전 보스 클리어 기록: ok=%s reason=%s" % [clear_result.get("ok", false), clear_result.get("reason", "")])
+		if not clear_result.ok:
+			return
+		dungeon_cleared = true
+	elif remaining == 0 and dungeon_runtime != null and _dungeon_boss_combat_available():
 		var clear_result: Dictionary = dungeon_runtime.complete_dungeon({
 			"objective_complete": true,
 			"resolution_type": "combat",
@@ -1933,8 +2076,9 @@ func _on_dungeon_enemy_defeated(_event: Dictionary, enemy, owner_id: String) -> 
 		_dungeon_debug("던전 클리어 기록: ok=%s reason=%s" % [clear_result.get("ok", false), clear_result.get("reason", "")])
 		if not clear_result.ok:
 			return
+		dungeon_cleared = true
 	if game_hud != null:
-		game_hud.show_status_toast("던전 클리어! 유적으로 돌아가세요." if remaining == 0 else "적을 처치했다!")
+		game_hud.show_status_toast("던전 클리어! 유적으로 돌아가세요." if dungeon_cleared else "적을 처치했다!")
 	_save_progress_after_turn()
 
 func _restore_dungeon_map_from_runtime() -> void:
@@ -2006,8 +2150,39 @@ func _current_biome_dungeon_definition() -> Dictionary:
 		"phase_count": 1,
 		"pattern_count": 1,
 		"peaceful_resolution": false,
-		"reward_item_ids": []
-	}
+			"reward_item_ids": []
+		}
+
+func _current_biome_boss_definition(biome_id: String, dungeon_id: String) -> Dictionary:
+	if catalog == null:
+		return {}
+	for definition in catalog.get_definitions("bosses"):
+		if String(definition.get("biome_id", "")) == biome_id and String(definition.get("dungeon_id", "")) == dungeon_id:
+			return definition.duplicate(true)
+	return {}
+
+func _pre_boss_dialogue_event_id_for(dungeon_definition: Dictionary, boss_definition := {}) -> String:
+	var explicit_event_id := String(dungeon_definition.get("pre_boss_dialogue_event_id", ""))
+	if explicit_event_id.is_empty() and typeof(boss_definition) == TYPE_DICTIONARY:
+		explicit_event_id = String(boss_definition.get("pre_boss_dialogue_event_id", ""))
+	if not explicit_event_id.is_empty():
+		return explicit_event_id if _narrative_event_exists(explicit_event_id) else ""
+	var biome_ids: Array = dungeon_definition.get("biome_ids", [])
+	if biome_ids.is_empty():
+		return ""
+	var biome_definition: Dictionary = catalog.find_by_id("biomes", String(biome_ids[0])) if catalog != null else {}
+	var order := int(biome_definition.get("progression_order", 0))
+	if order <= 0:
+		return ""
+	var legacy_event_id := DUNGEON_PRE_BOSS_EVENT_TEMPLATE % order
+	return legacy_event_id if _narrative_event_exists(legacy_event_id) else ""
+
+func _narrative_event_exists(event_id: String) -> bool:
+	if event_id.is_empty() or catalog == null:
+		return false
+	if narrative_runtime != null and narrative_runtime.event_definitions.has(event_id):
+		return true
+	return not catalog.find_by_id("events", event_id).is_empty()
 
 func _normalize_reward_hook_result(result) -> Dictionary:
 	if typeof(result) == TYPE_DICTIONARY:
@@ -2747,7 +2922,7 @@ func _handle_landmark_interaction(target_id: String) -> bool:
 		if dungeon_runtime == null:
 			return false
 		var lifecycle := String(dungeon_runtime.to_projection().get("lifecycle_state", DungeonInstanceState.STATE_OUTSIDE))
-		if lifecycle == DungeonInstanceState.STATE_ACTIVE and _combat_targets().is_empty():
+		if lifecycle == DungeonInstanceState.STATE_ACTIVE and _combat_targets().is_empty() and _dungeon_boss_combat_available():
 			var clear_result: Dictionary = dungeon_runtime.complete_dungeon({"objective_complete": true, "resolution_type": "combat", "choice_key": "dungeon_boss_defeated", "run_flag": "dungeon_boss_defeated", "reward_item_ids": [], "progression_unlock_ids": [String(run_state.current_biome_id)]})
 			if not clear_result.ok:
 				return false
@@ -2785,7 +2960,7 @@ func _handle_landmark_interaction(target_id: String) -> bool:
 		var progression := _ensure_biome_progression_state()
 		if not progression.ok:
 			return false
-		if dungeon_runtime != null and _in_dungeon_map and _combat_targets().is_empty():
+		if dungeon_runtime != null and _in_dungeon_map and _combat_targets().is_empty() and _dungeon_boss_combat_available():
 			var clear_result: Dictionary = dungeon_runtime.complete_dungeon({"objective_complete": true, "resolution_type": "combat", "choice_key": "dungeon_boss_defeated", "run_flag": "dungeon_boss_defeated", "reward_item_ids": [], "progression_unlock_ids": [biome_id]})
 			if clear_result.ok:
 				_dungeon_debug("유적 접근 전 미기록 던전 클리어 보정 완료")
@@ -3787,6 +3962,15 @@ func _handle_narrative_option_command(command: GameCommand) -> bool:
 		return false
 	_apply_narrative_result_commands(result.get("commands", []))
 	if bool(result.get("complete", false)):
+		var was_boss_precombat := _dungeon_precombat_dialogue_is_active(event_id)
+		if was_boss_precombat:
+			var boss_start_result: Dictionary = dungeon_runtime.complete_boss_precombat_dialogue(event_id)
+			if not boss_start_result.ok:
+				_dungeon_debug("보스 전 대화 완료 처리 실패: %s" % boss_start_result)
+				return false
+			var boss_cell := _dungeon_boss_cell()
+			if boss_cell != Vector2i(-1, -1):
+				_activate_dungeon_enemy(boss_cell)
 		_active_narrative_event_id = ""
 		_active_narrative_node_id = ""
 		if game_hud != null and game_hud.has_method("hide_narrative_dialogue"):
