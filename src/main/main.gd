@@ -394,6 +394,7 @@ func _configure_world_for_current_run() -> Dictionary:
 	})
 	if not generated_world.get("ok", false):
 		return {"ok": false, "reason": "world_generation_failed", "error": String(generated_world.get("failure_reason", "World generation failed."))}
+	generated_world["renderer_input"] = WorldRendererProjection.new().project(generated_world["world_data"], projection)
 	_biome_map_previews.clear()
 	for biome_definition in catalog.get_definitions("biomes"):
 		var preview_id := String(biome_definition.get("id", ""))
@@ -402,6 +403,7 @@ func _configure_world_for_current_run() -> Dictionary:
 		var preview_seed := int(run_state.seed) ^ (preview_id.hash() & 0x7fffffff)
 		var preview := generator.generate(preview_seed, catalog.data_version, biome_definition, catalog.get_definitions("balance"), catalog.get_definitions("items"), {"progression_projection": projection})
 		if bool(preview.get("ok", false)):
+			preview["renderer_input"] = WorldRendererProjection.new().project(preview["world_data"], projection)
 			_biome_map_previews[preview_id] = preview
 	var combat_pool_result := _configure_overworld_combat_from_spawn_pool()
 	if not combat_pool_result.ok:
@@ -4097,23 +4099,24 @@ func _owner_sprite_sources(world: Dictionary) -> Dictionary:
 		WorldData.LANDMARK_ENTRY: "small_signpost",
 		WorldData.LANDMARK_CORE_DUNGEON: "asset_assets_sprites_objects_structures_warehouse_2x2_64x64_png",
 		WorldData.LANDMARK_RUIN: "asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png",
-		WorldData.LANDMARK_TELEPORT_ZONE: WorldGenerator.RENDER_TELEPORT_ZONE,
+		WorldData.LANDMARK_TELEPORT_ZONE: "asset_assets_tiles_sheets_biome_atlases_biome_tile_map_light_object_biome_map_atlas_crop_1261_363_32x32_resize_32x32_png",
 		"wood": "log_resource",
 		"stone": "small_rock_resource",
 		"clay": "mud_patch_resource"
 	}
+	_merge_projected_owner_sources(sources, world.get("renderer_input", {}))
 	for node in world.get("resource_nodes", []):
 		var owner_id := String(node.get("id", ""))
 		var resource_id := String(node.get("resource_id", ""))
 		var source_id := String(node.get("source_id", ""))
 		if owner_id != "" and not source_id.is_empty():
 			sources[owner_id] = source_id
-		elif owner_id != "" and sources.has(resource_id):
+		elif owner_id != "" and not sources.has(owner_id) and sources.has(resource_id):
 			sources[owner_id] = sources[resource_id]
 	for node in world.get("facility_nodes", []):
 		var owner_id := String(node.get("id", ""))
 		var source_id := String(node.get("source_id", ""))
-		if owner_id != "" and source_id != "":
+		if owner_id != "" and source_id != "" and not sources.has(owner_id):
 			sources[owner_id] = source_id
 	# Generated path fences (and other procedural entities) keep their sprite
 	# reference in WorldData reservations rather than the high-level node lists.
@@ -4125,6 +4128,17 @@ func _owner_sprite_sources(world: Dictionary) -> Dictionary:
 		if not reservation_id.is_empty() and not reservation_source.is_empty():
 			sources[reservation_id] = reservation_source
 	return sources
+
+func _merge_projected_owner_sources(sources: Dictionary, renderer_input: Dictionary) -> void:
+	for layer in renderer_input.get("layers", []):
+		var layer_id := String(layer.get("id", ""))
+		if layer_id not in [WorldData.LAYER_FACILITIES, WorldData.LAYER_ENTITIES, WorldData.LAYER_INTERACTABLES]:
+			continue
+		for cell in layer.get("cells", []):
+			var owner_id := String(cell.get("owner_id", ""))
+			var source_id := String(cell.get("source_id", ""))
+			if not owner_id.is_empty() and not source_id.is_empty():
+				sources[owner_id] = source_id
 
 func _hide_prototype_visuals() -> void:
 	for child in get_children():

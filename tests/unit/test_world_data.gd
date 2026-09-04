@@ -101,8 +101,8 @@ func _renderer_projection_boundaries(asserts) -> void:
 	var projection := WorldRendererProjection.new().project(world_data, {
 		"teleport_states": {"common_region": "repairable"}
 	})
-	var terrain_layer: Dictionary = projection.layers[0]
-	var facility_layer: Dictionary = projection.layers[1]
+	var terrain_layer: Dictionary = projection.layers[1]
+	var facility_layer: Dictionary = projection.layers[2]
 	projection.bounds.width = 99
 
 	asserts.true_value(projection.read_only, "renderer projection is marked read-only")

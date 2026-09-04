@@ -9,7 +9,11 @@ const PlayerResources = preload("res://src/player/player_resources.gd")
 const RunState = preload("res://src/save/run_state.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
+const WorldRendererProjection = preload("res://src/world/rendering/world_renderer_projection.gd")
 const WorldSceneRenderer = preload("res://src/world/rendering/world_scene_renderer.gd")
+
+const COMMON_STONE_SOURCE_ID := "small_rock_resource"
+const MOUNTAIN_MINE_SOURCE_ID := "asset_assets_sprites_objects_mining_rock_cave_entrance_1x2_64x32_png"
 
 class TestPlayer:
 	extends Node2D
@@ -48,13 +52,16 @@ func run(asserts) -> void:
 
 func _generate_world(catalog: DataCatalog, generator: WorldGenerator, biome_id: String, seed: int) -> Dictionary:
 	var biome := catalog.find_by_id("biomes", biome_id)
-	return generator.generate(
+	var world := generator.generate(
 		seed,
 		catalog.data_version,
 		biome,
 		catalog.get_definitions("balance"),
 		catalog.get_definitions("items")
 	)
+	if bool(world.get("ok", false)):
+		world["renderer_input"] = WorldRendererProjection.new().project(world["world_data"])
+	return world
 
 func _assert_common_stone_renderer_contract(asserts, world: Dictionary, asset_catalog: AssetCatalog) -> void:
 	asserts.true_value(world.connectivity.valid, "DEV-76 common required landmarks remain connected")
@@ -67,10 +74,10 @@ func _assert_common_stone_renderer_contract(asserts, world: Dictionary, asset_ca
 			continue
 		stone_count += 1
 		var owner_id := String(node.get("id", ""))
-		asserts.equal(String(node.get("source_id", "")), WorldGenerator.RENDER_RESOURCE_STONE, "DEV-76 common stone node carries stable source_id")
-		asserts.equal(String(entity_sources.get(owner_id, "")), WorldGenerator.RENDER_RESOURCE_STONE, "DEV-76 common stone appears in renderer entity layer")
-		asserts.equal(String(interactable_sources.get(owner_id, "")), WorldGenerator.RENDER_RESOURCE_STONE, "DEV-76 common stone appears in renderer interactable layer")
-		asserts.true_value(not asset_catalog.id_for_reference(WorldGenerator.RENDER_RESOURCE_STONE).is_empty(), "DEV-76 common stone source resolves to an existing promoted asset")
+		asserts.false_value(node.has("source_id"), "DEV-76 common stone node stays semantic-only")
+		asserts.equal(String(entity_sources.get(owner_id, "")), COMMON_STONE_SOURCE_ID, "DEV-76 common stone appears in renderer entity layer")
+		asserts.equal(String(interactable_sources.get(owner_id, "")), COMMON_STONE_SOURCE_ID, "DEV-76 common stone appears in renderer interactable layer")
+		asserts.true_value(not asset_catalog.id_for_reference(COMMON_STONE_SOURCE_ID).is_empty(), "DEV-76 common stone source resolves to an existing promoted asset")
 		_assert_access_point_valid(asserts, world, node.get("access_position", {}), "DEV-76 common stone access point is reachable")
 	asserts.true_value(stone_count >= 1, "DEV-76 common biome places at least one visible stone resource")
 
@@ -86,10 +93,10 @@ func _assert_mountain_mine_renderer_contract(asserts, world: Dictionary, asset_c
 			continue
 		mine_count += 1
 		var owner_id := String(node.get("id", ""))
-		asserts.equal(String(node.get("source_id", "")), WorldGenerator.RENDER_MOUNTAIN_MINE, "DEV-76 mountain mine node carries stable source_id")
-		asserts.equal(String(facility_sources.get(owner_id, "")), WorldGenerator.RENDER_MOUNTAIN_MINE, "DEV-76 mountain mine appears in renderer facility layer")
-		asserts.equal(String(interactable_sources.get(owner_id, "")), WorldGenerator.RENDER_MOUNTAIN_MINE, "DEV-76 mountain mine appears in renderer interactable layer")
-		asserts.true_value(not asset_catalog.id_for_reference(WorldGenerator.RENDER_MOUNTAIN_MINE).is_empty(), "DEV-76 mountain mine source resolves to an existing promoted asset")
+		asserts.false_value(node.has("source_id"), "DEV-76 mountain mine node stays semantic-only")
+		asserts.equal(String(facility_sources.get(owner_id, "")), MOUNTAIN_MINE_SOURCE_ID, "DEV-76 mountain mine appears in renderer facility layer")
+		asserts.equal(String(interactable_sources.get(owner_id, "")), MOUNTAIN_MINE_SOURCE_ID, "DEV-76 mountain mine appears in renderer interactable layer")
+		asserts.true_value(not asset_catalog.id_for_reference(MOUNTAIN_MINE_SOURCE_ID).is_empty(), "DEV-76 mountain mine source resolves to an existing promoted asset")
 		_assert_access_point_valid(asserts, world, node.get("access_position", {}), "DEV-76 mountain mine access point is reachable")
 	asserts.equal(mine_count, 1, "DEV-76 mountain biome places exactly one mine facility")
 
@@ -98,7 +105,7 @@ func _assert_mountain_mine_renderer_contract(asserts, world: Dictionary, asset_c
 	asserts.true_value(render_result.ok, "DEV-76 headless renderer accepts mountain mine renderer input")
 	if render_result.ok:
 		asserts.true_value(int(render_result.counts.get(WorldData.LAYER_FACILITIES, 0)) >= 1, "DEV-76 headless renderer creates facility sprites")
-		asserts.false_value(WorldGenerator.RENDER_MOUNTAIN_MINE in render_result.asset_report.missing_references, "DEV-76 headless renderer resolves the mine asset reference")
+		asserts.false_value(MOUNTAIN_MINE_SOURCE_ID in render_result.asset_report.missing_references, "DEV-76 headless renderer resolves the mine asset reference")
 	root.free()
 
 func _assert_stone_command_and_save_load(asserts, catalog: DataCatalog, generated_world: Dictionary) -> void:
@@ -187,20 +194,18 @@ func _layer_source_ids_by_owner(renderer_input: Dictionary, layer_id: String) ->
 func _dev76_signature(world: Dictionary) -> Dictionary:
 	var resource_rows := []
 	for node in world.get("resource_nodes", []):
-		resource_rows.append("%s|%s|%s|%s|%s" % [
+		resource_rows.append("%s|%s|%s|%s" % [
 			String(node.get("id", "")),
 			String(node.get("resource_id", "")),
-			String(node.get("source_id", "")),
 			_key(_vector_from_dictionary(node.get("position", {}))),
 			_key(_vector_from_dictionary(node.get("access_position", {})))
 		])
 	resource_rows.sort()
 	var facility_rows := []
 	for node in world.get("facility_nodes", []):
-		facility_rows.append("%s|%s|%s|%s|%s" % [
+		facility_rows.append("%s|%s|%s|%s" % [
 			String(node.get("id", "")),
 			String(node.get("facility_term", "")),
-			String(node.get("source_id", "")),
 			_key(_vector_from_dictionary(node.get("position", {}))),
 			_key(_vector_from_dictionary(node.get("access_position", {})))
 		])

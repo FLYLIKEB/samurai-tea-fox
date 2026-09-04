@@ -67,7 +67,7 @@ func _ensure_caption() -> void:
 	_caption.add_theme_color_override("font_color", _effect_color())
 	_caption.add_theme_color_override("font_outline_color", Color(0.10, 0.07, 0.04, 1.0))
 	_caption.add_theme_constant_override("outline_size", 1)
-	var font := ResourceLoader.load(FONT_PATH) as Font
+	var font := _load_pixel_font()
 	if font is FontFile:
 		var font_file := font as FontFile
 		font_file.antialiasing = TextServer.FONT_ANTIALIASING_NONE
@@ -76,6 +76,11 @@ func _ensure_caption() -> void:
 		_caption.add_theme_font_override("font", font)
 	_caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_caption)
+
+func _load_pixel_font() -> Font:
+	if not ResourceLoader.exists(FONT_PATH, "Font"):
+		return null
+	return ResourceLoader.load(FONT_PATH, "Font") as Font
 
 func _verb() -> String:
 	return "채집" if effect_kind == "gatherable" else "획득"

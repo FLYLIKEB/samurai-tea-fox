@@ -293,14 +293,14 @@ func _assert_rainforest_runtime_sources(asserts, runtime: Main) -> void:
 	for node in runtime.generated_world.get("resource_nodes", []):
 		if String(node.get("resource_id", "")) == "item_5":
 			var incense_owner_id := String(node.get("id", ""))
-			asserts.equal(String(node.get("source_id", "")), "terrain_tree_round_32x32", "rainforest 침향 carries terrain tree asset id")
+			asserts.false_value(node.has("source_id"), "rainforest 침향 resource node stays semantic-only")
 			asserts.equal(String(owner_sources.get(incense_owner_id, "")), "terrain_tree_round_32x32", "main maps rainforest 침향 owner to terrain tree asset id")
 			asserts.equal(runtime.acquisition_service.gatherable_for(incense_owner_id).definition_id, "item_5", "main registers rainforest 침향 as a gatherable")
 			has_incense_gatherable = true
 		if String(node.get("resource_id", "")) != "wood":
 			continue
 		var owner_id := String(node.get("id", ""))
-		asserts.equal(String(node.get("source_id", "")), "terrain_tree_round_32x32", "rainforest wood carries terrain tree asset id")
+		asserts.false_value(node.has("source_id"), "rainforest wood resource node stays semantic-only")
 		asserts.equal(String(owner_sources.get(owner_id, "")), "terrain_tree_round_32x32", "main maps rainforest wood owner to its terrain tree asset id")
 		has_agarwood_source = true
 	asserts.true_value(has_agarwood_source, "rainforest runtime generates sourced agarwood resources")
