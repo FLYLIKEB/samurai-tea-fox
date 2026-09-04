@@ -91,6 +91,7 @@ const RENDER_WASTELAND_ABANDONED_OUTPOST := "asset_assets_sprites_objects_struct
 const RENDER_WASTELAND_RUINED_TEA_ROOM := "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png"
 const RENDER_WASTELAND_BATTLEFIELD_TRACE := "asset_assets_tiles_terrain_desert_bone_scatter_32x32_png"
 const RENDER_RESOURCE_IRON_SCRAP := "asset_assets_sprites_objects_mining_iron_ore_32x32_png"
+const RENDER_RESOURCE_STONE := "small_rock_resource"
 const RENDER_SNOWFIELD_SNOW := "asset_assets_tiles_terrain_snow_snow_ground_01_32x32_png"
 const RENDER_SNOWFIELD_PATH := "asset_assets_tiles_terrain_snow_snow_ground_03_32x32_png"
 const RENDER_SNOWFIELD_ICE := "asset_assets_tiles_terrain_snow_snow_ground_04_32x32_png"
@@ -1265,7 +1266,9 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 				"facility_terms": [],
 				"facility_source_by_term": {},
 				"resource_type_allowlist": ["재료"],
-				"resource_source_by_id": {},
+				"resource_source_by_id": {
+					"stone": RENDER_RESOURCE_STONE
+				},
 				"minimum_facility_nodes": 0
 			})
 		BIOME_MOUNTAIN:
@@ -1301,7 +1304,9 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 					"산중 찻집": RENDER_MOUNTAIN_TEA_HOUSE
 				},
 				"resource_type_allowlist": ["재료"],
-				"resource_source_by_id": {},
+				"resource_source_by_id": {
+					"stone": RENDER_MOUNTAIN_ROCK
+				},
 				"minimum_facility_nodes": facility_terms.size()
 			})
 		BIOME_WASTELAND:
