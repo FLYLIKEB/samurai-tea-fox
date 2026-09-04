@@ -93,7 +93,6 @@ static var POINTER_MOVE_STOP_DISTANCE_PIXELS := RuntimeConstants.float_value("in
 static var FEEDBACK_BEEP_MIX_RATE := RuntimeConstants.float_value("audio.feedback_mix_rate")
 static var FEEDBACK_BEEP_SECONDS := RuntimeConstants.float_value("audio.feedback_beep_seconds")
 static var FEEDBACK_BEEP_FREQUENCY := RuntimeConstants.float_value("audio.feedback_beep_frequency")
-static var TIME_SECONDS_PER_TURN := RuntimeConstants.float_value("game.turn_seconds")
 const FIRST_RUN_PROLOGUE_EVENT_ID := "first_run_prologue"
 const START_MODE_META := "muchau_start_mode"
 const START_MODE_NEW := "new"
@@ -2371,7 +2370,10 @@ func _is_turn_advancing_player_action(command) -> bool:
 func _advance_time_for_turn() -> void:
 	if time_state == null or player == null or player.resources == null:
 		return
-	time_state.tick(TIME_SECONDS_PER_TURN, player.resources)
+	time_state.tick(_time_seconds_per_turn(), player.resources)
+
+func _time_seconds_per_turn() -> float:
+	return RuntimeConstants.float_value("game.turn_seconds")
 
 func _on_player_hp_depleted() -> Dictionary:
 	if run_lifecycle_service == null:
