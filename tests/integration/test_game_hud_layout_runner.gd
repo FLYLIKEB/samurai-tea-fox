@@ -54,6 +54,8 @@ func _assert_layout_for_viewport(viewport_name: String, viewport_size: Vector2i)
 	hud._apply_safe_area_layout()
 	await process_frame
 	_assert_visible_rect_inside(viewport_name, hud, "Root/StatusPanel", viewport_size)
+	_assert_visible_rect_inside(viewport_name, hud, "Root/StatusPanel/StatusBody/StatusRows/EquipmentStrip", viewport_size)
+	_assert_rect_inside_node(viewport_name, hud, "Root/StatusPanel/StatusBody/StatusRows/EquipmentStrip", "Root/StatusPanel")
 	_assert_visible_rect_inside(viewport_name, hud, "Root/QuickSlotPanel", viewport_size)
 	_assert_visible_rect_inside(viewport_name, hud, "Root/MapPanel", viewport_size)
 	_assert_visible_rect_inside(viewport_name, hud, "Root/EnemyPanel", viewport_size)
@@ -114,6 +116,21 @@ func _assert_visible_rect_inside(viewport_name: String, root_node: Node, path: S
 	var rect := _rect(node)
 	if rect.position.x < -0.01 or rect.position.y < -0.01 or rect.end.x > float(viewport_size.x) + 0.01 or rect.end.y > float(viewport_size.y) + 0.01:
 		_failures.append("%s %s outside viewport: %s within %s" % [viewport_name, path, rect, viewport_size])
+
+func _assert_rect_inside_node(viewport_name: String, root_node: Node, child_path: String, parent_path: String) -> void:
+	var child := root_node.get_node_or_null(child_path) as Control
+	var parent := root_node.get_node_or_null(parent_path) as Control
+	if child == null or parent == null or not child.visible or not parent.visible:
+		return
+	var child_rect := _rect(child)
+	var parent_rect := _rect(parent)
+	if (
+		child_rect.position.x < parent_rect.position.x - 0.01
+		or child_rect.position.y < parent_rect.position.y - 0.01
+		or child_rect.end.x > parent_rect.end.x + 0.01
+		or child_rect.end.y > parent_rect.end.y + 0.01
+	):
+		_failures.append("%s %s outside %s: %s within %s" % [viewport_name, child_path, parent_path, child_rect, parent_rect])
 
 func _assert_no_overlap(viewport_name: String, root_node: Node, first_path: String, second_path: String) -> void:
 	var first := root_node.get_node_or_null(first_path) as Control

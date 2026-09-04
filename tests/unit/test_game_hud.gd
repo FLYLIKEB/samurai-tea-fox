@@ -53,6 +53,31 @@ class FakeInventory:
 class FakeInventoryCommandRuntime:
 	signal read_model_changed(read_model: Dictionary)
 
+	var equipment := {
+		"weapon": {
+			"slot": "weapon",
+			"item_id": "mountain_iron_dagger",
+			"instance_id": "weapon-1",
+			"definition": {"id": "mountain_iron_dagger", "name": "산철 단검", "type": "무기"}
+		},
+		"armor": {
+			"slot": "armor",
+			"item_id": "traveler_quilted_clothes",
+			"instance_id": "armor-1",
+			"definition": {"id": "traveler_quilted_clothes", "name": "나그네 누비옷", "type": "방어구"}
+		},
+		"tea_ware": {
+			"slot": "tea_ware",
+			"item_id": "humble_clay_bowl",
+			"instance_id": "tea-ware-1",
+			"definition": {"id": "humble_clay_bowl", "name": "소박한 흙찻잔", "type": "다구"}
+		}
+	}
+
+	func set_equipment_slot(slot_key: String, payload: Dictionary) -> void:
+		equipment[slot_key] = payload.duplicate(true)
+		read_model_changed.emit(read_model())
+
 	func read_model() -> Dictionary:
 		return {
 			"schema_version": 1,
@@ -63,7 +88,7 @@ class FakeInventoryCommandRuntime:
 			"selected_slot_index": 0,
 			"capacity": {"used": 3, "total": 14, "empty": 11, "full": false},
 			"available_filters": ["all", "재료", "소모품"],
-			"equipment": {},
+			"equipment": equipment.duplicate(true),
 			"slots": [
 				{"slot_index": 0, "empty": false, "selected": true, "item_id": "wood", "name": "wood", "kind": "재료", "quantity": 3, "max_stack": 20, "stack_label": "3/20", "can_use": false, "can_equip": false, "label": "01 wood x3 (3/20)", "commands": {}},
 				{"slot_index": 1, "empty": true, "selected": false, "item_id": "", "name": "", "kind": "", "quantity": 0, "max_stack": 0, "stack_label": "0/0", "can_use": false, "can_equip": false, "label": "02 빈 슬롯", "commands": {}},
@@ -178,6 +203,9 @@ class FakeCatalog:
 				return [
 					{"id": "wood", "name": "나무", "type": "재료"},
 					{"id": "wooden_workbench", "name": "목재 작업대", "type": "도구", "icon_asset_id": "asset_assets_sprites_objects_crafting_workbench_32x32_png"},
+					{"id": "mountain_iron_dagger", "name": "산철 단검", "type": "무기"},
+					{"id": "traveler_quilted_clothes", "name": "나그네 누비옷", "type": "방어구"},
+					{"id": "humble_clay_bowl", "name": "소박한 흙찻잔", "type": "다구"},
 					{"id": "missing_icon_item", "name": "그림 없는 잎", "type": "재료"}
 				]
 			"monsters":
@@ -208,6 +236,7 @@ func run(asserts) -> void:
 	_assert_read_model_uses_runtime_and_balance_sources(asserts)
 	_assert_inventory_item_icons_use_content_image_map(asserts)
 	_assert_crafting_result_icons_use_content_image_map(asserts)
+	_assert_equipment_strip_reads_runtime_equipment(asserts)
 	_assert_status_resources_use_visual_meters(asserts)
 	_assert_resource_details_open_without_emitting_movement(asserts)
 	_assert_time_uses_circular_dial(asserts)
@@ -238,6 +267,34 @@ func _assert_crafting_result_icons_use_content_image_map(asserts) -> void:
 		"item_wooden_workbench_object_64",
 		"crafting result icons resolve the dedicated content image before fixture icons"
 	)
+	hud.free()
+
+func _assert_equipment_strip_reads_runtime_equipment(asserts) -> void:
+	var hud := _configured_hud()
+	var strip := hud.get_node_or_null("Root/StatusPanel/StatusBody/StatusRows/EquipmentStrip") as HBoxContainer
+	asserts.true_value(strip != null, "HUD keeps the equipment strip inside the player status panel")
+	if strip != null:
+		asserts.equal(strip.get_child_count(), 3, "equipment strip always shows weapon, armor, and tea ware slots")
+	var read_model: Dictionary = hud.runtime_read_model()
+	asserts.equal(read_model.equipment.weapon.item_id, "mountain_iron_dagger", "HUD runtime model reads equipped weapon from inventory runtime")
+	var snapshot: Dictionary = hud.equipment_hud_snapshot()
+	asserts.equal(snapshot.weapon.item_id, "mountain_iron_dagger", "equipment HUD exposes the equipped weapon item id")
+	asserts.equal(snapshot.armor.item_id, "traveler_quilted_clothes", "equipment HUD exposes the equipped armor item id")
+	asserts.equal(snapshot.tea_ware.item_id, "humble_clay_bowl", "equipment HUD exposes the equipped tea ware item id")
+	asserts.equal(snapshot.weapon.icon_reference, "item_mountain_iron_dagger_icon", "weapon icon uses the dedicated content image map entry")
+	asserts.equal(snapshot.armor.icon_reference, "item_traveler_quilted_clothes_icon", "armor icon uses the dedicated content image map entry")
+	asserts.equal(snapshot.tea_ware.icon_reference, "item_humble_clay_bowl_icon", "tea ware icon uses the dedicated content image map entry")
+	asserts.equal(snapshot.weapon.display_text, "무 산철", "weapon slot keeps a visible slot cue and short item name")
+	asserts.equal(snapshot.armor.display_text, "방 나그네", "armor slot keeps a visible slot cue and short item name")
+	asserts.equal(snapshot.tea_ware.display_text, "다 소박한", "tea ware slot keeps a visible slot cue and short item name")
+	asserts.true_value(bool(snapshot.weapon.icon_has_texture), "equipped weapon slot loads a runtime texture")
+	asserts.true_value(String(snapshot.tea_ware.tooltip).contains("소박한 흙찻잔"), "equipment tooltip keeps the full item name")
+	var runtime := hud.inventory_command_runtime as FakeInventoryCommandRuntime
+	runtime.set_equipment_slot("weapon", {})
+	snapshot = hud.equipment_hud_snapshot()
+	asserts.equal(snapshot.weapon.item_id, "", "unequip read_model_changed immediately clears the weapon item id")
+	asserts.equal(snapshot.weapon.display_text, "무 -", "empty equipment slot renders a visible empty state")
+	asserts.false_value(bool(snapshot.weapon.icon_has_texture), "empty equipment slot hides the icon texture")
 	hud.free()
 
 func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:

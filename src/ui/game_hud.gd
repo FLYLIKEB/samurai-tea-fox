@@ -47,10 +47,23 @@ const PORTRAIT_PLAYER := PORTRAIT_MUCHAU
 
 const BALANCE_ABILITY_SLOTS_ID := "ability_equip_slots"
 const HUD_EDGE_GAP := 4.0
-const STATUS_PANEL_SIZE := Vector2(172, 68)
+const STATUS_PANEL_SIZE := Vector2(172, 90)
 const PORTRAIT_BOX_SIZE := Vector2(40, 40)
 const RESOURCE_ICON_COUNT := 5
 const RESOURCE_ICON_SIZE := Vector2(14, 14)
+const EQUIPMENT_ICON_SIZE := Vector2(18, 18)
+const EQUIPMENT_SLOT_SIZE := Vector2(34, 30)
+const EQUIPMENT_SLOT_KEYS := ["weapon", "armor", "tea_ware"]
+const EQUIPMENT_SLOT_LABELS := {
+	"weapon": "무기",
+	"armor": "방어",
+	"tea_ware": "다구"
+}
+const EQUIPMENT_SLOT_SHORT_LABELS := {
+	"weapon": "무",
+	"armor": "방",
+	"tea_ware": "다"
+}
 const RESOURCE_DETAIL_PANEL_SIZE := Vector2(172, 62)
 const ENEMY_PANEL_SIZE := Vector2(136, 46)
 const MAP_PANEL_SIZE := Vector2(126, 56)
@@ -168,6 +181,7 @@ var _selected_map_biome_id := ""
 var time_state
 var _labels: Dictionary = {}
 var _panels: Dictionary = {}
+var _equipment_slots: Dictionary = {}
 var _mobile_adapter := MobileCommandAdapter.new()
 var _built := false
 var _theme: Theme
@@ -249,11 +263,31 @@ func runtime_read_model() -> Dictionary:
 		"time_phase_label": _time_phase_label(phase_name),
 		"time_progress_percent": _time_progress_percent(),
 		"combat_target": _combat_target_read_model(),
+		"equipment": _equipment_read_model(),
 		"biome_label": _biome_label(String(world.get("biome_id", "common_region"))),
 		"terrain_count": _render_count("terrain"),
 		"object_count": _render_count("entities") + _render_count("Landmarks"),
 		"minimap": _minimap_read_model()
 	}
+
+func equipment_hud_snapshot() -> Dictionary:
+	var snapshot := {}
+	for slot_key in EQUIPMENT_SLOT_KEYS:
+		var nodes: Dictionary = _equipment_slots.get(slot_key, {})
+		var label := nodes.get("name") as Label
+		var icon := nodes.get("icon") as TextureRect
+		var cell := nodes.get("cell") as Control
+		snapshot[slot_key] = {
+			"slot_key": slot_key,
+			"slot_label": String(EQUIPMENT_SLOT_LABELS.get(slot_key, slot_key)),
+			"item_id": String(cell.get_meta("item_id", "") if cell != null else ""),
+			"name": String(cell.get_meta("name", "") if cell != null else ""),
+			"display_text": label.text if label != null else "",
+			"icon_reference": String(icon.get_meta("icon_reference", "") if icon != null else ""),
+			"icon_has_texture": icon != null and icon.texture != null,
+			"tooltip": cell.tooltip_text if cell != null else ""
+		}
+	return snapshot
 
 func press_mobile_button(button_id: String, direction := Vector2i.ZERO, slot := 0) -> bool:
 	if button_id == "repair_teleport":
@@ -622,6 +656,7 @@ func _build() -> void:
 	_labels.hp = _add_resource_icon_row(status_rows, "hp", ICON_HP, "체력", Color(0.86, 0.28, 0.16, 1.0))
 	_labels.ki = _add_resource_icon_row(status_rows, "ki", ICON_KI, "차기", Color(0.82, 0.53, 0.19, 1.0))
 	_labels.kokoro = _add_resource_icon_row(status_rows, "kokoro", ICON_KOKORO, "정신", Color(0.48, 0.40, 0.56, 1.0))
+	status_rows.add_child(_build_equipment_strip())
 	_build_resource_detail_panel(root)
 
 	var map_panel := _panel(MAP_PANEL_SIZE)
@@ -771,6 +806,7 @@ func _update() -> void:
 	_update_resource_icons("hp_icons", model.hp, model.hp_max)
 	_update_resource_icons("ki_icons", model.ki, model.ki_max)
 	_update_resource_icons("kokoro_icons", model.kokoro, model.kokoro_max)
+	_update_equipment_strip(model.get("equipment", {}))
 	_update_resource_detail(model)
 	_set_label("map_title", model.biome_label)
 	_set_label("time_phase", String(model.time_phase_label))
@@ -2250,6 +2286,109 @@ func _inventory_definition(item_id: String) -> Dictionary:
 		return catalog.find_by_id("items", item_id)
 	return {"id": item_id, "name": item_id}
 
+func _equipment_read_model() -> Dictionary:
+	if inventory_command_runtime == null or not inventory_command_runtime.has_method("read_model"):
+		return {}
+	var model: Dictionary = inventory_command_runtime.read_model()
+	return _dictionary_value(model.get("equipment", {})).duplicate(true)
+
+func _build_equipment_strip() -> HBoxContainer:
+	var strip := HBoxContainer.new()
+	strip.name = "EquipmentStrip"
+	_ignore_mouse(strip)
+	strip.add_theme_constant_override("separation", 3)
+	_equipment_slots.clear()
+	for slot_key in EQUIPMENT_SLOT_KEYS:
+		var cell := PanelContainer.new()
+		cell.name = "Equipment%s" % String(slot_key).to_pascal_case()
+		cell.custom_minimum_size = EQUIPMENT_SLOT_SIZE
+		cell.add_theme_stylebox_override("panel", _equipment_slot_style(false))
+		_ignore_mouse(cell)
+		strip.add_child(cell)
+		var rows := VBoxContainer.new()
+		rows.name = "Rows"
+		rows.alignment = BoxContainer.ALIGNMENT_CENTER
+		rows.add_theme_constant_override("separation", 0)
+		_ignore_mouse(rows)
+		cell.add_child(rows)
+		var icon := TextureRect.new()
+		icon.name = "ItemIcon"
+		icon.custom_minimum_size = EQUIPMENT_ICON_SIZE
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		rows.add_child(icon)
+		var label := _label(String(EQUIPMENT_SLOT_LABELS.get(slot_key, slot_key)), 7)
+		label.name = "ItemName"
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.custom_minimum_size = Vector2(EQUIPMENT_SLOT_SIZE.x - 4.0, 8.0)
+		label.clip_text = true
+		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		rows.add_child(label)
+		_equipment_slots[slot_key] = {"cell": cell, "icon": icon, "name": label}
+	return strip
+
+func _update_equipment_strip(equipment: Dictionary) -> void:
+	for slot_key in EQUIPMENT_SLOT_KEYS:
+		var nodes: Dictionary = _equipment_slots.get(slot_key, {})
+		var cell := nodes.get("cell") as PanelContainer
+		var icon := nodes.get("icon") as TextureRect
+		var label := nodes.get("name") as Label
+		if cell == null or icon == null or label == null:
+			continue
+		var payload := _dictionary_value(equipment.get(slot_key, {}))
+		var item_id := String(payload.get("item_id", ""))
+		var definition := _dictionary_value(payload.get("definition", {}))
+		if item_id.is_empty():
+			_set_equipment_slot_empty(slot_key, cell, icon, label)
+			continue
+		var name := String(definition.get("name", item_id))
+		var kind := String(definition.get("type", definition.get("kind", EQUIPMENT_SLOT_LABELS.get(slot_key, ""))))
+		var icon_reference := _item_icon_reference(item_id, kind, definition)
+		icon.texture = _load_texture(icon_reference) if not icon_reference.is_empty() else null
+		icon.visible = icon.texture != null
+		icon.set_meta("icon_reference", icon_reference)
+		cell.set_meta("item_id", item_id)
+		cell.set_meta("slot_key", slot_key)
+		cell.set_meta("name", name)
+		label.text = _equipment_slot_display(slot_key, name)
+		cell.tooltip_text = "%s: %s" % [String(EQUIPMENT_SLOT_LABELS.get(slot_key, slot_key)), name]
+		cell.add_theme_stylebox_override("panel", _equipment_slot_style(true))
+
+func _set_equipment_slot_empty(slot_key: String, cell: PanelContainer, icon: TextureRect, label: Label) -> void:
+	icon.texture = null
+	icon.visible = false
+	icon.set_meta("icon_reference", "")
+	cell.set_meta("item_id", "")
+	cell.set_meta("slot_key", slot_key)
+	cell.set_meta("name", "")
+	label.text = "%s -" % String(EQUIPMENT_SLOT_SHORT_LABELS.get(slot_key, slot_key))
+	cell.tooltip_text = "%s: 비어 있음" % String(EQUIPMENT_SLOT_LABELS.get(slot_key, slot_key))
+	cell.add_theme_stylebox_override("panel", _equipment_slot_style(false))
+
+func _equipment_slot_display(slot_key: String, name: String) -> String:
+	return "%s %s" % [String(EQUIPMENT_SLOT_SHORT_LABELS.get(slot_key, slot_key)), _compact_equipment_name(name)]
+
+func _compact_equipment_name(name: String) -> String:
+	var trimmed := name.strip_edges()
+	if trimmed.is_empty():
+		return "-"
+	var words := trimmed.split(" ", false)
+	if not words.is_empty():
+		return String(words[0]).left(4)
+	if trimmed.length() <= 4:
+		return trimmed
+	return trimmed.left(4)
+
+func _equipment_slot_style(equipped: bool) -> StyleBoxFlat:
+	var bg := Color(0.12, 0.085, 0.055, 0.90) if equipped else Color(0.06, 0.052, 0.042, 0.72)
+	var border := Color(0.86, 0.66, 0.36, 0.92) if equipped else Color(0.33, 0.25, 0.16, 0.70)
+	var style := _button_style(bg, true)
+	style.border_color = border
+	style.set_border_width_all(1)
+	style.set_content_margin_all(2)
+	return style
+
 func _inventory_item_icon_reference(row: Dictionary) -> String:
 	if row.is_empty() or bool(row.get("empty", false)):
 		return ""
@@ -2383,6 +2522,7 @@ func _apply_safe_area_layout() -> void:
 	_place_panel(_panels.menu, Control.PRESET_CENTER, Vector2.ZERO)
 	_place_panel(_panels.dpad, Control.PRESET_BOTTOM_LEFT, Vector2(margin.x, -margin.w))
 	_place_panel(_panels.action, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w))
+	_resolve_enemy_bottom_overlap(top_stack_bottom)
 	_resize_action_menu_panel(viewport_size, margin, top_stack_bottom)
 	_place_action_menu_panel(viewport_size, margin, top_stack_bottom)
 	_resize_narrative_panel(viewport_size, margin)
@@ -2454,6 +2594,28 @@ func _place_action_menu_panel(viewport_size: Vector2, margin: Vector4, top_stack
 		_place_panel(action_menu_panel, Control.PRESET_TOP_LEFT, Vector2(side_x, side_y))
 		return
 	_place_panel(action_menu_panel, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w))
+
+func _resolve_enemy_bottom_overlap(top_stack_bottom: float) -> void:
+	var enemy_panel := _panels.get("enemy") as Control
+	if enemy_panel == null or not enemy_panel.visible:
+		return
+	var enemy_rect := _panel_rect(enemy_panel)
+	var bottom_controls: Array[Rect2] = []
+	var dpad_rect := _panel_rect(_panels.dpad)
+	var action_rect := _panel_rect(_panels.action)
+	if dpad_rect.size != Vector2.ZERO:
+		bottom_controls.append(dpad_rect)
+	if action_rect.size != Vector2.ZERO:
+		bottom_controls.append(action_rect)
+	for control_rect in bottom_controls:
+		if not enemy_rect.intersects(control_rect):
+			continue
+		var candidate_y := control_rect.position.y - HUD_EDGE_GAP - enemy_rect.size.y
+		if candidate_y >= top_stack_bottom + HUD_EDGE_GAP:
+			_place_panel(enemy_panel, Control.PRESET_TOP_LEFT, Vector2(enemy_rect.position.x, candidate_y))
+		else:
+			enemy_panel.visible = false
+		return
 
 func _place_panel(panel, preset: int, offset: Vector2) -> void:
 	if not panel is Control:
