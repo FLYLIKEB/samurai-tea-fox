@@ -148,6 +148,7 @@ class ProjectContractTests(unittest.TestCase):
         notion_sources = json.loads(
             (ROOT / "data/generated/notion_sources.json").read_text(encoding="utf-8")
         )["sources"]
+        self.assertSetEqual(set(catalog_entries), set(notion_sources))
         for dataset, source in notion_sources.items():
             self.assertIn(dataset, catalog_entries)
             self.assertEqual(documented_sources[catalog_entries[dataset]], source)
