@@ -1,7 +1,5 @@
 extends SceneTree
 
-const GameHudTest = preload("res://tests/unit/test_game_hud.gd")
-
 const VIEWPORTS := [
 	{"name": "desktop", "size": Vector2i(1280, 720)},
 	{"name": "narrow_landscape", "size": Vector2i(480, 270)},
@@ -30,20 +28,46 @@ func _assert_layout_for_viewport(viewport_name: String, viewport_size: Vector2i)
 	viewport.size = viewport_size
 	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	root.add_child(viewport)
-	var fixture := GameHudTest.new()
-	var hud = fixture._configured_hud()
-	viewport.add_child(hud)
+	var packed_scene := load("res://src/main/main.tscn") as PackedScene
+	if packed_scene == null:
+		_failures.append("%s main scene did not load" % viewport_name)
+		viewport.queue_free()
+		return
+	var main := packed_scene.instantiate()
+	viewport.add_child(main)
 	await process_frame
+	await process_frame
+	await physics_frame
+	for _index in range(90):
+		if main.get_node_or_null("LoadingOverlay") == null:
+			break
+		await process_frame
+	var hud = main.get_node_or_null("GameHud")
+	if hud == null:
+		_failures.append("%s missing GameHud" % viewport_name)
+		viewport.queue_free()
+		await process_frame
+		return
+	if hud.has_method("narrative_dialogue_visible") and hud.narrative_dialogue_visible():
+		hud.hide_narrative_dialogue()
+		await process_frame
 	hud._apply_safe_area_layout()
 	await process_frame
 	_assert_visible_rect_inside(viewport_name, hud, "Root/StatusPanel", viewport_size)
 	_assert_visible_rect_inside(viewport_name, hud, "Root/QuickSlotPanel", viewport_size)
 	_assert_visible_rect_inside(viewport_name, hud, "Root/MapPanel", viewport_size)
+	_assert_visible_rect_inside(viewport_name, hud, "Root/EnemyPanel", viewport_size)
 	_assert_visible_rect_inside(viewport_name, hud, "Root/DPadPanel", viewport_size)
 	_assert_visible_rect_inside(viewport_name, hud, "Root/ActionPanel", viewport_size)
 	_assert_no_overlap(viewport_name, hud, "Root/StatusPanel", "Root/QuickSlotPanel")
 	_assert_no_overlap(viewport_name, hud, "Root/QuickSlotPanel", "Root/MapPanel")
 	_assert_no_overlap(viewport_name, hud, "Root/StatusPanel", "Root/MapPanel")
+	_assert_no_overlap(viewport_name, hud, "Root/EnemyPanel", "Root/StatusPanel")
+	_assert_no_overlap(viewport_name, hud, "Root/EnemyPanel", "Root/QuickSlotPanel")
+	_assert_no_overlap(viewport_name, hud, "Root/EnemyPanel", "Root/MapPanel")
+	_assert_no_overlap(viewport_name, hud, "Root/EnemyPanel", "Root/DPadPanel")
+	_assert_no_overlap(viewport_name, hud, "Root/EnemyPanel", "Root/ActionPanel")
+	_assert_no_overlap(viewport_name, hud, "Root/DPadPanel", "Root/QuickSlotPanel")
 	_assert_no_overlap(viewport_name, hud, "Root/DPadPanel", "Root/ActionPanel")
 	var menu_button := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/ActionMenuButton") as Button
 	if menu_button == null:
@@ -85,4 +109,4 @@ func _assert_no_overlap(viewport_name: String, root_node: Node, first_path: Stri
 		_failures.append("%s overlap: %s %s with %s %s" % [viewport_name, first_path, _rect(first), second_path, _rect(second)])
 
 func _rect(node: Control) -> Rect2:
-	return Rect2(node.global_position, node.size)
+	return node.get_global_rect()

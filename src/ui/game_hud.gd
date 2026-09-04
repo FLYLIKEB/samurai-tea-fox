@@ -2176,6 +2176,15 @@ func _apply_safe_area_layout() -> void:
 	):
 		quickslot_rect.position.x = margin.x
 		quickslot_rect.position.y = maxf(status_rect.end.y, map_rect.end.y) + HUD_EDGE_GAP
+	var dpad_size := _control_layout_size(_panels.dpad as Control) if _panels.dpad is Control else DPAD_BOARD_SIZE
+	var dpad_reserved_rect := Rect2(
+		Vector2(margin.x, viewport_size.y - margin.w - dpad_size.y - HUD_EDGE_GAP),
+		Vector2(dpad_size.x + HUD_EDGE_GAP, dpad_size.y + HUD_EDGE_GAP)
+	)
+	if quickslot_rect.intersects(dpad_reserved_rect):
+		var shifted_x := margin.x + dpad_size.x + HUD_EDGE_GAP
+		if shifted_x + quickslot_rect.size.x <= top_limit:
+			quickslot_rect.position.x = shifted_x
 	_place_panel(_panels.quickslot, Control.PRESET_TOP_LEFT, quickslot_rect.position)
 	var top_stack_bottom := maxf(maxf(status_rect.end.y, map_rect.end.y), quickslot_rect.end.y)
 	var resource_detail := _panels.get("resource_detail") as Control
@@ -2184,7 +2193,9 @@ func _apply_safe_area_layout() -> void:
 	if resource_detail != null and resource_detail.visible:
 		enemy_top += RESOURCE_DETAIL_PANEL_SIZE.y + 4.0
 	if quickslot_rect.position.x < margin.x + ENEMY_PANEL_SIZE.x + HUD_EDGE_GAP:
-		enemy_top = maxf(enemy_top, quickslot_rect.end.y + HUD_EDGE_GAP)
+		var enemy_size := _control_layout_size(_panels.enemy as Control) if _panels.enemy is Control else ENEMY_PANEL_SIZE
+		if enemy_top + enemy_size.y > quickslot_rect.position.y - HUD_EDGE_GAP:
+			enemy_top = maxf(enemy_top, quickslot_rect.end.y + HUD_EDGE_GAP)
 	_place_panel(_panels.enemy, Control.PRESET_TOP_LEFT, Vector2(margin.x, enemy_top))
 	_place_panel(_toast_panel, Control.PRESET_CENTER_TOP, Vector2(0.0, top_stack_bottom + HUD_EDGE_GAP))
 	_resize_menu_panel(viewport_size, margin)
@@ -2192,7 +2203,7 @@ func _apply_safe_area_layout() -> void:
 	_place_panel(_panels.dpad, Control.PRESET_BOTTOM_LEFT, Vector2(margin.x, -margin.w))
 	_place_panel(_panels.action, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w))
 	_resize_action_menu_panel(viewport_size, margin, top_stack_bottom)
-	_place_panel(_panels.action_menu, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w - ACTION_PANEL_SIZE.y - HUD_EDGE_GAP))
+	_place_action_menu_panel(viewport_size, margin, top_stack_bottom)
 	_place_panel(_panels.narrative, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w - NARRATIVE_PANEL_BOTTOM_OFFSET))
 	_place_panel(_facility_placement_panel, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w - 8.0))
 
@@ -2220,7 +2231,8 @@ func _resize_action_menu_panel(viewport_size: Vector2, margin: Vector4, top_stac
 	var action_menu_panel := _panels.get("action_menu") as Control
 	if action_menu_panel == null:
 		return
-	var action_top := viewport_size.y - margin.w - ACTION_PANEL_SIZE.y
+	var action_rect := _panel_rect(_panels.action)
+	var action_top := action_rect.position.y if action_rect.size.y > 0.0 else viewport_size.y - margin.w - ACTION_PANEL_SIZE.y
 	var available_height := action_top - top_stack_bottom - (HUD_EDGE_GAP * 2.0)
 	var panel_height := minf(ACTION_MENU_PANEL_SIZE.y, maxf(56.0, available_height))
 	var panel_size := Vector2(ACTION_MENU_PANEL_SIZE.x, panel_height)
@@ -2228,6 +2240,23 @@ func _resize_action_menu_panel(viewport_size: Vector2, margin: Vector4, top_stac
 	action_menu_panel.size = panel_size
 	if _action_menu_scroll != null:
 		_action_menu_scroll.custom_minimum_size = Vector2(panel_size.x - 12.0, maxf(44.0, panel_size.y - 12.0))
+
+func _place_action_menu_panel(viewport_size: Vector2, margin: Vector4, top_stack_bottom: float) -> void:
+	var action_menu_panel := _panels.get("action_menu") as Control
+	if action_menu_panel == null:
+		return
+	var action_rect := _panel_rect(_panels.action)
+	var menu_size := _control_layout_size(action_menu_panel)
+	var above_top := action_rect.position.y - HUD_EDGE_GAP - menu_size.y
+	if above_top >= top_stack_bottom + HUD_EDGE_GAP:
+		_place_panel(action_menu_panel, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, action_rect.position.y - viewport_size.y - HUD_EDGE_GAP))
+		return
+	var side_x := action_rect.position.x - HUD_EDGE_GAP - menu_size.x
+	var side_y := viewport_size.y - margin.w - menu_size.y
+	if side_x >= margin.x:
+		_place_panel(action_menu_panel, Control.PRESET_TOP_LEFT, Vector2(side_x, side_y))
+		return
+	_place_panel(action_menu_panel, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w))
 
 func _place_panel(panel, preset: int, offset: Vector2) -> void:
 	if not panel is Control:
