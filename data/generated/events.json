@@ -1,5 +1,5 @@
 {
-  "content_hash": "433144ba4c7d9425c22dd38a9222f4515fdf2b1dd7cb5026b2f882548ad26e6f",
+  "content_hash": "22eb21570008cd50ec1314747e8004bd044fc1adfb71697261e74d4ef46396fe",
   "data_version": "notion-2026-09-01",
   "items": [
     {
@@ -499,7 +499,85 @@
         }
       ],
       "replay_policy": "once",
+      "run_start": {
+        "father_physical_actor": false,
+        "max_run_count": 0,
+        "min_run_count": 0,
+        "presentation_kind": "father_farewell_then_border_cup",
+        "priority": 100
+      },
       "start_node_id": "father_farewell",
+      "status": "확정"
+    },
+    {
+      "id": "repeat_run_father_dream",
+      "name": "반복 런 시작 — 아버지의 다시 떠나는 꿈",
+      "nodes": [
+        {
+          "id": "father_dream",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "찻물에 비친 얼굴을 바라본다",
+              "id": "wake_to_border_cup",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "repeat_run_father_dream_seen",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-1",
+          "text": "또 길을 나서는구나. 괜찮다. 같은 물을 다시 끓여도 오늘의 한 잔은 전과 같지 않으니."
+        }
+      ],
+      "replay_policy": "once",
+      "run_start": {
+        "father_physical_actor": false,
+        "max_run_count": 4,
+        "min_run_count": 1,
+        "presentation_kind": "father_dream",
+        "priority": 90
+      },
+      "start_node_id": "father_dream",
+      "status": "확정"
+    },
+    {
+      "id": "veteran_run_father_memory",
+      "name": "반복 런 시작 — 다섯 번을 넘긴 향의 기억",
+      "nodes": [
+        {
+          "id": "father_scent_memory",
+          "options": [
+            {
+              "completes_event": true,
+              "conditions": [],
+              "display_text": "향이 사라지기 전에 길을 잡는다",
+              "id": "follow_scent_to_border_cup",
+              "next_node_id": "",
+              "results": [
+                {
+                  "id": "veteran_run_father_memory_seen",
+                  "type": "set_run_flag"
+                }
+              ]
+            }
+          ],
+          "speaker_id": "CHR-1",
+          "text": "이제는 길보다 네 표정을 먼저 보게 되는구나. 그 사람도 전부 기억하고 있을 테니, 네가 무엇을 반복하지 않을지만 정해라."
+        }
+      ],
+      "replay_policy": "once",
+      "run_start": {
+        "father_physical_actor": false,
+        "min_run_count": 5,
+        "presentation_kind": "father_scent_memory",
+        "priority": 110
+      },
+      "start_node_id": "father_scent_memory",
       "status": "확정"
     },
     {

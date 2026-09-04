@@ -64,7 +64,12 @@ func run(asserts) -> void:
 	var repeat_runtime := _configured_runtime(catalog, RunState.new(), {"run_count": 1})
 	asserts.true_value(repeat_runtime.result.ok, "repeat-run fixture configures")
 	if repeat_runtime.result.ok:
-		asserts.false_value(repeat_runtime.main.game_hud.narrative_dialogue_visible(), "repeat-run meta state does not auto-open the first-run prologue")
+		asserts.true_value(repeat_runtime.main.game_hud.narrative_dialogue_visible(), "repeat-run meta state opens its run-start memory presentation")
+		var repeat_model: Dictionary = repeat_runtime.main.start_run_event_read_model({"run_count": 1})
+		asserts.true_value(repeat_model.ok, "repeat-run start event has a read model")
+		if repeat_model.ok:
+			asserts.equal(repeat_model.read_model.event_id, "repeat_run_father_dream", "repeat-run start selects the father dream event")
+			asserts.false_value(bool(repeat_model.read_model.father_physical_actor), "repeat-run father presentation is not a physical Hongguk NPC")
 		asserts.equal(repeat_runtime.main.first_run_prologue_read_model({"run_count": 1}).reason, "not_first_run", "repeat-run meta state rejects first-run prologue")
 	asserts.equal(main.player.ability_runtime.equipped_ability_id(0), "ember", "first-tail playable ability is equipped by default")
 	main.player.global_position = main.world_position_for_cell_center(Vector2i(1, 1))
