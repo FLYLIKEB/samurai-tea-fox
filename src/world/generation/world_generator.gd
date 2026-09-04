@@ -4,6 +4,7 @@ class_name WorldGenerator
 const RuntimeConstants = preload("res://src/core/config/runtime_constants.gd")
 const DeterministicRng = preload("res://src/core/rng/deterministic_rng.gd")
 const ConnectivityValidator = preload("res://src/world/generation/connectivity_validator.gd")
+const MonsterSpawnPoolResolver = preload("res://src/world/generation/monster_spawn_pool_resolver.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldRendererProjection = preload("res://src/world/rendering/world_renderer_projection.gd")
 
@@ -137,6 +138,15 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 	if not resource_result.ok:
 		return _failure(seed, data_version, biome_definition, retry_limit, resource_result.reason, resource_result)
 	var resource_ids: Array = resource_result.ids
+	var monster_spawn_pool := {}
+	if options.has("monster_definitions"):
+		monster_spawn_pool = MonsterSpawnPoolResolver.new().resolve(
+			biome_definition,
+			options.get("monster_definitions", []),
+			String(options.get("time_phase", "day")),
+			seed,
+			data_version
+		)
 	var min_resource_result := _minimum_resource_nodes(balance_definitions, options)
 	if not min_resource_result.ok:
 		return _failure(seed, data_version, biome_definition, retry_limit, min_resource_result.reason)
@@ -169,7 +179,8 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 			max_resource_placement_attempts,
 			resource_ids,
 			progression_projection,
-			profile
+			profile,
+			monster_spawn_pool
 		)
 		if world.ok:
 			world.template_id = String(template.id)
@@ -177,7 +188,7 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 
 	return _failure(seed, data_version, biome_definition, retry_limit, "connectivity_or_resource_validation_failed")
 
-func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, layout_rng: DeterministicRng, content_rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, progression_projection: Dictionary, profile: Dictionary) -> Dictionary:
+func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, layout_rng: DeterministicRng, content_rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, progression_projection: Dictionary, profile: Dictionary, monster_spawn_pool: Dictionary) -> Dictionary:
 	var world_data := WorldData.new(MAP_WIDTH, MAP_HEIGHT, String(profile.default_terrain_id), bool(profile.default_walkable))
 	world_data.base_terrain_id = _base_terrain_render_id(String(profile.id))
 	var chunks := _compose_chunks(layout_rng, world_data, profile)
@@ -216,6 +227,7 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 		"templates": templates,
 		"facility_nodes": facility_nodes,
 		"resource_nodes": resource_nodes,
+		"monster_spawn_pool": monster_spawn_pool.duplicate(true),
 		"min_resource_nodes": min_resource_nodes,
 		"retry_attempt": attempt,
 		"retry_limit": retry_limit,

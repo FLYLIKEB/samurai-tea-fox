@@ -12,7 +12,14 @@ func _init(initial_catalog) -> void:
 	catalog = initial_catalog
 
 func spawn(monster_id: String, spawn_context := {}) -> Dictionary:
-	var definition_result: Dictionary = MonsterDefinition.from_catalog(catalog, monster_id)
+	var row: Dictionary = catalog.find_by_id("monsters", monster_id)
+	if row.is_empty():
+		return {"ok": false, "error": "Missing monster definition: %s" % monster_id}
+	row = row.duplicate(true)
+	var behavior_type_override := String(spawn_context.get("behavior_type_override", ""))
+	if not behavior_type_override.is_empty():
+		row["behavior_type"] = behavior_type_override
+	var definition_result: Dictionary = MonsterDefinition.from_dictionary(row)
 	if not definition_result.ok:
 		return definition_result
 	var combat_id := String(spawn_context.get("combat_id", ""))
