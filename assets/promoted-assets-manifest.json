@@ -6,7 +6,7 @@
     "remaining_source_files": 0,
     "remaining_source_image_files": 0
   },
-  "total_runtime_pngs": 532,
+  "total_runtime_pngs": 533,
   "runtime_roots": [
     "assets/backgrounds",
     "assets/sprites",
@@ -1147,6 +1147,15 @@
       "alpha_empty": true,
       "source_sha256": "sha256:3165bba0123b9e4489e4717fa6924102843adc0bcc23115da0fd2f6d65405cd3",
       "rgba_sha256": "sha256:e4a2eb9c1cd8bd477c5c46b204430ca5946c58b1d0a0e73056e06ff2e0ace63c"
+    },
+    {
+      "path": "assets/sprites/items/stone_axe_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": true,
+      "source_sha256": "sha256:82a2ba777c45e61f8c0b7bf520cb8c252e9756d1b2d7a8d596c603fd0307df43",
+      "rgba_sha256": "sha256:b85b37489cb034d2e762939c77021d224719242b744036704ed293eea7f969ea"
     },
     {
       "path": "assets/sprites/items/traveler_quilted_clothes_32x32.png",

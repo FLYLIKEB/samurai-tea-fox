@@ -10,7 +10,7 @@
 - 파일 경로 무결성 누락/깨짐: 0개
 - 전용 에셋 미해결: 0개
 - 사람 아트 검수 필요: 39개
-- 런타임 승인 매핑: 59개
+- 런타임 승인 매핑: 60개
 
 `missing_or_broken`/`path_integrity_missing_or_broken`은 현재 연결된 manifest asset ID와 PNG 파일 경로의 무결성 지표다. 전용 에셋 완료 지표가 아니며, 미검수 아이템 매핑은 `runtime_approved=false`로 런타임 조회에서 제외한다.
 
@@ -54,7 +54,7 @@
 | `snow_bamboo_overcoat` | 설죽 덧옷 | 방어구 | dedicated_item_icon | True | False | `item_snow_bamboo_overcoat_icon` | `res://assets/sprites/items/snow_bamboo_overcoat_32x32.png` |  |
 | `snowfield_mineral` | 설원 광물 | 재료 | dedicated_item_icon | True | False | `item_snowfield_mineral_icon` | `res://assets/sprites/items/snowfield_mineral_32x32.png` |  |
 | `stone` | 돌 | 재료 | dedicated_item_icon | True | False | `item_stone_icon` | `res://assets/sprites/items/stone_32x32.png` |  |
-| `stone_axe` | 돌도끼 | 도구 | semantic_existing_asset | False | False | `asset_assets_ui_icons_atlas_sword_png` | `res://assets/ui/icons/atlas/sword.png` |  |
+| `stone_axe` | 돌도끼 | 도구 | dedicated_item_icon | True | False | `item_stone_axe_icon` | `res://assets/sprites/items/stone_axe_32x32.png` |  |
 | `traveler_quilted_clothes` | 여행자의 누비옷 | 방어구 | dedicated_item_icon | True | False | `item_traveler_quilted_clothes_icon` | `res://assets/sprites/items/traveler_quilted_clothes_32x32.png` |  |
 | `unbroken_failure` | 깨지지 않은 실패작 | 다구 | dedicated_item_icon | True | False | `item_unbroken_failure_icon` | `res://assets/sprites/items/unbroken_failure_32x32.png` |  |
 | `war_tea_caddy` | 전란의 차입 | 다구 | dedicated_item_icon | True | False | `item_war_tea_caddy_icon` | `res://assets/sprites/items/war_tea_caddy_32x32.png` |  |

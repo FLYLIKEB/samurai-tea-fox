@@ -11617,6 +11617,29 @@
       "rgba_sha256": "sha256:e4a2eb9c1cd8bd477c5c46b204430ca5946c58b1d0a0e73056e06ff2e0ace63c"
     },
     {
+      "id": "item_stone_axe_icon",
+      "name": "돌도끼 아이콘",
+      "status": "완료",
+      "kind": "runtime_png",
+      "path": "res://assets/sprites/items/stone_axe_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "runtime_scale": 1,
+      "source_sha256": "sha256:82a2ba777c45e61f8c0b7bf520cb8c252e9756d1b2d7a8d596c603fd0307df43",
+      "rgba_sha256": "sha256:b85b37489cb034d2e762939c77021d224719242b744036704ed293eea7f969ea"
+    },
+    {
       "id": "item_wood_icon",
       "name": "목재 아이콘",
       "status": "완료",
