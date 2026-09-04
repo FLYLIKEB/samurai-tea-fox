@@ -88,6 +88,8 @@ const RESOURCE_SOURCE_BY_BIOME_RESOURCE := {
 	"rainforest|clay": "asset_assets_sprites_objects_natural_props_reed_clump_32x32_png"
 }
 
+const PATH_FENCE_SOURCE_ID := "asset_assets_sprites_objects_structures_wood_fence_horizontal_1x2_64x32_png"
+
 const TREE_SOURCE_BY_TERRAIN := {
 	"common_forest": "terrain_tree_broadleaf_32x32",
 	"mountain_conifer_forest": "terrain_tree_pine_32x32",
@@ -231,7 +233,7 @@ func _owner_source_id(owner_id: String, metadata: Dictionary) -> String:
 	if String(metadata.get("terrain_overlay", "")) == "tree":
 		return String(TREE_SOURCE_BY_TERRAIN.get(String(metadata.get("terrain_id", "")), ""))
 	if String(metadata.get("terrain_overlay", "")) == "path_fence":
-		return "asset_assets_sprites_objects_structures_wood_fence_horizontal_1x2_64x32_png"
+		return PATH_FENCE_SOURCE_ID
 	var facility_key := "%s|%s" % [String(metadata.get("biome_rule_id", "")), String(metadata.get("facility_term", ""))]
 	if FACILITY_SOURCE_BY_BIOME_TERM.has(facility_key):
 		return String(FACILITY_SOURCE_BY_BIOME_TERM[facility_key])

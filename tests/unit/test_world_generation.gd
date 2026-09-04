@@ -43,7 +43,7 @@ func run(asserts) -> void:
 	_assert_renderer_source_paths_exist(asserts, a.renderer_input)
 	_assert_large_fenced_house(asserts, a)
 	_assert_path_edge_fences(asserts, a)
-	_assert_tree_obstacles_render_over_base(asserts, a, WorldGenerator.TERRAIN_FOREST, WorldGenerator.RENDER_GRASS, WorldGenerator.RENDER_FOREST_TREE, "common forest")
+	_assert_tree_obstacles_render_over_base(asserts, a, WorldGenerator.TERRAIN_FOREST, _terrain_source_id(WorldGenerator.TERRAIN_GRASS), _tree_source_id(WorldGenerator.TERRAIN_FOREST), "common forest")
 	_assert_resource_accessibility(asserts, a)
 	_assert_common_templates(asserts, a)
 	_assert_continuous_water_stroke(asserts, a)
@@ -143,7 +143,7 @@ func _assert_mountain_generation(asserts, catalog, generator: WorldGenerator) ->
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 	_assert_large_fenced_house(asserts, generated)
 	_assert_mountain_terrain_profile(asserts, generated.world_data)
-	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_MOUNTAIN_CONIFER, WorldGenerator.RENDER_MOUNTAIN_SLOPE, WorldGenerator.RENDER_MOUNTAIN_CONIFER, "mountain conifer")
+	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_MOUNTAIN_CONIFER, _terrain_source_id(WorldGenerator.TERRAIN_MOUNTAIN_SLOPE), _tree_source_id(WorldGenerator.TERRAIN_MOUNTAIN_CONIFER), "mountain conifer")
 	_assert_mountain_renderer_sources(asserts, generated.renderer_input)
 	_assert_landmark_terrain_terms(asserts, generated.landmarks)
 	_assert_resource_ids_resolve_to_mountain_materials(asserts, generated.resource_nodes, mountain, catalog.get_definitions("items"))
@@ -195,7 +195,7 @@ func _assert_wasteland_generation(asserts, catalog, generator: WorldGenerator) -
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 	_assert_large_fenced_house(asserts, generated)
 	_assert_wasteland_terrain_profile(asserts, generated.world_data)
-	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_WASTELAND_DEAD_TREE, WorldGenerator.RENDER_WASTELAND_DRY_SOIL, WorldGenerator.RENDER_WASTELAND_DEAD_TREE, "wasteland dead tree")
+	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_WASTELAND_DEAD_TREE, _terrain_source_id(WorldGenerator.TERRAIN_WASTELAND_DRY_SOIL), _tree_source_id(WorldGenerator.TERRAIN_WASTELAND_DEAD_TREE), "wasteland dead tree")
 	_assert_wasteland_renderer_sources(asserts, generated.renderer_input)
 	_assert_landmark_terms(asserts, generated.landmarks, ["마른 흙", "갈라진 땅", "죽은 나무", "폐허", "말라붙은 하천", "군영 흔적"])
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, wasteland, catalog.get_definitions("items"))
@@ -251,7 +251,7 @@ func _assert_snowfield_generation(asserts, catalog, generator: WorldGenerator) -
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 	_assert_large_fenced_house(asserts, generated)
 	_assert_snowfield_terrain_profile(asserts, generated.world_data)
-	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_SNOWFIELD_PINE, WorldGenerator.RENDER_SNOWFIELD_SNOW, WorldGenerator.RENDER_SNOWFIELD_PINE, "snowfield pine")
+	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_SNOWFIELD_PINE, _terrain_source_id(WorldGenerator.TERRAIN_SNOWFIELD_SNOW), _tree_source_id(WorldGenerator.TERRAIN_SNOWFIELD_PINE), "snowfield pine")
 	_assert_snowfield_renderer_sources(asserts, generated.renderer_input)
 	_assert_landmark_terms(asserts, generated.landmarks, ["눈밭", "얼어붙은 강", "침엽수", "빙벽", "눈 덮인 산길"])
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, snowfield, catalog.get_definitions("items"))
@@ -308,7 +308,7 @@ func _assert_rainforest_generation(asserts, catalog, generator: WorldGenerator) 
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 	_assert_large_fenced_house(asserts, generated)
 	_assert_rainforest_terrain_profile(asserts, generated.world_data)
-	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_RAINFOREST_AGARWOOD, "terrain_plains_flower_grass_01", WorldGenerator.RENDER_RAINFOREST_AGARWOOD, "rainforest agarwood")
+	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_RAINFOREST_AGARWOOD, _terrain_source_id(WorldGenerator.TERRAIN_RAINFOREST_RIVER_BANK), _tree_source_id(WorldGenerator.TERRAIN_RAINFOREST_AGARWOOD), "rainforest agarwood")
 	_assert_rainforest_renderer_sources(asserts, generated.renderer_input)
 	_assert_landmark_terms(asserts, generated.landmarks, ["밀림", "습지", "넓은 강", "덩굴 통로", "차 재배지", "향목 숲"])
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, rainforest, catalog.get_definitions("items"))
@@ -366,9 +366,9 @@ func _assert_large_fenced_house(asserts, world: Dictionary) -> void:
 	asserts.equal(house.get("footprint_size", {}).get("x", 0), 2, "large house uses the 2x2 house footprint")
 	asserts.equal(house.get("footprint_size", {}).get("y", 0), 2, "large house uses the 2x2 house footprint height")
 	asserts.equal(house.get("fence_owner_ids", []).size(), 8, "large house has a complete eight-segment fence")
-	_assert_asset_reference_exists(asserts, WorldGenerator.LARGE_HOUSE_SOURCE_ID, "large house asset exists")
-	_assert_asset_reference_exists(asserts, WorldGenerator.FENCE_CORNER_SOURCE_ID, "fence corner asset exists")
-	_assert_asset_reference_exists(asserts, WorldGenerator.FENCE_HORIZONTAL_SOURCE_ID, "fence segment asset exists")
+	_assert_asset_reference_exists(asserts, String(WorldRendererProjection.OWNER_SOURCE_IDS.get(WorldGenerator.LARGE_HOUSE_ID, "")), "large house asset exists")
+	_assert_asset_reference_exists(asserts, String(WorldRendererProjection.OWNER_SOURCE_IDS.get("large_house_fence_nw", "")), "fence corner asset exists")
+	_assert_asset_reference_exists(asserts, WorldRendererProjection.PATH_FENCE_SOURCE_ID, "fence segment asset exists")
 
 func _assert_facility_accessibility(asserts, world: Dictionary) -> void:
 	_assert_facility_accessibility_for_terms(asserts, world, ["광산", "산사", "폐광", "산중 찻집"])
@@ -571,7 +571,7 @@ func _assert_path_edge_fences(asserts, world: Dictionary) -> void:
 		asserts.true_value(next_to_path, "path fence is placed beside a route cell")
 		fence_sources[String(entity_sources.get(String(reservation.get("owner_id", "")), ""))] = true
 	asserts.true_value(fence_count > 0, "generated route has intermittent edge fences")
-	asserts.true_value(fence_sources.has(WorldGenerator.FENCE_HORIZONTAL_SOURCE_ID), "route uses the existing wooden fence object")
+	asserts.true_value(fence_sources.has(WorldRendererProjection.PATH_FENCE_SOURCE_ID), "route uses the existing wooden fence object")
 
 func _assert_continuous_water_stroke(asserts, world: Dictionary) -> void:
 	var water_template := _template_by_id(world, WorldGenerator.TEMPLATE_WATER_STROKE)
@@ -904,6 +904,12 @@ func _vector_from_dictionary(data: Dictionary) -> Vector2i:
 
 func _key(position: Vector2i) -> String:
 	return "%d,%d" % [position.x, position.y]
+
+func _terrain_source_id(terrain_id: String) -> String:
+	return String(WorldRendererProjection.TERRAIN_SOURCE_IDS.get(terrain_id, terrain_id))
+
+func _tree_source_id(terrain_id: String) -> String:
+	return String(WorldRendererProjection.TREE_SOURCE_BY_TERRAIN.get(terrain_id, ""))
 
 func _canonical_world(world: Dictionary) -> Dictionary:
 	var canonical := world.duplicate(true)

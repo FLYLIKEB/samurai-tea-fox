@@ -56,66 +56,6 @@ const TERRAIN_RAINFOREST_TEA_FIELD := "rainforest_tea_field"
 const TERRAIN_RAINFOREST_AGARWOOD := "rainforest_agarwood_grove"
 const TERRAIN_RAINFOREST_RIVER_BANK := "rainforest_river_bank"
 
-const RENDER_GROUND := "terrain_plains_grass_ground_01"
-const RENDER_GRASS := "terrain_plains_grass_ground_01"
-const RENDER_PATH := "asset_assets_tiles_terrain_paths_road_isolated_32x32_png"
-const RENDER_FIELD := "terrain_plains_flower_grass_01"
-const RENDER_FOREST_TREE := "terrain_tree_broadleaf_32x32"
-const RENDER_WATER := "terrain_river_water_01"
-const RENDER_MOUNTAIN_SLOPE := "asset_assets_tiles_terrain_mountain_mountain_ground_01_32x32_png"
-const RENDER_MOUNTAIN_BASE_GRASS := "terrain_mountain_base_grass_01"
-const RENDER_MOUNTAIN_PATH := "asset_assets_tiles_terrain_mountain_mountain_trail_01_32x32_png"
-const RENDER_MOUNTAIN_CLIFF := "asset_assets_tiles_terrain_mountain_mountain_cliff_01_32x32_png"
-const RENDER_BRIDGE_VERTICAL := "asset_assets_tiles_terrain_bridges_bridge_vertical_32x32_png"
-const RENDER_BRIDGE_HORIZONTAL := "asset_assets_tiles_terrain_bridges_bridge_horizontal_32x32_png"
-const RENDER_BRIDGE := RENDER_BRIDGE_VERTICAL
-const RENDER_TELEPORT_ZONE := "asset_assets_tiles_sheets_biome_atlases_biome_tile_map_light_object_biome_map_atlas_crop_1261_363_32x32_resize_32x32_png"
-const RENDER_MAP_EDGE_CLIFF := "asset_assets_tiles_sheets_biome_atlases_biome_tile_map_light_object_biome_map_atlas_crop_147_91_35x34_resize_32x32_png"
-const RENDER_MOUNTAIN_ROCK := "asset_assets_tiles_terrain_mountain_mountain_rock_01_32x32_png"
-const RENDER_MOUNTAIN_CONIFER := "terrain_tree_pine_32x32"
-const RENDER_MOUNTAIN_CAVE := "asset_assets_sprites_objects_mining_rock_cave_entrance_1x2_64x32_png"
-const RENDER_MOUNTAIN_MINE := "asset_assets_sprites_objects_mining_rock_cave_entrance_1x2_64x32_png"
-const RENDER_MOUNTAIN_TEMPLE := "asset_assets_sprites_objects_structures_shrine_torii_gate_2x2_64x64_png"
-const RENDER_MOUNTAIN_ABANDONED_MINE := "asset_assets_sprites_objects_mining_timber_support_1x2_32x64_png"
-const RENDER_MOUNTAIN_TEA_HOUSE := "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png"
-const RENDER_WASTELAND_DRY_SOIL := "asset_assets_tiles_terrain_desert_dry_soil_01_32x32_png"
-const RENDER_WASTELAND_CRACKED_GROUND := "asset_assets_tiles_terrain_desert_cracked_clay_32x32_png"
-const RENDER_WASTELAND_DETOUR_PATH := "asset_assets_tiles_terrain_desert_sand_ripple_01_32x32_png"
-const RENDER_WASTELAND_RUIN := "asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png"
-const RENDER_WASTELAND_DEAD_TREE := "terrain_tree_round_32x32"
-const RENDER_WASTELAND_DRY_RIVER := "asset_assets_tiles_terrain_desert_dry_scrub_patch_32x32_png"
-const RENDER_WASTELAND_CAMP_TRACE := "asset_assets_tiles_terrain_desert_bone_scatter_32x32_png"
-const RENDER_WASTELAND_ABANDONED_VILLAGE := "asset_assets_sprites_objects_structures_small_storage_shed_64x64_png"
-const RENDER_WASTELAND_ABANDONED_OUTPOST := "asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png"
-const RENDER_WASTELAND_RUINED_TEA_ROOM := "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png"
-const RENDER_WASTELAND_BATTLEFIELD_TRACE := "asset_assets_tiles_terrain_desert_bone_scatter_32x32_png"
-const RENDER_RESOURCE_IRON_SCRAP := "asset_assets_sprites_objects_mining_iron_ore_32x32_png"
-const RENDER_RESOURCE_STONE := "small_rock_resource"
-const RENDER_SNOWFIELD_SNOW := "asset_assets_tiles_terrain_snow_snow_ground_01_32x32_png"
-const RENDER_SNOWFIELD_PATH := "asset_assets_tiles_terrain_snow_snow_ground_03_32x32_png"
-const RENDER_SNOWFIELD_ICE := "asset_assets_tiles_terrain_snow_snow_ground_04_32x32_png"
-const RENDER_SNOWFIELD_ICE_EDGE := "asset_assets_tiles_terrain_snow_snow_rock_edge_01_32x32_png"
-const RENDER_SNOWFIELD_PINE := "terrain_tree_pine_32x32"
-const RENDER_SNOWFIELD_ICE_WALL := "asset_assets_tiles_terrain_snow_snow_rock_edge_02_32x32_png"
-const RENDER_SNOWFIELD_SAFE_CLEARING := "asset_assets_tiles_terrain_snow_snow_mound_32x32_png"
-const RENDER_SNOWFIELD_LODGE := "asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png"
-const RENDER_SNOWFIELD_HOT_SPRING := "asset_assets_sprites_objects_shrine_props_stone_water_basin_32x32_png"
-const RENDER_SNOWFIELD_SHRINE := "asset_assets_sprites_objects_structures_shrine_torii_gate_2x2_64x64_png"
-const RENDER_SNOWFIELD_FROZEN_MINE := "asset_assets_sprites_objects_mining_rock_cave_entrance_1x2_64x32_png"
-const RENDER_RAINFOREST_JUNGLE := "terrain_tree_broadleaf_32x32"
-const RENDER_RAINFOREST_SWAMP := "asset_assets_sprites_objects_natural_props_reed_clump_32x32_png"
-const RENDER_RAINFOREST_RIVER := "terrain_river_water_01"
-const RENDER_RAINFOREST_VINE_PATH := "asset_assets_tiles_terrain_plains_flower_grass_02_32x32_png"
-const RENDER_RAINFOREST_TEA_FIELD := "asset_assets_sprites_objects_crafting_tea_leaf_worktable_32x32_png"
-const RENDER_RAINFOREST_AGARWOOD := "terrain_tree_round_32x32"
-const RENDER_RAINFOREST_RIVER_BANK := "asset_assets_tiles_terrain_plains_flower_grass_02_32x32_png"
-const RENDER_RAINFOREST_RIVERSIDE_VILLAGE := "asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png"
-const RENDER_RAINFOREST_FOREST_TEA_ROOM := "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png"
-const RENDER_RAINFOREST_INCENSE_SPACE := "asset_assets_sprites_objects_shrine_props_incense_burner_32x32_png"
-const LARGE_HOUSE_SOURCE_ID := "asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png"
-const FENCE_CORNER_SOURCE_ID := "asset_assets_sprites_objects_structures_wood_fence_corner_32x32_png"
-const FENCE_HORIZONTAL_SOURCE_ID := "asset_assets_sprites_objects_structures_wood_fence_horizontal_1x2_64x32_png"
-const FENCE_HORIZONTAL_BOTTOM_SOURCE_ID := "asset_assets_sprites_objects_structures_wood_fence_horizontal_1x2_64x32_bottom_180_png"
 const LARGE_HOUSE_ID := "large_fenced_house"
 
 const BALANCE_MIN_RESOURCE_NODES_ID := "biome_min_resource_nodes"
@@ -1227,21 +1167,6 @@ func _facility_candidate_offsets() -> Array:
 		Vector2i(-1, -3),
 		Vector2i(1, 3)
 	]
-
-func _base_terrain_render_id(biome_id: String) -> String:
-	match biome_id:
-		BIOME_COMMON:
-			return RENDER_GROUND
-		BIOME_MOUNTAIN:
-			return RENDER_MOUNTAIN_BASE_GRASS
-		BIOME_WASTELAND:
-			return RENDER_WASTELAND_DRY_SOIL
-		BIOME_SNOWFIELD:
-			return RENDER_SNOWFIELD_SNOW
-		BIOME_RAINFOREST:
-			return RENDER_RAINFOREST_RIVER_BANK
-		_:
-			return ""
 
 func _reachable_access_position(position: Vector2i, reachable_cells: Dictionary, offsets: Array) -> Vector2i:
 	for offset in offsets:
