@@ -2,10 +2,12 @@ extends RefCounted
 class_name AssetCatalog
 
 const DEFAULT_MANIFEST_PATH := "res://assets/asset-manifest.json"
+const DEFAULT_CONTENT_IMAGE_MAP_PATH := "res://assets/content-image-map.json"
 const STABLE_ID_PATTERN := "^[a-z][a-z0-9_]*$"
 
 var definitions: Dictionary = {}
 var _asset_id_by_path: Dictionary = {}
+var _content_images: Dictionary = {}
 
 func load_manifest(path := DEFAULT_MANIFEST_PATH) -> Dictionary:
 	definitions.clear()
@@ -51,6 +53,32 @@ func load_manifest(path := DEFAULT_MANIFEST_PATH) -> Dictionary:
 		definitions[asset_id] = definition.duplicate(true)
 	return {"ok": true}
 
+func load_content_image_map(path := DEFAULT_CONTENT_IMAGE_MAP_PATH) -> Dictionary:
+	_content_images.clear()
+	if not FileAccess.file_exists(path):
+		return {"ok": false, "error": "Missing content image map: %s" % path}
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if typeof(parsed) != TYPE_DICTIONARY or parsed.get("schema_version") != 1:
+		return {"ok": false, "error": "Invalid content image map: %s" % path}
+	var content = parsed.get("content")
+	if typeof(content) != TYPE_DICTIONARY:
+		return {"ok": false, "error": "Content image map content must be a dictionary: %s" % path}
+	for dataset in content:
+		var rows = content[dataset]
+		if typeof(rows) != TYPE_ARRAY:
+			return {"ok": false, "error": "Content image map dataset must be an array: %s" % dataset}
+		for row in rows:
+			if typeof(row) != TYPE_DICTIONARY:
+				return {"ok": false, "error": "Content image map entry must be a dictionary: %s" % dataset}
+			var content_id := String(row.get("content_id", ""))
+			var asset_id := String(row.get("asset_id", ""))
+			if content_id.is_empty() or asset_id.is_empty():
+				return {"ok": false, "error": "Content image map entry is missing IDs: %s" % dataset}
+			if not definitions.has(asset_id):
+				return {"ok": false, "error": "Content image map references unknown asset: %s:%s -> %s" % [dataset, content_id, asset_id]}
+			_content_images["%s:%s" % [dataset, content_id]] = row.duplicate(true)
+	return {"ok": true}
+
 func has(id: String) -> bool:
 	return definitions.has(id)
 
@@ -70,6 +98,10 @@ func path_for_reference(reference: String) -> String:
 	if definitions.has(reference):
 		return path_for(reference)
 	return _normalize_asset_path(reference)
+
+func content_asset_id(dataset: String, content_id: String) -> String:
+	var key := "%s:%s" % [dataset, content_id]
+	return String(_content_images.get(key, {}).get("asset_id", ""))
 
 func id_for_reference(reference: String) -> String:
 	if definitions.has(reference):
