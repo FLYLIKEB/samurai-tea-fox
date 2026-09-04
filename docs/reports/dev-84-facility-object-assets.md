@@ -32,4 +32,3 @@
 - Runtime RGBA sha256: sha256:929711e64439986b552c0c29fbdd35ad4856c506cb55582e1536b3334b790912
 - Runtime validation: RGBA 64x64, alpha_bbox=(2, 16, 63, 48), no text/watermark by visual inspection
 - Visual judgement: 통과: 낮은 사각 작업대와 작은 도구 흔적이 명확하고 산중 가마와 실루엣이 구분됨.
-
