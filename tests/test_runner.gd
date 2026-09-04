@@ -8,6 +8,8 @@ const TESTS := [
 	preload("res://tests/unit/test_map_read_model.gd"),
 	preload("res://tests/unit/test_bounded_resource.gd"),
 	preload("res://tests/unit/test_asset_catalog.gd"),
+	preload("res://tests/unit/test_sfx_event_router.gd"),
+	preload("res://tests/unit/test_main_sfx_feedback.gd"),
 	preload("res://tests/unit/test_directional_walk_animator.gd"),
 	preload("res://tests/unit/test_data_catalog.gd"),
 	preload("res://tests/unit/test_runtime_constants.gd"),

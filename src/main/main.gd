@@ -41,6 +41,7 @@ const FacilityPlacementService = preload("res://src/world/placement/facility_pla
 const ConsumableService = preload("res://src/consumable/consumable_service.gd")
 const AcquisitionEffect = preload("res://src/presentation/acquisition_effect.gd")
 const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
+const SfxEventRouter = preload("res://src/audio/sfx_event_router.gd")
 
 class FacilityPlacementPreview extends Node2D:
 	var origin := Vector2i(-1, -1)
@@ -186,6 +187,7 @@ var _preview_asset_catalog_ready := false
 var _feedback_player: AudioStreamPlayer
 var _feedback_playback: AudioStreamGeneratorPlayback
 var feedback_beep_count := 0
+var _sfx_router: SfxEventRouter
 var _enemy_turn_queued := false
 var _active_narrative_event_id := ""
 var _active_narrative_node_id := ""
@@ -326,19 +328,41 @@ func _configure_combat_lifecycle() -> Dictionary:
 			return ability_result
 	if combat_dummy.has_signal("defeat_event") and not combat_dummy.is_connected("defeat_event", Callable(self, "_on_combat_dummy_defeated")):
 		combat_dummy.connect("defeat_event", Callable(self, "_on_combat_dummy_defeated"))
+	_connect_combat_sfx_source(combat_dummy)
 	if player.has_signal("grid_step_finished") and not player.is_connected("grid_step_finished", Callable(self, "_on_player_grid_step_finished")):
 		player.connect("grid_step_finished", Callable(self, "_on_player_grid_step_finished"))
 	return {"ok": true}
 
 func _connect_player_feedback_signals() -> void:
-	for signal_name in [&"attack_started", &"ability_cast", &"dodge_started", &"grid_step_started"]:
-		if player.has_signal(signal_name) and not player.is_connected(signal_name, Callable(self, "_on_player_activity_feedback")):
-			player.connect(signal_name, Callable(self, "_on_player_activity_feedback"))
+	var signal_callbacks := {
+		&"attack_started": Callable(self, "_on_player_attack_feedback"),
+		&"ability_cast": Callable(self, "_on_player_activity_feedback"),
+		&"damage_received": Callable(self, "_on_player_damage_feedback"),
+		&"dodge_started": Callable(self, "_on_player_dodge_feedback"),
+		&"grid_step_blocked": Callable(self, "_on_player_grid_step_blocked")
+	}
+	for signal_name in signal_callbacks:
+		var callback: Callable = signal_callbacks[signal_name]
+		if player.has_signal(signal_name) and not player.is_connected(signal_name, callback):
+			player.connect(signal_name, callback)
 
 func _on_player_activity_feedback(_a = null, _b = null, _c = null) -> void:
 	_play_feedback_beep()
 
-func _on_player_grid_step_finished(_cell: Vector2i) -> void:
+func _on_player_attack_feedback(swing: Dictionary) -> void:
+	_play_sfx_event(SfxEventRouter.EVENT_ATTACK_SWING, swing, String(swing.get("swing_id", "attack")))
+
+func _on_player_damage_feedback(event: Dictionary, applied_damage: int) -> void:
+	_play_sfx_event(SfxEventRouter.EVENT_PLAYER_HIT, {"event": event, "applied_damage": applied_damage}, String(event.get("source_id", "player_hit")))
+
+func _on_player_dodge_feedback(direction: Vector2, distance_pixels: float) -> void:
+	_play_sfx_event(SfxEventRouter.EVENT_DODGE, {"direction": direction, "distance_pixels": distance_pixels}, "player_dodge")
+
+func _on_player_grid_step_blocked(from_cell: Vector2i, to_cell: Vector2i) -> void:
+	_play_sfx_event(SfxEventRouter.EVENT_INTERACT_FAIL, {"from_cell": from_cell, "to_cell": to_cell}, "grid_blocked:%s:%s" % [from_cell, to_cell])
+
+func _on_player_grid_step_finished(cell: Vector2i) -> void:
+	_play_sfx_event(SfxEventRouter.EVENT_STEP, {"cell": cell}, "step:%s" % cell)
 	_advance_time_for_turn()
 	_queue_enemy_turn_after_player_action()
 
@@ -489,7 +513,6 @@ func submit_mobile_movement_command(command) -> bool:
 	var accepted := _movement_selector.submit_mobile_command(command)
 	if accepted and command.direction != Vector2i.ZERO:
 		_clear_pointer_movement()
-		_play_feedback_beep()
 	return accepted
 
 func submit_mobile_movement_direction(direction: Vector2i) -> bool:
@@ -634,7 +657,6 @@ func _gather_dungeon_ore(target_id: String, cell: Vector2i) -> bool:
 	_dungeon_debug("광석 채집 결과: target=%s ok=%s reason=%s" % [target_id, result.get("ok", false), result.get("reason", "")])
 	if result.ok:
 		_advance_time_for_turn()
-		_play_feedback_beep()
 		_queue_enemy_turn_after_player_action()
 	return true
 
@@ -780,6 +802,7 @@ func submit_player_interaction(direction := Vector2i.ZERO) -> bool:
 			nearby_landmark = _large_house_target_near_world_position(player.global_position, _runtime_tile_size() * 3.5)
 		if not nearby_landmark.is_empty():
 			return submit_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": String(nearby_landmark.target_id)}))
+	_play_sfx_event(SfxEventRouter.EVENT_INTERACT_FAIL, {"direction": direction}, "interact_empty")
 	return false
 
 func _landmark_target_near_world_position(world_position: Vector2, max_distance := -1.0) -> Dictionary:
@@ -831,13 +854,14 @@ func submit_action_command(command) -> bool:
 			if _is_landmark_target(target_id):
 				var landmark_accepted := _handle_landmark_interaction(target_id)
 				if landmark_accepted:
-					_play_feedback_beep()
+					_play_sfx_event(SfxEventRouter.EVENT_INTERACT_SUCCESS, {"target_id": target_id}, "landmark:%s" % target_id)
 				return landmark_accepted
 			var accepted: bool = acquisition_service != null and bool(acquisition_service.handle_command(command).ok)
 			if accepted:
 				_advance_time_for_turn()
-				_play_feedback_beep()
 				_queue_enemy_turn_after_player_action()
+			else:
+				_play_sfx_event(SfxEventRouter.EVENT_INTERACT_FAIL, {"target_id": target_id}, "interact_failed:%s" % target_id)
 			return accepted
 		GameCommand.Type.DRINK_TEA:
 			var accepted: bool = _handle_tea_command(command)
@@ -881,7 +905,7 @@ func submit_action_command(command) -> bool:
 		GameCommand.Type.OPEN_TEA_BREWING:
 			var accepted: bool = game_hud != null and game_hud.show_tea_brewing_menu()
 			if accepted:
-				_play_feedback_beep()
+				_play_sfx_event(SfxEventRouter.EVENT_UI_MENU_OPEN, {"menu_id": "tea_brewing"}, "menu:tea_brewing")
 			return accepted
 		GameCommand.Type.TEA_BREW_SELECT_LEAF, GameCommand.Type.TEA_BREW_SELECT_VESSEL, GameCommand.Type.TEA_BREW_SELECT_SLOT, GameCommand.Type.TEA_BREW_NAVIGATE, GameCommand.Type.BREW_TEA:
 			var accepted: bool = _handle_tea_brewing_command(command)
@@ -891,7 +915,7 @@ func submit_action_command(command) -> bool:
 		GameCommand.Type.OPEN_META_CODEX:
 			var accepted: bool = game_hud != null and game_hud.show_meta_codex_menu()
 			if accepted:
-				_play_feedback_beep()
+				_play_sfx_event(SfxEventRouter.EVENT_UI_MENU_OPEN, {"menu_id": "meta_codex"}, "menu:meta_codex")
 			return accepted
 		GameCommand.Type.META_CODEX_SET_TAB, GameCommand.Type.META_CODEX_SET_FILTER, GameCommand.Type.META_CODEX_SELECT_DETAIL, GameCommand.Type.META_CODEX_NAVIGATE:
 			var accepted: bool = _handle_meta_codex_command(command)
@@ -901,30 +925,30 @@ func submit_action_command(command) -> bool:
 		GameCommand.Type.OPEN_INVENTORY:
 			var accepted: bool = game_hud != null and game_hud.show_inventory_menu()
 			if accepted:
-				_play_feedback_beep()
+				_play_sfx_event(SfxEventRouter.EVENT_UI_MENU_OPEN, {"menu_id": "inventory"}, "menu:inventory")
 			return accepted
 		GameCommand.Type.OPEN_CRAFTING:
 			_configure_game_hud()
 			var accepted: bool = game_hud != null and game_hud.show_crafting_menu()
 			if accepted:
-				_play_feedback_beep()
+				_play_sfx_event(SfxEventRouter.EVENT_UI_MENU_OPEN, {"menu_id": "crafting"}, "menu:crafting")
 			return accepted
 		GameCommand.Type.OPEN_FACILITIES:
 			_configure_game_hud()
 			var accepted: bool = game_hud != null and game_hud.show_facilities_menu()
 			if accepted:
-				_play_feedback_beep()
+				_play_sfx_event(SfxEventRouter.EVENT_UI_MENU_OPEN, {"menu_id": "facilities"}, "menu:facilities")
 			return accepted
 		GameCommand.Type.OPEN_MAP:
 			var accepted: bool = game_hud != null and game_hud.show_map_menu()
 			if accepted:
-				_play_feedback_beep()
+				_play_sfx_event(SfxEventRouter.EVENT_UI_MENU_OPEN, {"menu_id": "map"}, "menu:map")
 			return accepted
 		GameCommand.Type.HIDE_MENU:
 			var placement_cancelled := _cancel_pending_facility_placement()
 			var accepted: bool = (game_hud != null and game_hud.hide_menu()) or placement_cancelled
 			if accepted:
-				_play_feedback_beep()
+				_play_sfx_event(SfxEventRouter.EVENT_UI_MENU_CLOSE, {"placement_cancelled": placement_cancelled}, "menu:hide")
 			return accepted
 		GameCommand.Type.CRAFT_RECIPE:
 			var accepted: bool = _handle_craft_recipe_command(command)
@@ -1789,6 +1813,7 @@ func _spawn_dungeon_combatants(allow_default_spawn := false) -> void:
 			var defeat_callback := Callable(self, "_on_dungeon_enemy_defeated").bind(enemy, String(spec.id))
 			if not enemy.is_connected("defeat_event", defeat_callback):
 				enemy.connect("defeat_event", defeat_callback)
+		_connect_combat_sfx_source(enemy)
 		_connect_acquisition_combat_source(enemy)
 		if enemy.has_method("configure_grid_navigation"):
 			enemy.configure_grid_navigation(world_data, _runtime_world_origin(), _runtime_tile_size())
@@ -2116,6 +2141,16 @@ func _connect_acquisition_combat_source(source) -> Dictionary:
 		source.connect("drop_requested", callback)
 	return {"ok": true}
 
+func _connect_combat_sfx_source(source) -> void:
+	if source == null or not source.has_signal("damaged"):
+		return
+	var callback := Callable(self, "_on_combat_target_damaged")
+	if not source.is_connected("damaged", callback):
+		source.connect("damaged", callback)
+
+func _on_combat_target_damaged(event: Dictionary, applied_damage: int) -> void:
+	_play_sfx_event(SfxEventRouter.EVENT_COMBAT_HIT, {"event": event, "applied_damage": applied_damage}, String(event.get("swing_id", "combat_hit")))
+
 func _on_acquisition_changed(snapshot: Dictionary) -> void:
 	if run_state != null and not _in_dungeon_map:
 		run_state.acquisitions = snapshot.duplicate(true)
@@ -2124,6 +2159,7 @@ func _on_acquisition_changed(snapshot: Dictionary) -> void:
 func _on_acquisition_completed(result: Dictionary) -> void:
 	if not bool(result.get("ok", false)) or not result.get("position", null) is Dictionary:
 		return
+	_play_sfx_event(SfxEventRouter.event_id_for_acquisition(result), result, String(result.get("pickup_id", result.get("node_id", result.get("item_id", "acquisition")))))
 	var item_id := String(result.get("item_id", ""))
 	if item_id.is_empty():
 		return
@@ -3695,28 +3731,25 @@ func _apply_narrative_result_commands(commands: Array) -> void:
 				run_state.narrative_flags.append(flag_id)
 
 func _configure_audio_feedback() -> void:
-	if _feedback_player != null:
+	if _sfx_router != null:
 		return
-	var stream := AudioStreamGenerator.new()
-	stream.mix_rate = FEEDBACK_BEEP_MIX_RATE
-	stream.buffer_length = 0.08
-	_feedback_player = AudioStreamPlayer.new()
-	_feedback_player.name = "FeedbackAudio"
-	_feedback_player.stream = stream
-	add_child(_feedback_player)
-	_feedback_player.play()
-	_feedback_playback = _feedback_player.get_stream_playback() as AudioStreamGeneratorPlayback
+	_sfx_router = SfxEventRouter.new()
+	_sfx_router.name = "SfxEventRouter"
+	add_child(_sfx_router)
 
 func _play_feedback_beep() -> void:
-	feedback_beep_count += 1
-	if _feedback_playback == null:
-		return
-	var frame_count := mini(int(FEEDBACK_BEEP_MIX_RATE * FEEDBACK_BEEP_SECONDS), _feedback_playback.get_frames_available())
-	for index in range(frame_count):
-		var t := float(index) / FEEDBACK_BEEP_MIX_RATE
-		var envelope := 1.0 - (float(index) / maxf(float(frame_count), 1.0))
-		var sample := sin(TAU * FEEDBACK_BEEP_FREQUENCY * t) * 0.12 * envelope
-		_feedback_playback.push_frame(Vector2(sample, sample))
+	_play_sfx_event(SfxEventRouter.EVENT_UI_SELECT)
+
+func _play_sfx_event(event_id: String, payload := {}, dedupe_key := "") -> Dictionary:
+	if _sfx_router == null:
+		_configure_audio_feedback()
+	if _sfx_router == null:
+		return {"ok": false, "reason": "missing_sfx_router", "event_id": event_id}
+	var before_count := _sfx_router.played_events.size()
+	var result: Dictionary = _sfx_router.play_event(event_id, payload, dedupe_key)
+	if _sfx_router.played_events.size() > before_count:
+		feedback_beep_count += 1
+	return result
 
 func _centered_world_origin(renderer_input: Dictionary) -> Vector2:
 	var bounds: Dictionary = renderer_input.get("bounds", {})
