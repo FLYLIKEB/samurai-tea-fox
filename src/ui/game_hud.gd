@@ -46,21 +46,22 @@ const PORTRAIT_BY_CHARACTER := {
 const PORTRAIT_PLAYER := PORTRAIT_MUCHAU
 
 const BALANCE_ABILITY_SLOTS_ID := "ability_equip_slots"
-const STATUS_PANEL_SIZE := Vector2(190, 76)
-const PORTRAIT_BOX_SIZE := Vector2(48, 48)
+const HUD_EDGE_GAP := 4.0
+const STATUS_PANEL_SIZE := Vector2(172, 68)
+const PORTRAIT_BOX_SIZE := Vector2(40, 40)
 const RESOURCE_ICON_COUNT := 5
-const RESOURCE_ICON_SIZE := Vector2(16, 16)
-const RESOURCE_DETAIL_PANEL_SIZE := Vector2(190, 68)
-const ENEMY_PANEL_SIZE := Vector2(150, 50)
-const MAP_PANEL_SIZE := Vector2(132, 58)
-const MAP_PANEL_TIME_HEIGHT := 84.0
-const QUICKSLOT_PANEL_SIZE := Vector2(218, 32)
-const DPAD_BOARD_SIZE := Vector2(84, 84)
-const ACTION_BUTTON_SIZE := Vector2(68, 30)
-const ACTION_MENU_BUTTON_SIZE := Vector2(26, 22)
-const SECONDARY_ACTION_ICON_BUTTON_SIZE := Vector2(22, 22)
-const ACTION_PANEL_SIZE := Vector2(154, 96)
-const ACTION_MENU_PANEL_SIZE := Vector2(142, 132)
+const RESOURCE_ICON_SIZE := Vector2(14, 14)
+const RESOURCE_DETAIL_PANEL_SIZE := Vector2(172, 62)
+const ENEMY_PANEL_SIZE := Vector2(136, 46)
+const MAP_PANEL_SIZE := Vector2(126, 56)
+const MAP_PANEL_TIME_HEIGHT := 80.0
+const QUICKSLOT_PANEL_SIZE := Vector2(188, 28)
+const DPAD_BOARD_SIZE := Vector2(72, 72)
+const ACTION_BUTTON_SIZE := Vector2(58, 26)
+const ACTION_MENU_BUTTON_SIZE := Vector2(24, 20)
+const SECONDARY_ACTION_ICON_BUTTON_SIZE := Vector2(20, 20)
+const ACTION_PANEL_SIZE := Vector2(132, 84)
+const ACTION_MENU_PANEL_SIZE := Vector2(132, 120)
 const ACTION_PANEL_COLUMNS := 2
 const MENU_PANEL_SIZE := Vector2(560, 280)
 const MENU_CONTENT_SIZE := Vector2(544, 228)
@@ -240,6 +241,8 @@ func runtime_read_model() -> Dictionary:
 	}
 
 func press_mobile_button(button_id: String, direction := Vector2i.ZERO, slot := 0) -> bool:
+	if button_id == "repair_teleport":
+		return false
 	var command = _mobile_adapter.command_for_button(button_id, direction, slot)
 	if not command is GameCommand:
 		return false
@@ -786,7 +789,7 @@ func _rebuild_action_buttons() -> void:
 			_add_icon_action(_secondary_action_bar, "QuickAbilityButton", ICON_ABILITY, "요술 사용", "cast_ability", Vector2i.ZERO, 0)
 	_clear_container_children(_action_grid)
 	_add_text_action(_action_grid, "AttackButton", ICON_ATTACK, "공격", "attack", Vector2i.ZERO, 0)
-	_interaction_button = _add_interaction_action(_action_grid)
+	_add_text_action(_action_grid, "DodgeButton", ICON_DODGE, "회피", "dodge", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "InventoryButton", ICON_BAG, "가방", "open_inventory", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "CraftingButton", ICON_CONSUMABLE, "제작", "open_crafting", Vector2i.ZERO, 0)
 	if _action_menu_grid != null:
@@ -869,7 +872,7 @@ func _add_text_action(parent: Container, name: String, icon_path: String, text: 
 func _add_interaction_action(parent: Container) -> Button:
 	var button := Button.new()
 	button.name = "InteractionButton"
-	button.custom_minimum_size = Vector2(48, 48)
+	button.custom_minimum_size = Vector2(42, 42)
 	button.text = "상호\n작용"
 	button.tooltip_text = "가까운 유적·텔레포트와 상호작용"
 	button.focus_mode = Control.FOCUS_NONE
@@ -2128,6 +2131,7 @@ func _item_icon_reference(item_id: String, kind: String, definition: Dictionary)
 func _apply_safe_area_layout() -> void:
 	var margin := _safe_margin()
 	var viewport_size := get_viewport().get_visible_rect().size if get_viewport() != null else Vector2(640, 360)
+	var top_limit := viewport_size.x - margin.z
 	var narrative_overlay := _panels.get("narrative_overlay") as Control
 	if narrative_overlay != null:
 		narrative_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -2160,28 +2164,76 @@ func _apply_safe_area_layout() -> void:
 		_narrative_right_portrait_frame.size = NARRATIVE_PORTRAIT_FRAME_SIZE
 		_narrative_right_portrait_frame.position = right_frame_position
 	_place_panel(_panels.status, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y))
+	_place_panel(_panels.map, Control.PRESET_TOP_RIGHT, Vector2(-margin.z, margin.y))
+	var status_rect := _panel_rect(_panels.status)
+	var map_rect := _panel_rect(_panels.map)
+	var quickslot_rect := _top_center_rect(_panels.quickslot, viewport_size, margin.y)
+	if (
+		quickslot_rect.position.x < margin.x
+		or quickslot_rect.end.x > top_limit
+		or quickslot_rect.intersects(status_rect)
+		or quickslot_rect.intersects(map_rect)
+	):
+		quickslot_rect.position.x = margin.x
+		quickslot_rect.position.y = maxf(status_rect.end.y, map_rect.end.y) + HUD_EDGE_GAP
+	_place_panel(_panels.quickslot, Control.PRESET_TOP_LEFT, quickslot_rect.position)
+	var top_stack_bottom := maxf(maxf(status_rect.end.y, map_rect.end.y), quickslot_rect.end.y)
 	var resource_detail := _panels.get("resource_detail") as Control
 	_place_panel(resource_detail, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y + STATUS_PANEL_SIZE.y + 4.0))
-	_place_panel(_panels.map, Control.PRESET_TOP_RIGHT, Vector2(-margin.z, margin.y))
 	var enemy_top := margin.y + STATUS_PANEL_SIZE.y + 8.0
 	if resource_detail != null and resource_detail.visible:
 		enemy_top += RESOURCE_DETAIL_PANEL_SIZE.y + 4.0
+	if quickslot_rect.position.x < margin.x + ENEMY_PANEL_SIZE.x + HUD_EDGE_GAP:
+		enemy_top = maxf(enemy_top, quickslot_rect.end.y + HUD_EDGE_GAP)
 	_place_panel(_panels.enemy, Control.PRESET_TOP_LEFT, Vector2(margin.x, enemy_top))
-	_place_panel(_panels.quickslot, Control.PRESET_CENTER_TOP, Vector2(0.0, margin.y))
-	_place_panel(_toast_panel, Control.PRESET_CENTER_TOP, Vector2(0.0, margin.y + STATUS_PANEL_SIZE.y + 8.0))
+	_place_panel(_toast_panel, Control.PRESET_CENTER_TOP, Vector2(0.0, top_stack_bottom + HUD_EDGE_GAP))
 	_resize_menu_panel(viewport_size, margin)
 	_place_panel(_panels.menu, Control.PRESET_CENTER, Vector2.ZERO)
 	_place_panel(_panels.dpad, Control.PRESET_BOTTOM_LEFT, Vector2(margin.x, -margin.w))
-	_place_panel(_panels.action_menu, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w - ACTION_PANEL_SIZE.y - 8.0))
 	_place_panel(_panels.action, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w))
+	_resize_action_menu_panel(viewport_size, margin, top_stack_bottom)
+	_place_panel(_panels.action_menu, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w - ACTION_PANEL_SIZE.y - HUD_EDGE_GAP))
 	_place_panel(_panels.narrative, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w - NARRATIVE_PANEL_BOTTOM_OFFSET))
 	_place_panel(_facility_placement_panel, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w - 8.0))
+
+func _panel_rect(panel) -> Rect2:
+	if not panel is Control:
+		return Rect2()
+	var control := panel as Control
+	return Rect2(control.position, control.size)
+
+func _top_center_rect(panel, viewport_size: Vector2, top: float) -> Rect2:
+	if not panel is Control:
+		return Rect2(Vector2(viewport_size.x * 0.5, top), Vector2.ZERO)
+	var control := panel as Control
+	var panel_size := _control_layout_size(control)
+	return Rect2(Vector2((viewport_size.x - panel_size.x) * 0.5, top), panel_size)
+
+func _control_layout_size(control: Control) -> Vector2:
+	var combined := control.get_combined_minimum_size()
+	return Vector2(
+		maxf(control.custom_minimum_size.x, combined.x),
+		maxf(control.custom_minimum_size.y, combined.y)
+	)
+
+func _resize_action_menu_panel(viewport_size: Vector2, margin: Vector4, top_stack_bottom: float) -> void:
+	var action_menu_panel := _panels.get("action_menu") as Control
+	if action_menu_panel == null:
+		return
+	var action_top := viewport_size.y - margin.w - ACTION_PANEL_SIZE.y
+	var available_height := action_top - top_stack_bottom - (HUD_EDGE_GAP * 2.0)
+	var panel_height := minf(ACTION_MENU_PANEL_SIZE.y, maxf(56.0, available_height))
+	var panel_size := Vector2(ACTION_MENU_PANEL_SIZE.x, panel_height)
+	action_menu_panel.custom_minimum_size = panel_size
+	action_menu_panel.size = panel_size
+	if _action_menu_scroll != null:
+		_action_menu_scroll.custom_minimum_size = Vector2(panel_size.x - 12.0, maxf(44.0, panel_size.y - 12.0))
 
 func _place_panel(panel, preset: int, offset: Vector2) -> void:
 	if not panel is Control:
 		return
 	var control := panel as Control
-	var panel_size := control.custom_minimum_size
+	var panel_size := _control_layout_size(control)
 	control.size = panel_size
 	control.set_anchors_preset(preset)
 	match preset:

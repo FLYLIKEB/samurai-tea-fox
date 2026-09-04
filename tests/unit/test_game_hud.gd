@@ -279,7 +279,7 @@ func _assert_status_resources_use_visual_meters(asserts) -> void:
 	asserts.true_value(hearts != null, "HUD renders HP as a heart row")
 	if hearts != null:
 		asserts.equal(hearts.get_child_count(), 5, "HP uses five heart slots")
-		asserts.equal((hearts.get_child(0) as Control).custom_minimum_size, Vector2(16, 16), "resource icons use the balanced HUD size")
+		asserts.equal((hearts.get_child(0) as Control).custom_minimum_size, Vector2(14, 14), "resource icons use the compact HUD size")
 		asserts.equal((hearts.get_child(0) as TextureRect).expand_mode, TextureRect.EXPAND_IGNORE_SIZE, "resource icons ignore their source texture size")
 		asserts.equal((hearts.get_child(0) as TextureRect).get_meta("fill_ratio"), 1.0, "full HP heart is filled")
 		asserts.true_value(is_equal_approx(float((hearts.get_child(4) as TextureRect).get_meta("fill_ratio")), 0.1), "partial HP remains visible in the final heart")
@@ -338,7 +338,7 @@ func _assert_dpad_emits_press_and_release_movement(asserts) -> void:
 	if dpad_panel != null:
 		asserts.true_value(dpad_panel.visible, "HUD displays the compact directional pad")
 		asserts.false_value(_panel_uses_dark_background(dpad_panel), "dpad omits the outer dark panel background")
-		asserts.equal(dpad_panel.custom_minimum_size, Vector2(84, 84), "dpad provides a larger mobile touch surface")
+		asserts.equal(dpad_panel.custom_minimum_size, Vector2(72, 72), "dpad provides a compact mobile touch surface")
 	var left_button := hud.get_node_or_null("Root/DPadPanel/DPadBoard/DPadLeft") as Button
 	asserts.true_value(left_button != null, "HUD owns a left dpad button")
 	if left_button != null:
@@ -357,7 +357,7 @@ func _assert_mobile_controls_emit_shared_commands(asserts) -> void:
 	asserts.true_value(action_panel != null, "HUD keeps the action command surface")
 	if action_panel != null:
 		asserts.false_value(_panel_uses_dark_background(action_panel), "action controls omit the outer dark panel background")
-		asserts.equal(action_panel.custom_minimum_size, Vector2(154, 96), "action controls provide larger mobile touch targets")
+		asserts.equal(action_panel.custom_minimum_size, Vector2(132, 84), "action controls provide compact mobile touch targets")
 	var received: Array = []
 	hud.mobile_command_issued.connect(func(command): received.append(command))
 	asserts.true_value(hud.press_mobile_button("move", Vector2i.LEFT), "HUD accepts mobile movement control")
@@ -496,8 +496,8 @@ func _assert_narrative_dialogue_emits_option_commands(asserts) -> void:
 	asserts.true_value(_tree_has_text(hud, "아버지 — 차를 사랑하는 구미호"), "HUD resolves narrative speaker names from character data")
 	asserts.true_value(_tree_has_text(hud, "물이 끓기 전에 서두르지 마라."), "HUD renders narrative dialogue text")
 	asserts.true_value(_texture_rect_has_texture(hud.get_node_or_null("Root/NarrativeOverlay/NarrativeBackground")), "prologue dialogue renders its scene background")
-	asserts.true_value(_tree_uses_texture(hud.get_node_or_null("Root/NarrativeOverlay/LeftPortrait"), "kitsune_father_front_64x64.png"), "prologue dialogue renders the father portrait")
-	asserts.true_value(_tree_uses_texture(hud.get_node_or_null("Root/NarrativeOverlay/RightPortrait"), "fox_samurai_front_idle_64x64.png"), "prologue dialogue renders Muchau as the conversation partner")
+	asserts.true_value(_tree_uses_texture(hud.get_node_or_null("Root/NarrativeOverlay/LeftPortrait"), "chr_1_kitsune_father_96x96.png"), "prologue dialogue renders the father portrait")
+	asserts.true_value(_tree_uses_texture(hud.get_node_or_null("Root/NarrativeOverlay/RightPortrait"), "chr_8_muchau_96x96.png"), "prologue dialogue renders Muchau as the conversation partner")
 	asserts.false_value((hud.get_node_or_null("Root/StatusPanel") as Control).visible, "prologue hides the normal status HUD")
 	asserts.false_value((hud.get_node_or_null("Root/MapPanel") as Control).visible, "prologue hides the normal map HUD")
 	asserts.false_value((hud.get_node_or_null("Root/QuickSlotPanel") as Control).visible, "prologue hides the normal quickslot HUD")
