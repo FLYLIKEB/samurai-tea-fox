@@ -358,7 +358,11 @@ func _configure_world_for_current_run() -> Dictionary:
 	var current_biome: Dictionary = catalog.find_by_id("biomes", current_biome_id)
 	if current_biome.is_empty():
 		return {"ok": false, "reason": "missing_current_biome", "error": "No current biome data loaded for %s." % current_biome_id}
-	generated_world = generator.generate(run_state.seed, catalog.data_version, current_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), {"progression_projection": projection})
+	generated_world = generator.generate(run_state.seed, catalog.data_version, current_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), {
+		"progression_projection": projection,
+		"monster_definitions": catalog.get_definitions("monsters"),
+		"time_phase": String(time_state.phase) if time_state != null else "day"
+	})
 	if not generated_world.get("ok", false):
 		return {"ok": false, "reason": "world_generation_failed", "error": String(generated_world.get("failure_reason", "World generation failed."))}
 	_biome_map_previews.clear()

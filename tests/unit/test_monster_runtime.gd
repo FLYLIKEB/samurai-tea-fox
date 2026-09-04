@@ -60,6 +60,7 @@ func run(asserts) -> void:
 	_assert_data_snapshot_changes_runtime_stats(asserts)
 	_assert_damage_stagger_death_and_drop_hooks(asserts)
 	_assert_damage_ignores_dead_and_zero_applied_hits(asserts)
+	_assert_spawn_factory_accepts_pool_behavior_variant(asserts)
 	_assert_combat_dummy_preserves_no_arg_defeated_signal(asserts)
 	_assert_combat_dummy_damage_popup_is_world_anchored(asserts)
 	_assert_invalid_data_is_rejected(asserts)
@@ -205,6 +206,16 @@ func _assert_damage_ignores_dead_and_zero_applied_hits(asserts) -> void:
 	asserts.equal(monster.received_stagger_events.size(), 0, "dead monster re-hit does not create stagger history")
 	asserts.equal(probe.death_events.size(), 1, "dead monster re-hit does not re-emit death")
 	asserts.equal(probe.drop_events.size(), 1, "dead monster re-hit does not re-request drops")
+
+func _assert_spawn_factory_accepts_pool_behavior_variant(asserts) -> void:
+	var spawned: Dictionary = MonsterSpawnFactory.new(_runtime_catalog()).spawn(
+		"road_bandit",
+		{"combat_id": "road_bandit_rare", "behavior_type_override": "희귀"}
+	)
+	asserts.true_value(spawned.ok, "spawn factory accepts a data-driven rare behavior variant")
+	if spawned.ok:
+		asserts.equal(spawned.monster.definition_id, "road_bandit", "rare variant keeps the base monster definition id")
+		asserts.equal(spawned.behavior.behavior_type, "희귀", "rare variant uses the rare behavior strategy")
 
 func _assert_combat_dummy_preserves_no_arg_defeated_signal(asserts) -> void:
 	var dummy := CombatDummy.new()
