@@ -32,6 +32,7 @@ func run(asserts) -> void:
 	_assert_current_run_biome_unlock_allows_recipe(asserts)
 	_assert_crafting_rolls_back_when_result_grant_fails(asserts)
 	_assert_facility_placement_reserves_valid_footprint(asserts)
+	_assert_facility_placement_uses_validated_result_contract(asserts)
 	_assert_facility_placement_rejects_blocked_or_missing_workspace(asserts)
 	_assert_facility_placement_preserves_required_paths(asserts)
 	_assert_facility_availability_requires_proximity(asserts)
@@ -198,6 +199,38 @@ func _assert_facility_placement_reserves_valid_footprint(asserts) -> void:
 	asserts.true_value(world.is_occupied(Vector2i(1, 1)), "placement reserves origin")
 	asserts.true_value(world.is_occupied(Vector2i(2, 1)), "placement reserves full footprint")
 	asserts.equal(world.get_interactables(Vector2i(2, 1)), ["wooden_workbench@1,1"], "placement creates interactable footprint")
+
+func _assert_facility_placement_uses_validated_result_contract(asserts) -> void:
+	var service := _fixture_placement_service()
+	var world := WorldData.new(6, 6, "grass", true)
+	var validation: Dictionary = service.can_place_facility("wooden_workbench", world, Vector2i(2, 2))
+	asserts.true_value(validation.ok, "validated placement result is produced")
+	asserts.equal(validation.origin, {"x": 2, "y": 2}, "validated result records anchor origin")
+	asserts.equal(validation.footprint_size, {"x": 2, "y": 1}, "validated result records footprint size")
+	asserts.equal(validation.footprint_cells, [{"x": 2, "y": 2}, {"x": 3, "y": 2}], "validated result records exact footprint cells")
+
+	var placed: Dictionary = service.place_validated_facility(validation, world)
+	asserts.true_value(placed.ok, "validated placement result installs")
+	asserts.equal(placed.origin, validation.origin, "installed placement keeps validated origin")
+	asserts.equal(placed.footprint_size, validation.footprint_size, "installed placement keeps validated footprint")
+	asserts.equal(placed.footprint_cells, validation.footprint_cells, "installed placement keeps validated footprint cells")
+	asserts.equal(placed.reservation.origin, validation.origin, "reservation uses validated origin")
+	asserts.equal(placed.reservation.size, validation.footprint_size, "reservation uses validated footprint")
+	asserts.equal(placed.reservation.cells, validation.footprint_cells, "reservation uses validated cells")
+
+	var tampered := validation.duplicate(true)
+	tampered.footprint_cells = [{"x": 2, "y": 2}]
+	var rejected: Dictionary = service.place_validated_facility(tampered, WorldData.new(6, 6, "grass", true))
+	asserts.false_value(rejected.ok, "tampered cached placement result is rejected")
+	asserts.equal(rejected.reason, "invalid_placement_result", "tampered cached result reports stable reason")
+
+	var stale_world := WorldData.new(6, 6, "grass", true)
+	var stale_validation: Dictionary = service.can_place_facility("wooden_workbench", stale_world, Vector2i(2, 2))
+	asserts.true_value(stale_validation.ok, "stale fixture starts with a valid placement")
+	asserts.true_value(stale_world.set_terrain(Vector2i(3, 2), "water", false), "stale fixture blocks a validated footprint cell")
+	var stale: Dictionary = service.place_validated_facility(stale_validation, stale_world)
+	asserts.false_value(stale.ok, "stale validated placement is rejected when terrain becomes blocked")
+	asserts.equal(stale.reason, "blocked", "stale blocked terrain reports stable reason")
 
 func _assert_facility_placement_rejects_blocked_or_missing_workspace(asserts) -> void:
 	var service := _fixture_placement_service()
