@@ -29,13 +29,13 @@
 | `data/generated/drops.json` | `collection://362e7813-5332-420b-aca0-fb2824dbcce0` | `🎁 드롭 테이블` |
 | `data/generated/abilities.json` | `collection://011bff45-d1e8-4d8a-a52d-bbf6c06a3566` | `요술` |
 | `data/generated/meta_unlocks.json` | `collection://7927bdc1-70eb-4fe7-82c5-971c74caa5d3` | `메타 해금` |
-| `data/generated/events.json` | `fixture://dev_25_story_events` | `스토리·퀘스트`로 이전 예정 |
+| `data/generated/events.json` | `collection://671bff29-b822-4706-87b2-64fc4cff057d` | `🎬 인게임 대사 스크립트` |
 | `data/generated/choices.json` | `collection://943e27c2-91e1-40ec-a5e9-30ef62737a40` | `선택·결과` |
 | `data/generated/characters.json` | `collection://86d9c16b-e60e-4434-9c84-26b4b00d16c8` | `캐릭터 목록` |
 | `data/generated/shops.json` | `collection://3f6354ff-02fb-4b92-9b81-9f821ae6408b` | `상점·거래` |
-| `data/generated/bosses.json` | `fixture://dev_28_boss_runtime` | `던전·보스전`으로 이전 예정 |
+| `data/generated/bosses.json` | `collection://cd97553c-f51f-44fe-9604-c257cc9d9342` | `던전·보스전` |
 
-`events.json`과 `bosses.json`의 fixture 출처 제거, 전체 Notion 재-export는 [DEV-89](https://app.notion.com/p/3d1373699e6681b7b1f2fc4ed9cf108b)가 소유한다.
+`events.json`은 루트 정본의 대사 작업대가 관리하는 `🎬 인게임 대사 스크립트` DB에서 런타임 이벤트 객체를 추적한다. 개별 스토리 사건의 상위 기획 책임은 `스토리·퀘스트` DB가 소유한다.
 
 ## 보조 출처와 에셋 경계
 

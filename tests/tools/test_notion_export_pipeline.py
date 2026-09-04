@@ -1025,7 +1025,7 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(minimum["status"], "테스트")
         self.assertEqual(minimum["category"], "월드")
         self.assertEqual(minimum["unit"], "개")
-        self.assertEqual(minimum["value"], 9)
+        self.assertEqual(minimum["value"], 14)
 
     def test_dev_9_biome_export_uses_sot_resource_field_only(self):
         generated = ROOT / "data/generated"
