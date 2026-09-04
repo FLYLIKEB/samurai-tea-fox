@@ -18,14 +18,16 @@ class ContentImageAuditTests(unittest.TestCase):
         self.assertEqual(payload["audit"]["path_integrity_missing_or_broken"], 0)
         self.assertEqual(payload["audit"]["dedicated_asset_missing"], 0)
         self.assertEqual(payload["audit"]["art_review_required"], 39)
-        self.assertEqual(payload["audit"]["runtime_approved"], 59)
-        self.assertEqual(payload["audit"]["by_resolution"]["dedicated_item_icon"], 38)
-        self.assertIn("semantic_existing_asset", payload["audit"]["by_resolution"])
+        self.assertEqual(payload["audit"]["runtime_approved"], 60)
+        self.assertEqual(payload["audit"]["by_resolution"]["dedicated_item_icon"], 39)
+        self.assertNotIn("semantic_existing_asset", payload["audit"]["by_resolution"])
         self.assertNotIn("kind_fallback_exception", payload["audit"]["by_resolution"])
         self.assertEqual(payload["audit"]["by_resolution"]["monster_id_convention"], 21)
         self.assertNotIn("monster_variant_fallback_exception", payload["audit"]["by_resolution"])
-        self.assertEqual(payload["audit"]["by_resolution"]["semantic_existing_asset"], 1)
         items = {entry["content_id"]: entry for entry in payload["content"]["items"]}
+        self.assertEqual(items["stone_axe"]["asset_id"], "item_stone_axe_icon")
+        self.assertEqual(items["stone_axe"]["path"], "res://assets/sprites/items/stone_axe_32x32.png")
+        self.assertTrue(items["stone_axe"]["runtime_approved"])
         self.assertEqual(
             items["blacksmith_forge"]["asset_id"],
             "item_blacksmith_forge_object_64",

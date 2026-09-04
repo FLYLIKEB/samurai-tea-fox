@@ -2,16 +2,15 @@
   "audit": {
     "art_review_required": 39,
     "by_resolution": {
-      "dedicated_item_icon": 38,
-      "monster_id_convention": 21,
-      "semantic_existing_asset": 1
+      "dedicated_item_icon": 39,
+      "monster_id_convention": 21
     },
     "dedicated_asset_missing": 0,
     "items": 39,
     "missing_or_broken": 0,
     "monsters": 21,
     "path_integrity_missing_or_broken": 0,
-    "runtime_approved": 59,
+    "runtime_approved": 60,
     "runtime_target_rows": 60
   },
   "content": {
@@ -626,22 +625,22 @@
       },
       {
         "art_review_required": true,
-        "asset_id": "asset_assets_ui_icons_atlas_sword_png",
+        "asset_id": "item_stone_axe_icon",
         "asset_status": "완료",
         "content_id": "stone_axe",
         "dataset": "items",
         "dedicated_asset_missing": false,
         "exception_reason": "",
-        "height": 59,
+        "height": 32,
         "kind": "도구",
         "name": "돌도끼",
-        "path": "res://assets/ui/icons/atlas/sword.png",
-        "resolution": "semantic_existing_asset",
-        "rgba_sha256": "sha256:95bb9e33d030d5dd705967d9ea77b1522a9c0d60bffbc349abeed18a5b208c2c",
-        "runtime_approved": false,
-        "source_sha256": "sha256:d45c1d427196e2e313a2c2632cbafce02aa926a56ac4eda4033fe272044582ba",
+        "path": "res://assets/sprites/items/stone_axe_32x32.png",
+        "resolution": "dedicated_item_icon",
+        "rgba_sha256": "sha256:b85b37489cb034d2e762939c77021d224719242b744036704ed293eea7f969ea",
+        "runtime_approved": true,
+        "source_sha256": "sha256:82a2ba777c45e61f8c0b7bf520cb8c252e9756d1b2d7a8d596c603fd0307df43",
         "status": "확정",
-        "width": 54
+        "width": 32
       },
       {
         "art_review_required": true,
@@ -1161,7 +1160,7 @@
     ]
   },
   "content_hashes": {
-    "asset_manifest": "sha256:04b68be3a90abc8250a374124d98ba09e8e69fc5e9aadf90aa6e415c44a74557",
+    "asset_manifest": "sha256:74f1d536fc386f6fbf2113ee93696fa6cc130c249bf4d4bd3fb3c4a6125c83dd",
     "items": "947bca5285dc32a8f702af9fa76293b79ed49e028c8ac2f9e4beb069b01d9f37",
     "monsters": "b44646c65fca8a73ef29d0e908991986c7eb3387626b4bdb5f506919b1e28e9f"
   },

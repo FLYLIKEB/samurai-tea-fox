@@ -59,6 +59,16 @@ func run(asserts) -> void:
 		"runtime-approved dedicated item image audit is exposed to runtime lookups"
 	)
 	asserts.equal(
+		catalog.content_asset_id("items", "stone_axe"),
+		"item_stone_axe_icon",
+		"stone axe resolves to its dedicated runtime icon instead of a semantic fallback"
+	)
+	asserts.equal(
+		catalog.path_for(catalog.content_asset_id("items", "stone_axe")),
+		"res://assets/sprites/items/stone_axe_32x32.png",
+		"stone axe dedicated icon resolves to the promoted 32x32 runtime path"
+	)
+	asserts.equal(
 		catalog.content_asset_id("items", "traveler_quilted_clothes"),
 		"item_traveler_quilted_clothes_icon",
 		"traveler armor resolves to its dedicated runtime icon"
