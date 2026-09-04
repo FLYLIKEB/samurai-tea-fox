@@ -64,10 +64,18 @@ func _ready() -> void:
 	_ensure_damage_popup()
 	_apply_sprite()
 
-func configure_combat(catalog, attack_target = null, config = null) -> Dictionary:
-	var result: Dictionary = MonsterSpawnFactory.new(catalog).spawn(monster_id, {"combat_id": "%s_%d" % [monster_id, get_instance_id()]})
+func configure_combat(catalog, attack_target = null, config = null, spawn_context := {}) -> Dictionary:
+	var context: Dictionary = spawn_context.duplicate(true)
+	if String(context.get("combat_id", "")).is_empty():
+		context["combat_id"] = "%s_%d" % [monster_id, get_instance_id()]
+	var result: Dictionary = MonsterSpawnFactory.new(catalog).spawn(monster_id, context)
 	if not result.ok:
 		return result
+	if combatant != null:
+		if combatant.defeated.is_connected(_on_monster_defeated):
+			combatant.defeated.disconnect(_on_monster_defeated)
+		if combatant.drop_requested.is_connected(_on_monster_drop_requested):
+			combatant.drop_requested.disconnect(_on_monster_drop_requested)
 	combatant = result.monster
 	combatant.defeated.connect(_on_monster_defeated)
 	combatant.drop_requested.connect(_on_monster_drop_requested)
@@ -78,7 +86,12 @@ func configure_combat(catalog, attack_target = null, config = null) -> Dictionar
 	_attack_cooldown_remaining = attack_period_seconds
 	target = attack_target
 	_update_health_bar()
-	return {"ok": true}
+	return {
+		"ok": true,
+		"monster_id": combatant.definition_id,
+		"behavior_type": combatant.behavior_type,
+		"spawn_context": context.duplicate(true)
+	}
 
 func configure_grid_navigation(world_data = null, world_origin := Vector2.ZERO, tile_size := -1.0) -> void:
 	_grid_world_data = world_data

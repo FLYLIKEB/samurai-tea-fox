@@ -398,6 +398,9 @@ func _configure_world_for_current_run() -> Dictionary:
 		var preview := generator.generate(preview_seed, catalog.data_version, biome_definition, catalog.get_definitions("balance"), catalog.get_definitions("items"), {"progression_projection": projection})
 		if bool(preview.get("ok", false)):
 			_biome_map_previews[preview_id] = preview
+	var combat_pool_result := _configure_overworld_combat_from_spawn_pool()
+	if not combat_pool_result.ok:
+		return combat_pool_result
 	var acquisition_result := _configure_acquisition_for_generated_world()
 	if not acquisition_result.ok:
 		return acquisition_result
@@ -414,6 +417,71 @@ func _configure_world_for_current_run() -> Dictionary:
 	_record_current_map_discovery()
 	_configure_game_hud()
 	return {"ok": true}
+
+func _configure_overworld_combat_from_spawn_pool() -> Dictionary:
+	if combat_dummy == null or not combat_dummy.has_method("configure_combat"):
+		generated_world["active_monster_spawn"] = {
+			"source": "unconfigured_combat_source",
+			"reason": "combat source does not expose configure_combat"
+		}
+		return {"ok": true, "source": "unconfigured_combat_source"}
+	var selected_entry := _selected_overworld_spawn_entry()
+	if selected_entry.is_empty():
+		combat_dummy.monster_id = "road_bandit"
+		var fallback_result: Dictionary = combat_dummy.configure_combat(catalog, player, player.combat_config)
+		if not fallback_result.ok:
+			return fallback_result
+		generated_world["active_monster_spawn"] = {
+			"source": "fallback",
+			"monster_id": combat_dummy.monster_id,
+			"reason": "empty_or_invalid_spawn_pool"
+		}
+		return {"ok": true, "source": "fallback", "combat": fallback_result}
+	combat_dummy.monster_id = String(selected_entry.get("monster_id", ""))
+	var spawn_context := {
+		"combat_id": "%s_%s_%d" % [
+			String(selected_entry.get("id", combat_dummy.monster_id)),
+			String(generated_world.get("time_phase", "")),
+			int(run_state.seed) if run_state != null else 0
+		]
+	}
+	var behavior_type_override := String(selected_entry.get("behavior_type_override", ""))
+	if not behavior_type_override.is_empty():
+		spawn_context["behavior_type_override"] = behavior_type_override
+	var pool_result: Dictionary = combat_dummy.configure_combat(catalog, player, player.combat_config, spawn_context)
+	if not pool_result.ok:
+		combat_dummy.monster_id = "road_bandit"
+		var fallback_result: Dictionary = combat_dummy.configure_combat(catalog, player, player.combat_config)
+		if not fallback_result.ok:
+			return fallback_result
+		generated_world["active_monster_spawn"] = {
+			"source": "fallback",
+			"monster_id": combat_dummy.monster_id,
+			"reason": "invalid_spawn_pool_entry",
+			"entry": selected_entry.duplicate(true)
+		}
+		return {"ok": true, "source": "fallback", "combat": fallback_result, "invalid_entry": selected_entry.duplicate(true)}
+	generated_world["active_monster_spawn"] = {
+		"source": "monster_spawn_pool",
+		"entry": selected_entry.duplicate(true),
+		"monster_id": combat_dummy.monster_id,
+		"behavior_type": String(pool_result.get("behavior_type", "")),
+		"spawn_context": spawn_context.duplicate(true)
+	}
+	return {"ok": true, "source": "monster_spawn_pool", "entry": selected_entry.duplicate(true), "combat": pool_result}
+
+func _selected_overworld_spawn_entry() -> Dictionary:
+	var pool: Dictionary = generated_world.get("monster_spawn_pool", {})
+	var entries = pool.get("entries", [])
+	if not entries is Array or entries.is_empty():
+		return {}
+	for entry in entries:
+		if entry is Dictionary and bool(entry.get("rare", false)) and not String(entry.get("monster_id", "")).is_empty():
+			return entry.duplicate(true)
+	for entry in entries:
+		if entry is Dictionary and not String(entry.get("monster_id", "")).is_empty():
+			return entry.duplicate(true)
+	return {}
 
 func _physics_process(_delta: float) -> void:
 	if _death_transition_active:
