@@ -5,6 +5,7 @@ const BOSS_TEA_CONDITION_TYPES := ["always", "prepared_tea", "run_flag", "run_no
 const BOSS_TEA_HOOK_GROUPS := ["common", "peaceful_tea_ceremony", "mixed", "combat_started"]
 const BOSS_TEA_HOOK_CHANNELS := ["memory", "weakness", "dialogue"]
 const DROP_CONDITIONS := ["항상", "낮", "밤"]
+const MONSTER_DAY_NIGHT_VALUES := ["낮", "밤", "둘 다"]
 const EVENT_CONDITION_TYPES := [
 	"always",
 	"run_flag",
@@ -231,6 +232,8 @@ func _validate_item_contract(dataset_name: String, item: Dictionary) -> Dictiona
 		return {"ok": true}
 	if dataset_name == "drops":
 		return _validate_drop_contract(item)
+	if dataset_name == "monsters":
+		return _validate_monster_contract(item)
 	if dataset_name == "choices":
 		return _validate_choice_contract(item)
 	if dataset_name == "shops":
@@ -246,6 +249,16 @@ func _validate_item_contract(dataset_name: String, item: Dictionary) -> Dictiona
 	if String(item.get("type", "")) != "다구" or String(item.get("equipment_slot", "")) != "다구":
 		return {"ok": true}
 	return _validate_attachment_stage_data(item)
+
+func _validate_monster_contract(item: Dictionary) -> Dictionary:
+	if not item.has("day_night"):
+		return {"ok": true}
+	var day_night := String(item.get("day_night", ""))
+	if not MONSTER_DAY_NIGHT_VALUES.has(day_night):
+		return {"ok": false, "error": "monsters item '%s' has unsupported day_night '%s'." % [item.id, day_night]}
+	if item.has("biome_ids") and typeof(item.biome_ids) != TYPE_ARRAY:
+		return {"ok": false, "error": "monsters item '%s' biome_ids must be an array." % item.id}
+	return {"ok": true}
 
 func _validate_tea_contract(item: Dictionary) -> Dictionary:
 	if item.has("ki_recovery"):

@@ -106,6 +106,15 @@ func run(asserts) -> void:
 	if not missing_nested_summon.ok:
 		asserts.true_value("missing_monster" in missing_nested_summon.error, "nested summon relation error names the missing monster")
 
+	var invalid_monster_day_night := validator.validate_catalog({
+		"monsters": [{"id": "broken_spawn_window", "name": "broken", "status": "테스트", "day_night": "비 오는 밤"}]
+	}, {
+		"monsters": {"required_fields": ["id", "name", "status", "day_night"]}
+	})
+	asserts.false_value(invalid_monster_day_night.ok, "monster day/night spawn windows are validated from generated data")
+	if not invalid_monster_day_night.ok:
+		asserts.true_value("day_night" in invalid_monster_day_night.error, "invalid monster day/night error names the field")
+
 	var boss_tea_rules := {
 		"bosses": {"required_fields": ["id"]},
 		"choices": {"required_fields": ["id"]},
