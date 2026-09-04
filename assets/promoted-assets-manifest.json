@@ -6,7 +6,7 @@
     "remaining_source_files": 0,
     "remaining_source_image_files": 0
   },
-  "total_runtime_pngs": 462,
+  "total_runtime_pngs": 482,
   "runtime_roots": [
     "assets/backgrounds",
     "assets/sprites",
@@ -19,7 +19,7 @@
       "width": 32,
       "height": 32,
       "mode": "RGBA",
-      "alpha_empty": false,
+      "alpha_empty": true,
       "source_sha256": "sha256:b0775cba09eadf2fde241b35daa28cdcd03af6d23e99e0decd32b42f13f6d220",
       "rgba_sha256": "sha256:ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7"
     },
@@ -28,7 +28,7 @@
       "width": 32,
       "height": 32,
       "mode": "RGBA",
-      "alpha_empty": false,
+      "alpha_empty": true,
       "source_sha256": "sha256:b0775cba09eadf2fde241b35daa28cdcd03af6d23e99e0decd32b42f13f6d220",
       "rgba_sha256": "sha256:ad7facb2586fc6e966c004d7d1d16b024f5805ff7cb47c7a85dabd8b48892ca7"
     },
@@ -38,8 +38,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:ac1964ec6b3cb40cc3b273c3393bbf4fbe851f48a4a3d303ae3c7a1d41a2ca28",
-      "rgba_sha256": "sha256:55ab328990eaf26153e5d073a6407ece603dfe0725a2c567b18cd03fd35ea60f"
+      "source_sha256": "sha256:c4f370ebe86a2048e8f4dd0f576849c27db8634ae90d4247f31ababd4b6e39fd",
+      "rgba_sha256": "sha256:8fe9d468f6699343f4ccc8729ba2509f2a7db0f37c3b7f38f1b3874965d2ac33"
     },
     {
       "path": "assets/tiles/terrain/paths/road_corner_nw_32x32.png",
@@ -47,8 +47,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:107e40d6f759e17fd7f4520ffacf6002358a5e3f9593df312153d7fa5381365a",
-      "rgba_sha256": "sha256:1a7d9e4780e6acf57afc51ad03fb58097880603e23cc6201d9922980d3f66a1c"
+      "source_sha256": "sha256:e07e33e5077630222ab26d8a02a773c06f1648c9700e6b0bf3b02f8ca19dbfdf",
+      "rgba_sha256": "sha256:6876469f74317c63a55a51f4ae075f01527b13c1550914c43c03a43fb53eea4e"
     },
     {
       "path": "assets/tiles/terrain/paths/road_t_junction_esw_32x32.png",
@@ -56,8 +56,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:473b52c7ec7c446bf7b9aaca666131bb9efed86787eb8f0e0d929e40ef7fe346",
-      "rgba_sha256": "sha256:0b364adf3d25861156913e1485810292085a4dbc44a94077b043e708203078ca"
+      "source_sha256": "sha256:6b41401151740e0887be16d9466f3194b26fe9e9b2ab9e99f9973968cecec9a9",
+      "rgba_sha256": "sha256:37bb7c1eac2974a21bc555c9ec79d0a1d246c3c12685cbf7ebb34972d860fa28"
     },
     {
       "path": "assets/tiles/terrain/paths/road_t_junction_nsw_32x32.png",
@@ -65,8 +65,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:60975b1bb292049e07dbbd8e1688a49e68a2d1bf4f364609109ba1aea0a7fe8b",
-      "rgba_sha256": "sha256:0d3e8e7241908ea631767eacaab580ec54274d32279d468aef28523531fc1ad0"
+      "source_sha256": "sha256:9cb2813e6020d905c9cb3c5166aaba7521dfa829a4a0fb987fa1787397fbd5b8",
+      "rgba_sha256": "sha256:8cad3ea9680c993b8ffe125cf153a415d9921400cc6891128a3d4e446eccea04"
     },
     {
       "path": "assets/tiles/terrain/paths/road_t_junction_new_32x32.png",
@@ -74,8 +74,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:0cfe708826158299044f610a5ca03521c7a3fd704a4a73813fdd05fc9149ea9d",
-      "rgba_sha256": "sha256:b3d38f98203fde0a3324e467d9501a12515964f56109c392cd5bfa2fec132d0f"
+      "source_sha256": "sha256:a3c678e2b234e916b32da0ed5d588d467abaaa825e01265cf4b66ab5aebb2bd1",
+      "rgba_sha256": "sha256:7448ddb72dbe649ea12bc1f62020fa0d13a2d0203ee78c0ded1fe193a700d4ba"
     },
     {
       "path": "assets/tiles/terrain/paths/road_t_junction_nes_32x32.png",
@@ -83,8 +83,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:d28d20421dd75481130ad96402176e55a4fe131b2a6bfeba42cbbac397a0fecb",
-      "rgba_sha256": "sha256:e262387449e32a78c44ddcdcdc8b6253df8e5e89284a1e0395a5f7150c154aba"
+      "source_sha256": "sha256:8be41ff1d3f6748ec06fdb59a76c07954ef9691243a6d4dcf3ecada528f06005",
+      "rgba_sha256": "sha256:5dd2c7dfb419a83b816703f126269498b408f855ab9cf3e63fab3381b27a573a"
     },
     {
       "path": "assets/tiles/terrain/paths/road_cross_32x32.png",
@@ -92,8 +92,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:e18430723278d463bb32d59169bbc81e857c63636881ebd531370ebdd5f99e21",
-      "rgba_sha256": "sha256:9b5ade0ad9ef7f82ef031c9dd70d130e50476f47879a6bfe8065436127d7d6ff"
+      "source_sha256": "sha256:caa5d72149cdd82a7f62415b4f8d5beb2d419a971f65f685c711bdd36ea3f320",
+      "rgba_sha256": "sha256:d23d7189e6f0e260311735e080763fd366ea2038eb196a89b77c38207bed4601"
     },
     {
       "path": "assets/tiles/terrain/paths/road_cross_variant_32x32.png",
@@ -101,8 +101,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:f86930cd7c8fffe9c8948426d7e81fd19fe7d620602f9203d6f2d51c431e97c3",
-      "rgba_sha256": "sha256:3a71fa27b76e8bf4404ea740fbd4111bd56319ab0aeefb47dc7829a5c9a7cb00"
+      "source_sha256": "sha256:d58ce78ab40e9e5316260bb739c06f73151824ee6575eb699bdef3d15b007b99",
+      "rgba_sha256": "sha256:92a7d6a16d3b12c3c5280340e17d09d2ab8fc5b565a4ec3ebb636a059cd5aedf"
     },
     {
       "path": "assets/tiles/terrain/paths/road_end_north_32x32.png",
@@ -110,8 +110,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:704ac88888a51ceba3f99a211489a9f0031dc31ec3e37c4177edb510cd535349",
-      "rgba_sha256": "sha256:af59ce16c6cb105456f57dd59aa368cd76aa0bd61800183ba68874a7e8868744"
+      "source_sha256": "sha256:811dbbfc171677226527ea117f92c657c2b9f66fb8307fa35355a21b6e2234a8",
+      "rgba_sha256": "sha256:bf854c4a9de267c36131dcdb35fc34746b997c5b8f503bb9550b8cc2ca369473"
     },
     {
       "path": "assets/tiles/terrain/paths/road_end_east_32x32.png",
@@ -119,8 +119,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:953f52def4904d21b25ec49a2f4e42be66a296e096dc06d4d41a985828ded32d",
-      "rgba_sha256": "sha256:eade17a86ac21f530cb5858dbde8cef96b7e577b48fca06efe7cfe1eab4eb411"
+      "source_sha256": "sha256:9b8808e59c7c5ff0d6d5f89b9580c58361cbd399681429f681f21f01a01eb648",
+      "rgba_sha256": "sha256:a3214816de55e7a3d8b002b8d04b69329fa98add6897eeed86189512ea9813ea"
     },
     {
       "path": "assets/tiles/terrain/paths/road_end_south_32x32.png",
@@ -128,8 +128,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:fe55e26785d9bbd28c546f2888c134e2e62f8b6b0b1b16f799032af9238ef8d7",
-      "rgba_sha256": "sha256:60bdf6379938721cc14292dbcd9518905d0856179c270743953d1e2e8d1ba218"
+      "source_sha256": "sha256:8c98487ed538286723dca37689bde72219c803360eef7a568783827aadff9758",
+      "rgba_sha256": "sha256:412366bf65530f03927100e775b96f7104a6d09caf0a542175e49e2846edb076"
     },
     {
       "path": "assets/tiles/terrain/paths/road_end_west_32x32.png",
@@ -137,8 +137,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:61d2b10401bd324ada2841a04a1dfa1492aac3c847cbbdfaf27c0d0c57288d3f",
-      "rgba_sha256": "sha256:702f391ea0d9c62836ba8e345c917d9854d6ed534485f014ed04bdf1e62f75e6"
+      "source_sha256": "sha256:e0593496a05b22ca89ca1b41f42b023b4a9f5c1ca70226908c660723a247cfcb",
+      "rgba_sha256": "sha256:1245c17e71ae34d5960ef2be123321cd7e0a77f887863910cef4f33027468e1f"
     },
     {
       "path": "assets/tiles/terrain/paths/road_straight_horizontal_32x32.png",
@@ -146,8 +146,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:35aab0b6b78aae109aa7ed7284ddbd1ecbe9b49d78bde571a36ed586e34c9670",
-      "rgba_sha256": "sha256:0833fece0474ac144d9addf8e7fd1b965d20ad3626924e3d7a27c50507d28d55"
+      "source_sha256": "sha256:f230db33c17d8038db2b606fd7c3cd497659c69b29094730e26e81f7ccec6397",
+      "rgba_sha256": "sha256:fcf951d616f3c539a0b9d80771a69fd4351a6311090efe86427b6033ce2d9d24"
     },
     {
       "path": "assets/tiles/terrain/paths/road_straight_vertical_32x32.png",
@@ -155,8 +155,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:d67476c7f5c6276e368043a09621108a9749fd1c313dfa2512ce4b36dc5cb74d",
-      "rgba_sha256": "sha256:83b895f2a72e80051a3d3e8ba576190a4de320365f86f54d075cc2582a423ca0"
+      "source_sha256": "sha256:dab919a04de34260a5ddeca16e6af36f91fd5bb02903bd057b94120b6885031a",
+      "rgba_sha256": "sha256:713a6fae0a6677a124080937fc103ccc6648baeb24236b6b2fc391f79c661186"
     },
     {
       "path": "assets/tiles/terrain/paths/road_corner_se_32x32.png",
@@ -164,8 +164,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:05045a91e0be52bb47cbbbe90bb893573bc96c91166ff69afdc3188ba1ccd68e",
-      "rgba_sha256": "sha256:11f7b29411007c6cd75be393e9ce7cb34800ad42569308f604147070fd06de50"
+      "source_sha256": "sha256:cba507353a6df73cdca7c24cdc7b7f4114385f28bb743290910bd4440780de7f",
+      "rgba_sha256": "sha256:d5d790ae3cd3c5f5b3020ac843e1d2bcf2602d06b38c19529834f1c39ee5f368"
     },
     {
       "path": "assets/tiles/terrain/paths/road_corner_sw_32x32.png",
@@ -173,14 +173,14 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:9c08534ecc9d545f113f7f35fb1e6f920db167f62ce85e85df04fb982da227dd",
-      "rgba_sha256": "sha256:558928a2dc56653335d666739be8287ce15b96380ff115a9d1dfffa2eb8fd7a8"
+      "source_sha256": "sha256:adabb2cf23d1493079afdeb8468844a92afc1e1615c00cc26cf34d0aa5446da1",
+      "rgba_sha256": "sha256:53de0a8ea7e082c4284f6d7e2b59f17e89aa1b5196917d360ec8e9e7e7147d61"
     },
     {
       "path": "assets/sprites/characters/monsters/foxfire/foxfire_front_idle_32x32.png",
       "width": 32,
       "height": 32,
-      "mode": "RGBA",
+      "mode": "P",
       "alpha_empty": false,
       "source_sha256": "sha256:43a5abbc133813c460169d2a80f127c6b58f44d52ebee52df98fb0f2ba7d8833",
       "rgba_sha256": "sha256:c4513e8ae27c63e91cf7d65c5a313488dd3ad56516acc1fbe43a9508e2460359"
@@ -189,7 +189,7 @@
       "path": "assets/backgrounds/interiors/mossy-ruins/mossy_dungeon_room.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:634cc28cd5f46300259c40ebc46c790861d6aa872317118cb7a693babdb1015e",
       "rgba_sha256": "sha256:2c35908ae4813c597403cd848ea63b51732424cd00667be65ecc9fdadffa7e72"
@@ -198,7 +198,7 @@
       "path": "assets/backgrounds/interiors/mossy-ruins/mossy_room_variation_set.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:6379749e7c5d89a2b9183f20bc4703cce7e8575e9f1697ad64990bcf4e1597ec",
       "rgba_sha256": "sha256:962e9cdb623c992f2aeedddcd4742b5e969305b6496677b72685d13edb42d9d0"
@@ -207,7 +207,7 @@
       "path": "assets/backgrounds/interiors/mossy-ruins/mossy_ruined_teahouse_room.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:8b4e940adcc538f5561f8a205356c32ad6949eb075c7830c21b52d2780f6511f",
       "rgba_sha256": "sha256:d86f8218785579f44ec24f9be16714e3a4ad7db48212815062796d6777a2d42f"
@@ -216,7 +216,7 @@
       "path": "assets/backgrounds/interiors/ruined-dojo-rooms/ruined_dark_dojo_interior.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:4b87f79974152a7fbb23863ee06eecc7133bc3631ef12ffbef8ab8b991b1e5f4",
       "rgba_sha256": "sha256:b130065f3eaf1398167d358bdb693493dbdb9449e596bfe2395a1d105c24ff42"
@@ -225,7 +225,7 @@
       "path": "assets/backgrounds/interiors/ruined-dojo-rooms/ruined_wood_dojo_room_variations.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:627ebfa45f44129f07d5d999138573bce81f7d4a7a36a32b757aee8e5f8b1c4b",
       "rgba_sha256": "sha256:05ec527486222f5a9ced1cabe1d9ee82069396e68402eff1f58e813a1b8db35c"
@@ -234,7 +234,7 @@
       "path": "assets/backgrounds/interiors/ruined-dojo-rooms/warm_wood_dojo_dungeon_room.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:e3f98b4a7b683cecdb849f76105533c0a8885d87d3bada3407950ed96e3c6670",
       "rgba_sha256": "sha256:e5b4e9ae8c05adf16bdea85e9f1261088c2719a326f6ef71b714cab5ac38c589"
@@ -243,7 +243,7 @@
       "path": "assets/backgrounds/interiors/snowy-interiors/snowy_large_dojo_interior.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:363eab73400c533c061087e03a9c3acf3ea7fd1d7dec3d208a9007361de73ce6",
       "rgba_sha256": "sha256:4a4295d5d3e60a843f18b03d73b349e05bd34fa333b0795d9bc337aca586f57c"
@@ -252,7 +252,7 @@
       "path": "assets/backgrounds/interiors/snowy-interiors/snowy_room_variation_set.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:0becb6e14af3d1dbbbf10237440913332cd49699190a68ea3fcef49dee183fa6",
       "rgba_sha256": "sha256:45874598dec33c0fef116016e51959a01dee995c69fbbe9778509270a3b04e46"
@@ -261,7 +261,7 @@
       "path": "assets/backgrounds/interiors/snowy-interiors/snowy_teahouse_interior_map.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:a56befbb36e775736c2d519629cd5dc4a795b34989a8bf4601816b8a94b42b15",
       "rgba_sha256": "sha256:b2ed634f50f26d73e4c9db9c19a1c301e804833173964448e0ff4d07bbf1ee05"
@@ -270,7 +270,7 @@
       "path": "assets/backgrounds/interiors/teahouse-interiors/clean_warm_teahouse_interior.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:39ebf4d6b4ba108830594d08ac41649e48ea632f89f6761765ba165c9374a258",
       "rgba_sha256": "sha256:a98bbb3adb6bf25aef3224f22f5b1ce37c8051b18e2389a2d8f4fe2534ba8742"
@@ -279,7 +279,7 @@
       "path": "assets/backgrounds/interiors/teahouse-interiors/clean_warm_teahouse_interior_layout.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:f98c246afcf1087352cc7bf60b01bf50ff56616ff08acaa7193abc16d6e93bc5",
       "rgba_sha256": "sha256:f9d431e9e8f5861c65196702cfc997800da1271708e9d0473c9ca3c761bd815c"
@@ -288,7 +288,7 @@
       "path": "assets/backgrounds/interiors/teahouse-interiors/lantern_lit_teahouse_interior.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:5e531dcdaf347e9b06f78b8541c2a431001e63eb1fea35a5f88a25c8c752201d",
       "rgba_sha256": "sha256:0a867aacb1fe213179b47bdb73f873d6e7cab93445c90ab37a6528c4d003fb52"
@@ -893,8 +893,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:4a8bfb937b2cc385e845c2762b5211b8c248b9f47d6b5890d14ba5a3c4c1c81d",
-      "rgba_sha256": "sha256:5ee85bc5043e842cca370f5ecdcc690112fb305326fe0ecdc93f344b8e18907c"
+      "source_sha256": "sha256:1262a011b24e9eed414976bf34893036f7c555f8536f2a21f4deeab9bdb77cd1",
+      "rgba_sha256": "sha256:7499dacb58255f9077581d9122b36b431064e597141b55a846765582d49ee276"
     },
     {
       "path": "assets/sprites/objects/natural-props/bamboo_reeds_32x32.png",
@@ -902,8 +902,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:9e2c2379c377e2e5703239ca6211521500743e98f378d7e9425445e1217e6373",
-      "rgba_sha256": "sha256:1c555e97718128bf7ddc347f29d7397852b171f6f03cb9f9de34c300ce778d08"
+      "source_sha256": "sha256:ab237e46affc085c44b09cba19ebce0ae1097e0b57a550b7b50896c04b29c91a",
+      "rgba_sha256": "sha256:503ccdf2aac31e2c0e980ef7dc6df18bbecf37d7b819516b1cd81947f24d72d7"
     },
     {
       "path": "assets/sprites/objects/natural-props/blue_crystal_cluster_32x32.png",
@@ -911,8 +911,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:3e7c7130b7d53a23861859e994804649592c6cf963c9ad663ad740e3fe067672",
-      "rgba_sha256": "sha256:c9720857220abdd184988dabac289c03129b0d586cfc09de8bd99f0af02367a8"
+      "source_sha256": "sha256:fda7c89eb7070b8642ac49544b9531d23be06b90292f76bb7d95ba43e4a79568",
+      "rgba_sha256": "sha256:f3a4e769514dfdf85b959e1cb17422f975dd2c66e138780cdc6450243c65588d"
     },
     {
       "path": "assets/sprites/objects/natural-props/broadleaf_tree_small_32x32.png",
@@ -920,8 +920,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:a87c415d53649809601b08de3517f2e8b0ebe4d664c0d0bbfc3fb75052b1b25d",
-      "rgba_sha256": "sha256:7bc468383d6711293e23b3390f5c52c0d58bf8fdce06dcc2133185dbcd47c188"
+      "source_sha256": "sha256:708affb5b14072ce21f31b848e8e9a5f49440b2bf37a1634c1e42a1f97bc8433",
+      "rgba_sha256": "sha256:204e72a36abdc8a95735d1cb91e7ab7e559daf066daf566a358fdc504d5b28f4"
     },
     {
       "path": "assets/sprites/objects/natural-props/dead_tree_small_32x32.png",
@@ -929,8 +929,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:5101f60ac1ba50e2b31af6d19ac1a69a21bf258e028c884af3dd9ac8a8b975ed",
-      "rgba_sha256": "sha256:e6b83c80adaf06d84e1102b9414fb0f9ca1d8ab857bd9d7fed3ec3a0aa961329"
+      "source_sha256": "sha256:c78d145dccbe3d5566a48fdeddc2f3b06a2b8b275baaad653c2b82a90e219a8a",
+      "rgba_sha256": "sha256:7cd1df13fdaad4028e069d5f418f0bffa5c84324356e73f7f2b7a25a7a6d4f81"
     },
     {
       "path": "assets/sprites/objects/natural-props/dense_shrub_32x32.png",
@@ -938,8 +938,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:2c3fac3d0414520cd1fe3923580a54e96ce000471cc9232b40383d8b84e37108",
-      "rgba_sha256": "sha256:057f105da73c65ace889bb250441f6afed3ab39f39c119eee43924fb9d9072e6"
+      "source_sha256": "sha256:2dfa82c00a5035ae4c228ee7d3ec208b618b17fddb660edea477db806b163505",
+      "rgba_sha256": "sha256:fafb0162f5a4d1c82b695dd947e8fc6edc060bbc06067caff61e10d9ba84a6fe"
     },
     {
       "path": "assets/sprites/objects/natural-props/flat_rock_32x32.png",
@@ -1037,8 +1037,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:efa771e22a30ef1ad6c7d414f74d7eff738c54b9842e2a668d2248db740ec029",
-      "rgba_sha256": "sha256:836ff591477025a45b43453c553f37417a66bf630f1bf76a4dbc453370430332"
+      "source_sha256": "sha256:e3beb2adab4167dfd6482c8df96370ede996f4e2096356bfda1b5831b9e22f18",
+      "rgba_sha256": "sha256:c23fc84fb5968602e83ed5b6d104841c5dadbcf361d1f05f90c905bc7393ab6a"
     },
     {
       "path": "assets/sprites/objects/natural-props/pebble_pile_32x32.png",
@@ -1046,8 +1046,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:30f872e9c0fe03eee591417a11bbec46575c8b7ceafddc793381591fdeddf6a8",
-      "rgba_sha256": "sha256:34df8629d15380b260019d49fbf9e94b549f27d19b35068abd18a58b2305070f"
+      "source_sha256": "sha256:8aa4861a4f743df8c0351a7526f13928c72056da96423cab7779549ab9a53aaf",
+      "rgba_sha256": "sha256:a91a35c7aa002a407069e05f06987eaa7a13bf125b2671e51139141588edc292"
     },
     {
       "path": "assets/sprites/objects/natural-props/pine_tree_small_32x32.png",
@@ -1055,8 +1055,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:23548c616a79857b303783eea1c5415f76396b8c652b4e11aec3516dd83bc7bb",
-      "rgba_sha256": "sha256:aab50cf142eb382910654750e885f8b70560104c752629043d3485cf0e2e9a98"
+      "source_sha256": "sha256:11b90067828b5cd9f0345fb189a1f81f9dd5e0aebf98c5284249b5daeea610e8",
+      "rgba_sha256": "sha256:e8e0fb2164c2db1dc21e86887a747980a9daea600e383778d6a914c8a80a8789"
     },
     {
       "path": "assets/sprites/objects/natural-props/red_flower_32x32.png",
@@ -1073,8 +1073,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:f2d4da185e2137b0961f9aba999cbcf12616c7d56f5aaffc3b41e71e7b5d01a2",
-      "rgba_sha256": "sha256:440cc06211c3e2d901fbdc6f9cb308f759897c00119bdcbc6b9cd3240cbbdfe3"
+      "source_sha256": "sha256:ddc5cb93aa2167b36012bc8aaed342b3d3d8edb45c23fda618f3a66dfd359f1a",
+      "rgba_sha256": "sha256:df3f40a89f32f64f830cd88a3494f101442d34bbc52efcd90b1bc970b0f545eb"
     },
     {
       "path": "assets/sprites/objects/natural-props/rock_pile_32x32.png",
@@ -1091,8 +1091,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:46bf268925e078a5fc239a32d71642a54ef06cb5ee50dd9e2f57dc65f6b448ef",
-      "rgba_sha256": "sha256:345e49d1cc23b9a1f4111cbfcac9d0ebe8767117d9f60c7ed03dd85ee390f5b2"
+      "source_sha256": "sha256:5e4a8823f498361a66bf93300c960494e79d76975d45f7ccbf1c1e15db32e8c9",
+      "rgba_sha256": "sha256:96d23ec9801d26a4c9a50b3f004f3e790e9271fa10d99f62d646f03f1a1c443a"
     },
     {
       "path": "assets/sprites/objects/natural-props/round_tree_large_32x32.png",
@@ -1100,8 +1100,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:846f682facbc11dcbeb0005e15fa5df66d679aae9faa42071a11581cc4a6137e",
-      "rgba_sha256": "sha256:bd31503405387d62d393fca42fbde0f9f66564b424a92a15d71de9b404f43d81"
+      "source_sha256": "sha256:f6256406b468fb820eb50984bbed4c5affaf46e0ca0727b3a4a93aad45e89a48",
+      "rgba_sha256": "sha256:4d63f2cb23c021ce43d72985384de681c58388a37ab8807c186d92543063db13"
     },
     {
       "path": "assets/sprites/objects/natural-props/round_tree_small_32x32.png",
@@ -1109,8 +1109,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:dd7391e2824a0550a2d2797520c446c956bb7c0b03a8d358d7705f65f0220085",
-      "rgba_sha256": "sha256:0d35b268a45c7627f2fab65378b92de5dac6ff6a65b9117da8746643827b74ce"
+      "source_sha256": "sha256:c8f74b79e4b361dc65cf50d6b19bf3febbff1304d45f164f5ccf55824554c0a1",
+      "rgba_sha256": "sha256:ed3687a20c6a7203060933c0a9f2a79ee3ea0cf3a58b0533aadf59fd1164fe03"
     },
     {
       "path": "assets/sprites/objects/natural-props/small_rock_32x32.png",
@@ -1244,8 +1244,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:de0d5a1089db149ea461726b549382b231fa0f3b894baf8107be4d73500ed4a4",
-      "rgba_sha256": "sha256:be8cdb89d6183bf278ea02b42de9584ac9648374b9d67391c4bc2adce06ef4b5"
+      "source_sha256": "sha256:a834d1f1d119617d415e2a7ca067b7c44a4b765d70460a8127bc6c273a03f20a",
+      "rgba_sha256": "sha256:b67b51f8e049afa497e44f1cba2a909461dd474ce219dd6c55dea3d0ff6d85c7"
     },
     {
       "path": "assets/sprites/objects/shrine-props/incense_burner_32x32.png",
@@ -1280,8 +1280,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:2ddf23540eac5eadc7b0de3f444a557e34f7601273e2e2f4577aed3d6d4a1668",
-      "rgba_sha256": "sha256:b9ae1d6f96ccab212accee716f569399c81ab57167d4fe9cd8242a51ca921af2"
+      "source_sha256": "sha256:8e9ae50aeecfe384a8513186b912685903766e942eff106670484fccb4f87312",
+      "rgba_sha256": "sha256:8c233f2ef924bcb4dfcbc89f61eefbe0ac58e33f3cbac0ed4749b631971985ef"
     },
     {
       "path": "assets/sprites/objects/shrine-props/stone_guardian_statue_32x32.png",
@@ -1289,8 +1289,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:110a733f5e1bcf5bb02bd9ca6bbde280933c4def6aee01f77190cb25d908a3ea",
-      "rgba_sha256": "sha256:82325c49b431aeb88d4965d230bfaf1acfbbaea3265618c6bb1262bc654f7521"
+      "source_sha256": "sha256:74f0e7521332249a034162f95c123f1f585f82ae456362aff090213fcc4419bf",
+      "rgba_sha256": "sha256:7afb0d3f97aca993924dd7ef36311e9127ce2d36b11a777b468a711f5eb1b2c5"
     },
     {
       "path": "assets/sprites/objects/shrine-props/stone_lantern_1x2_32x64.png",
@@ -1307,8 +1307,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:f1b3d31321360e5bde4e3c1ce4a41aab747f7f977133c298da2917b823c190b9",
-      "rgba_sha256": "sha256:8d59322e74822e1d22c52136ba0626f2f820b3da4c739d3a704b176cc05588fb"
+      "source_sha256": "sha256:fd824f01e589a8f8cfac1410478023e5d207604e7b0f2d63ac47e91580d76b10",
+      "rgba_sha256": "sha256:c2a6d1f9ed8f14d66f140b1aff974225614d4d0f7d70f6a245ed25c2134d5fc8"
     },
     {
       "path": "assets/sprites/objects/shrine-props/stone_steps_1x2_64x32.png",
@@ -1325,8 +1325,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:17a3a8a658119b591d2a6f7d4bd35fc1d448617b7690321bac1fda8212cbcaa3",
-      "rgba_sha256": "sha256:99f8e1ef9be8e5951c0b94eda951d436997a4bfa842ef8a53f017b891bc3a1a7"
+      "source_sha256": "sha256:246a8f8db42ea2aca663c887826cdf84addb805175d788c2358c9eb701fe776f",
+      "rgba_sha256": "sha256:f87b83a5b84fe18d31cacb95c2c71e2a35cd3eda2584a17c0475449c017ccc42"
     },
     {
       "path": "assets/sprites/objects/structures/bamboo_fence_corner_32x32.png",
@@ -1361,8 +1361,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:f89d287a3294120ad557379988d255f9eaf13ccc00570273d60db5b107dd76cf",
-      "rgba_sha256": "sha256:60dc509af6f63145b05a75f7f7d73777030b7b094480d9e7a128d84d366e464d"
+      "source_sha256": "sha256:3026b2fd694a117fe581cf91161dcef85dcab53dba9cbaaa85aa3c7008fb4075",
+      "rgba_sha256": "sha256:40387628fc43bf8622cb9782b3078aba12359154d9005364c352a77c48b42f9c"
     },
     {
       "path": "assets/sprites/objects/structures/dungeon_entry_small_32x32.png",
@@ -1388,8 +1388,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:86111311419e7b1040f354faa8d6438f7df361ebc7c4d84d43bdea00e6ae610f",
-      "rgba_sha256": "sha256:5c31c6e3c9b5bb4b099adc4e9075b6420cf309a8c904f426b21682ca0178937e"
+      "source_sha256": "sha256:63f25dbb92d016237daa5661d7dad8b1431bd052c99f096481067aea187ded1a",
+      "rgba_sha256": "sha256:603c8ca9aecfa30853ad35a9cf70da1213159171758e58e71ae6205fde409013"
     },
     {
       "path": "assets/sprites/objects/structures/large_signboard_1x2_64x32.png",
@@ -1487,8 +1487,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:2978d7eb0c979d198f13387e8a27facd00e09af87a3b6032bddc1942efafccdb",
-      "rgba_sha256": "sha256:86f790084e35266c9482d1a8073a0bc001a1ca9e8df2bcb93adc39b37b1aa3ca"
+      "source_sha256": "sha256:754431dcfd7fc19852fa479a7ae5a3d65b66f5c257b4c3e715af7e76d986e352",
+      "rgba_sha256": "sha256:b616f300e4f0c91abeb0b98d8c85a5b21d7eb4d11bcb3a1bf53ee33fcc604723"
     },
     {
       "path": "assets/sprites/objects/structures/stone_fox_statue_1x2_32x64.png",
@@ -1568,8 +1568,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:edc09e12b6ffc3f88bab0538e2191261e9d3f569a6dfe9600d75a6f64bc8e757",
-      "rgba_sha256": "sha256:da260be518501ca19126df90c52a9d1e5c4a19ba5f614317805f54a04f1446f3"
+      "source_sha256": "sha256:ddc49768bfbbe97f43934cd2a14ffa20cc7fef9c1374d6fa4f2d8e6312a8ff06",
+      "rgba_sha256": "sha256:d119d66381942e9b55d5ef240c11e4f5eac1e3888ebdbee5035876ef408e0cca"
     },
     {
       "path": "assets/sprites/objects/structures/wooden_notice_board_large_64x64.png",
@@ -1586,8 +1586,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:434275894e74cb29dca98c36056c99b2f69d4ca48793287270a4acc3c96a96e6",
-      "rgba_sha256": "sha256:69d0ab30f24e2f0302dd92d4a89c234bd9cc22fc395a5dfa277de4b494814da0"
+      "source_sha256": "sha256:89d361bf3c920c0feed9b30a3bba0d0fb4f1a838bb4d6c5911ba158563a9639d",
+      "rgba_sha256": "sha256:a72b4e985a782167a0db60f46207a6ac34bce2ed80697526b2ed410b86fb8a1a"
     },
     {
       "path": "assets/sprites/objects/structures/wooden_stage_platform_96x64.png",
@@ -1622,8 +1622,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:09f95b0f561b935f2a16762b592c81dba6be8664811704b4d1c06e4b82e271a2",
-      "rgba_sha256": "sha256:e33912fe2fe2ce06c15431429c5ab1fa96b63495f44b22134a44a52c8bb36536"
+      "source_sha256": "sha256:363a5f219e36f9f42565e090598a72c4407a1f56ba6ddc84a43546bc897fc00b",
+      "rgba_sha256": "sha256:3c8151151e67a4a43ae424d8b601d49c46e45bdbd4efecab9e6dbc008e64e433"
     },
     {
       "path": "assets/sprites/objects/village-props/handcart_1x2_64x32.png",
@@ -1649,8 +1649,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:7edf285a74bd98c35de9bae87b4c234fa4fc6289184dd5ad4bd2c4a5e148884b",
-      "rgba_sha256": "sha256:0709278a1d57656bcd0c9649c7817a247a6b605aff8206ac53a3206b6fdd9363"
+      "source_sha256": "sha256:0440a7ced52723df5ba5fb41af4c7119158bf1010130d8b796a798d889dc8221",
+      "rgba_sha256": "sha256:61d8ff1956025f680bb5dd29eeeca39d57f24e770dde85e177c58b936a14fadd"
     },
     {
       "path": "assets/sprites/objects/village-props/roofed_well_2x2_64x64.png",
@@ -1694,14 +1694,14 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:fab0e71658e5982bce80a28be44e763f903e8f1008924e544d8e25494f60aa28",
-      "rgba_sha256": "sha256:45cdeaad90a2c9a29a81a7aa3d1c87892dbb416a5f3fae8ddafb3d1e142773b6"
+      "source_sha256": "sha256:5258a2d1171fb9bb459e99bc516caa9356eaf587aeb716f087d8ef635c9f738d",
+      "rgba_sha256": "sha256:fb0e7be5a61eecff3e82d41fae4d6fe32226e8d00c6bb01711ceff739dc059e0"
     },
     {
       "path": "assets/sprites/sheets/source-atlases/character-ui/fox_tea_character_ui_atlas.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:d5b255cc3f46641c182d9a12bbd6c611b0601219aa3622ed2cea061a63d0541b",
       "rgba_sha256": "sha256:8ce837b31cf00a0f0e923485b2fe0d73b29d51a9e1df3f3ba4337c337d0db93f"
@@ -1710,7 +1710,7 @@
       "path": "assets/sprites/sheets/source-atlases/interior-props/mossy_interior_prop_atlas.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:705e43d83d6050d5170db7aa28d9b292b726faaa91b007b5f041fbbb528e8083",
       "rgba_sha256": "sha256:9ab2513e3a8d6058d70639f1f6256bf7c5139cda240646834fdfb76e71eef20b"
@@ -1719,7 +1719,7 @@
       "path": "assets/sprites/sheets/source-atlases/interior-props/snowy_interior_prop_atlas.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:8f79253eb2b4b0ef1eea495f1e5cef491ab57cf85abe07f67da63205c11c0c04",
       "rgba_sha256": "sha256:b24c02d00205e69fd97cf9b0462fe12f637f4b50c6065f016536bb9e9488ace7"
@@ -1728,7 +1728,7 @@
       "path": "assets/sprites/sheets/source-atlases/interior-props/wabi_teahouse_interior_prop_atlas.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:485601a65a146a3adeca2f84a496325e84c85c3848dc38da5f97eb59d3c81273",
       "rgba_sha256": "sha256:cfd03f4df2d6f1f529e87db74c25ad02b825f716346bf3f387d9d2b69f2e44f1"
@@ -1737,7 +1737,7 @@
       "path": "assets/sprites/sheets/source-atlases/interior-props/warm_interior_prop_atlas.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:e701140bd7a43f0bdce399c310c07a00d5d21efb43f7d5addb96559a549b87a1",
       "rgba_sha256": "sha256:26348d4d4617ec5b32a2db250e21b3367d8275c9a1c838efa83280b6b87159a4"
@@ -1746,7 +1746,7 @@
       "path": "assets/sprites/sheets/source-atlases/mixed-object-map/comprehensive_object_map_atlas.png",
       "width": 1324,
       "height": 1188,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:733811858a5f84e9ddeb3224da70cf797628471fccc16d7796df28555b793a98",
       "rgba_sha256": "sha256:5877cfd571b830392c35e9e0ac994949544fb8990633fbe2f7835e0cd8a910d8"
@@ -1755,7 +1755,7 @@
       "path": "assets/sprites/sheets/source-atlases/mixed-object-map/full_tiles_object_map_atlas.png",
       "width": 1322,
       "height": 1190,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:902696e18a0b844e0b8c389f63037b22b891783bd2a42b5e4c0d91ca3bc2555a",
       "rgba_sha256": "sha256:a513b2302714c0a6e3b1110195080a566c9f82cf0c27b2ac87193de2a39dfbe4"
@@ -1764,7 +1764,7 @@
       "path": "assets/sprites/sheets/source-atlases/mixed-object-map/object_sprite_map_examples_atlas.png",
       "width": 1295,
       "height": 1215,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:6ac8f17fbe4df5029ed776cd6825617068a617b7bb6fbe37e2e6a8b5e0eb9761",
       "rgba_sha256": "sha256:2765eb944d19703eb86aa6b43e3c23332376a5f29332c1fb8697f7ff4932e60c"
@@ -1811,8 +1811,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:499c671bd87c2b111826d22225272104b0022fa40cc88cfdd6f7c8cd861c4306",
-      "rgba_sha256": "sha256:5d895e2da4c76aa6bc6f326ee7e6397e238db5c89c11af0bce9b247f7b13120c"
+      "source_sha256": "sha256:58dfa336caa90a3f2dce1141745ad1f25f09288580fecb83aa15dc7884b29bbb",
+      "rgba_sha256": "sha256:04dc4a35dd73d123d24b7bf1d956a07c42e11cf0305661ab9917d6e9c483a894"
     },
     {
       "path": "assets/tiles/terrain/desert/bone_scatter_32x32.png",
@@ -1820,8 +1820,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:328e4839dc86d9f4dfd84488fb305c9e701983ac639a79954562883baf218b42",
-      "rgba_sha256": "sha256:ad2b6b290a6d0dcb4654b72044e268ecd833c1df1c0d9287c50ce7ea0852cb44"
+      "source_sha256": "sha256:7b47e76e61875e6345cbe2ffb7a9c5f4e99831b4d812218eb8d01fa587d88207",
+      "rgba_sha256": "sha256:02514d53da1a4b6427cd7d2d19f759914ba3c47ed1f28c9fa5496f14323c070e"
     },
     {
       "path": "assets/tiles/terrain/desert/cactus_32x32.png",
@@ -1829,8 +1829,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:985d5b05f307e1445227cc0cde4444f592340b10e06d04891f44464306fbf535",
-      "rgba_sha256": "sha256:8f49f77d18a8c90b8d36903370cd1e7a79b26b1c10d59d66ce7fa5cdb7535ea7"
+      "source_sha256": "sha256:ec21f3ef177d1fcb12e404834bf8d38e4c6a4159094f89c047df5bc5ae1ef4d7",
+      "rgba_sha256": "sha256:5d1bdc5ab855bd4b1b997a4d340a6c51b386f3c087e09acd89a8ff5d8fd3defc"
     },
     {
       "path": "assets/tiles/terrain/desert/cracked_clay_32x32.png",
@@ -1838,8 +1838,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:7e0680c914e72edc5fabf8e4b0dc47128f7b581ae9421d967839149119d619c4",
-      "rgba_sha256": "sha256:7865a61b76521dccea51d8798073d9dd6ece65073b147d6bdd62b37143192411"
+      "source_sha256": "sha256:7056f326f73b01ccf0afbef9737557370fff9aa02b54e045faad0db3fdab995b",
+      "rgba_sha256": "sha256:826f17249de1d1fe4519b10b638c4572e8aee1726f13d98ff9bb5a6668fc0843"
     },
     {
       "path": "assets/tiles/terrain/desert/dead_bush_patch_32x32.png",
@@ -1856,8 +1856,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:3303555b19b3fb5748c031e85e5fe521decb2d4a2c1bb0a6851ac182546d2192",
-      "rgba_sha256": "sha256:c8176a94b9c15402434e5939688e09fe91eb8a53929bc86fa0e3bba4692f756b"
+      "source_sha256": "sha256:ab34ea5eb94808f952c7da5936b6ff45ee54dda7764e3c964932d46399260010",
+      "rgba_sha256": "sha256:3728977ae9a3b6d47a4b2dd8ed96a397436bfdf05ec14f237d2a3aeda2c7a99f"
     },
     {
       "path": "assets/tiles/terrain/desert/dry_scrub_patch_32x32.png",
@@ -1865,8 +1865,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:98d4e115eb093cc6760745ad8ef6d89e0dfb12cb34aed7c837a74c4360cf2994",
-      "rgba_sha256": "sha256:936ea1678854ff5acb9cb93f4825575c0618d873ae452a498befe77c0eb76356"
+      "source_sha256": "sha256:87071332442ed78716136a0714b820c34b6f14da8215b2750ed7e04a64c3417b",
+      "rgba_sha256": "sha256:e2f3c8ff54944fa54526487e8db0e8e271f2d8f0907f2c7bf1a672e0bec8e8a3"
     },
     {
       "path": "assets/tiles/terrain/desert/dry_soil_01_32x32.png",
@@ -1874,8 +1874,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:5c869fde897f6a97ec3f99c1c70aeb206f9da6d0634f40556739ba8d7d88a1d6",
-      "rgba_sha256": "sha256:34583fbca641e14b2c7ae063925d2fe4bde6e2b1e98f2c8a1322053f6d9e2612"
+      "source_sha256": "sha256:a04d5c39f22fdbbdffcd8e11ab4eb0e39d2ea191ec0ad0a6be664d6227d0c155",
+      "rgba_sha256": "sha256:5d3953a7fb1b4d41ddd007544833705296b38cd85c9d1b114e1cb435df02a2aa"
     },
     {
       "path": "assets/tiles/terrain/desert/dry_soil_02_32x32.png",
@@ -1883,8 +1883,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:14423e29842a6823fa77c4bb1d35f8a2bf1723a0dd1b231a8ec5e3d34f9d0e88",
-      "rgba_sha256": "sha256:a189b30f9438b491f6017f10f259bd80f4bb84887ae7ce16a3cba276d9362d3b"
+      "source_sha256": "sha256:0f3ba369013007b281f36cdbff5ecd895420e0d23afafef39068d63c46712dc7",
+      "rgba_sha256": "sha256:c4b49e0e880878259c9471d59a6f6e9c7341d62c98d65a2eef5c676e83134468"
     },
     {
       "path": "assets/tiles/terrain/desert/dry_soil_03_32x32.png",
@@ -1892,8 +1892,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:5013331a788396a06e8bc884b5657be2b7310dcfbb1a098b188b9836a4c5bfaa",
-      "rgba_sha256": "sha256:aaa84db5741f34244cc492dad4b33ae966ccc49439cf07ee37ba48c3cc02aa24"
+      "source_sha256": "sha256:ae3dc0fd949c54a9c9aa89ded3d1e0acf648661d8df9f994de4f86bd972a9e00",
+      "rgba_sha256": "sha256:81fa22a8de10474257f0ac3e126c4e40da22a7730e72648ee42c28d7dd4cb779"
     },
     {
       "path": "assets/tiles/terrain/desert/dune_ground_01_32x32.png",
@@ -1901,8 +1901,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:b4639e1486552be24c6bff6960cb9dab83ff93c399532bd5fd849c63a37bce94",
-      "rgba_sha256": "sha256:ff5b9116ed648c6dc59843de9d25955b33b3c46f4fa5f578f09feb1ec1c792f0"
+      "source_sha256": "sha256:bb27793d50b5b02c7024b3539d5778f2b66ea19caa2a1ef6ab4008fd9a9ec8db",
+      "rgba_sha256": "sha256:95d3b5998ac3f1dc80d36be96e837d519e0e1c04583bb133f2308135c29ef900"
     },
     {
       "path": "assets/tiles/terrain/desert/palm_tree_oasis_64x32.png",
@@ -1919,8 +1919,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:00a6b3487a2da433c4fde4dc3237822f6a143174e91f4e77439de7f22790b7b0",
-      "rgba_sha256": "sha256:c4774501f7cae158fb68df46bb70fd8fd89f8b48f6debb19242932e6f6274b22"
+      "source_sha256": "sha256:50f37a7bf708b2e61d420a7002864fa2339010ef118f45a31cdaa8eb3c771e38",
+      "rgba_sha256": "sha256:26803693b73c3dc7f0d355263783c4e28d3c8dc905e6d13c1d9cb1e5b03fd2d7"
     },
     {
       "path": "assets/tiles/terrain/desert/rock_cluster_02_32x32.png",
@@ -1928,8 +1928,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:38bb2b2d93240ac1f1dbd8d3442c745dd33fdf2d3af1485475e7f3785cf477f3",
-      "rgba_sha256": "sha256:e380733f626b2c969bb836d11ee064a3b56e7187704740ce3884be56d1ff1385"
+      "source_sha256": "sha256:0ba2bd940a316d6222080e5173d820ccf778c574d6838ab26876d3a4dc4a3b70",
+      "rgba_sha256": "sha256:13c10d2151b3c1c164638754e0068af0b1b217035b012ed251cbd6fceb0b1096"
     },
     {
       "path": "assets/tiles/terrain/desert/sand_mound_01_32x32.png",
@@ -1937,8 +1937,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:fbbb2ad27557f601d0ac752db27b34ddd5d47254a82a265b1190f8ddad4f4fdd",
-      "rgba_sha256": "sha256:626a5d9cc1c000848d625aa06864d677394c23a09cc3a5617f4d802e9f82d13c"
+      "source_sha256": "sha256:fbdaa4b6f55743cdf6bb90feb1966508eea88d324de7da207af341b7ab5fc882",
+      "rgba_sha256": "sha256:80802e54d469d564ff54aa3152f9c7d54093611372bd02efe96079f4a4fe6d40"
     },
     {
       "path": "assets/tiles/terrain/desert/sand_mound_02_32x32.png",
@@ -1946,8 +1946,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:98a828723738ae7ef994a8f3cc8bfb77259cb8bd31f8148c256d1dcaf6f4ce26",
-      "rgba_sha256": "sha256:469d5b26e22974a937444ff099687e6d697a0978a6035cac446b01f2c27dcdd6"
+      "source_sha256": "sha256:04e1309489fa42cadfc23b41b8f612cd7748e6e66857f307f91d498211631341",
+      "rgba_sha256": "sha256:23488a024c89868647b393745b709e813ba07a7441aea122caca8ef33296902b"
     },
     {
       "path": "assets/tiles/terrain/desert/sand_ripple_01_32x32.png",
@@ -1955,8 +1955,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:a14e53a4677c65c795079416741e5122e75fca92cac6f718ac01dec1bef037a3",
-      "rgba_sha256": "sha256:2d3644adf02431203d5655774319b57ef36671620d95850423c91f54b5a1440d"
+      "source_sha256": "sha256:54bd0a7f3133240b7810e731f438fc3671d624a064f2c20fad83a305b83feb8b",
+      "rgba_sha256": "sha256:946a2b21f8b319e0923aadd39399f9d5e9893db2f1d33a1f7ce7c10219bc132d"
     },
     {
       "path": "assets/tiles/terrain/desert/sandy_ground_01_32x32.png",
@@ -1964,8 +1964,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:9da873f44958c66f66a86c7e90fb7b0a1550ccb79d5207a500fb67fb88e5c753",
-      "rgba_sha256": "sha256:d5c481bc46b379cb35fe36d171b5b30e7d84678dfe776884ff1503d166e6d41c"
+      "source_sha256": "sha256:e6e17bbf8c3299ded70b9897b49e62a7dc4894f84d11f9c03d1200383ef0a7d4",
+      "rgba_sha256": "sha256:9f5fa280ec72302c8b3852ef37a390a538baca4c641f08b26a2b4618a6ac779e"
     },
     {
       "path": "assets/tiles/terrain/desert/sandy_ground_02_32x32.png",
@@ -1973,8 +1973,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:e1db7da47d3c90fd028155cc89f6d418e5160b7cb83ff5ae1c8bd8f500e60422",
-      "rgba_sha256": "sha256:e7d00d4bc6bcce7878875fa80c47e641fc902eda13ad5d8c0b644809fac846b0"
+      "source_sha256": "sha256:5fcc3405680a8fcaecef3bacff951f527a4d1b4a00b42ca54818dca60f593991",
+      "rgba_sha256": "sha256:50d12184bb1cc4f016d7032c8d49e3908f35bee9a5ccede253e01519b2ae9037"
     },
     {
       "path": "assets/tiles/terrain/desert/stacked_stones_01_32x32.png",
@@ -1982,8 +1982,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:52f1ead3f943db437f974ac3664d8b6b9e0bcd6ebec1c99d4fb95b6a5b8e50a0",
-      "rgba_sha256": "sha256:d38c476dc7f5100ec729a88089de51e3674f8442f3ab901a0fc6e70b23a09d66"
+      "source_sha256": "sha256:a29c9c6527010663254a597ee97ab1bed345bbca56d7c4ad8c96efb7c500659a",
+      "rgba_sha256": "sha256:2fc0c3218f09fc3c84e7c9d9368afce3d51dde500d936b6c6e91d0bbc48673b7"
     },
     {
       "path": "assets/tiles/terrain/desert/stacked_stones_02_32x32.png",
@@ -1991,17 +1991,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:9f2194ba35061bb1e5badb185dd0d2de739a82e68ddabda33fbfc652ef75ab4d",
-      "rgba_sha256": "sha256:439f311a9aaf71dd97cc41f66567fceff2a2cc4438d65da26eacd31a7beea56e"
-    },
-    {
-      "path": "assets/tiles/terrain/forest/forest_boundary_tree_tileset_8x32.png",
-      "width": 256,
-      "height": 32,
-      "mode": "RGBA",
-      "alpha_empty": false,
-      "source_sha256": "sha256:50f58b922e7de74b51a5faa786b98eacf3f54f40fd72ae31f76831788f4a5b61",
-      "rgba_sha256": "sha256:a1ac8bf50fc8fced96ff51b875d800ef513b413fdd2f14d053589069fb29fb8c"
+      "source_sha256": "sha256:4ac9ab41bb51b5811d7b56e657ee5c6e2ab97e6da21d868020a86f1ff175a004",
+      "rgba_sha256": "sha256:1927f39b50d69a5af51e157675e9242d86ef5f7f283d97465948007803dce49d"
     },
     {
       "path": "assets/tiles/terrain/plains/flower_grass_01_32x32_crop_1_1_30x30_resize_32x32_4.png",
@@ -2011,15 +2002,6 @@
       "alpha_empty": false,
       "source_sha256": "sha256:a04589062a975bd273c0a4189aeaf7c0c06d34484df395574bbb0e00df5152f9",
       "rgba_sha256": "sha256:d97fcdd33c9c9150c67c75e7130b4038173ae23f2c1d438a443e015704935a5a"
-    },
-    {
-      "path": "assets/tiles/terrain/plains/flower_grass_02_32x32.png",
-      "width": 32,
-      "height": 32,
-      "mode": "RGBA",
-      "alpha_empty": false,
-      "source_sha256": "sha256:1c7724cbaf97bd23ad56ee178306557ae9628770ae4bab22a8047987aa8eb597",
-      "rgba_sha256": "sha256:427007f2235d16f90cbbec3492adecff44b3485d814d6de472f36b417a28efcb"
     },
     {
       "path": "assets/tiles/terrain/plains/plain_grass_01_32x32.png",
@@ -2057,8 +2039,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:d250ee067fcf899c9dcd2dfc87b0ed232b9c80856268a81abad9e9b638211a4c",
-      "rgba_sha256": "sha256:4fc7fa286ed71894f6d4e21428f4c1432ea53963fd08cb258a464c11c65cfb03"
+      "source_sha256": "sha256:2944e0af50c301e44424e7bc5adbf51c386b9d14cb27f8546213333283f8aca8",
+      "rgba_sha256": "sha256:a8fcd3b47b263f51a256a7bb8328350d0897c3a2bae0b78b32640d9ff0fbbe10"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_204_59_144x147_resize_32x32.png",
@@ -2066,8 +2048,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:161d7316f46df302cfe0231a557580d1e2f42fd0cc1ea6279009429d3e72a408",
-      "rgba_sha256": "sha256:859ed1b59b41623f6bbcf951d1d0dc6735e60ccc7ad576bfb47290bb6cb83455"
+      "source_sha256": "sha256:01d2249acf9504268b268a3a33770a79e18702eb156870c3f16f29574c604743",
+      "rgba_sha256": "sha256:0c346141dff4bd4d0ee9238f1d3277ac966aef6ec739b7b4552424c225ae301d"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_204_771_143x146_resize_32x32.png",
@@ -2075,8 +2057,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:09ec9ab24e3e7130d8fed13850894c06219131a9f92807b70c2b8747ec633dc4",
-      "rgba_sha256": "sha256:459fd1c53b5d72e6f95c1f32b823182289ffd1e8a0dcf6a32a8f847a3d053074"
+      "source_sha256": "sha256:68ff6ede7bf92b7f03e4a057c88c9db388d9a91d9a3c673ad3c3a26c17636f88",
+      "rgba_sha256": "sha256:23f1c63500faa9f20c18ace3328af7950aaaeb2f26a1b647e9d3417aa450225b"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_205_597_144x145_resize_32x32.png",
@@ -2084,8 +2066,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:37113148e7e61113e9589a6208b6c882e5df320b9aa3dd4bec49d8fc3182043b",
-      "rgba_sha256": "sha256:f3713884b16d28cebecb28475b7a669b5a926626f876a239024294716c2813e1"
+      "source_sha256": "sha256:89f9c0fed471fed70f5580e3945061e13d2b894882542c5fcb06a432ba4faf3e",
+      "rgba_sha256": "sha256:3b4b66e405ac4e64b44dbe24f97d865c6a60757c40eb8d7394d2c2be30669946"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_205_951_143x147_resize_32x32.png",
@@ -2093,8 +2075,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:1f5a0abeac5d13e9dfdb05cf0d3bd960a20a7d3a6b5e8af406943da18366c1d2",
-      "rgba_sha256": "sha256:95a86b5694f73dbe8bc80adf2fd045d00b8c954cd12b9206e00e738b8684c29e"
+      "source_sha256": "sha256:0cd23ec9349474c9fe420a68e13e28ca673f6973c661422ee0a95f2187c287b4",
+      "rgba_sha256": "sha256:1bb27578c1baddbd9895f58fa254b050052c5ac566bee37426164a177cd11b82"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_28_237_145x148_resize_32x32.png",
@@ -2102,8 +2084,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:f0f0f0c78529fc604ebbe661f5495764ffb514aa6123e6c6e354df5834160bf2",
-      "rgba_sha256": "sha256:cd6b866dddfd7fe1a00002e73ea7179c22fdba5fa6825a96252c35538e3e21a2"
+      "source_sha256": "sha256:e3b2cd3e0c10f88da33c47a5a63c5dfbab2baa60d131e2356017bd67cf7f99f9",
+      "rgba_sha256": "sha256:c29f5bfd1c055a56dc2ecef76aec3caeb5c7edcaeb6c72c59cb9adef9e8130ff"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_28_418_146x148_resize_32x32.png",
@@ -2111,8 +2093,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:4a9abfeb638f3b18fc3c74a9f859564d27ec46066eaddc53d30e746e7005b28b",
-      "rgba_sha256": "sha256:8fa006352e905d2efee85cfecc2c8eb9eb3018a19d00f867c03d43fddb03a00b"
+      "source_sha256": "sha256:7485353bd8094b9e5053e417dae91c99d50b4319dcd85801ad18216c1d43b5a4",
+      "rgba_sha256": "sha256:2f56b1dd87dff9599e397cd37c481f722ced94c9accd9146adc193bea40a57b4"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_29_419_144x145_resize_32x32.png",
@@ -2120,8 +2102,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:befbd6b574df63df8e26d3a663e9a2a9f45ab7bf719db8cf70f3aab96a7894c9",
-      "rgba_sha256": "sha256:b2f277bb2ed650514919fd02aac7993e9f40c0eb0b8bc99c25a95a358071e254"
+      "source_sha256": "sha256:518760cb758ff3a5b5a46a560a242d34bfe3a587a04e290446c776d4d7726c60",
+      "rgba_sha256": "sha256:ab6475b35681df02303b49021f404c23d7de5cd67a8abb27a7ed4916fcb9037c"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_29_593_145x148_resize_32x32.png",
@@ -2129,8 +2111,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:6b3f4e6ef759c99cd4d59490431aae765626b08aedeb532c7f7183f037f063ff",
-      "rgba_sha256": "sha256:527f1e88d3c3a346f16110c6fe9093a8a7d40b2697b8527c8a6a56081e690949"
+      "source_sha256": "sha256:dd96c95a537c8aa7de0c596115956f268414e475694b3d0ea57ddc61354c3b21",
+      "rgba_sha256": "sha256:1e6956a4c841bf0de6dbbc38bb987b271ce94444e1793123821968d0e098f4b7"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_29_60_145x148_resize_32x32.png",
@@ -2138,8 +2120,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:b6d21f493128cb3345d5cd3fb28e3f7c7dbdfdc2219fb2ce959461106a1294a1",
-      "rgba_sha256": "sha256:643481a88e948b59cbec69761cdeb211d6fb7558d793f81b99d512fb5968826b"
+      "source_sha256": "sha256:0c57210aa7dc1122c7567cb510da8e24de8671f739939ea4c13cde8ae79b8760",
+      "rgba_sha256": "sha256:0c957909f03e6db5b688648280d38a550977b284766065f29e2f17342ff693f5"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_29_773_145x145_resize_32x32.png",
@@ -2147,8 +2129,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:daa0440387b5f513c0eb1952b61f482bdd57fe711705861d6e20ccd8bbe98585",
-      "rgba_sha256": "sha256:a5af136276eccc334906bca4b66660b4719d781d87717db3ac872f7155f53caa"
+      "source_sha256": "sha256:9d21a835fa50c8c1ef26190b00e41dc355644820784ce3bd598804f4a345fc16",
+      "rgba_sha256": "sha256:5bf0b5ffb2fc66e85637fae2bf7019d87903a9995ce9322e50cb52c41ea37aa3"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_30_952_144x146_resize_32x32.png",
@@ -2156,8 +2138,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:4bb748644153270dd1c49d7d86ed9d21d0151e756cabdb638dcc46630917a04e",
-      "rgba_sha256": "sha256:5a03d934730b08bf6a1ffbdd9829eaac6323491190cae3d26111726b231dae21"
+      "source_sha256": "sha256:41220a737302fdff07aa4613201ed683feb50274e36b96b569ecbc8f3202bf5d",
+      "rgba_sha256": "sha256:df1ec9f217e4b0534ebaf9d81070e7ddca18eea5453abf7903c21d1e6b64c885"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_374_764_149x153_resize_32x32.png",
@@ -2165,8 +2147,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:7c5a110aff312f4987b14e9ae39842bf99c855e21b39b860f472ef73d973441f",
-      "rgba_sha256": "sha256:d8141b9d7a116392ec168d2d52f28ee3cec8b0a9b0c9532d864f209e78ed3268"
+      "source_sha256": "sha256:1257677277af7e7388b8393e6279725ead8ad498a49401b2e901eeb8b3fc3432",
+      "rgba_sha256": "sha256:21efcf9ed9eb9c515636023440035a97f2839b33c1fb0d7dbf99efe73d95be60"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_377_238_146x147_resize_32x32.png",
@@ -2174,8 +2156,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:a8f750c4bd978dc9e4e5e145fe3d80a6b7af866fad2799873e3e0dae580ddbf7",
-      "rgba_sha256": "sha256:e2157c680576efb282cb308a8e91229cabc3d4e4aa7fe70771c0a02c12eeabad"
+      "source_sha256": "sha256:2be90611ff7dde61c8f8bb4054e833b85070fca9b55740a03f11d665f8adf6e7",
+      "rgba_sha256": "sha256:f258d7780cd26c9c3ca28038a00334921b08e335b00744b97790f3003526ac83"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_377_58_147x149_resize_32x32.png",
@@ -2183,8 +2165,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:0c46a0bb43bbe71229040a1c18ca41196234a7e5df8fd6db8135dde6faee95c1",
-      "rgba_sha256": "sha256:35aa20b450c80bfe1c119f6ae7236a1005ef923dcdb862d1f2b5efe7f2217ad3"
+      "source_sha256": "sha256:cfd4a0579ec37c961258f5e553e0b35c1d7a04237866b5f0022dfbdbb33988f2",
+      "rgba_sha256": "sha256:f2c06d0295f9157ede4211171c06b4bb9d701e996d981a2337e4b20415f43b5f"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_377_951_147x148_resize_32x32.png",
@@ -2192,8 +2174,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:675f0481c5aaf846101585e98b777ed518659e1c31ae46a691ee77667527a578",
-      "rgba_sha256": "sha256:dc53e2211baefba12facb9df66c7ed68b961600152eda930021a638d878e82aa"
+      "source_sha256": "sha256:b1da99e56937bc58de8cdc0f5ec386e1a953a66f8331dfb7b838654d4b2ded10",
+      "rgba_sha256": "sha256:d78f8e2c3ee6706b057f6b6e5432a9a9e7627f5ff1f73c13172b8ebbcec53843"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_378_417_147x146_resize_32x32.png",
@@ -2201,8 +2183,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:42e8d1ad0acf27b456925945a61e73bae57e2e034b0c30201e79509005cbf425",
-      "rgba_sha256": "sha256:bffafa446efbfd56482745a7fe5f08f4721f3c16076000d031656062f86348d3"
+      "source_sha256": "sha256:b4ec89d768df6799f21b60ccb7f8f1ebfd409caeb3acdec790de20755f0736ed",
+      "rgba_sha256": "sha256:2ba59b913f815c99b6110d2737c57f485baebf89b5463c4d6fe086d4b0d7b578"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_378_595_147x145_resize_32x32.png",
@@ -2210,8 +2192,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:cff59175e65b1eb2e9190bff51e3ea16713f123eb8adec3b9136f44fda9991f6",
-      "rgba_sha256": "sha256:0b8dcb657a18950a52c2313b752c88b7fed99930f9747ee249c1e31f300b1673"
+      "source_sha256": "sha256:df30fe7a388626f8b1f24353137cc12008e33717859edf998921b9776cc75305",
+      "rgba_sha256": "sha256:036866591ca341b1846318923160c913e248a8e1e5de97c25ecce5fbf24ec73c"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_552_417_151x149_resize_32x32.png",
@@ -2219,8 +2201,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:2c54ae510301ffd1b5801fe48155429b5d3d468b4c78265592a24c141b5ccd64",
-      "rgba_sha256": "sha256:f6f2cefaccd67d2379ef024a3e5783a2385e8e6a62db27631a162a22aa62c7be"
+      "source_sha256": "sha256:fdab8527423700a0b10cd101a829d053f30e1009f92f2a60a811967b95b8b862",
+      "rgba_sha256": "sha256:11b62c84d96ae8abfa509181db9ac928730f5cabe093c500e8cfe42ab54fb105"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_553_951_148x146_resize_32x32.png",
@@ -2228,8 +2210,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:4c2a693516a4ae78cc3cf454dae3ec77e2937e5bb9c20b366c9ab933225f45f5",
-      "rgba_sha256": "sha256:05335214219e559cba30925b7c54bd2434fe7bcb3aee4a322d6b3b55b1a9b58a"
+      "source_sha256": "sha256:351ca1d6884de0c1e2ac756ca77009f794f93baf5d2644b1a66530e4d8e39403",
+      "rgba_sha256": "sha256:ece5862da8adb19649c5a14f00c6432704423ba8637c761fc9a56c087cf6fb64"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_554_61_147x146_resize_32x32.png",
@@ -2237,8 +2219,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:04e2dadb59d59033f5d4e26d60c41508d452ac486f7ae614b821b70de88546a5",
-      "rgba_sha256": "sha256:87ccfa175354eb1ccc8dff6522045c4cd826832455dfe8efad724c4998006503"
+      "source_sha256": "sha256:e388532f46b51fbf422e65bcb2abb21785bfcca49d8c55e53c3d9bdb5472ffe4",
+      "rgba_sha256": "sha256:eda9f26193aaa54dc37aa3ab2b46d14638f5ed08c5e87385bee79f5b64a60c84"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_732_60_144x148_resize_32x32.png",
@@ -2246,8 +2228,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:059258db12ed9251a91fe3bc3839fdca8b0d88dca0a871b752c26bd55b20bc0f",
-      "rgba_sha256": "sha256:b7c1593b4b647209d9f237d85c4e5a6a5dc728f320b2391b75707cd11ec70c52"
+      "source_sha256": "sha256:03a018860b9ba626543ade32cd7189fcb769b909d8c990aeeb6c9d61423fd370",
+      "rgba_sha256": "sha256:0030a300e18026e7cb41dd3db746ce7ff58a2fcfa51df0acc3e09787494cc0b5"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_733_594_145x147_resize_32x32.png",
@@ -2255,8 +2237,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:f51196ae0cff00b9e6a60d025d69b3b5549f785b7ca177fc166aec71fb2749f6",
-      "rgba_sha256": "sha256:a9e7fc614323a61e6668f789b24ef2b52bea720c14dabf0196e1054519a39e93"
+      "source_sha256": "sha256:5a767b08338a113b82d8ded2c93beb64363b33aa98fe5fa569380ce51a4c4249",
+      "rgba_sha256": "sha256:d0cea2530b179957252d0ae94ed949f592cdf5bab8fab04850bdf657e53d1dc7"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_733_950_146x150_resize_32x32.png",
@@ -2264,8 +2246,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:d18387597df16c6ab9bfaf53900578e3df95d51e5a71344a4f846eab6664f486",
-      "rgba_sha256": "sha256:ce57b1422d3d2b2de31b98335b57386bb841512e9d708bdc8b1f4ea3720a8411"
+      "source_sha256": "sha256:1c3214256d148ed16af1fb46c318504f85a7c52b87b3d2cf3298fb35bbe3ac88",
+      "rgba_sha256": "sha256:788fe8aee58b58ba5488f586690463d1b394d28192276de8cced6fc5d04c290a"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_907_60_144x147_resize_32x32.png",
@@ -2273,8 +2255,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:e58080f7ec9d6a877c18bf8e953a7ea190cd310ee164965c2fdd719276e9f57c",
-      "rgba_sha256": "sha256:122c1222fcbd1d4707cd8820dd2d8316b26a88780224be389b936d3e321ca50c"
+      "source_sha256": "sha256:2fbb9a02c10ceb24cde03d961ac24fb9204a7ca3884c92817d04e360c7a999f8",
+      "rgba_sha256": "sha256:a9fa92cfeddcd738ccb4d8a61cc62e55b57f96194de49bc5b07151a2afce7b4f"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_907_950_148x148_resize_32x32.png",
@@ -2282,8 +2264,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:dbe09a90ed6674798cc07a13f96d6ce78e86a5010b181172fe53bd153519c5ae",
-      "rgba_sha256": "sha256:f47331f8c58a8cf97d95a1a4ab8f4fec9d7269e5a2b29c80ba4072076a2e9840"
+      "source_sha256": "sha256:9ab98b8235f9a5f083cc0a567bedcf35f9355928a1aa9b8c06dc6c51ed3ee1e3",
+      "rgba_sha256": "sha256:ebf369fe21489fde1bed7b980bcf6b0a8e2b6faeb23546311bc5e9280fa5b434"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_908_771_144x146_resize_32x32.png",
@@ -2291,8 +2273,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:44cb52e61525cb209398146b598258fc48ed9c0eb3cea871c12e47d201d23cbf",
-      "rgba_sha256": "sha256:1b28f02d05d7a62ab1e64efec5c29304746dbda85b2baf216673d259b65ba464"
+      "source_sha256": "sha256:b6eb1725ce0633fc254523c3caed6b3aea45ad41a90daed00ea480445f85553c",
+      "rgba_sha256": "sha256:dc10bd1d4e4c78588f2a1c92c14e261c1a33a7a569dd83cc4c4ae4ad72c6234a"
     },
     {
       "path": "assets/tiles/terrain/river/3128FD1E-45B5-438E-A810-C6049FC50F77_crop_909_594_142x148_resize_32x32.png",
@@ -2300,8 +2282,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:7f6a222c16d647d1cf16ecc882f8917a5e85af62f29d8b7fc7376f150dc2adef",
-      "rgba_sha256": "sha256:bf9de133ac7c9bcfe467eab61d7acd7d47c40c485321cc6f0c2eca27c33b6b3c"
+      "source_sha256": "sha256:8b5bc7d705ba92192ea1e19299751410232caecf0cb94ad2e5b544748758eed8",
+      "rgba_sha256": "sha256:065813b681ab2afb4bf0b7a8e44ee76f6506228a541547e9471708fdbed05ec1"
     },
     {
       "path": "assets/tiles/terrain/snow/snow_boulder_32x32.png",
@@ -2390,8 +2372,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": false,
-      "source_sha256": "sha256:4a6332b2c60d454636c2a6f643116f64fbbf601b78c693e7db2cf43aa201077c",
-      "rgba_sha256": "sha256:51d49fc9d3e6390f684d1c77eccef867e090a847344d9cea30c48807a7a70661"
+      "source_sha256": "sha256:f38c0052b75df603b7869778a385d16ae498e0c6dafee990f5ef8f68617715d4",
+      "rgba_sha256": "sha256:6cd43256b5426da83a0dd5ce606ab0c84e8a7911800976bea1d0d17ec0de378d"
     },
     {
       "path": "assets/ui/icons/alert_mark_32.png",
@@ -2649,7 +2631,7 @@
       "path": "assets/ui/mockups/screens/fox_tea_ui_flow_mockups.png",
       "width": 1448,
       "height": 1086,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:9839480624e7ac9cba6b287faa2cc9cd666aff6bac830c05f5043554cd8806bc",
       "rgba_sha256": "sha256:04661f87e17eabeadaaad7a235a5dcbd2e605b703027595d73f606aef2d0c4f0"
@@ -2658,7 +2640,7 @@
       "path": "assets/ui/mockups/screens/tea_fox_title_screen_mockup.png",
       "width": 941,
       "height": 1672,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:f1b3bd62684f8891d61601e787a70ff31f4d2ccb129f9986dc5f6a32b7e7ed4a",
       "rgba_sha256": "sha256:618e3b944fd11d61b68bdcf4775ee49c47e9f0a5e1a2e0fc36947a7848f4493a"
@@ -2667,7 +2649,7 @@
       "path": "assets/ui/mockups/screens/world_ui_system_mockup_atlas.png",
       "width": 1536,
       "height": 1024,
-      "mode": "RGB",
+      "mode": "RGBA",
       "alpha_empty": false,
       "source_sha256": "sha256:00acdb233a3d254a1151fc9a4b9a1e5658de1b40363162aceb9d0bbabf2e2a3f",
       "rgba_sha256": "sha256:82c87d065668c51d0eba850b8d6184f98d9184ed98e7e2893e5884ab88a8c254"
@@ -3360,7 +3342,7 @@
       "path": "assets/ui/controls/quest_collapse.png",
       "width": 25,
       "height": 22,
-      "mode": "RGBA",
+      "mode": "P",
       "alpha_empty": false,
       "source_sha256": "sha256:71f4e47101d035d76f8eb4fe4cf967d5c7192bd50056ffd32a0ff0f055b007b0",
       "rgba_sha256": "sha256:d6356061e02bf5f448c894c1820605d39332f0c37b1db66e3cfb901b374a3f4a"
@@ -3738,7 +3720,7 @@
       "path": "assets/ui/icons/atlas/quest_check_1.png",
       "width": 28,
       "height": 28,
-      "mode": "RGBA",
+      "mode": "P",
       "alpha_empty": false,
       "source_sha256": "sha256:bff846d2588452a9cbcf20c35e498fcdd1e9b645889f73d7f861bace904c61f8",
       "rgba_sha256": "sha256:ec9d605f83eba298514fc2011eaab00b667a37975a10d464964711f6f4b7e7d8"
@@ -3747,7 +3729,7 @@
       "path": "assets/ui/icons/atlas/quest_check_2.png",
       "width": 28,
       "height": 28,
-      "mode": "RGBA",
+      "mode": "P",
       "alpha_empty": false,
       "source_sha256": "sha256:e67b3a659c1cd86cbb1ee075a4c2241ba8271236c051d755303838622871e5fb",
       "rgba_sha256": "sha256:d9fd70e73cbf58babe6ee162bcebfa26455fb24d4b9e08e558b89f5d891e6534"
@@ -3873,7 +3855,7 @@
       "path": "assets/ui/decorators/divider_under_brand.png",
       "width": 594,
       "height": 17,
-      "mode": "RGBA",
+      "mode": "P",
       "alpha_empty": false,
       "source_sha256": "sha256:4a70f475e0998e2b5586b8ca9196a4ed68884e935c50c36f622b6b6f6664d232",
       "rgba_sha256": "sha256:305ff6537f3f2f9cf97b3a7310e6e02c9da887e671dd65eb12434006802e7018"
@@ -4192,6 +4174,186 @@
       "alpha_empty": false,
       "source_sha256": "sha256:7d8a2e145dd1a30f111489f23590bbbbff029724fea73f7e48c1409d8b00110e",
       "rgba_sha256": "sha256:de3f2cd99f9d8a707f06a3ee04146c99b85304f0989e4f581343426a4d23c1f0"
+    },
+    {
+      "path": "assets/tiles/terrain/trees/terrain_tree_broadleaf_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:fda7c89eb7070b8642ac49544b9531d23be06b90292f76bb7d95ba43e4a79568",
+      "rgba_sha256": "sha256:f3a4e769514dfdf85b959e1cb17422f975dd2c66e138780cdc6450243c65588d"
+    },
+    {
+      "path": "assets/tiles/terrain/trees/terrain_tree_pine_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:11b90067828b5cd9f0345fb189a1f81f9dd5e0aebf98c5284249b5daeea610e8",
+      "rgba_sha256": "sha256:e8e0fb2164c2db1dc21e86887a747980a9daea600e383778d6a914c8a80a8789"
+    },
+    {
+      "path": "assets/tiles/terrain/trees/terrain_tree_round_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:c78d145dccbe3d5566a48fdeddc2f3b06a2b8b275baaad653c2b82a90e219a8a",
+      "rgba_sha256": "sha256:7cd1df13fdaad4028e069d5f418f0bffa5c84324356e73f7f2b7a25a7a6d4f81"
+    },
+    {
+      "path": "assets/backgrounds/prologue/first_run_father_muchau_teahouse.png",
+      "width": 640,
+      "height": 360,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:b82491acbf5cc796c697aeeb28f9e19d61791a2503c7652e29c9a09cc99ed4ca",
+      "rgba_sha256": "sha256:3f0edc021c09b02b999b2305284229d5c1ed75fcff43649fc4293cdecc196b40"
+    },
+    {
+      "path": "assets/sprites/objects/structures/wood_fence_horizontal_1x2_64x32_bottom_180.png",
+      "width": 64,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:fa5c9b49c487e64b9a7bcdff1044ca0c9b5334258fd3c4e5147f12b740c5c823",
+      "rgba_sha256": "sha256:4f42c5c7e77cff5624929c331a9d7133b9b6863c50267d645d3af45284b1147d"
+    },
+    {
+      "path": "assets/tiles/terrain/mountain/mountain_cliff_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:806b3e01c072daed0c3415b18ac5e343e86a5b5763a8f911446e115dd5546d27",
+      "rgba_sha256": "sha256:8eebcb22627208b38ec2fcd3eea082426c62d2d8c5b99992afe1a01ca11977b5"
+    },
+    {
+      "path": "assets/tiles/terrain/mountain/mountain_path_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:dc8e5a87428e07604e7b344c378692325ec2160c2b9994c58ad1977f340c2f0c",
+      "rgba_sha256": "sha256:6eab9f400382839a82a5eaf1a71e294050428256d80c5d804aae47068273a34a"
+    },
+    {
+      "path": "assets/tiles/terrain/mountain/mountain_rock_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:a643779d8f6dd421ba8c29b8eea8f0c19c053f4261c64718abce419768c3dda9",
+      "rgba_sha256": "sha256:e56849e49b28d9c569c4e9d4e9983faa30eea5eb688361c7ebc2112c79ff77c3"
+    },
+    {
+      "path": "assets/tiles/terrain/mountain/mountain_slope_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:b59ff257301463a6745b68d80c661b9018c4bb9a0b8e96ae02cc6c7a3274482d",
+      "rgba_sha256": "sha256:6c1309db1a4d96995a080721a03c698b3904a0a669b022119431c50ef80a3c1e"
+    },
+    {
+      "path": "assets/tiles/terrain/mountain/mountain_ground_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:414c50f7989c86331095ef947928f01fdcd3cc14984a4a53723d0f307d4b6da5",
+      "rgba_sha256": "sha256:6c1309db1a4d96995a080721a03c698b3904a0a669b022119431c50ef80a3c1e"
+    },
+    {
+      "path": "assets/tiles/terrain/mountain/mountain_trail_01_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:dc8e5a87428e07604e7b344c378692325ec2160c2b9994c58ad1977f340c2f0c",
+      "rgba_sha256": "sha256:6eab9f400382839a82a5eaf1a71e294050428256d80c5d804aae47068273a34a"
+    },
+    {
+      "path": "assets/sprites/portraits/major/chr_1_kitsune_father_96x96.png",
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:a617b784e346428a32ca2c6a2548ca607fadaec80354e7c53f457f9f982692ef",
+      "rgba_sha256": "sha256:7153831043bde5eceb18bfed6d101572f761ef0a3b5ba2e5c03b2976fe045861"
+    },
+    {
+      "path": "assets/sprites/portraits/major/chr_2_wasteland_daimyo_96x96.png",
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:50d21a1445444c16a5cb7dfae7972a6e8c8f86e623d6c6702a5e8c33111f0da2",
+      "rgba_sha256": "sha256:c519840cc6fdd30ba20997a4a0535b146b96f53d74c64cb31ec88783320ea85f"
+    },
+    {
+      "path": "assets/sprites/portraits/major/chr_3_furuta_oribe_96x96.png",
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:ba1e8b0d370450769712187091b1135d00d68e3400e8a5beca65e8e2902b0ace",
+      "rgba_sha256": "sha256:4f731fbc6a32f18c192cc982e4b25e1b74751c8dd9635fccbc5a09649e05628d"
+    },
+    {
+      "path": "assets/sprites/portraits/major/chr_4_snow_monk_96x96.png",
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:b5fa70b9efcde6f0560d72294d03b4acdc0f228cb8c136d538a6ba5130c1af11",
+      "rgba_sha256": "sha256:b8142f15af95a11e3fa23194abafecb8903a5291716664e22e086c8e4aff35e3"
+    },
+    {
+      "path": "assets/sprites/portraits/major/chr_5_sen_rikyu_96x96.png",
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:ef75b54f58bbf9a5ae25220c62d5c3d8ad96454e11ad91d4953ca1c53ee6cc9b",
+      "rgba_sha256": "sha256:be4c6abe5dfd131dcdadb8c76e0ca6b34d4ac48c0a63dd9bc7fd44d9be357364"
+    },
+    {
+      "path": "assets/sprites/portraits/major/chr_6_yokai_tea_master_96x96.png",
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:875f6a3bce4823c2bb43f145418e37933279a1f8400b5a03c347ea3748d6b35f",
+      "rgba_sha256": "sha256:fbb6e8d73bed41578631ec01f6dd38fa35dd1f02b2b8b7a75e2e59fe7bdf874b"
+    },
+    {
+      "path": "assets/sprites/portraits/major/chr_7_mountain_potter_96x96.png",
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:7abc106b91fa020eca952abe81c9e25c73f56f129f7d42bbd9d16ac28d2cda36",
+      "rgba_sha256": "sha256:4bbd00d7826a5c07d565d265b249201babdd5c94057fe36c581c9f0b4dca46ba"
+    },
+    {
+      "path": "assets/sprites/portraits/major/chr_8_muchau_96x96.png",
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:62ceb72d72820071a4c555fd73dcb72717336c5c9a76d4fe7c3401ab9c9c5e35",
+      "rgba_sha256": "sha256:ed6d90bbaddf213546d21d6da01e91826827cd382f2313f569970b8308f1137a"
+    },
+    {
+      "path": "assets/sprites/portraits/major/chr_9_wandering_tea_merchant_96x96.png",
+      "width": 96,
+      "height": 96,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:d113f016faf09fa5fb86d2e6d77f2683ddbfd9a4b1bf8da24d1399ac9b0eebb3",
+      "rgba_sha256": "sha256:a0721f1c0f32eaab2993e933974acd5a85ca65ce230762567517870102b32556"
     }
   ]
 }

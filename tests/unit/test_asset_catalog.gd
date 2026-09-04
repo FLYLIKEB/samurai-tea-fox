@@ -6,6 +6,11 @@ func run(asserts) -> void:
 	var catalog := AssetCatalog.new()
 	var result := catalog.load_manifest()
 	asserts.true_value(result.ok, "authoritative asset manifest loads")
+	for asset_id in catalog.definitions:
+		asserts.true_value(
+			catalog.load_texture(String(asset_id)) != null,
+			"registered runtime asset loads as Texture2D: %s" % asset_id
+		)
 	asserts.true_value(catalog.has("fox_samurai_front_idle"), "stable asset ID is registered")
 	asserts.equal(
 		catalog.path_for("fox_samurai_front_idle"),
