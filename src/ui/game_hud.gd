@@ -74,6 +74,18 @@ const NARRATIVE_PORTRAIT_INSET := 4.0
 const NARRATIVE_PANEL_BOTTOM_OFFSET := 12.0
 const TIME_DIAL_SIZE := Vector2(28, 28)
 const STATUS_TOAST_DURATION := 0.9
+const STATUS_TOAST_MAX_VISIBLE_QUEUE := 4
+const STATUS_TOAST_ICON_SIZE := Vector2(18, 18)
+const STATUS_TOAST_PANEL_SIZE := Vector2(300, 32)
+const TOAST_ITEM_ACQUIRED := "item_acquired"
+const TOAST_CRAFT_COMPLETED := "craft_completed"
+const TOAST_ENEMY_DEFEATED := "enemy_defeated"
+const TOAST_DUNGEON_ENTERED := "dungeon_entered"
+const TOAST_DUNGEON_EXITED := "dungeon_exited"
+const TOAST_DUNGEON_FLOOR_CHANGED := "dungeon_floor_changed"
+const TOAST_BIOME_TRANSITION := "biome_transition"
+const TOAST_REGION_TRANSITION := "region_transition"
+const TOAST_MAP_TRANSITION := "map_transition"
 
 class TimeDial:
 	extends Control
@@ -136,8 +148,11 @@ var run_state
 var tea_service
 var asset_catalog := AssetCatalog.new()
 var _asset_catalog_ready := false
-var _toast_queue: Array[String] = []
+var _content_image_map_ready := false
+var _toast_queue: Array[Dictionary] = []
+var _active_toast: Dictionary = {}
 var _toast_label: Label
+var _toast_icon: TextureRect
 var _toast_panel: PanelContainer
 var _toast_remaining := 0.0
 var _crafting_filter := "all"
@@ -392,13 +407,141 @@ func show_command_feedback(message: String) -> void:
 		_refresh_open_menu()
 
 func show_status_toast(message: String) -> void:
+	_enqueue_status_toast({"message": message, "event_key": "message:%s" % message})
+
+func show_status_event(event: Dictionary) -> bool:
+	var model := _status_toast_model(event)
+	if model.is_empty():
+		return false
+	return _enqueue_status_toast(model)
+
+func status_toast_debug_snapshot() -> Dictionary:
+	return {
+		"active": _active_toast.duplicate(true),
+		"queue": _toast_queue.duplicate(true),
+		"remaining": _toast_remaining,
+		"panel_visible": _toast_panel != null and _toast_panel.visible,
+		"label_text": _toast_label.text if _toast_label != null else "",
+		"icon_visible": _toast_icon != null and _toast_icon.visible,
+		"icon_has_texture": _toast_icon != null and _toast_icon.texture != null
+	}
+
+func _enqueue_status_toast(model: Dictionary) -> bool:
+	var message := String(model.get("message", ""))
 	if message.is_empty():
-		return
-	if _toast_queue.size() >= 4 and _toast_queue.back() == message:
-		return
-	_toast_queue.append(message)
+		return false
+	var event_key := String(model.get("event_key", message))
+	if _active_toast_key() == event_key:
+		return false
+	for pending in _toast_queue:
+		if String(pending.get("event_key", "")) == event_key:
+			return false
+	model["event_key"] = event_key
+	if _active_toast.is_empty() and _toast_queue.size() >= STATUS_TOAST_MAX_VISIBLE_QUEUE:
+		_toast_queue.pop_front()
+	elif not _active_toast.is_empty() and _toast_queue.size() >= STATUS_TOAST_MAX_VISIBLE_QUEUE - 1:
+		_toast_queue.pop_front()
+	_toast_queue.append(model)
 	if _toast_label != null and _toast_remaining <= 0.0:
 		_advance_status_toast()
+	return true
+
+func _active_toast_key() -> String:
+	return String(_active_toast.get("event_key", ""))
+
+func _status_toast_model(event: Dictionary) -> Dictionary:
+	if event.is_empty() or not bool(event.get("ok", true)):
+		return {}
+	var event_type := String(event.get("type", event.get("event_type", "")))
+	match event_type:
+		TOAST_ITEM_ACQUIRED:
+			return _content_toast_model(event, "items", String(event.get("item_id", "")), "을(를) 얻었다!", "item")
+		TOAST_CRAFT_COMPLETED:
+			return _content_toast_model(event, "items", String(event.get("result_item_id", event.get("item_id", ""))), "을(를) 제작했다!", "craft")
+		TOAST_ENEMY_DEFEATED:
+			return _content_toast_model(event, "monsters", String(event.get("monster_id", event.get("enemy_id", ""))), "을(를) 쓰러뜨렸다!", "enemy")
+		TOAST_DUNGEON_ENTERED:
+			return _place_toast_model(event, "dungeons", String(event.get("dungeon_id", "")), "던전에 들어갔다!", "dungeon-enter")
+		TOAST_DUNGEON_EXITED:
+			return _place_toast_model(event, "dungeons", String(event.get("dungeon_id", "")), "던전에서 나왔다!", "dungeon-exit")
+		TOAST_DUNGEON_FLOOR_CHANGED:
+			return _floor_toast_model(event)
+		TOAST_BIOME_TRANSITION, TOAST_REGION_TRANSITION:
+			return _place_toast_model(event, "biomes", String(event.get("biome_id", event.get("region_id", ""))), "지역으로 이동했다!", "biome")
+		TOAST_MAP_TRANSITION:
+			return _place_toast_model(event, "biomes", String(event.get("biome_id", "")), "맵을 이동했다!", "map")
+		_:
+			return {}
+
+func _content_toast_model(event: Dictionary, dataset: String, stable_id: String, suffix: String, key_prefix: String) -> Dictionary:
+	if stable_id.is_empty():
+		return {}
+	var definition := _catalog_definition(dataset, stable_id)
+	var name := String(event.get("name", definition.get("name", stable_id)))
+	var quantity := int(event.get("quantity", 0))
+	var quantity_label := " x%d" % quantity if quantity > 1 and key_prefix == "item" else ""
+	return {
+		"message": "%s%s%s" % [name, quantity_label, suffix],
+		"icon_reference": _content_icon_reference(dataset, stable_id, definition),
+		"event_key": "%s:%s:%s" % [key_prefix, stable_id, String(event.get("event_id", ""))]
+	}
+
+func _place_toast_model(event: Dictionary, dataset: String, stable_id: String, fallback_message: String, key_prefix: String) -> Dictionary:
+	var definition := _catalog_definition(dataset, stable_id)
+	var name := String(event.get("name", definition.get("name", "")))
+	var message := fallback_message
+	if not name.is_empty() and key_prefix in ["biome", "map"]:
+		message = "%s %s" % [name, fallback_message]
+	return {
+		"message": message,
+		"icon_reference": _content_icon_reference(dataset, stable_id, definition),
+		"event_key": "%s:%s:%s" % [key_prefix, stable_id, String(event.get("event_id", ""))]
+	}
+
+func _floor_toast_model(event: Dictionary) -> Dictionary:
+	var floor_number := int(event.get("floor", event.get("floor_index", 0)))
+	var message := "던전 층을 이동했다!" if floor_number <= 0 else "던전 %d층으로 이동했다!" % floor_number
+	return {
+		"message": message,
+		"icon_reference": ICON_MAP,
+		"event_key": "dungeon-floor:%d:%s" % [floor_number, String(event.get("event_id", ""))]
+	}
+
+func _catalog_definition(dataset: String, stable_id: String) -> Dictionary:
+	if catalog != null and catalog.has_method("find_by_id"):
+		return catalog.find_by_id(dataset, stable_id)
+	return {}
+
+func _content_icon_reference(dataset: String, stable_id: String, definition: Dictionary) -> String:
+	var icon_reference := String(definition.get("icon_asset_id", ""))
+	if not icon_reference.is_empty():
+		return icon_reference
+	if _ensure_content_image_map() and not stable_id.is_empty():
+		return asset_catalog.content_asset_id(dataset, stable_id)
+	return ""
+
+func _ensure_content_image_map() -> bool:
+	if _content_image_map_ready:
+		return true
+	if not _ensure_asset_catalog():
+		return false
+	var result: Dictionary = asset_catalog.load_content_image_map()
+	if result.ok:
+		_content_image_map_ready = true
+		return true
+	push_warning("HUD content image map failed: %s" % result.get("error", "unknown error"))
+	return false
+
+func _apply_status_toast_model(model: Dictionary) -> void:
+	_toast_label.text = String(model.get("message", ""))
+	var icon_reference := String(model.get("icon_reference", ""))
+	var texture := _load_texture(icon_reference) if not icon_reference.is_empty() else null
+	if _toast_icon != null:
+		_toast_icon.texture = texture
+		_toast_icon.visible = texture != null
+	_toast_label.visible = true
+	_toast_panel.visible = true
+	_toast_remaining = STATUS_TOAST_DURATION
 
 func _process(delta: float) -> void:
 	if _toast_label != null and _toast_remaining > 0.0:
@@ -429,18 +572,35 @@ func _build() -> void:
 	_ignore_mouse(root)
 	root.theme = _theme
 	add_child(root)
-	_toast_panel = _panel(Vector2(250, 30))
+	_toast_panel = _panel(STATUS_TOAST_PANEL_SIZE)
 	_toast_panel.name = "StatusToastPanel"
 	_toast_panel.z_index = 100
 	_toast_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_toast_panel.visible = false
 	root.add_child(_toast_panel)
+	var toast_row := HBoxContainer.new()
+	toast_row.name = "StatusToastRow"
+	toast_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	toast_row.add_theme_constant_override("separation", 5)
+	_ignore_mouse(toast_row)
+	_toast_panel.add_child(toast_row)
+	_toast_icon = TextureRect.new()
+	_toast_icon.name = "StatusToastIcon"
+	_toast_icon.custom_minimum_size = STATUS_TOAST_ICON_SIZE
+	_toast_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_toast_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_toast_icon.visible = false
+	_ignore_mouse(_toast_icon)
+	toast_row.add_child(_toast_icon)
 	_toast_label = _label("", 12)
 	_toast_label.name = "StatusToastLabel"
 	_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_toast_label.clip_text = true
+	_toast_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_toast_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_toast_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_toast_label.visible = false
-	_toast_panel.add_child(_toast_label)
+	toast_row.add_child(_toast_label)
 
 	var status_panel := _panel(STATUS_PANEL_SIZE)
 	status_panel.name = "StatusPanel"
@@ -957,16 +1117,18 @@ func _build_menu_panel(parent: PanelContainer) -> void:
 	rows.add_child(_labels.menu_feedback)
 func _advance_status_toast() -> void:
 	if _toast_label == null or _toast_queue.is_empty():
+		_active_toast.clear()
 		if _toast_label != null:
 			_toast_label.visible = false
+		if _toast_icon != null:
+			_toast_icon.visible = false
+			_toast_icon.texture = null
 		if _toast_panel != null:
 			_toast_panel.visible = false
 		_toast_remaining = 0.0
 		return
-	_toast_label.text = _toast_queue.pop_front()
-	_toast_label.visible = true
-	_toast_panel.visible = true
-	_toast_remaining = STATUS_TOAST_DURATION
+	_active_toast = _toast_queue.pop_front()
+	_apply_status_toast_model(_active_toast)
 
 func _placement_command_button(text: String, command_type: int) -> Button:
 	var button := Button.new()

@@ -174,8 +174,18 @@ class FakeCatalog:
 					{"id": "bandage", "status": "테스트"},
 					{"id": "iron_kettle", "status": "초안"}
 				]
+			"items":
+				return [
+					{"id": "wood", "name": "나무", "type": "재료"},
+					{"id": "wooden_workbench", "name": "목재 작업대", "type": "도구", "icon_asset_id": "asset_assets_sprites_objects_crafting_workbench_32x32_png"},
+					{"id": "missing_icon_item", "name": "그림 없는 잎", "type": "재료"}
+				]
 			"monsters":
 				return [{"id": "road_bandit", "name": "노상 도적", "hp": 70, "attack": 9}]
+			"biomes":
+				return [{"id": "common_region", "name": "일반 지역"}]
+			"dungeons":
+				return [{"id": "common_region_core_dungeon", "name": "일반 유적"}]
 			_:
 				return []
 
@@ -206,6 +216,7 @@ func run(asserts) -> void:
 	_assert_dodge_control_does_not_use_baked_dash_asset(asserts)
 	_assert_fast_menus_show_runtime_read_models(asserts)
 	_assert_safe_area_layout_uses_viewport_top(asserts)
+	_assert_status_toasts_use_event_models_icons_and_queue_limits(asserts)
 	_assert_narrative_dialogue_emits_option_commands(asserts)
 
 func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:
@@ -470,6 +481,40 @@ func _assert_safe_area_layout_uses_viewport_top(asserts) -> void:
 		asserts.equal(int(round(status_panel.position.y)), 12, "status panel anchors to the viewport top margin")
 	if quickslot_panel != null:
 		asserts.equal(int(round(quickslot_panel.position.y)), 12, "quickslot panel anchors to the viewport top margin")
+	hud.free()
+
+func _assert_status_toasts_use_event_models_icons_and_queue_limits(asserts) -> void:
+	var hud := _configured_hud()
+	asserts.false_value(hud.show_status_event({"type": "item_acquired", "ok": false, "item_id": "wood"}), "failed acquisition events do not enqueue a status toast")
+	asserts.true_value(hud.show_status_event({"type": "item_acquired", "ok": true, "item_id": "wood", "quantity": 2, "event_id": "pickup-1"}), "successful item acquisition enqueues one toast")
+	asserts.false_value(hud.show_status_event({"type": "item_acquired", "ok": true, "item_id": "wood", "quantity": 2, "event_id": "pickup-1"}), "duplicate item events do not enqueue twice")
+	var snapshot: Dictionary = hud.status_toast_debug_snapshot()
+	asserts.equal(snapshot.label_text, "나무 x2을(를) 얻었다!", "item toast resolves Korean names from stable item id")
+	asserts.true_value(bool(snapshot.icon_visible), "item toast shows an icon when the content image map has one")
+	asserts.true_value(bool(snapshot.icon_has_texture), "item toast icon loads a runtime texture")
+	var label := hud.get_node_or_null("Root/StatusToastPanel/StatusToastRow/StatusToastLabel") as Label
+	asserts.true_value(label != null and label.clip_text, "toast label clips long Korean messages instead of overflowing")
+	asserts.equal(label.text_overrun_behavior, TextServer.OVERRUN_TRIM_ELLIPSIS, "toast label uses ellipsis overflow for narrow viewports")
+	asserts.true_value(hud.show_status_event({"type": "craft_completed", "ok": true, "result_item_id": "wooden_workbench", "event_id": "craft-1"}), "successful crafting completion enqueues a toast")
+	asserts.true_value(hud.show_status_event({"type": "enemy_defeated", "ok": true, "monster_id": "road_bandit", "event_id": "enemy-1"}), "enemy defeat enqueues a toast")
+	asserts.true_value(hud.show_status_event({"type": "dungeon_entered", "ok": true, "dungeon_id": "common_region_core_dungeon", "event_id": "dungeon-enter"}), "dungeon entry enqueues a toast")
+	hud._process(1.0)
+	asserts.equal(hud.status_toast_debug_snapshot().label_text, "목재 작업대을(를) 제작했다!", "toast queue preserves crafting after acquisition")
+	hud._process(1.0)
+	asserts.equal(hud.status_toast_debug_snapshot().label_text, "노상 도적을(를) 쓰러뜨렸다!", "toast queue preserves enemy defeat order")
+	hud._process(1.0)
+	asserts.equal(hud.status_toast_debug_snapshot().label_text, "던전에 들어갔다!", "toast queue preserves dungeon event order")
+	asserts.true_value(hud.show_status_event({"type": "item_acquired", "ok": true, "item_id": "missing_icon_item", "event_id": "missing-icon"}), "missing image definitions still enqueue text-only toasts")
+	hud._process(1.0)
+	snapshot = hud.status_toast_debug_snapshot()
+	asserts.equal(snapshot.label_text, "그림 없는 잎을(를) 얻었다!", "missing image fallback keeps readable text")
+	asserts.false_value(bool(snapshot.icon_visible), "missing image fallback hides the icon instead of showing a broken texture")
+	for index in range(6):
+		asserts.true_value(hud.show_status_event({"type": "map_transition", "ok": true, "biome_id": "common_region", "event_id": "map-%d" % index}), "map transition enqueues while respecting queue cap")
+	snapshot = hud.status_toast_debug_snapshot()
+	asserts.equal((snapshot.queue as Array).size(), 3, "toast queue caps pending items behind the active toast")
+	var toast_panel := hud.get_node_or_null("Root/StatusToastPanel") as Control
+	asserts.true_value(toast_panel != null and toast_panel.position.y > (hud.get_node("Root/StatusPanel") as Control).position.y, "toast remains below the safe-area top HUD stack")
 	hud.free()
 
 func _assert_narrative_dialogue_emits_option_commands(asserts) -> void:
