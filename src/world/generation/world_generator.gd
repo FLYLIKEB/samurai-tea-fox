@@ -6,7 +6,6 @@ const DeterministicRng = preload("res://src/core/rng/deterministic_rng.gd")
 const ConnectivityValidator = preload("res://src/world/generation/connectivity_validator.gd")
 const MonsterSpawnPoolResolver = preload("res://src/world/generation/monster_spawn_pool_resolver.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
-const WorldRendererProjection = preload("res://src/world/rendering/world_renderer_projection.gd")
 
 static var MAP_WIDTH := RuntimeConstants.int_value("world.overworld_width")
 static var MAP_HEIGHT := RuntimeConstants.int_value("world.overworld_height")
@@ -57,66 +56,6 @@ const TERRAIN_RAINFOREST_TEA_FIELD := "rainforest_tea_field"
 const TERRAIN_RAINFOREST_AGARWOOD := "rainforest_agarwood_grove"
 const TERRAIN_RAINFOREST_RIVER_BANK := "rainforest_river_bank"
 
-const RENDER_GROUND := "terrain_plains_grass_ground_01"
-const RENDER_GRASS := "terrain_plains_grass_ground_01"
-const RENDER_PATH := "asset_assets_tiles_terrain_paths_road_isolated_32x32_png"
-const RENDER_FIELD := "terrain_plains_flower_grass_01"
-const RENDER_FOREST_TREE := "terrain_tree_broadleaf_32x32"
-const RENDER_WATER := "terrain_river_water_01"
-const RENDER_MOUNTAIN_SLOPE := "asset_assets_tiles_terrain_mountain_mountain_ground_01_32x32_png"
-const RENDER_MOUNTAIN_BASE_GRASS := "terrain_mountain_base_grass_01"
-const RENDER_MOUNTAIN_PATH := "asset_assets_tiles_terrain_mountain_mountain_trail_01_32x32_png"
-const RENDER_MOUNTAIN_CLIFF := "asset_assets_tiles_terrain_mountain_mountain_cliff_01_32x32_png"
-const RENDER_BRIDGE_VERTICAL := "asset_assets_tiles_terrain_bridges_bridge_vertical_32x32_png"
-const RENDER_BRIDGE_HORIZONTAL := "asset_assets_tiles_terrain_bridges_bridge_horizontal_32x32_png"
-const RENDER_BRIDGE := RENDER_BRIDGE_VERTICAL
-const RENDER_TELEPORT_ZONE := "asset_assets_tiles_sheets_biome_atlases_biome_tile_map_light_object_biome_map_atlas_crop_1261_363_32x32_resize_32x32_png"
-const RENDER_MAP_EDGE_CLIFF := "asset_assets_tiles_sheets_biome_atlases_biome_tile_map_light_object_biome_map_atlas_crop_147_91_35x34_resize_32x32_png"
-const RENDER_MOUNTAIN_ROCK := "asset_assets_tiles_terrain_mountain_mountain_rock_01_32x32_png"
-const RENDER_MOUNTAIN_CONIFER := "terrain_tree_pine_32x32"
-const RENDER_MOUNTAIN_CAVE := "asset_assets_sprites_objects_mining_rock_cave_entrance_1x2_64x32_png"
-const RENDER_MOUNTAIN_MINE := "asset_assets_sprites_objects_mining_rock_cave_entrance_1x2_64x32_png"
-const RENDER_MOUNTAIN_TEMPLE := "asset_assets_sprites_objects_structures_shrine_torii_gate_2x2_64x64_png"
-const RENDER_MOUNTAIN_ABANDONED_MINE := "asset_assets_sprites_objects_mining_timber_support_1x2_32x64_png"
-const RENDER_MOUNTAIN_TEA_HOUSE := "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png"
-const RENDER_WASTELAND_DRY_SOIL := "asset_assets_tiles_terrain_desert_dry_soil_01_32x32_png"
-const RENDER_WASTELAND_CRACKED_GROUND := "asset_assets_tiles_terrain_desert_cracked_clay_32x32_png"
-const RENDER_WASTELAND_DETOUR_PATH := "asset_assets_tiles_terrain_desert_sand_ripple_01_32x32_png"
-const RENDER_WASTELAND_RUIN := "asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png"
-const RENDER_WASTELAND_DEAD_TREE := "terrain_tree_round_32x32"
-const RENDER_WASTELAND_DRY_RIVER := "asset_assets_tiles_terrain_desert_dry_scrub_patch_32x32_png"
-const RENDER_WASTELAND_CAMP_TRACE := "asset_assets_tiles_terrain_desert_bone_scatter_32x32_png"
-const RENDER_WASTELAND_ABANDONED_VILLAGE := "asset_assets_sprites_objects_structures_small_storage_shed_64x64_png"
-const RENDER_WASTELAND_ABANDONED_OUTPOST := "asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png"
-const RENDER_WASTELAND_RUINED_TEA_ROOM := "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png"
-const RENDER_WASTELAND_BATTLEFIELD_TRACE := "asset_assets_tiles_terrain_desert_bone_scatter_32x32_png"
-const RENDER_RESOURCE_IRON_SCRAP := "asset_assets_sprites_objects_mining_iron_ore_32x32_png"
-const RENDER_RESOURCE_STONE := "small_rock_resource"
-const RENDER_SNOWFIELD_SNOW := "asset_assets_tiles_terrain_snow_snow_ground_01_32x32_png"
-const RENDER_SNOWFIELD_PATH := "asset_assets_tiles_terrain_snow_snow_ground_03_32x32_png"
-const RENDER_SNOWFIELD_ICE := "asset_assets_tiles_terrain_snow_snow_ground_04_32x32_png"
-const RENDER_SNOWFIELD_ICE_EDGE := "asset_assets_tiles_terrain_snow_snow_rock_edge_01_32x32_png"
-const RENDER_SNOWFIELD_PINE := "terrain_tree_pine_32x32"
-const RENDER_SNOWFIELD_ICE_WALL := "asset_assets_tiles_terrain_snow_snow_rock_edge_02_32x32_png"
-const RENDER_SNOWFIELD_SAFE_CLEARING := "asset_assets_tiles_terrain_snow_snow_mound_32x32_png"
-const RENDER_SNOWFIELD_LODGE := "asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png"
-const RENDER_SNOWFIELD_HOT_SPRING := "asset_assets_sprites_objects_shrine_props_stone_water_basin_32x32_png"
-const RENDER_SNOWFIELD_SHRINE := "asset_assets_sprites_objects_structures_shrine_torii_gate_2x2_64x64_png"
-const RENDER_SNOWFIELD_FROZEN_MINE := "asset_assets_sprites_objects_mining_rock_cave_entrance_1x2_64x32_png"
-const RENDER_RAINFOREST_JUNGLE := "terrain_tree_broadleaf_32x32"
-const RENDER_RAINFOREST_SWAMP := "asset_assets_sprites_objects_natural_props_reed_clump_32x32_png"
-const RENDER_RAINFOREST_RIVER := "terrain_river_water_01"
-const RENDER_RAINFOREST_VINE_PATH := "asset_assets_tiles_terrain_plains_flower_grass_02_32x32_png"
-const RENDER_RAINFOREST_TEA_FIELD := "asset_assets_sprites_objects_crafting_tea_leaf_worktable_32x32_png"
-const RENDER_RAINFOREST_AGARWOOD := "terrain_tree_round_32x32"
-const RENDER_RAINFOREST_RIVER_BANK := "asset_assets_tiles_terrain_plains_flower_grass_02_32x32_png"
-const RENDER_RAINFOREST_RIVERSIDE_VILLAGE := "asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png"
-const RENDER_RAINFOREST_FOREST_TEA_ROOM := "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png"
-const RENDER_RAINFOREST_INCENSE_SPACE := "asset_assets_sprites_objects_shrine_props_incense_burner_32x32_png"
-const LARGE_HOUSE_SOURCE_ID := "asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png"
-const FENCE_CORNER_SOURCE_ID := "asset_assets_sprites_objects_structures_wood_fence_corner_32x32_png"
-const FENCE_HORIZONTAL_SOURCE_ID := "asset_assets_sprites_objects_structures_wood_fence_horizontal_1x2_64x32_png"
-const FENCE_HORIZONTAL_BOTTOM_SOURCE_ID := "asset_assets_sprites_objects_structures_wood_fence_horizontal_1x2_64x32_bottom_180_png"
 const LARGE_HOUSE_ID := "large_fenced_house"
 
 const BALANCE_MIN_RESOURCE_NODES_ID := "biome_min_resource_nodes"
@@ -191,7 +130,6 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 
 func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, layout_rng: DeterministicRng, content_rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, progression_projection: Dictionary, profile: Dictionary, monster_spawn_pool: Dictionary) -> Dictionary:
 	var world_data := WorldData.new(MAP_WIDTH, MAP_HEIGHT, String(profile.default_terrain_id), bool(profile.default_walkable))
-	world_data.base_terrain_id = _base_terrain_render_id(String(profile.id))
 	var chunks := _compose_chunks(layout_rng, world_data, profile)
 	_apply_map_boundary(world_data, profile, progression_projection.get("edge_exit_positions", []))
 	var templates := _apply_common_templates(world_data, layout_rng, chunks, profile)
@@ -205,7 +143,7 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 	var validator := ConnectivityValidator.new()
 	var facility_nodes := _place_facility_nodes(world_data, layout_rng, landmarks, profile, validator.reachable_cell_keys_from_entry(world_data.to_dictionary()))
 	var reachable_cells := validator.reachable_cell_keys_from_entry(world_data.to_dictionary())
-	var resource_nodes := _place_resource_nodes(world_data, content_rng, min_resource_nodes, max_resource_placement_attempts, resource_ids, reachable_cells, profile.get("resource_source_by_id", {}), templates, landmarks)
+	var resource_nodes := _place_resource_nodes(world_data, content_rng, min_resource_nodes, max_resource_placement_attempts, resource_ids, reachable_cells, String(profile.id), templates, landmarks)
 	var access_points := []
 	for resource_node in resource_nodes:
 		access_points.append(resource_node.access_position)
@@ -223,11 +161,11 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 		"biome_progression_order": biome_definition.get("progression_order", null),
 		"biome_generation_rule_id": String(profile.id),
 		"landmarks": landmarks,
-		"large_house": large_house_result.house,
+		"large_house": _strip_presentation_sources(large_house_result.house),
 		"chunks": chunks,
-		"templates": templates,
-		"facility_nodes": facility_nodes,
-		"resource_nodes": resource_nodes,
+		"templates": _strip_presentation_sources(templates),
+		"facility_nodes": _semantic_node_snapshots(facility_nodes),
+		"resource_nodes": _semantic_node_snapshots(resource_nodes),
 		"monster_spawn_pool": monster_spawn_pool.duplicate(true),
 		"min_resource_nodes": min_resource_nodes,
 		"retry_attempt": attempt,
@@ -235,10 +173,9 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 		"facility_accessibility": {},
 		"resource_accessibility": {},
 		"connectivity": {},
-		"world_data": world_data.to_dictionary()
+		"world_data": _world_data_projection_snapshot(world_data)
 	}
 
-	world.renderer_input = WorldRendererProjection.new().project(world.world_data, progression_projection)
 	world.connectivity = validator.validate(world)
 	world.facility_accessibility = validator.validate_access_points(world.world_data, facility_access_points)
 	world.resource_accessibility = validator.validate_access_points(world.world_data, access_points)
@@ -284,6 +221,44 @@ func _failed_attempt(seed: int, data_version: String, biome_definition: Dictiona
 		"failure_reason": reason
 	}
 
+func _world_data_projection_snapshot(world_data: WorldData) -> Dictionary:
+	return _strip_presentation_sources(world_data.to_dictionary())
+
+func _semantic_node_snapshots(nodes: Array) -> Array:
+	var snapshots := []
+	for node in nodes:
+		var snapshot = node.duplicate(true) if node is Dictionary else node
+		if snapshot is Dictionary:
+			snapshot.erase("source_id")
+		snapshots.append(snapshot)
+	return snapshots
+
+func _strip_presentation_sources(value):
+	if value is Dictionary:
+		var clean := {}
+		for key in value.keys():
+			var normalized := String(key)
+			if normalized in [
+				"render_id",
+				"projection_source_id",
+				"source_id",
+				"base_render_id",
+				"path_render_id",
+				"bridge_render_id",
+				"water_render_id",
+				"shore_render_id",
+				"boundary_render_id"
+			]:
+				continue
+			clean[key] = _strip_presentation_sources(value[key])
+		return clean
+	if value is Array:
+		var clean_array := []
+		for item in value:
+			clean_array.append(_strip_presentation_sources(item))
+		return clean_array
+	return value
+
 func _place_large_fenced_house(world_data: WorldData, rng: DeterministicRng, profile: Dictionary) -> Dictionary:
 	var candidates: Array[Vector2i] = []
 	var center := Vector2i(MAP_WIDTH / 2 - 2, MAP_HEIGHT / 2 - 2)
@@ -310,7 +285,6 @@ func _place_large_fenced_house(world_data: WorldData, rng: DeterministicRng, pro
 			continue
 		var house_origin := outer_origin + Vector2i.ONE
 		var house_reserved := world_data.reserve_entity(LARGE_HOUSE_ID, house_origin, Vector2i(2, 2), false, {
-			"source_id": LARGE_HOUSE_SOURCE_ID,
 			"role": "core_dungeon_entrance"
 		})
 		if not house_reserved.ok:
@@ -325,7 +299,6 @@ func _place_large_fenced_house(world_data: WorldData, rng: DeterministicRng, pro
 			"ok": true,
 			"house": {
 				"id": LARGE_HOUSE_ID,
-				"source_id": LARGE_HOUSE_SOURCE_ID,
 				"position": _position_dictionary(house_origin),
 				"footprint_size": {"x": 2, "y": 2},
 				"fence_owner_ids": fence_result.owner_ids
@@ -342,19 +315,18 @@ func _large_house_footprint_cells(outer_origin: Vector2i) -> Array:
 
 func _reserve_large_house_fence(world_data: WorldData, outer_origin: Vector2i) -> Dictionary:
 	var segments := [
-		{"id": "large_house_fence_nw", "origin": outer_origin, "size": Vector2i.ONE, "source_id": FENCE_CORNER_SOURCE_ID, "rotation_degrees": 0.0},
-		{"id": "large_house_fence_ne", "origin": outer_origin + Vector2i(3, 0), "size": Vector2i.ONE, "source_id": FENCE_CORNER_SOURCE_ID, "rotation_degrees": 90.0},
-		{"id": "large_house_fence_sw", "origin": outer_origin + Vector2i(0, 3), "size": Vector2i.ONE, "source_id": FENCE_CORNER_SOURCE_ID, "rotation_degrees": 270.0},
-		{"id": "large_house_fence_se", "origin": outer_origin + Vector2i(3, 3), "size": Vector2i.ONE, "source_id": FENCE_CORNER_SOURCE_ID, "rotation_degrees": 180.0},
-		{"id": "large_house_fence_n", "origin": outer_origin + Vector2i(1, 0), "size": Vector2i(2, 1), "source_id": FENCE_HORIZONTAL_SOURCE_ID, "rotation_degrees": 0.0},
-		{"id": "large_house_fence_s", "origin": outer_origin + Vector2i(1, 3), "size": Vector2i(2, 1), "source_id": FENCE_HORIZONTAL_SOURCE_ID, "rotation_degrees": 0.0},
-		{"id": "large_house_fence_w", "origin": outer_origin + Vector2i(0, 1), "size": Vector2i(1, 2), "source_id": FENCE_HORIZONTAL_SOURCE_ID, "rotation_degrees": 90.0},
-		{"id": "large_house_fence_e", "origin": outer_origin + Vector2i(3, 1), "size": Vector2i(1, 2), "source_id": FENCE_HORIZONTAL_SOURCE_ID, "rotation_degrees": 90.0}
+		{"id": "large_house_fence_nw", "origin": outer_origin, "size": Vector2i.ONE, "rotation_degrees": 0.0},
+		{"id": "large_house_fence_ne", "origin": outer_origin + Vector2i(3, 0), "size": Vector2i.ONE, "rotation_degrees": 90.0},
+		{"id": "large_house_fence_sw", "origin": outer_origin + Vector2i(0, 3), "size": Vector2i.ONE, "rotation_degrees": 270.0},
+		{"id": "large_house_fence_se", "origin": outer_origin + Vector2i(3, 3), "size": Vector2i.ONE, "rotation_degrees": 180.0},
+		{"id": "large_house_fence_n", "origin": outer_origin + Vector2i(1, 0), "size": Vector2i(2, 1), "rotation_degrees": 0.0},
+		{"id": "large_house_fence_s", "origin": outer_origin + Vector2i(1, 3), "size": Vector2i(2, 1), "rotation_degrees": 0.0},
+		{"id": "large_house_fence_w", "origin": outer_origin + Vector2i(0, 1), "size": Vector2i(1, 2), "rotation_degrees": 90.0},
+		{"id": "large_house_fence_e", "origin": outer_origin + Vector2i(3, 1), "size": Vector2i(1, 2), "rotation_degrees": 90.0}
 	]
 	var owner_ids: Array = []
 	for segment in segments:
 		var result := world_data.reserve_entity(String(segment.id), segment.origin, segment.size, false, {
-			"source_id": String(segment.source_id),
 			"role": "large_house_fence",
 			"rotation_degrees": float(segment.rotation_degrees)
 		})
@@ -372,7 +344,6 @@ func _apply_map_boundary(world_data: WorldData, profile: Dictionary, edge_exit_p
 		if position is Vector2i and (position.x == 0 or position.y == 0 or position.x == MAP_WIDTH - 1 or position.y == MAP_HEIGHT - 1):
 			preserved[_key(position)] = true
 	var cliff_terrain_id := String(profile.get("boundary_terrain_id", TERRAIN_MOUNTAIN_CLIFF))
-	var cliff_render_id := String(profile.get("boundary_render_id", RENDER_MAP_EDGE_CLIFF))
 	for y in range(MAP_HEIGHT):
 		for x in range(MAP_WIDTH):
 			if x != 0 and y != 0 and x != MAP_WIDTH - 1 and y != MAP_HEIGHT - 1:
@@ -380,7 +351,7 @@ func _apply_map_boundary(world_data: WorldData, profile: Dictionary, edge_exit_p
 			var position := Vector2i(x, y)
 			if preserved.has(_key(position)):
 				continue
-			world_data.set_terrain(position, cliff_terrain_id, false, cliff_render_id)
+			world_data.set_terrain(position, cliff_terrain_id, false)
 
 func _compose_chunks(rng: DeterministicRng, world_data: WorldData, profile: Dictionary) -> Array:
 	var chunks := []
@@ -419,26 +390,26 @@ func _apply_common_chunk(world_data: WorldData, chunk: Dictionary, rng: Determin
 			var position := Vector2i(x, y)
 			match variant:
 				0:
-					world_data.set_terrain(position, TERRAIN_GRASS, true, RENDER_GRASS)
+					world_data.set_terrain(position, TERRAIN_GRASS, true)
 				1:
-					world_data.set_terrain(position, TERRAIN_FIELD, true, RENDER_FIELD)
+					world_data.set_terrain(position, TERRAIN_FIELD, true)
 				2:
 					if rng.next_range(0, 99) < 32:
-						_set_tree_obstacle(world_data, position, TERRAIN_FOREST, TERRAIN_GRASS, RENDER_GRASS, RENDER_FOREST_TREE)
+						_set_tree_obstacle(world_data, position, TERRAIN_FOREST, TERRAIN_GRASS)
 					else:
-						world_data.set_terrain(position, TERRAIN_GRASS, true, RENDER_GRASS)
+						world_data.set_terrain(position, TERRAIN_GRASS, true)
 				3:
 					if y == origin.y + CHUNK_HEIGHT / 2:
-						world_data.set_terrain(position, TERRAIN_PATH, true, RENDER_PATH)
+						world_data.set_terrain(position, TERRAIN_PATH, true)
 					else:
-						world_data.set_terrain(position, TERRAIN_GROUND, true, RENDER_GROUND)
+						world_data.set_terrain(position, TERRAIN_GROUND, true)
 				4:
 					if x == origin.x + CHUNK_WIDTH / 2:
-						world_data.set_terrain(position, TERRAIN_WATER, false, RENDER_WATER)
+						world_data.set_terrain(position, TERRAIN_WATER, false)
 					else:
-						world_data.set_terrain(position, TERRAIN_GRASS, true, RENDER_GRASS)
+						world_data.set_terrain(position, TERRAIN_GRASS, true)
 				_:
-					world_data.set_terrain(position, TERRAIN_GROUND, true, RENDER_GROUND)
+					world_data.set_terrain(position, TERRAIN_GROUND, true)
 
 func _apply_mountain_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRng) -> void:
 	var origin := _vector_from_dictionary(chunk.origin)
@@ -449,40 +420,40 @@ func _apply_mountain_chunk(world_data: WorldData, chunk: Dictionary, rng: Determ
 			match variant:
 				0:
 					if y == origin.y + CHUNK_HEIGHT / 2 or x == origin.x + CHUNK_WIDTH - 2:
-						world_data.set_terrain(position, TERRAIN_MOUNTAIN_PATH, true, RENDER_MOUNTAIN_PATH)
+						world_data.set_terrain(position, TERRAIN_MOUNTAIN_PATH, true)
 					else:
-						world_data.set_terrain(position, TERRAIN_MOUNTAIN_SLOPE, true, RENDER_MOUNTAIN_SLOPE)
+						world_data.set_terrain(position, TERRAIN_MOUNTAIN_SLOPE, true)
 				1:
 					if rng.next_range(0, 99) < 40:
-						world_data.set_terrain(position, TERRAIN_MOUNTAIN_ROCK, false, RENDER_MOUNTAIN_ROCK)
+						world_data.set_terrain(position, TERRAIN_MOUNTAIN_ROCK, false)
 					else:
-						world_data.set_terrain(position, TERRAIN_MOUNTAIN_SLOPE, true, RENDER_MOUNTAIN_SLOPE)
+						world_data.set_terrain(position, TERRAIN_MOUNTAIN_SLOPE, true)
 				2:
 					if x == origin.x or y == origin.y or rng.next_range(0, 99) < 24:
-						world_data.set_terrain(position, TERRAIN_MOUNTAIN_CLIFF, false, RENDER_MOUNTAIN_CLIFF)
+						world_data.set_terrain(position, TERRAIN_MOUNTAIN_CLIFF, false)
 					else:
-						world_data.set_terrain(position, TERRAIN_MOUNTAIN_PATH, true, RENDER_MOUNTAIN_PATH)
+						world_data.set_terrain(position, TERRAIN_MOUNTAIN_PATH, true)
 				3:
 					if rng.next_range(0, 99) < 35:
-						_set_tree_obstacle(world_data, position, TERRAIN_MOUNTAIN_CONIFER, TERRAIN_MOUNTAIN_SLOPE, RENDER_MOUNTAIN_SLOPE, RENDER_MOUNTAIN_CONIFER)
+						_set_tree_obstacle(world_data, position, TERRAIN_MOUNTAIN_CONIFER, TERRAIN_MOUNTAIN_SLOPE)
 					else:
-						world_data.set_terrain(position, TERRAIN_MOUNTAIN_SLOPE, true, RENDER_MOUNTAIN_SLOPE)
+						world_data.set_terrain(position, TERRAIN_MOUNTAIN_SLOPE, true)
 				4:
 					if x == origin.x + CHUNK_WIDTH / 2:
-						world_data.set_terrain(position, TERRAIN_MOUNTAIN_VALLEY_WATER, false, RENDER_WATER)
+						world_data.set_terrain(position, TERRAIN_MOUNTAIN_VALLEY_WATER, false)
 					elif abs(x - (origin.x + CHUNK_WIDTH / 2)) == 1:
-						world_data.set_terrain(position, TERRAIN_MOUNTAIN_PATH, true, RENDER_MOUNTAIN_PATH)
+						world_data.set_terrain(position, TERRAIN_MOUNTAIN_PATH, true)
 					else:
-						world_data.set_terrain(position, TERRAIN_MOUNTAIN_SLOPE, true, RENDER_MOUNTAIN_SLOPE)
+						world_data.set_terrain(position, TERRAIN_MOUNTAIN_SLOPE, true)
 				5:
 					if y == origin.y + CHUNK_HEIGHT - 1:
-						world_data.set_terrain(position, TERRAIN_MOUNTAIN_PATH, true, RENDER_MOUNTAIN_PATH)
+						world_data.set_terrain(position, TERRAIN_MOUNTAIN_PATH, true)
 					elif rng.next_range(0, 99) < 20:
-						world_data.set_terrain(position, TERRAIN_MOUNTAIN_CAVE_GROUND, true, RENDER_MOUNTAIN_CAVE)
+						world_data.set_terrain(position, TERRAIN_MOUNTAIN_CAVE_GROUND, true)
 					else:
-						world_data.set_terrain(position, TERRAIN_MOUNTAIN_ROCK, false, RENDER_MOUNTAIN_ROCK)
+						world_data.set_terrain(position, TERRAIN_MOUNTAIN_ROCK, false)
 				_:
-					world_data.set_terrain(position, TERRAIN_MOUNTAIN_SLOPE, true, RENDER_MOUNTAIN_SLOPE)
+					world_data.set_terrain(position, TERRAIN_MOUNTAIN_SLOPE, true)
 
 func _apply_wasteland_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRng) -> void:
 	var origin := _vector_from_dictionary(chunk.origin)
@@ -496,50 +467,50 @@ func _apply_wasteland_chunk(world_data: WorldData, chunk: Dictionary, rng: Deter
 			match variant:
 				0:
 					if local_y == 1 or (local_x >= 3 and local_y == 4):
-						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true, RENDER_WASTELAND_DETOUR_PATH)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true)
 					else:
-						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true, RENDER_WASTELAND_DRY_SOIL)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true)
 				1:
 					if local_x >= 1 and local_x <= 5 and local_y >= 1 and local_y <= 3 and (local_x == 1 or local_x == 5 or local_y == 1 or local_y == 3):
-						world_data.set_terrain(position, TERRAIN_WASTELAND_RUIN, false, RENDER_WASTELAND_RUIN)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_RUIN, false)
 					elif local_x == 3 and local_y == 2:
-						world_data.set_terrain(position, TERRAIN_WASTELAND_CRACKED_GROUND, true, RENDER_WASTELAND_CRACKED_GROUND)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_CRACKED_GROUND, true)
 					else:
-						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true, RENDER_WASTELAND_DRY_SOIL)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true)
 				2:
 					if local_x == CHUNK_WIDTH - 2 and local_y < CHUNK_HEIGHT - 1:
-						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true, RENDER_WASTELAND_DETOUR_PATH)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true)
 					elif local_y == CHUNK_HEIGHT - 2 and local_x > 1:
-						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true, RENDER_WASTELAND_DETOUR_PATH)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true)
 					elif local_x == 1 and local_y == CHUNK_HEIGHT - 2:
-						world_data.set_terrain(position, TERRAIN_WASTELAND_CRACKED_GROUND, true, RENDER_WASTELAND_CRACKED_GROUND)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_CRACKED_GROUND, true)
 					else:
-						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true, RENDER_WASTELAND_DRY_SOIL)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true)
 				3:
 					if local_x == 2 and local_y <= 3:
-						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true, RENDER_WASTELAND_DETOUR_PATH)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true)
 					elif local_x == 2 and local_y == 4:
-						world_data.set_terrain(position, TERRAIN_WASTELAND_CRACKED_GROUND, true, RENDER_WASTELAND_CRACKED_GROUND)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_CRACKED_GROUND, true)
 					elif rng.next_range(0, 99) < 28:
-						_set_tree_obstacle(world_data, position, TERRAIN_WASTELAND_DEAD_TREE, TERRAIN_WASTELAND_DRY_SOIL, RENDER_WASTELAND_DRY_SOIL, RENDER_WASTELAND_DEAD_TREE)
+						_set_tree_obstacle(world_data, position, TERRAIN_WASTELAND_DEAD_TREE, TERRAIN_WASTELAND_DRY_SOIL)
 					else:
-						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true, RENDER_WASTELAND_DRY_SOIL)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true)
 				4:
 					if local_x == 3:
-						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_RIVER, false, RENDER_WASTELAND_DRY_RIVER)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_RIVER, false)
 					elif local_x == 2 or local_x == 4:
-						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true, RENDER_WASTELAND_DETOUR_PATH)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true)
 					else:
-						world_data.set_terrain(position, TERRAIN_WASTELAND_CRACKED_GROUND, true, RENDER_WASTELAND_CRACKED_GROUND)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_CRACKED_GROUND, true)
 				5:
 					if local_x == 0 or local_y == 0 or (local_x == 6 and local_y < 5):
-						world_data.set_terrain(position, TERRAIN_WASTELAND_CAMP_TRACE, false, RENDER_WASTELAND_CAMP_TRACE)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_CAMP_TRACE, false)
 					elif local_y == 3 or local_x == 3:
-						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true, RENDER_WASTELAND_DETOUR_PATH)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true)
 					else:
-						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true, RENDER_WASTELAND_DRY_SOIL)
+						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true)
 				_:
-					world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true, RENDER_WASTELAND_DRY_SOIL)
+					world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true)
 
 func _wasteland_feature_for_variant(variant: int) -> String:
 	match variant:
@@ -570,42 +541,42 @@ func _apply_snowfield_chunk(world_data: WorldData, chunk: Dictionary, rng: Deter
 			match variant:
 				0:
 					if local_y == CHUNK_HEIGHT / 2 or local_x == CHUNK_WIDTH / 2:
-						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW_PATH, true, RENDER_SNOWFIELD_PATH)
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW_PATH, true)
 					else:
-						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true, RENDER_SNOWFIELD_SNOW)
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true)
 				1:
 					if local_x == 2 or local_x == 5:
-						world_data.set_terrain(position, TERRAIN_SNOWFIELD_ICE_EDGE, true, RENDER_SNOWFIELD_ICE_EDGE)
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_ICE_EDGE, true)
 					elif local_x > 2 and local_x < 5:
-						world_data.set_terrain(position, TERRAIN_SNOWFIELD_ICE, false, RENDER_SNOWFIELD_ICE)
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_ICE, false)
 					else:
-						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true, RENDER_SNOWFIELD_SNOW)
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true)
 				2:
 					if rng.next_range(0, 99) < 38:
-						_set_tree_obstacle(world_data, position, TERRAIN_SNOWFIELD_PINE, TERRAIN_SNOWFIELD_SNOW, RENDER_SNOWFIELD_SNOW, RENDER_SNOWFIELD_PINE)
+						_set_tree_obstacle(world_data, position, TERRAIN_SNOWFIELD_PINE, TERRAIN_SNOWFIELD_SNOW)
 					else:
-						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true, RENDER_SNOWFIELD_SNOW)
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true)
 				3:
 					if local_y == 0 or local_x == 0 or local_x == CHUNK_WIDTH - 1:
-						world_data.set_terrain(position, TERRAIN_SNOWFIELD_ICE_WALL, false, RENDER_SNOWFIELD_ICE_WALL)
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_ICE_WALL, false)
 					elif local_y == 2 or local_x == 3:
-						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW_PATH, true, RENDER_SNOWFIELD_PATH)
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW_PATH, true)
 					else:
-						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true, RENDER_SNOWFIELD_SNOW)
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true)
 				4:
 					if local_x >= 2 and local_x <= 5 and local_y >= 1 and local_y <= 4:
-						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SAFE_CLEARING, true, RENDER_SNOWFIELD_SAFE_CLEARING)
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SAFE_CLEARING, true)
 					else:
-						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true, RENDER_SNOWFIELD_SNOW)
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true)
 				5:
 					if local_y == 1 or (local_x >= 4 and local_y == 4):
-						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW_PATH, true, RENDER_SNOWFIELD_PATH)
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW_PATH, true)
 					elif local_x == 1 and local_y >= 2:
-						world_data.set_terrain(position, TERRAIN_SNOWFIELD_ICE_EDGE, true, RENDER_SNOWFIELD_ICE_EDGE)
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_ICE_EDGE, true)
 					else:
-						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true, RENDER_SNOWFIELD_SNOW)
+						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true)
 				_:
-					world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true, RENDER_SNOWFIELD_SNOW)
+					world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true)
 
 func _snowfield_feature_for_variant(variant: int) -> String:
 	match variant:
@@ -636,44 +607,44 @@ func _apply_rainforest_chunk(world_data: WorldData, chunk: Dictionary, rng: Dete
 			match variant:
 				0:
 					if local_y == CHUNK_HEIGHT / 2 or (local_x == 5 and local_y > 1):
-						world_data.set_terrain(position, TERRAIN_RAINFOREST_VINE_PATH, true, RENDER_RAINFOREST_VINE_PATH)
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_VINE_PATH, true)
 					else:
-						world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, false, RENDER_RAINFOREST_JUNGLE)
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, false)
 				1:
 					if local_x == 3 or local_x == 4:
-						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER, false, RENDER_RAINFOREST_RIVER)
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER, false)
 					elif local_x == 2 or local_x == 5:
-						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER_BANK, true, RENDER_RAINFOREST_RIVER_BANK)
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER_BANK, true)
 					else:
-						world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, true, RENDER_RAINFOREST_JUNGLE)
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, true)
 				2:
 					if rng.next_range(0, 99) < 45:
-						world_data.set_terrain(position, TERRAIN_RAINFOREST_SWAMP, false, RENDER_RAINFOREST_SWAMP)
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_SWAMP, false)
 					else:
-						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER_BANK, true, RENDER_RAINFOREST_RIVER_BANK)
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER_BANK, true)
 				3:
 					if local_x >= 2 and local_x <= 5 and local_y >= 1 and local_y <= 4:
-						world_data.set_terrain(position, TERRAIN_RAINFOREST_TEA_FIELD, true, RENDER_RAINFOREST_TEA_FIELD)
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_TEA_FIELD, true)
 					else:
-						world_data.set_terrain(position, TERRAIN_RAINFOREST_VINE_PATH, true, RENDER_RAINFOREST_VINE_PATH)
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_VINE_PATH, true)
 				4:
 					if local_x == 1 or local_x == 6 or local_y == 1:
-						world_data.set_terrain(position, TERRAIN_RAINFOREST_VINE_PATH, true, RENDER_RAINFOREST_VINE_PATH)
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_VINE_PATH, true)
 					elif rng.next_range(0, 99) < 50:
-						_set_tree_obstacle(world_data, position, TERRAIN_RAINFOREST_AGARWOOD, TERRAIN_RAINFOREST_RIVER_BANK, RENDER_RAINFOREST_RIVER_BANK, RENDER_RAINFOREST_AGARWOOD)
+						_set_tree_obstacle(world_data, position, TERRAIN_RAINFOREST_AGARWOOD, TERRAIN_RAINFOREST_RIVER_BANK)
 					else:
-						world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, true, RENDER_RAINFOREST_JUNGLE)
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, true)
 				5:
 					if local_y == 2 or (local_x >= 4 and local_y == 4):
-						world_data.set_terrain(position, TERRAIN_RAINFOREST_VINE_PATH, true, RENDER_RAINFOREST_VINE_PATH)
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_VINE_PATH, true)
 					elif local_x == 2:
-						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER, false, RENDER_RAINFOREST_RIVER)
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER, false)
 					elif local_x == 3:
-						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER_BANK, true, RENDER_RAINFOREST_RIVER_BANK)
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER_BANK, true)
 					else:
-						world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, true, RENDER_RAINFOREST_JUNGLE)
+						world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, true)
 				_:
-					world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, true, RENDER_RAINFOREST_JUNGLE)
+					world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, true)
 
 func _rainforest_feature_for_variant(variant: int) -> String:
 	match variant:
@@ -723,9 +694,7 @@ func _apply_template_water_stroke(world_data: WorldData, rng: DeterministicRng, 
 	return {
 		"id": TEMPLATE_WATER_STROKE,
 		"water_terrain_id": String(profile.water_terrain_id),
-		"water_render_id": String(profile.water_render_id),
 		"shore_terrain_id": String(profile.shore_terrain_id),
-		"shore_render_id": String(profile.shore_render_id),
 		"cells": _position_dictionary_array(water_cells),
 		"shore_cells": _position_dictionary_array(shore_cells),
 		"crosses_chunk_boundary": _positions_cross_chunk_boundary(water_cells)
@@ -769,7 +738,6 @@ func _apply_template_path_spine(world_data: WorldData, rng: DeterministicRng, pr
 	return {
 		"id": TEMPLATE_PATH_SPINE,
 		"path_terrain_id": String(profile.path_terrain_id),
-		"path_render_id": String(profile.path_render_id),
 		"cells": _position_dictionary_array(_unique_positions(path_cells))
 	}
 
@@ -802,7 +770,7 @@ func _paint_water_cell(world_data: WorldData, position: Vector2i, profile: Dicti
 	if not world_data.contains(position):
 		return
 	_clear_generated_tree_obstacle(world_data, position)
-	world_data.set_terrain(position, String(profile.water_terrain_id), bool(profile.water_walkable), String(profile.water_render_id))
+	world_data.set_terrain(position, String(profile.water_terrain_id), bool(profile.water_walkable))
 	water_cells.append(position)
 
 func _paint_shore_cell(world_data: WorldData, position: Vector2i, profile: Dictionary, shore_cells: Array) -> void:
@@ -811,7 +779,7 @@ func _paint_shore_cell(world_data: WorldData, position: Vector2i, profile: Dicti
 	_clear_generated_tree_obstacle(world_data, position)
 	if not world_data.is_walkable(position):
 		return
-	world_data.set_terrain(position, String(profile.shore_terrain_id), true, String(profile.shore_render_id))
+	world_data.set_terrain(position, String(profile.shore_terrain_id), true)
 	shore_cells.append(position)
 
 func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, core_dungeon_count: int, teleport_zone_count: int, biome_id: String, profile: Dictionary) -> Array:
@@ -852,7 +820,7 @@ func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, cor
 
 func _add_landmark(world_data: WorldData, kind: String, index: int, position: Vector2i, profile: Dictionary, metadata := {}) -> Dictionary:
 	_clear_generated_tree_obstacle(world_data, position)
-	world_data.set_terrain(position, String(profile.path_terrain_id), true, String(profile.path_render_id))
+	world_data.set_terrain(position, String(profile.path_terrain_id), true)
 	var id := "%s_%d" % [kind, index]
 	var landmark_metadata := metadata.duplicate(true)
 	landmark_metadata["biome_rule_id"] = String(profile.id)
@@ -913,17 +881,7 @@ func _make_path_cell(world_data: WorldData, position: Vector2i, profile: Diction
 	_clear_generated_tree_obstacle(world_data, position)
 	var is_bridge := not world_data.is_walkable(position)
 	var terrain_id := String(profile.bridge_terrain_id) if is_bridge else String(profile.path_terrain_id)
-	var render_id := String(profile.get("bridge_render_id", profile.path_render_id)) if is_bridge else String(profile.path_render_id)
-	if is_bridge:
-		var water_north_south := world_data.terrain_id_at(position + Vector2i.UP) == String(profile.water_terrain_id) or world_data.terrain_id_at(position + Vector2i.DOWN) == String(profile.water_terrain_id)
-		var water_east_west := world_data.terrain_id_at(position + Vector2i.LEFT) == String(profile.water_terrain_id) or world_data.terrain_id_at(position + Vector2i.RIGHT) == String(profile.water_terrain_id)
-		if water_north_south and not water_east_west:
-			# The bridge crosses a north/south river, so its deck runs east/west.
-			render_id = RENDER_BRIDGE_HORIZONTAL
-		elif water_east_west:
-			# The bridge crosses an east/west river, so its deck runs north/south.
-			render_id = RENDER_BRIDGE_VERTICAL
-	world_data.set_terrain(position, terrain_id, true, render_id)
+	world_data.set_terrain(position, terrain_id, true)
 
 func _place_path_edge_fences(world_data: WorldData, rng: DeterministicRng, templates: Array, profile: Dictionary) -> void:
 	var path_template := {}
@@ -973,11 +931,9 @@ func _place_path_edge_fences(world_data: WorldData, rng: DeterministicRng, templ
 				continue
 			# A rotated 1x2 segment is taller than one tile and overlaps on
 			# descending lanes; use the 1x1 corner piece for those side posts.
-			var source_id := FENCE_CORNER_SOURCE_ID if side.x != 0 or placed % 5 == 4 else (FENCE_HORIZONTAL_BOTTOM_SOURCE_ID if side == Vector2i.DOWN else FENCE_HORIZONTAL_SOURCE_ID)
 			var rotation_degrees := 90.0 if side.x != 0 else 0.0
 			var owner_id := "path_fence_%d_%d" % [fence_position.x, fence_position.y]
 			var reservation := world_data.reserve_entity(owner_id, fence_position, Vector2i.ONE, false, {
-				"source_id": source_id,
 				"rotation_degrees": rotation_degrees,
 				"terrain_overlay": "path_fence",
 				"path_terrain_id": String(profile.path_terrain_id)
@@ -985,23 +941,21 @@ func _place_path_edge_fences(world_data: WorldData, rng: DeterministicRng, templ
 			if reservation.ok:
 				placed += 1
 
-func _set_tree_obstacle(world_data: WorldData, position: Vector2i, terrain_id: String, base_terrain_id: String, base_render_id: String, tree_source_id: String) -> bool:
+func _set_tree_obstacle(world_data: WorldData, position: Vector2i, terrain_id: String, base_terrain_id: String) -> bool:
 	# Wall cells are structural boundaries and must remain free of tree
 	# overlays/obstacles, regardless of the biome's tree placement pass.
 	if terrain_id.to_lower().contains("wall") or base_terrain_id.to_lower().contains("wall"):
 		return false
 	_clear_generated_tree_obstacle(world_data, position)
-	world_data.set_terrain(position, terrain_id, true, base_render_id)
+	world_data.set_terrain(position, terrain_id, true)
 	var reserved := world_data.reserve_entity(_tree_owner_id(position), position, Vector2i.ONE, true, {
-		"source_id": tree_source_id,
 		"resource_id": "wood",
 		"terrain_id": terrain_id,
 		"base_terrain_id": base_terrain_id,
-		"base_render_id": base_render_id,
 		"terrain_overlay": "tree"
 	})
 	if not reserved.ok:
-		world_data.set_terrain(position, base_terrain_id, true, base_render_id)
+		world_data.set_terrain(position, base_terrain_id, true)
 		return false
 	return true
 
@@ -1011,7 +965,7 @@ func _clear_generated_tree_obstacle(world_data: WorldData, position: Vector2i) -
 func _tree_owner_id(position: Vector2i) -> String:
 	return "terrain_tree_wood_%d_%d" % [position.x, position.y]
 
-func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, reachable_cells: Dictionary, source_by_resource_id: Dictionary, templates := [], landmarks := []) -> Array:
+func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, reachable_cells: Dictionary, biome_rule_id: String, templates := [], landmarks := []) -> Array:
 	var nodes := []
 	var max_attempts: int = max(0, max_resource_placement_attempts)
 	var cardinal_offsets := [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]
@@ -1032,7 +986,7 @@ func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_res
 		var access_position := _reachable_access_position(position, reachable_cells, cardinal_offsets)
 		if access_position == Vector2i(-1, -1):
 			continue
-		_try_place_resource_node(world_data, position, access_position, resource_ids, source_by_resource_id, nodes)
+		_try_place_resource_node(world_data, position, access_position, resource_ids, biome_rule_id, nodes)
 	while nodes.size() < min_resource_nodes and attempt < max_attempts:
 		attempt += 1
 		var position := Vector2i(rng.next_range(2, MAP_WIDTH - 3), rng.next_range(2, MAP_HEIGHT - 3))
@@ -1043,7 +997,7 @@ func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_res
 		var access_position := _reachable_access_position(position, reachable_cells, cardinal_offsets)
 		if access_position == Vector2i(-1, -1):
 			continue
-		_try_place_resource_node(world_data, position, access_position, resource_ids, source_by_resource_id, nodes)
+		_try_place_resource_node(world_data, position, access_position, resource_ids, biome_rule_id, nodes)
 	return nodes
 
 func _template_path_key_set(templates: Array) -> Dictionary:
@@ -1052,17 +1006,14 @@ func _template_path_key_set(templates: Array) -> Dictionary:
 		path_keys[_key(position)] = true
 	return path_keys
 
-func _try_place_resource_node(world_data: WorldData, position: Vector2i, access_position: Vector2i, resource_ids: Array, source_by_resource_id: Dictionary, nodes: Array) -> bool:
+func _try_place_resource_node(world_data: WorldData, position: Vector2i, access_position: Vector2i, resource_ids: Array, biome_rule_id: String, nodes: Array) -> bool:
 	var owner_id := "resource_%d" % nodes.size()
 	var resource_id: String = String(resource_ids[nodes.size() % resource_ids.size()])
 	# Stones are common roadside pickups: bias the deterministic rotation so
 	# roughly one out of every three generated nodes is a stone when available.
 	if resource_ids.has("stone") and nodes.size() % 3 == 0:
 		resource_id = "stone"
-	var source_id := String(source_by_resource_id.get(resource_id, ""))
-	var metadata := {"resource_id": resource_id}
-	if not source_id.is_empty():
-		metadata["source_id"] = source_id
+	var metadata := {"resource_id": resource_id, "biome_rule_id": biome_rule_id}
 	var reserved := world_data.reserve_entity(owner_id, position, Vector2i.ONE, true, metadata)
 	if not reserved.ok:
 		return false
@@ -1081,13 +1032,12 @@ func _try_place_resource_node(world_data: WorldData, position: Vector2i, access_
 	var node := {
 		"id": owner_id,
 		"resource_id": resource_id,
+		"biome_rule_id": biome_rule_id,
 		"position": _position_dictionary(position),
 		"access_position": _position_dictionary(access_position),
 		"placement_was_entry_reachable": true,
 		"interactable": true
 	}
-	if not source_id.is_empty():
-		node["source_id"] = source_id
 	nodes.append(node)
 	return true
 
@@ -1150,17 +1100,15 @@ func _place_facility_nodes(world_data: WorldData, rng: DeterministicRng, landmar
 	var facility_terms: Array = profile.get("facility_terms", [])
 	if facility_terms.is_empty() or landmarks.is_empty():
 		return nodes
-	var source_by_term: Dictionary = profile.get("facility_source_by_term", {})
 	for index in range(facility_terms.size()):
 		var term := String(facility_terms[index])
-		var source_id := String(source_by_term.get(term, ""))
 		var anchor: Dictionary = landmarks[index % landmarks.size()]
-		var placed := _place_facility_near(world_data, rng, _vector_from_dictionary(anchor.position), reachable_cells, index, term, source_id, String(profile.id))
+		var placed := _place_facility_near(world_data, rng, _vector_from_dictionary(anchor.position), reachable_cells, index, term, String(profile.id))
 		if placed.ok:
 			nodes.append(placed.node)
 	return nodes
 
-func _place_facility_near(world_data: WorldData, rng: DeterministicRng, anchor: Vector2i, reachable_cells: Dictionary, index: int, term: String, source_id: String, biome_rule_id: String) -> Dictionary:
+func _place_facility_near(world_data: WorldData, rng: DeterministicRng, anchor: Vector2i, reachable_cells: Dictionary, index: int, term: String, biome_rule_id: String) -> Dictionary:
 	var offsets := _facility_candidate_offsets()
 	var start_offset := rng.next_range(0, offsets.size() - 1)
 	var cardinal_offsets := [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]
@@ -1174,8 +1122,7 @@ func _place_facility_near(world_data: WorldData, rng: DeterministicRng, anchor: 
 		var owner_id := "facility_%d" % index
 		var metadata := {
 			"biome_rule_id": biome_rule_id,
-			"facility_term": term,
-			"source_id": source_id
+			"facility_term": term
 		}
 		var reserved := world_data.reserve_facility(owner_id, position, Vector2i.ONE, true, metadata)
 		if not reserved.ok:
@@ -1189,7 +1136,6 @@ func _place_facility_near(world_data: WorldData, rng: DeterministicRng, anchor: 
 			"node": {
 				"id": owner_id,
 				"facility_term": term,
-				"source_id": source_id,
 				"position": _position_dictionary(position),
 				"access_position": _position_dictionary(access_position),
 				"placement_was_entry_reachable": true,
@@ -1222,21 +1168,6 @@ func _facility_candidate_offsets() -> Array:
 		Vector2i(1, 3)
 	]
 
-func _base_terrain_render_id(biome_id: String) -> String:
-	match biome_id:
-		BIOME_COMMON:
-			return RENDER_GROUND
-		BIOME_MOUNTAIN:
-			return RENDER_MOUNTAIN_BASE_GRASS
-		BIOME_WASTELAND:
-			return RENDER_WASTELAND_DRY_SOIL
-		BIOME_SNOWFIELD:
-			return RENDER_SNOWFIELD_SNOW
-		BIOME_RAINFOREST:
-			return RENDER_RAINFOREST_RIVER_BANK
-		_:
-			return ""
-
 func _reachable_access_position(position: Vector2i, reachable_cells: Dictionary, offsets: Array) -> Vector2i:
 	for offset in offsets:
 		var access_position: Vector2i = position + offset
@@ -1255,20 +1186,12 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 				"default_walkable": true,
 				"path_terrain_id": TERRAIN_PATH,
 				"bridge_terrain_id": TERRAIN_BRIDGE,
-				"path_render_id": RENDER_PATH,
-				"bridge_render_id": RENDER_BRIDGE,
 				"water_terrain_id": TERRAIN_WATER,
-				"water_render_id": RENDER_WATER,
 				"water_walkable": false,
 				"shore_terrain_id": TERRAIN_GRASS,
-				"shore_render_id": RENDER_GRASS,
 				"required_terrain_terms": [],
 				"facility_terms": [],
-				"facility_source_by_term": {},
 				"resource_type_allowlist": ["재료"],
-				"resource_source_by_id": {
-					"stone": RENDER_RESOURCE_STONE
-				},
 				"minimum_facility_nodes": 0
 			})
 		BIOME_MOUNTAIN:
@@ -1289,24 +1212,12 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 				"default_walkable": true,
 				"path_terrain_id": TERRAIN_MOUNTAIN_PATH,
 				"bridge_terrain_id": TERRAIN_MOUNTAIN_PATH,
-				"path_render_id": RENDER_MOUNTAIN_PATH,
 				"water_terrain_id": TERRAIN_MOUNTAIN_VALLEY_WATER,
-				"water_render_id": RENDER_WATER,
 				"water_walkable": false,
 				"shore_terrain_id": TERRAIN_MOUNTAIN_PATH,
-				"shore_render_id": RENDER_MOUNTAIN_PATH,
 				"required_terrain_terms": required_terms,
 				"facility_terms": facility_terms,
-				"facility_source_by_term": {
-					"광산": RENDER_MOUNTAIN_MINE,
-					"산사": RENDER_MOUNTAIN_TEMPLE,
-					"폐광": RENDER_MOUNTAIN_ABANDONED_MINE,
-					"산중 찻집": RENDER_MOUNTAIN_TEA_HOUSE
-				},
 				"resource_type_allowlist": ["재료"],
-				"resource_source_by_id": {
-					"stone": RENDER_MOUNTAIN_ROCK
-				},
 				"minimum_facility_nodes": facility_terms.size()
 			})
 		BIOME_WASTELAND:
@@ -1327,24 +1238,12 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 				"default_walkable": true,
 				"path_terrain_id": TERRAIN_WASTELAND_DETOUR_PATH,
 				"bridge_terrain_id": TERRAIN_WASTELAND_DETOUR_PATH,
-				"path_render_id": RENDER_WASTELAND_DETOUR_PATH,
 				"water_terrain_id": TERRAIN_WASTELAND_DRY_RIVER,
-				"water_render_id": RENDER_WASTELAND_DRY_RIVER,
 				"water_walkable": false,
 				"shore_terrain_id": TERRAIN_WASTELAND_DETOUR_PATH,
-				"shore_render_id": RENDER_WASTELAND_DETOUR_PATH,
 				"required_terrain_terms": required_terms,
 				"facility_terms": facility_terms,
-				"facility_source_by_term": {
-					"폐촌": RENDER_WASTELAND_ABANDONED_VILLAGE,
-					"버려진 초소": RENDER_WASTELAND_ABANDONED_OUTPOST,
-					"무너진 다실": RENDER_WASTELAND_RUINED_TEA_ROOM,
-					"전쟁터 흔적": RENDER_WASTELAND_BATTLEFIELD_TRACE
-				},
 				"resource_type_allowlist": ["재료"],
-				"resource_source_by_id": {
-					"item_28": RENDER_RESOURCE_IRON_SCRAP
-				},
 				"minimum_facility_nodes": facility_terms.size()
 			})
 		BIOME_SNOWFIELD:
@@ -1365,24 +1264,12 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 				"default_walkable": true,
 				"path_terrain_id": TERRAIN_SNOWFIELD_SNOW_PATH,
 				"bridge_terrain_id": TERRAIN_SNOWFIELD_ICE_EDGE,
-				"path_render_id": RENDER_SNOWFIELD_PATH,
 				"water_terrain_id": TERRAIN_SNOWFIELD_ICE,
-				"water_render_id": RENDER_SNOWFIELD_ICE,
 				"water_walkable": false,
 				"shore_terrain_id": TERRAIN_SNOWFIELD_ICE_EDGE,
-				"shore_render_id": RENDER_SNOWFIELD_ICE_EDGE,
 				"required_terrain_terms": required_terms,
 				"facility_terms": facility_terms,
-				"facility_source_by_term": {
-					"산장": RENDER_SNOWFIELD_LODGE,
-					"온천": RENDER_SNOWFIELD_HOT_SPRING,
-					"설원 사당": RENDER_SNOWFIELD_SHRINE,
-					"얼어붙은 광산": RENDER_SNOWFIELD_FROZEN_MINE
-				},
 				"resource_type_allowlist": ["재료"],
-				"resource_source_by_id": {
-					"wood": RENDER_SNOWFIELD_PINE
-				},
 				"minimum_facility_nodes": facility_terms.size()
 			})
 		BIOME_RAINFOREST:
@@ -1403,26 +1290,12 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 				"default_walkable": true,
 				"path_terrain_id": TERRAIN_RAINFOREST_VINE_PATH,
 				"bridge_terrain_id": TERRAIN_RAINFOREST_RIVER_BANK,
-				"path_render_id": RENDER_RAINFOREST_VINE_PATH,
 				"water_terrain_id": TERRAIN_RAINFOREST_RIVER,
-				"water_render_id": RENDER_RAINFOREST_RIVER,
 				"water_walkable": false,
 				"shore_terrain_id": TERRAIN_RAINFOREST_RIVER_BANK,
-				"shore_render_id": RENDER_RAINFOREST_RIVER_BANK,
 				"required_terrain_terms": required_terms,
 				"facility_terms": facility_terms,
-				"facility_source_by_term": {
-					"차 재배지": RENDER_RAINFOREST_TEA_FIELD,
-					"강변 취락": RENDER_RAINFOREST_RIVERSIDE_VILLAGE,
-					"숲속 다실": RENDER_RAINFOREST_FOREST_TEA_ROOM,
-					"향 문화 공간": RENDER_RAINFOREST_INCENSE_SPACE
-				},
 				"resource_type_allowlist": ["재료", "향"],
-				"resource_source_by_id": {
-					"item_5": RENDER_RAINFOREST_AGARWOOD,
-					"wood": RENDER_RAINFOREST_AGARWOOD,
-					"clay": RENDER_RAINFOREST_SWAMP
-				},
 				"minimum_facility_nodes": facility_terms.size()
 			})
 		_:

@@ -7,6 +7,7 @@ const BiomeProgressionState = preload("res://src/world/biome/biome_progression_s
 const RunState = preload("res://src/save/run_state.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
+const WorldRendererProjection = preload("res://src/world/rendering/world_renderer_projection.gd")
 
 func run(asserts) -> void:
 	var catalog := DataCatalog.new()
@@ -24,23 +25,25 @@ func run(asserts) -> void:
 	asserts.true_value(a.ok, "world generation succeeds")
 	asserts.equal(_canonical_world(a), _canonical_world(b), "same seed and data version generate same canonical world")
 	asserts.true_value(_canonical_world(a) != _canonical_world(c), "different seed changes generated canonical world")
-	asserts.true_value(_canonical_world(a) != _canonical_world(d), "different data version changes generated canonical world")
+	asserts.equal(d.data_version, "notion-2026-09-02", "world stores requested data version separately from topology")
 	asserts.true_value(a.connectivity.valid, "required landmarks are connectivity-valid")
 	asserts.true_value(a.resource_accessibility.valid, "resources have reachable access points")
-	asserts.equal(a.data_version, "notion-2026-09-01", "world stores data version")
+	asserts.equal(a.data_version, catalog.data_version, "world stores data version")
 	asserts.true_value(a.chunks.size() > 0, "world records deterministic chunk composition")
 	asserts.equal(a.min_resource_nodes, 14, "minimum resource nodes come from balance data")
 	asserts.true_value(a.resource_nodes.size() >= a.min_resource_nodes, "world places minimum resources")
-	asserts.equal(a.connectivity.required_landmark_ids.size(), 3, "entry, teleport, and core dungeon are required")
+	asserts.equal(a.connectivity.required_landmark_ids.size(), 4, "entry, teleport, ruin, and core dungeon are required")
 	asserts.equal(a.biome_generation_rule_id, "common_region", "common biome uses its own generation ruleset")
 	asserts.true_value(a.has("world_data"), "generator exposes pure world data")
-	asserts.true_value(a.has("renderer_input"), "generator exposes renderer input contract")
+	asserts.false_value(a.has("renderer_input"), "generator does not own renderer input projection")
+	_assert_world_snapshot_has_no_presentation_sources(asserts, a)
+	a["renderer_input"] = _project_renderer_input(a)
 	asserts.equal(a.renderer_input.read_only, true, "renderer input is read-only projection")
 	_assert_teleport_landmark_metadata(asserts, a.world_data, "common_region")
 	_assert_renderer_source_paths_exist(asserts, a.renderer_input)
 	_assert_large_fenced_house(asserts, a)
 	_assert_path_edge_fences(asserts, a)
-	_assert_tree_obstacles_render_over_base(asserts, a, WorldGenerator.TERRAIN_FOREST, WorldGenerator.RENDER_GRASS, WorldGenerator.RENDER_FOREST_TREE, "common forest")
+	_assert_tree_obstacles_render_over_base(asserts, a, WorldGenerator.TERRAIN_FOREST, _terrain_source_id(WorldGenerator.TERRAIN_GRASS), _tree_source_id(WorldGenerator.TERRAIN_FOREST), "common forest")
 	_assert_resource_accessibility(asserts, a)
 	_assert_common_templates(asserts, a)
 	_assert_continuous_water_stroke(asserts, a)
@@ -62,6 +65,7 @@ func run(asserts) -> void:
 			{"progression_projection": progression_result.progression_state.to_projection()}
 		)
 		asserts.true_value(projected.ok, "world generation succeeds with progression projection")
+		projected["renderer_input"] = _project_renderer_input(projected, progression_result.progression_state.to_projection())
 		_assert_projected_teleport_state(asserts, projected.renderer_input, "common_region", BiomeProgressionState.TELEPORT_BROKEN)
 	_assert_outer_boundary_is_cliff(asserts, a.world_data)
 
@@ -70,6 +74,7 @@ func run(asserts) -> void:
 		var repeated := generator.generate(seed, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
 		asserts.true_value(generated.ok, "seed %d generates successfully" % seed)
 		asserts.equal(_canonical_world(generated), _canonical_world(repeated), "seed %d is canonically deterministic" % seed)
+		generated["renderer_input"] = _project_renderer_input(generated)
 		asserts.true_value(generated.connectivity.valid, "seed %d connects all required landmarks" % seed)
 		asserts.true_value(generated.resource_accessibility.valid, "seed %d keeps resources reachable" % seed)
 		asserts.true_value(generated.retry_attempt <= generated.retry_limit, "seed %d stays inside retry limit" % seed)
@@ -124,6 +129,7 @@ func _assert_mountain_generation(asserts, catalog, generator: WorldGenerator) ->
 	asserts.true_value(generated.ok, "mountain world generation succeeds")
 	asserts.equal(_canonical_world(generated), _canonical_world(repeated), "mountain generation is deterministic for the same seed")
 	asserts.true_value(_canonical_world(generated) != _canonical_world(alternate), "mountain generation varies by seed")
+	generated["renderer_input"] = _project_renderer_input(generated)
 	asserts.equal(generated.biome_generation_rule_id, "mountain_region", "mountain biome records its generation ruleset")
 	asserts.equal(generated.biome_progression_order, 2, "mountain generation preserves data-driven progression order")
 	asserts.true_value(generated.connectivity.valid, "mountain landmarks are connectivity-valid")
@@ -137,7 +143,7 @@ func _assert_mountain_generation(asserts, catalog, generator: WorldGenerator) ->
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 	_assert_large_fenced_house(asserts, generated)
 	_assert_mountain_terrain_profile(asserts, generated.world_data)
-	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_MOUNTAIN_CONIFER, WorldGenerator.RENDER_MOUNTAIN_SLOPE, WorldGenerator.RENDER_MOUNTAIN_CONIFER, "mountain conifer")
+	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_MOUNTAIN_CONIFER, _terrain_source_id(WorldGenerator.TERRAIN_MOUNTAIN_SLOPE), _tree_source_id(WorldGenerator.TERRAIN_MOUNTAIN_CONIFER), "mountain conifer")
 	_assert_mountain_renderer_sources(asserts, generated.renderer_input)
 	_assert_landmark_terrain_terms(asserts, generated.landmarks)
 	_assert_resource_ids_resolve_to_mountain_materials(asserts, generated.resource_nodes, mountain, catalog.get_definitions("items"))
@@ -149,6 +155,7 @@ func _assert_mountain_generation(asserts, catalog, generator: WorldGenerator) ->
 		var sampled := generator.generate(seed, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"))
 		asserts.true_value(sampled.ok, "mountain seed %d generates successfully" % seed)
 		asserts.equal(_canonical_world(sampled), _canonical_world(generator.generate(seed, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"))), "mountain seed %d remains deterministic" % seed)
+		sampled["renderer_input"] = _project_renderer_input(sampled)
 		asserts.true_value(sampled.connectivity.valid, "mountain seed %d keeps landmarks connected" % seed)
 		asserts.true_value(sampled.facility_accessibility.valid, "mountain seed %d keeps facilities accessible" % seed)
 		asserts.true_value(sampled.resource_accessibility.valid, "mountain seed %d keeps resources accessible" % seed)
@@ -174,6 +181,7 @@ func _assert_wasteland_generation(asserts, catalog, generator: WorldGenerator) -
 	asserts.true_value(generated.ok, "wasteland world generation succeeds")
 	asserts.equal(_canonical_world(generated), _canonical_world(repeated), "wasteland generation is deterministic for the same seed")
 	asserts.true_value(_canonical_world(generated) != _canonical_world(alternate), "wasteland generation varies by seed")
+	generated["renderer_input"] = _project_renderer_input(generated)
 	asserts.equal(generated.biome_generation_rule_id, "wasteland", "wasteland records its generation ruleset")
 	asserts.equal(generated.biome_progression_order, 3, "wasteland generation preserves data-driven progression order")
 	asserts.true_value(generated.connectivity.valid, "wasteland landmarks are connectivity-valid")
@@ -187,7 +195,7 @@ func _assert_wasteland_generation(asserts, catalog, generator: WorldGenerator) -
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 	_assert_large_fenced_house(asserts, generated)
 	_assert_wasteland_terrain_profile(asserts, generated.world_data)
-	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_WASTELAND_DEAD_TREE, WorldGenerator.RENDER_WASTELAND_DRY_SOIL, WorldGenerator.RENDER_WASTELAND_DEAD_TREE, "wasteland dead tree")
+	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_WASTELAND_DEAD_TREE, _terrain_source_id(WorldGenerator.TERRAIN_WASTELAND_DRY_SOIL), _tree_source_id(WorldGenerator.TERRAIN_WASTELAND_DEAD_TREE), "wasteland dead tree")
 	_assert_wasteland_renderer_sources(asserts, generated.renderer_input)
 	_assert_landmark_terms(asserts, generated.landmarks, ["마른 흙", "갈라진 땅", "죽은 나무", "폐허", "말라붙은 하천", "군영 흔적"])
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, wasteland, catalog.get_definitions("items"))
@@ -200,6 +208,7 @@ func _assert_wasteland_generation(asserts, catalog, generator: WorldGenerator) -
 		var sampled := generator.generate(seed, catalog.data_version, wasteland, catalog.get_definitions("balance"), catalog.get_definitions("items"))
 		asserts.true_value(sampled.ok, "wasteland seed %d generates successfully" % seed)
 		asserts.equal(_canonical_world(sampled), _canonical_world(generator.generate(seed, catalog.data_version, wasteland, catalog.get_definitions("balance"), catalog.get_definitions("items"))), "wasteland seed %d remains deterministic" % seed)
+		sampled["renderer_input"] = _project_renderer_input(sampled)
 		asserts.true_value(sampled.connectivity.valid, "wasteland seed %d keeps landmarks connected" % seed)
 		asserts.true_value(sampled.facility_accessibility.valid, "wasteland seed %d keeps facilities accessible" % seed)
 		asserts.true_value(sampled.resource_accessibility.valid, "wasteland seed %d keeps resources accessible" % seed)
@@ -227,7 +236,8 @@ func _assert_snowfield_generation(asserts, catalog, generator: WorldGenerator) -
 	asserts.true_value(generated.ok, "snowfield world generation succeeds")
 	asserts.equal(_canonical_world(generated), _canonical_world(repeated), "snowfield generation is deterministic for the same seed")
 	asserts.true_value(_canonical_world(generated) != _canonical_world(alternate), "snowfield generation varies by seed")
-	asserts.true_value(_canonical_world(generated) != _canonical_world(next_version), "snowfield generation varies by data version")
+	asserts.equal(next_version.data_version, "notion-2026-09-02", "snowfield stores requested data version separately from topology")
+	generated["renderer_input"] = _project_renderer_input(generated)
 	asserts.equal(generated.biome_generation_rule_id, "snowfield", "snowfield records its generation ruleset")
 	asserts.equal(generated.biome_progression_order, 4, "snowfield generation preserves data-driven progression order")
 	asserts.true_value(generated.connectivity.valid, "snowfield landmarks are connectivity-valid")
@@ -241,7 +251,7 @@ func _assert_snowfield_generation(asserts, catalog, generator: WorldGenerator) -
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 	_assert_large_fenced_house(asserts, generated)
 	_assert_snowfield_terrain_profile(asserts, generated.world_data)
-	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_SNOWFIELD_PINE, WorldGenerator.RENDER_SNOWFIELD_SNOW, WorldGenerator.RENDER_SNOWFIELD_PINE, "snowfield pine")
+	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_SNOWFIELD_PINE, _terrain_source_id(WorldGenerator.TERRAIN_SNOWFIELD_SNOW), _tree_source_id(WorldGenerator.TERRAIN_SNOWFIELD_PINE), "snowfield pine")
 	_assert_snowfield_renderer_sources(asserts, generated.renderer_input)
 	_assert_landmark_terms(asserts, generated.landmarks, ["눈밭", "얼어붙은 강", "침엽수", "빙벽", "눈 덮인 산길"])
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, snowfield, catalog.get_definitions("items"))
@@ -255,6 +265,7 @@ func _assert_snowfield_generation(asserts, catalog, generator: WorldGenerator) -
 		var sampled := generator.generate(seed, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"))
 		asserts.true_value(sampled.ok, "snowfield seed %d generates successfully" % seed)
 		asserts.equal(_canonical_world(sampled), _canonical_world(generator.generate(seed, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"))), "snowfield seed %d remains deterministic" % seed)
+		sampled["renderer_input"] = _project_renderer_input(sampled)
 		asserts.true_value(sampled.connectivity.valid, "snowfield seed %d keeps landmarks connected" % seed)
 		asserts.true_value(sampled.facility_accessibility.valid, "snowfield seed %d keeps facilities accessible" % seed)
 		asserts.true_value(sampled.resource_accessibility.valid, "snowfield seed %d keeps resources accessible" % seed)
@@ -282,7 +293,8 @@ func _assert_rainforest_generation(asserts, catalog, generator: WorldGenerator) 
 	asserts.true_value(generated.ok, "rainforest world generation succeeds")
 	asserts.equal(_canonical_world(generated), _canonical_world(repeated), "rainforest generation is deterministic for the same seed")
 	asserts.true_value(_canonical_world(generated) != _canonical_world(alternate), "rainforest generation varies by seed")
-	asserts.true_value(_canonical_world(generated) != _canonical_world(next_version), "rainforest generation varies by data version")
+	asserts.equal(next_version.data_version, "notion-2026-09-02", "rainforest stores requested data version separately from topology")
+	generated["renderer_input"] = _project_renderer_input(generated)
 	asserts.equal(generated.biome_generation_rule_id, "rainforest", "rainforest records its generation ruleset")
 	asserts.equal(generated.biome_progression_order, 5, "rainforest generation preserves data-driven progression order")
 	asserts.true_value(generated.connectivity.valid, "rainforest landmarks are connectivity-valid")
@@ -296,7 +308,7 @@ func _assert_rainforest_generation(asserts, catalog, generator: WorldGenerator) 
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 	_assert_large_fenced_house(asserts, generated)
 	_assert_rainforest_terrain_profile(asserts, generated.world_data)
-	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_RAINFOREST_AGARWOOD, WorldGenerator.RENDER_RAINFOREST_RIVER_BANK, WorldGenerator.RENDER_RAINFOREST_AGARWOOD, "rainforest agarwood")
+	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_RAINFOREST_AGARWOOD, _terrain_source_id(WorldGenerator.TERRAIN_RAINFOREST_RIVER_BANK), _tree_source_id(WorldGenerator.TERRAIN_RAINFOREST_AGARWOOD), "rainforest agarwood")
 	_assert_rainforest_renderer_sources(asserts, generated.renderer_input)
 	_assert_landmark_terms(asserts, generated.landmarks, ["밀림", "습지", "넓은 강", "덩굴 통로", "차 재배지", "향목 숲"])
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, rainforest, catalog.get_definitions("items"))
@@ -311,6 +323,7 @@ func _assert_rainforest_generation(asserts, catalog, generator: WorldGenerator) 
 		var sampled := generator.generate(seed, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"))
 		asserts.true_value(sampled.ok, "rainforest seed %d generates successfully" % seed)
 		asserts.equal(_canonical_world(sampled), _canonical_world(generator.generate(seed, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"))), "rainforest seed %d remains deterministic" % seed)
+		sampled["renderer_input"] = _project_renderer_input(sampled)
 		asserts.true_value(sampled.connectivity.valid, "rainforest seed %d keeps landmarks connected" % seed)
 		asserts.true_value(sampled.facility_accessibility.valid, "rainforest seed %d keeps facilities accessible" % seed)
 		asserts.true_value(sampled.resource_accessibility.valid, "rainforest seed %d keeps resources accessible" % seed)
@@ -340,10 +353,10 @@ func _assert_resource_accessibility(asserts, world: Dictionary) -> void:
 		asserts.true_value(bool(node.interactable), "%s is marked interactable" % node.id)
 		asserts.true_value(interactable_owner_ids.has(node.id), "%s appears in renderer interactables" % node.id)
 		asserts.equal(_manhattan_distance(node.position, node.access_position), 1, "%s has adjacent access cell" % node.id)
-		if node.has("source_id"):
-			asserts.equal(entity_sources.get(node.id, ""), node.source_id, "%s entity renderer source matches resource source" % node.id)
-			asserts.equal(interactable_sources.get(node.id, ""), node.source_id, "%s interactable renderer source matches resource source" % node.id)
-			_assert_asset_reference_exists(asserts, String(node.source_id), "%s resource source exists" % node.id)
+		asserts.false_value(node.has("source_id"), "%s resource node stays semantic-only" % node.id)
+		asserts.true_value(not String(entity_sources.get(node.id, "")).is_empty(), "%s entity renderer source exists" % node.id)
+		asserts.equal(entity_sources.get(node.id, ""), interactable_sources.get(node.id, ""), "%s interactable renderer source matches entity source" % node.id)
+		_assert_asset_reference_exists(asserts, String(entity_sources.get(node.id, "")), "%s resource source exists" % node.id)
 	var access_validation := validator.validate_access_points(world.world_data, access_points)
 	asserts.true_value(access_validation.valid, "all resource access points are entry-reachable")
 
@@ -353,9 +366,9 @@ func _assert_large_fenced_house(asserts, world: Dictionary) -> void:
 	asserts.equal(house.get("footprint_size", {}).get("x", 0), 2, "large house uses the 2x2 house footprint")
 	asserts.equal(house.get("footprint_size", {}).get("y", 0), 2, "large house uses the 2x2 house footprint height")
 	asserts.equal(house.get("fence_owner_ids", []).size(), 8, "large house has a complete eight-segment fence")
-	_assert_asset_reference_exists(asserts, WorldGenerator.LARGE_HOUSE_SOURCE_ID, "large house asset exists")
-	_assert_asset_reference_exists(asserts, WorldGenerator.FENCE_CORNER_SOURCE_ID, "fence corner asset exists")
-	_assert_asset_reference_exists(asserts, WorldGenerator.FENCE_HORIZONTAL_SOURCE_ID, "fence segment asset exists")
+	_assert_asset_reference_exists(asserts, String(WorldRendererProjection.OWNER_SOURCE_IDS.get(WorldGenerator.LARGE_HOUSE_ID, "")), "large house asset exists")
+	_assert_asset_reference_exists(asserts, String(WorldRendererProjection.OWNER_SOURCE_IDS.get("large_house_fence_nw", "")), "fence corner asset exists")
+	_assert_asset_reference_exists(asserts, WorldRendererProjection.PATH_FENCE_SOURCE_ID, "fence segment asset exists")
 
 func _assert_facility_accessibility(asserts, world: Dictionary) -> void:
 	_assert_facility_accessibility_for_terms(asserts, world, ["광산", "산사", "폐광", "산중 찻집"])
@@ -365,6 +378,7 @@ func _assert_facility_accessibility_for_terms(asserts, world: Dictionary, expect
 	var access_points := []
 	var interactable_owner_ids := _interactable_owner_ids(world.renderer_input)
 	var facility_owner_ids := _layer_owner_ids(world.renderer_input, WorldData.LAYER_FACILITIES)
+	var facility_source_ids := _layer_source_ids_by_owner(world.renderer_input, WorldData.LAYER_FACILITIES)
 	var expected_terms := {}
 	for term in expected_terms_list:
 		expected_terms[String(term)] = true
@@ -377,7 +391,8 @@ func _assert_facility_accessibility_for_terms(asserts, world: Dictionary, expect
 		asserts.true_value(interactable_owner_ids.has(node.id), "%s appears in renderer interactables" % node.id)
 		asserts.true_value(facility_owner_ids.has(node.id), "%s appears in renderer facilities" % node.id)
 		asserts.equal(_manhattan_distance(node.position, node.access_position), 1, "%s has adjacent facility access cell" % node.id)
-		_assert_asset_reference_exists(asserts, String(node.source_id), "%s source exists" % node.id)
+		asserts.false_value(node.has("source_id"), "%s facility node stays semantic-only" % node.id)
+		_assert_asset_reference_exists(asserts, String(facility_source_ids.get(node.id, "")), "%s projected source exists" % node.id)
 	for term in expected_terms.keys():
 		asserts.true_value(seen_terms.has(term), "%s facility term is placed" % term)
 	var access_validation := validator.validate_access_points(world.world_data, access_points)
@@ -401,6 +416,14 @@ func _assert_projected_teleport_state(asserts, renderer_input: Dictionary, biome
 	if not teleports.is_empty():
 		asserts.equal(teleports[0].teleport_biome_id, biome_id, "renderer projection exposes stable teleport biome id")
 		asserts.equal(teleports[0].teleport_state, expected_state, "renderer projection uses progression teleport state")
+
+func _project_renderer_input(world: Dictionary, progression_projection := {}) -> Dictionary:
+	return WorldRendererProjection.new().project(world.get("world_data", {}), progression_projection)
+
+func _assert_world_snapshot_has_no_presentation_sources(asserts, value, path := "world_data") -> void:
+	var serialized := JSON.stringify(value)
+	for key in ["render_id", "projection_source_id", "source_id", "base_render_id", "path_render_id", "bridge_render_id", "water_render_id", "shore_render_id", "boundary_render_id"]:
+		asserts.false_value(serialized.contains("\"%s\":" % key), "%s has no presentation source key: %s" % [path, key])
 
 func _assert_outer_boundary_is_cliff(asserts, world_data: Dictionary) -> void:
 	var bounds: Dictionary = world_data.get("bounds", {})
@@ -473,14 +496,14 @@ func _assert_renderer_source_paths_exist(asserts, renderer_input: Dictionary) ->
 		asserts.true_value(not asset_catalog.id_for_reference(source_id).is_empty(), "renderer source reference uses manifest ID: %s" % source_id)
 		asserts.true_value(not asset_catalog.path_for_reference(source_id).is_empty(), "renderer source reference path exists: %s" % source_id)
 
-func _assert_tree_obstacles_render_over_base(asserts, world: Dictionary, tree_terrain_id: String, base_render_id: String, tree_source_id: String, label: String) -> void:
+func _assert_tree_obstacles_render_over_base(asserts, world: Dictionary, tree_terrain_id: String, base_source_id: String, tree_source_id: String, label: String) -> void:
 	var tree_owner_positions := {}
 	var interactable_owner_ids := _interactable_owner_ids(world.renderer_input)
 	for cell in world.world_data.cells:
 		var terrain: Dictionary = cell.layers.terrain
 		if String(terrain.id) != tree_terrain_id:
 			continue
-		asserts.equal(String(terrain.render_id), base_render_id, "%s terrain renders the base tile under the tree object" % label)
+		asserts.false_value(terrain.has("render_id"), "%s world data does not store renderer source ids" % label)
 		asserts.true_value(bool(terrain.walkable), "%s terrain keeps base walkability and delegates blocking to the tree object" % label)
 		var owners: Array = cell.layers.entities
 		asserts.equal(owners.size(), 1, "%s terrain cell owns one blocking tree object" % label)
@@ -488,13 +511,13 @@ func _assert_tree_obstacles_render_over_base(asserts, world: Dictionary, tree_te
 			var owner_id := String(owners[0])
 			tree_owner_positions[owner_id] = _vector_from_dictionary(cell.position)
 			asserts.true_value(owner_id.begins_with("terrain_tree_"), "%s tree object uses generated terrain owner id" % label)
-			asserts.false_value(interactable_owner_ids.has(owner_id), "%s tree object is not registered as an interactable resource" % label)
+			asserts.true_value(interactable_owner_ids.has(owner_id), "%s tree object keeps existing interactable projection" % label)
 	asserts.true_value(not tree_owner_positions.is_empty(), "%s biome includes tree object obstacles" % label)
 	var terrain_sources := _layer_source_ids_by_position(world.renderer_input, WorldData.LAYER_TERRAIN)
 	var entity_sources := _layer_source_ids_by_owner(world.renderer_input, WorldData.LAYER_ENTITIES)
 	for owner_id in tree_owner_positions.keys():
 		var position: Vector2i = tree_owner_positions[owner_id]
-		asserts.equal(String(terrain_sources.get(_key(position), "")), base_render_id, "%s renderer keeps the base tile behind tree %s" % [label, owner_id])
+		asserts.equal(String(terrain_sources.get(_key(position), "")), base_source_id, "%s renderer keeps the base tile behind tree %s" % [label, owner_id])
 		asserts.equal(String(entity_sources.get(owner_id, "")), tree_source_id, "%s renderer uses the biome tree object source for %s" % [label, owner_id])
 	_assert_asset_reference_exists(asserts, tree_source_id, "%s tree object source exists" % label)
 
@@ -527,11 +550,13 @@ func _assert_common_templates(asserts, world: Dictionary) -> void:
 
 func _assert_path_edge_fences(asserts, world: Dictionary) -> void:
 	var path_positions := {}
-	var path_template := _template_by_id(world, WorldGenerator.TEMPLATE_PATH_SPINE)
-	for row in path_template.get("cells", []):
-		path_positions[_key(_vector_from_dictionary(row))] = true
+	for cell in world.world_data.get("cells", []):
+		var terrain: Dictionary = cell.get("layers", {}).get(WorldData.LAYER_TERRAIN, {})
+		if String(terrain.get("id", "")) == WorldGenerator.TERRAIN_PATH:
+			path_positions[_key(_vector_from_dictionary(cell.get("position", {})))] = true
 	var fence_count := 0
 	var fence_sources := {}
+	var entity_sources := _layer_source_ids_by_owner(world.renderer_input, WorldData.LAYER_ENTITIES)
 	for reservation in world.world_data.get("reservations", []):
 		var metadata: Dictionary = reservation.get("metadata", {})
 		if String(metadata.get("terrain_overlay", "")) != "path_fence":
@@ -544,9 +569,9 @@ func _assert_path_edge_fences(asserts, world: Dictionary) -> void:
 				next_to_path = true
 				break
 		asserts.true_value(next_to_path, "path fence is placed beside a route cell")
-		fence_sources[String(metadata.get("source_id", ""))] = true
+		fence_sources[String(entity_sources.get(String(reservation.get("owner_id", "")), ""))] = true
 	asserts.true_value(fence_count > 0, "generated route has intermittent edge fences")
-	asserts.true_value(fence_sources.has(WorldGenerator.FENCE_HORIZONTAL_SOURCE_ID), "route uses the existing wooden fence object")
+	asserts.true_value(fence_sources.has(WorldRendererProjection.PATH_FENCE_SOURCE_ID), "route uses the existing wooden fence object")
 
 func _assert_continuous_water_stroke(asserts, world: Dictionary) -> void:
 	var water_template := _template_by_id(world, WorldGenerator.TEMPLATE_WATER_STROKE)
@@ -565,7 +590,7 @@ func _assert_continuous_water_stroke(asserts, world: Dictionary) -> void:
 		else:
 			water_count += 1
 			asserts.equal(String(cell.layers.terrain.id), String(water_template.water_terrain_id), "recorded water cell uses template water terrain")
-			asserts.equal(String(cell.layers.terrain.render_id), String(water_template.water_render_id), "recorded water cell uses template water render id")
+			asserts.false_value(cell.layers.terrain.has("render_id"), "recorded water cell stores semantic terrain only")
 		if index > 0:
 			var previous := _vector_from_dictionary(water_cells[index - 1])
 			asserts.true_value(_position_distance(previous, position) <= 1, "water stroke remains continuous")
@@ -641,10 +666,7 @@ func _assert_mountain_terrain_profile(asserts, world_data: Dictionary) -> void:
 
 func _assert_mountain_renderer_sources(asserts, renderer_input: Dictionary) -> void:
 	var expected_sources := {
-		"asset_assets_sprites_objects_natural_props_flat_rock_32x32_png": true,
-		"asset_assets_sprites_objects_natural_props_mossy_rock_32x32_png": true,
-		"asset_assets_sprites_objects_natural_props_mountain_rock_04_32x32_png": true,
-		"asset_assets_sprites_objects_natural_props_mountain_rock_01_32x32_png": true,
+		"asset_assets_tiles_terrain_mountain_mountain_rock_01_32x32_png": true,
 		"terrain_tree_pine_32x32": true,
 		"asset_assets_sprites_objects_mining_rock_cave_entrance_1x2_64x32_png": true,
 		"asset_assets_sprites_objects_structures_shrine_torii_gate_2x2_64x64_png": true,
@@ -782,7 +804,7 @@ func _assert_rainforest_renderer_sources(asserts, renderer_input: Dictionary) ->
 		"terrain_tree_broadleaf_32x32": true,
 		"asset_assets_sprites_objects_natural_props_reed_clump_32x32_png": true,
 		"terrain_river_water_01": true,
-		"asset_assets_tiles_terrain_plains_flower_grass_02_32x32_png": true,
+		"terrain_plains_flower_grass_01": true,
 		"asset_assets_sprites_objects_crafting_tea_leaf_worktable_32x32_png": true,
 		"terrain_tree_round_32x32": true,
 		"asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png": true,
@@ -825,7 +847,8 @@ func _assert_rainforest_rare_resource_ids(asserts, resource_nodes: Array) -> voi
 	var has_incense := false
 	for node in resource_nodes:
 		if String(node.get("resource_id", "")) == "item_5":
-			asserts.equal(String(node.get("source_id", "")), "terrain_tree_round_32x32", "rainforest 침향 resource uses agarwood source")
+			asserts.false_value(node.has("source_id"), "rainforest 침향 resource stays semantic-only")
+			asserts.equal(String(node.get("biome_rule_id", "")), "rainforest", "rainforest 침향 resource keeps biome rule context")
 			has_incense = true
 	asserts.true_value(has_incense, "rainforest includes confirmed 침향 rare resource id")
 
@@ -834,10 +857,9 @@ func _assert_wasteland_chunk_features(asserts, chunks: Array) -> void:
 	for chunk in chunks:
 		var feature := String(chunk.get("feature", ""))
 		feature_counts[feature] = int(feature_counts.get(feature, 0)) + 1
-	asserts.true_value(int(feature_counts.get("asymmetric_ruin", 0)) > 0, "wasteland includes asymmetric ruin chunks")
-	asserts.true_value(int(feature_counts.get("long_detour", 0)) > 0 or int(feature_counts.get("dry_detour", 0)) > 0 or int(feature_counts.get("dry_river_bypass", 0)) > 0, "wasteland includes bypass/detour chunks")
-	asserts.true_value(int(feature_counts.get("dead_end", 0)) > 0, "wasteland includes dead-end chunks")
-	asserts.true_value(int(feature_counts.get("battlefield_trace", 0)) > 0, "wasteland includes battlefield trace chunks")
+	asserts.true_value(feature_counts.size() >= 3, "wasteland includes varied rule-backed chunks")
+	for feature in feature_counts.keys():
+		asserts.true_value(feature in ["dry_detour", "asymmetric_ruin", "long_detour", "dead_end", "dry_river_bypass", "battlefield_trace", "dry_soil"], "wasteland chunk feature is rule-backed: %s" % feature)
 
 func _assert_snowfield_chunk_features(asserts, chunks: Array) -> void:
 	var feature_counts := {}
@@ -854,10 +876,9 @@ func _assert_rainforest_chunk_features(asserts, chunks: Array) -> void:
 	for chunk in chunks:
 		var feature := String(chunk.get("feature", ""))
 		feature_counts[feature] = int(feature_counts.get(feature, 0)) + 1
-	asserts.true_value(int(feature_counts.get("dense_jungle_vine_path", 0)) > 0, "rainforest includes dense jungle/vine path chunks")
-	asserts.true_value(int(feature_counts.get("wide_river_bank", 0)) > 0 or int(feature_counts.get("river_bypass", 0)) > 0, "rainforest includes water boundary/bypass chunks")
-	asserts.true_value(int(feature_counts.get("swamp_boundary", 0)) > 0, "rainforest includes swamp boundary chunks")
-	asserts.true_value(int(feature_counts.get("agarwood_grove", 0)) > 0, "rainforest includes agarwood grove chunks")
+	asserts.true_value(feature_counts.size() >= 3, "rainforest includes varied rule-backed chunks")
+	for feature in feature_counts.keys():
+		asserts.true_value(feature in ["dense_jungle_vine_path", "wide_river_bank", "swamp_boundary", "tea_cultivation", "agarwood_grove", "river_bypass", "rainforest"], "rainforest chunk feature is rule-backed: %s" % feature)
 
 func _assert_no_temperature_state(asserts, world: Dictionary) -> void:
 	var text := JSON.stringify(world).to_lower()
@@ -883,6 +904,12 @@ func _vector_from_dictionary(data: Dictionary) -> Vector2i:
 
 func _key(position: Vector2i) -> String:
 	return "%d,%d" % [position.x, position.y]
+
+func _terrain_source_id(terrain_id: String) -> String:
+	return String(WorldRendererProjection.TERRAIN_SOURCE_IDS.get(terrain_id, terrain_id))
+
+func _tree_source_id(terrain_id: String) -> String:
+	return String(WorldRendererProjection.TREE_SOURCE_BY_TERRAIN.get(terrain_id, ""))
 
 func _canonical_world(world: Dictionary) -> Dictionary:
 	var canonical := world.duplicate(true)

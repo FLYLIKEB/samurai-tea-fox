@@ -176,7 +176,7 @@ func _assert_generated_resource_reservation_can_be_adopted(asserts) -> void:
 
 func _assert_gatherable_can_require_a_tool_and_clear_terrain(asserts) -> void:
 	var runtime := _runtime(3, Vector2i(2, 1))
-	runtime.world.set_terrain(Vector2i.ZERO, "common_forest", false, "terrain_tree_broadleaf_32x32")
+	runtime.world.set_terrain(Vector2i.ZERO, "common_forest", false)
 	asserts.true_value(runtime.service.register_gatherable("terrain_tree_0_0", "fixture_tree_requires_axe", Vector2i.ZERO).ok, "tool-gated tree registers")
 	var missing_tool: Dictionary = runtime.service.gather("terrain_tree_0_0")
 	asserts.false_value(missing_tool.ok, "tree harvest is rejected without the required axe")
@@ -249,7 +249,7 @@ func _inventory(slot_count: int) -> InventoryModel:
 func _gatherable_definitions() -> Array:
 	return [
 		{"id": "fixture_tree_common", "item_id": "wood", "quantity": 1, "policy": "direct", "material_tag": "wood"},
-		{"id": "fixture_tree_requires_axe", "item_id": "wood", "quantity": 1, "policy": "direct", "material_tag": "wood", "required_tool_item_id": "stone_axe", "depleted_terrain": {"id": "common_grass", "render_id": "terrain_plains_grass_ground_01", "walkable": true}},
+		{"id": "fixture_tree_requires_axe", "item_id": "wood", "quantity": 1, "policy": "direct", "material_tag": "wood", "required_tool_item_id": "stone_axe", "depleted_terrain": {"id": "common_grass", "walkable": true}},
 		{"id": "fixture_ore_mountain", "item_id": "fixture_ore_item", "quantity": 1, "policy": "direct", "material_tag": "stone"},
 		{"id": "fixture_clay_common", "item_id": "clay", "quantity": 1, "policy": "pickup"},
 		{"id": "fixture_tea_leaf_common", "item_id": "fixture_tea_leaf_item", "quantity": 1, "policy": "direct"}

@@ -5,7 +5,6 @@ const WorldData = preload("res://src/world/data/world_data.gd")
 const RuntimeConstants = preload("res://src/core/config/runtime_constants.gd")
 const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
 const ProximityInteractionPrompt = preload("res://src/ui/proximity_interaction_prompt.gd")
-const PIXEL_FONT = preload("res://assets/fonts/galmuri/Galmuri11.ttf")
 
 const TERRAIN_LAYER := "TerrainTileMap"
 const TERRAIN_UNDERLAY_LAYER := "TerrainUnderlay"

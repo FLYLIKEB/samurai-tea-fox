@@ -107,7 +107,7 @@ func run(asserts) -> void:
 	var empty_click_runtime := _configured_runtime(catalog, RunState.new(), Vector2i.ZERO)
 	asserts.true_value(empty_click_runtime.result.ok, "empty pointer fixture configures")
 	var inventory_before_empty_click: Dictionary = empty_click_runtime.main.inventory.to_snapshot()
-	asserts.false_value(empty_click_runtime.main.submit_pointer_interaction(empty_click_runtime.main.world_position_for_cell_center(Vector2i(2, 0))), "empty pointer interaction ignores empty cells")
+	asserts.false_value(empty_click_runtime.main.submit_pointer_interaction(empty_click_runtime.main.world_position_for_cell_center(Vector2i(4, 0))), "empty pointer interaction ignores empty cells")
 	asserts.equal(empty_click_runtime.main.inventory.to_snapshot(), inventory_before_empty_click, "empty pointer interaction does not mutate inventory")
 
 	var movement_runtime := _configured_movement_runtime()
@@ -262,8 +262,8 @@ func _assert_wasteland_runtime_sources(asserts, runtime: Main) -> void:
 		if String(node.get("resource_id", "")) != "item_28":
 			continue
 		var owner_id := String(node.get("id", ""))
-		asserts.equal(String(node.get("source_id", "")), "asset_assets_sprites_objects_mining_iron_ore_32x32_png", "wasteland repair resource carries manifest asset id")
-		asserts.equal(String(owner_sources.get(owner_id, "")), "asset_assets_sprites_objects_mining_iron_ore_32x32_png", "main maps wasteland repair resource owner to its manifest asset id")
+		asserts.false_value(node.has("source_id"), "wasteland repair resource node stays semantic-only")
+		asserts.equal(String(owner_sources.get(owner_id, "")), "asset_assets_sprites_objects_mining_iron_ore_32x32_png", "projection maps wasteland repair resource owner to its manifest asset id")
 		has_iron_scrap_source = true
 	asserts.true_value(has_iron_scrap_source, "wasteland runtime generates sourced iron-scrap repair resources")
 
@@ -274,8 +274,8 @@ func _assert_snowfield_runtime_sources(asserts, runtime: Main) -> void:
 		if String(node.get("resource_id", "")) != "wood":
 			continue
 		var owner_id := String(node.get("id", ""))
-		asserts.equal(String(node.get("source_id", "")), "terrain_tree_pine_32x32", "snowfield conifer wood carries terrain tree asset id")
-		asserts.equal(String(owner_sources.get(owner_id, "")), "terrain_tree_pine_32x32", "main maps snowfield wood owner to its terrain tree asset id")
+		asserts.false_value(node.has("source_id"), "snowfield conifer wood node stays semantic-only")
+		asserts.equal(String(owner_sources.get(owner_id, "")), "terrain_tree_pine_32x32", "projection maps snowfield wood owner to its terrain tree asset id")
 		has_conifer_source = true
 	asserts.true_value(has_conifer_source, "snowfield runtime generates sourced conifer wood resources")
 
@@ -293,14 +293,14 @@ func _assert_rainforest_runtime_sources(asserts, runtime: Main) -> void:
 	for node in runtime.generated_world.get("resource_nodes", []):
 		if String(node.get("resource_id", "")) == "item_5":
 			var incense_owner_id := String(node.get("id", ""))
-			asserts.equal(String(node.get("source_id", "")), "terrain_tree_round_32x32", "rainforest 침향 carries terrain tree asset id")
+			asserts.false_value(node.has("source_id"), "rainforest 침향 resource node stays semantic-only")
 			asserts.equal(String(owner_sources.get(incense_owner_id, "")), "terrain_tree_round_32x32", "main maps rainforest 침향 owner to terrain tree asset id")
 			asserts.equal(runtime.acquisition_service.gatherable_for(incense_owner_id).definition_id, "item_5", "main registers rainforest 침향 as a gatherable")
 			has_incense_gatherable = true
 		if String(node.get("resource_id", "")) != "wood":
 			continue
 		var owner_id := String(node.get("id", ""))
-		asserts.equal(String(node.get("source_id", "")), "terrain_tree_round_32x32", "rainforest wood carries terrain tree asset id")
+		asserts.false_value(node.has("source_id"), "rainforest wood resource node stays semantic-only")
 		asserts.equal(String(owner_sources.get(owner_id, "")), "terrain_tree_round_32x32", "main maps rainforest wood owner to its terrain tree asset id")
 		has_agarwood_source = true
 	asserts.true_value(has_agarwood_source, "rainforest runtime generates sourced agarwood resources")
@@ -344,13 +344,11 @@ func _configured_tree_runtime(catalog, state = null) -> Dictionary:
 	if not services.ok:
 		return {"main": runtime, "result": services}
 	var world := WorldData.new(3, 1, "common_grass", true)
-	world.set_terrain(Vector2i(1, 0), "common_forest", true, "common_grass")
+	world.set_terrain(Vector2i(1, 0), "common_forest", true)
 	world.reserve_entity("terrain_tree_wood_1_0", Vector2i(1, 0), Vector2i.ONE, true, {
-		"source_id": "terrain_tree_broadleaf_32x32",
 		"resource_id": "wood",
 		"terrain_id": "common_forest",
 		"base_terrain_id": "common_grass",
-		"base_render_id": "common_grass",
 		"terrain_overlay": "tree"
 	})
 	var world_snapshot := world.to_dictionary()

@@ -45,8 +45,12 @@ func _assert_visible_house_accepts_e_before_attack(asserts, catalog: DataCatalog
 	asserts.true_value(runtime.main._in_dungeon_map, "E switches to the dungeon map instead of attacking")
 	var dungeon_snapshot: Dictionary = runtime.main.world_data.to_dictionary()
 	var dungeon_terrain: Dictionary = dungeon_snapshot.cells[0].layers[WorldData.LAYER_TERRAIN]
-	asserts.equal(dungeon_terrain.render_id, Main.DUNGEON_TILESET_SOURCE_ID, "entered dungeon uses the dedicated mossy dojo tileset")
+	asserts.false_value(dungeon_terrain.has("projection_source_id"), "entered dungeon data stays semantic-only")
+	asserts.false_value(dungeon_terrain.has("render_id"), "entered dungeon data does not store renderer ids")
 	asserts.equal(dungeon_terrain.atlas_coords, {"x": 0, "y": 1}, "dungeon boundary selects an explicit wall tile")
+	var projected_terrain: Dictionary = runtime.main.generated_world.renderer_input.layers[1].cells[0]
+	asserts.equal(projected_terrain.source_id, Main.DUNGEON_TILESET_SOURCE_ID, "entered dungeon projection uses the dedicated mossy dojo tileset")
+	asserts.equal(projected_terrain.atlas_coords, {"x": 0, "y": 1}, "entered dungeon projection preserves atlas presentation data")
 	asserts.equal(runtime.main._dungeon_resources.size(), 18, "dungeon has the generated resource-node set")
 	asserts.true_value(not runtime.main.acquisition_service.gatherable_for("dungeon_iron_ore_0").is_empty(), "dungeon ore is registered as gatherable")
 	var ore_cell := Vector2i(4, 3)
