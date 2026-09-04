@@ -44,6 +44,26 @@ ITEM_OVERRIDES = {
     "wooden_workbench": "asset_assets_sprites_objects_crafting_workbench_32x32_png",
 }
 
+DEDICATED_ITEM_ICONS = {
+    "bandage": "item_cloth_bandage_icon",
+    "charcoal": "item_charcoal_icon",
+    "clay": "item_clay_icon",
+    "cloth": "item_cloth_scraps_icon",
+    "conifer_wood": "item_conifer_wood_icon",
+    "copper_ore": "item_copper_ore_icon",
+    "incense_sticks": "item_incense_sticks_icon",
+    "iron_ore": "item_iron_ore_icon",
+    "item_5": "item_agarwood_icon",
+    "item_28": "item_iron_scrap_icon",
+    "item_29": "item_reversal_knot_icon",
+    "item_33": "item_coin_icon",
+    "old_wood": "item_old_wood_icon",
+    "rare_wood": "item_rare_wood_icon",
+    "snowfield_mineral": "item_snowfield_mineral_icon",
+    "stone": "item_stone_icon",
+    "wood": "item_wood_icon",
+}
+
 KIND_FALLBACKS = {
     "다구": "asset_assets_ui_icons_atlas_bowl_png",
     "도구": "asset_assets_ui_icons_atlas_low_table_png",
@@ -93,6 +113,15 @@ def first_non_empty(row: dict[str, Any], keys: list[str]) -> str:
 def item_entry(item: dict[str, Any], assets: dict[str, dict[str, Any]]) -> dict[str, Any]:
     item_id = str(item["id"])
     kind = str(item.get("type", ""))
+    if item_id in DEDICATED_ITEM_ICONS:
+        result = asset_record(DEDICATED_ITEM_ICONS[item_id], assets)
+        result.update({
+            "resolution": "dedicated_item_icon",
+            "exception_reason": "",
+            "dedicated_asset_missing": False,
+            "runtime_approved": True,
+        })
+        return result
     explicit = first_non_empty(item, ["icon_asset_id", "icon", "asset_id", "sprite_asset_id", "source_id"])
     if explicit:
         result = asset_record(explicit, assets)
@@ -129,7 +158,7 @@ def content_entry(dataset: str, row: dict[str, Any], image: dict[str, Any]) -> d
         "kind": row.get("type", row.get("kind", "")),
         **image,
         "art_review_required": art_review_required,
-        "runtime_approved": not art_review_required,
+        "runtime_approved": bool(image.get("runtime_approved", not art_review_required)),
     }
 
 

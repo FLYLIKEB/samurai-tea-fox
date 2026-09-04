@@ -6,7 +6,7 @@
     "remaining_source_files": 0,
     "remaining_source_image_files": 0
   },
-  "total_runtime_pngs": 482,
+  "total_runtime_pngs": 499,
   "runtime_roots": [
     "assets/backgrounds",
     "assets/sprites",
@@ -4354,6 +4354,159 @@
       "alpha_empty": false,
       "source_sha256": "sha256:d113f016faf09fa5fb86d2e6d77f2683ddbfd9a4b1bf8da24d1399ac9b0eebb3",
       "rgba_sha256": "sha256:a0721f1c0f32eaab2993e933974acd5a85ca65ce230762567517870102b32556"
+    },
+    {
+      "path": "assets/sprites/items/agarwood_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:898c254293c84aee0f7cf7d51b8a4f54c76b55b1777b1b6c99739553af6b5384",
+      "rgba_sha256": "sha256:c72fe7a03a4b3524f10d69b91ffc69a6d6f99cc60674b2c5106c3669fa24b211"
+    },
+    {
+      "path": "assets/sprites/items/iron_ore_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:0e100cb5b187ac0768e73d25e5c67bb1cca100c874fcbd1786632691612dbd15",
+      "rgba_sha256": "sha256:2705d67f4ed2b04ae2ef0f8f34b68ac5fa42e24ff8721470827192369f130dc2"
+    },
+    {
+      "path": "assets/sprites/items/copper_ore_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:142c4f3be28c043802d59c1fb2aca83dc5fc6f9488395708d8a390a7372a0768",
+      "rgba_sha256": "sha256:4cf53c7c68b74ecceaf65a60362e70d1a2e5f9f29d4b5c1945c8716760b582c9"
+    },
+    {
+      "path": "assets/sprites/items/conifer_wood_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:c980c4b3c31f12cfb0771f0f53308a7d39394f5189913228ce8f14756081f668",
+      "rgba_sha256": "sha256:a93d2491db969258efb760197de0265b246ea6c587dc5bdec1e0ed8a76e0f50d"
+    },
+    {
+      "path": "assets/sprites/items/snowfield_mineral_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:d8a5c509e17cec3a95642ce72b8189aca6a2b030bd0afd0749c7edf4e6bfe787",
+      "rgba_sha256": "sha256:d653ee653baf7fb092920bc1fe75c67555599d6c906c88f2617de9825505e21b"
+    },
+    {
+      "path": "assets/sprites/items/charcoal_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:5ede03f8c40cfdb3b77f78caac24292ba751ff9c75c067f1d923c5b031120ba0",
+      "rgba_sha256": "sha256:52b50f35c4fb40da4a95e8313e7e2af9cfd04ffce5c8a79f0501b773d96ab683"
+    },
+    {
+      "path": "assets/sprites/items/clay_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:d0abb9fde1786e8f1d2b2ac03a45132efb2109be5e0fe2aa7dccf2176c4c396d",
+      "rgba_sha256": "sha256:7b4e4b1ae5bf23b5d83649dc7170dc087eceed96d610623392ddea542c46f48b"
+    },
+    {
+      "path": "assets/sprites/items/incense_sticks_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:38c8c3d6a7dcd5740ac9f3fafc2f56d254e6b41e861a5d180559f8a56f395b51",
+      "rgba_sha256": "sha256:2200e7790fa0a6b6247ad9b58df0b3cde619120c63e3e896ccceb139cff5bdbd"
+    },
+    {
+      "path": "assets/sprites/items/rare_wood_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:c980b73973ca366dfd9e6e60a204099976ad8386fbc1e22365079fd355cad724",
+      "rgba_sha256": "sha256:53afc0afc04f1695a2d8b8b3f930571fedb55d02a14c5ea165f153ba9575666b"
+    },
+    {
+      "path": "assets/sprites/items/old_wood_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:3363c572977292788cb7969e2c0f68ec9053387976ac9e99c2e1a18e7fe6a688",
+      "rgba_sha256": "sha256:869e0202aa73b6aa8f05675ae1d2491022567e4eab04c1fac1c86f8b54dc5f69"
+    },
+    {
+      "path": "assets/sprites/items/stone_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:3165bba0123b9e4489e4717fa6924102843adc0bcc23115da0fd2f6d65405cd3",
+      "rgba_sha256": "sha256:e4a2eb9c1cd8bd477c5c46b204430ca5946c58b1d0a0e73056e06ff2e0ace63c"
+    },
+    {
+      "path": "assets/sprites/items/wood_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:d3389f3b41405db20026ddcf659a6d1438295249df52f083aab4981a8e681702",
+      "rgba_sha256": "sha256:494620afefd85aa3686e722301660ba08b4967a0c75304fbf700fb577d901d20"
+    },
+    {
+      "path": "assets/sprites/items/iron_scrap_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:2e026eb5209d4f458297f4a6f872cdbe00f9e22ca7a2b1d9e5bd0a4ed18e1407",
+      "rgba_sha256": "sha256:18999a48b8b9a8034f315a7f49d0b0d027ed84eff78b2aa101429950de383808"
+    },
+    {
+      "path": "assets/sprites/items/reversal_knot_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:45633ad631b3bd84b4ed171a5bf265d51bb92f32487457b7ec1b6feb8452efc2",
+      "rgba_sha256": "sha256:965874fd936a7c9d497882cd1ebce6c2b1d8f44f38a5b94f0cce7ba96feba109"
+    },
+    {
+      "path": "assets/sprites/items/cloth_bandage_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:1e158e6360aaa26f96b82c641b76002501a0e0b2e84a80001181d55fbc233b2e",
+      "rgba_sha256": "sha256:8743ef891672b21237f7ef9f2605a6571452da892f85c28bd5d1804f0cff013c"
+    },
+    {
+      "path": "assets/sprites/items/cloth_scraps_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:ca2004557fbf5b654f39cda69635bc2b0ca20b0b2e282f3936bf828e699bf987",
+      "rgba_sha256": "sha256:50958c48966928f11d67b11c853fdb977c389414cc9c61b3d5b30f01b4b29b8c"
+    },
+    {
+      "path": "assets/sprites/items/coin_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:88c18675612f76b76bc583b4ae705f5ee382b4174583052af486cc1f5d37e6cf",
+      "rgba_sha256": "sha256:06641a6b56f8b6d20bd48777fcf65c30685ed1fa40b1c39f9cf040c6572983bf"
     }
   ]
 }
