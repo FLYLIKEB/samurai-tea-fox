@@ -493,8 +493,6 @@ func _physics_process(_delta: float) -> void:
 	_update_dungeon_sign_visibility()
 	if has_pending_facility_placement():
 		return
-	if player != null and player.ability_runtime != null:
-		player.ability_runtime.tick(_delta)
 	_record_current_map_discovery()
 	var desktop_command = _desktop_adapter.poll_movement_command()
 	player.submit_command(movement_command_for_current_inputs(desktop_command))
