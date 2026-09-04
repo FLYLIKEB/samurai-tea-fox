@@ -295,10 +295,15 @@ class AssetManifestValidator:
             self.errors.append(f"{label} direction_count must be a positive integer")
         elif isinstance(asset.get("frame_count"), int) and asset["frame_count"] % asset["direction_count"] != 0:
             self.errors.append(f"{label} frame_count must be divisible by direction_count")
-        if asset.get("kind") == "character_sprite" and (
-            grid["frame_width"] != base_size or grid["frame_height"] != base_size
-        ):
-            self.errors.append(f"{label} character frames must be {base_size}x{base_size}")
+        if asset.get("kind") == "character_sprite":
+            allowed_frame_sizes = {(base_size, base_size)}
+            if asset.get("direction_count") == 1 and asset.get("frame_count") == 1:
+                allowed_frame_sizes.add((base_size, base_size * 2))
+            if (grid["frame_width"], grid["frame_height"]) not in allowed_frame_sizes:
+                self.errors.append(
+                    f"{label} character frames must be {base_size}x{base_size}"
+                    f" or single-frame {base_size}x{base_size * 2}"
+                )
 
     def _validate_resource_references(self, manifest: dict[str, Any], registered_paths: set[str]) -> int:
         roots = self._res_roots(manifest.get("resource_scan_roots"), "resource_scan_roots")

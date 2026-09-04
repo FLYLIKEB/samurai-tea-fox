@@ -16,14 +16,14 @@ class ContentImageAuditTests(unittest.TestCase):
         self.assertEqual(payload["audit"]["monsters"], 21)
         self.assertEqual(payload["audit"]["missing_or_broken"], 0)
         self.assertEqual(payload["audit"]["path_integrity_missing_or_broken"], 0)
-        self.assertEqual(payload["audit"]["dedicated_asset_missing"], 4)
-        self.assertEqual(payload["audit"]["art_review_required"], 41)
-        self.assertEqual(payload["audit"]["runtime_approved"], 55)
+        self.assertEqual(payload["audit"]["dedicated_asset_missing"], 2)
+        self.assertEqual(payload["audit"]["art_review_required"], 39)
+        self.assertEqual(payload["audit"]["runtime_approved"], 57)
         self.assertEqual(payload["audit"]["by_resolution"]["dedicated_item_icon"], 36)
         self.assertIn("semantic_existing_asset", payload["audit"]["by_resolution"])
         self.assertEqual(payload["audit"]["by_resolution"]["kind_fallback_exception"], 2)
-        self.assertEqual(payload["audit"]["by_resolution"]["monster_id_convention"], 19)
-        self.assertEqual(payload["audit"]["by_resolution"]["monster_variant_fallback_exception"], 2)
+        self.assertEqual(payload["audit"]["by_resolution"]["monster_id_convention"], 21)
+        self.assertNotIn("monster_variant_fallback_exception", payload["audit"]["by_resolution"])
         self.assertEqual(payload["audit"]["by_resolution"]["semantic_existing_asset"], 1)
         items = {entry["content_id"]: entry for entry in payload["content"]["items"]}
         self.assertEqual(
@@ -41,6 +41,8 @@ class ContentImageAuditTests(unittest.TestCase):
         monsters = {entry["content_id"]: entry for entry in payload["content"]["monsters"]}
         self.assertEqual(monsters["monster_16"]["asset_id"], "monster_monster_16_front_idle")
         self.assertEqual(monsters["monster_17"]["asset_id"], "monster_monster_17_front_idle")
+        self.assertEqual(monsters["monster_18"]["asset_id"], "monster_monster_18_front_idle")
+        self.assertEqual(monsters["monster_19"]["asset_id"], "monster_monster_19_front_idle")
         self.assertEqual(monsters["monster_20"]["asset_id"], "monster_monster_20_front_idle")
         self.assertEqual(monsters["monster_21"]["asset_id"], "monster_monster_21_front_idle")
 

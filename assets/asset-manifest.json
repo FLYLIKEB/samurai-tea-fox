@@ -224,6 +224,52 @@
       "runtime_scale": 1
     },
     {
+      "id": "monster_monster_18_front_idle",
+      "name": "모래갑옷 무사 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/monsters/monster_18/sand_armor_samurai_front_idle_32x64.png",
+      "width": 32,
+      "height": 64,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 64
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:a13958750df58397a5f24b6b818bff00e59bb217f51435b620dc7b690349f38a",
+      "rgba_sha256": "sha256:a6d8faa29361bf5fbe934021dcb6ffd620aab3812eeeefe15628f2a7ae3a9dae",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_monster_19_front_idle",
+      "name": "바람굶주린 도적 정면 대기",
+      "status": "완료",
+      "kind": "character_sprite",
+      "path": "res://assets/sprites/characters/monsters/monster_19/wind_starved_bandit_front_idle_32x64.png",
+      "width": 32,
+      "height": 64,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 64
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:48de0eb377a1f393d985e3cf6569e844332d5836500674c1aad03a679f3fee45",
+      "rgba_sha256": "sha256:70a7e05f3462f89f595ec1f971a95520bd92cba3f26b7d2c6af891f637085ec6",
+      "runtime_scale": 1
+    },
+    {
       "id": "monster_monster_20_front_idle",
       "name": "눈굴 토끼요괴 정면 대기",
       "status": "완료",
