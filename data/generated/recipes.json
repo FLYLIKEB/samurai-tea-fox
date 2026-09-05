@@ -1,5 +1,5 @@
 {
-  "content_hash": "071944ccc2a78c5e47333207dc9072d4796753e8a4f54d6e0b3f4c7983898ec4",
+  "content_hash": "eb16668dfceebd7e1ec70b3831e7e8a6c39150fddfef96f1de779b16f64a5d0b",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -127,6 +127,30 @@
       "unlock_condition": "산악 핵심 던전 클리어 후 현재 런에서 금속·다구 가공 해금"
     },
     {
+      "category": "방어구",
+      "craft_seconds": 4,
+      "facility": "목재 작업대",
+      "facility_item_ids": [
+        "wooden_workbench"
+      ],
+      "id": "mountain_wind_layered_clothes",
+      "materials": [
+        {
+          "item_id": "cloth",
+          "quantity": 4
+        }
+      ],
+      "materials_note": "천 조각 4",
+      "name": "산바람 겹옷 제작",
+      "notion_id": "3d237369-9e66-81cc-8c9e-f23f742589b0",
+      "result_item_id": "mountain_wind_layered_clothes",
+      "result_quantity": 1,
+      "status": "확정",
+      "unlock_biome": "산악",
+      "unlock_biome_id": "mountain_region",
+      "unlock_condition": "산악 핵심 던전 해결(전투·평화 공통) 후 해당 텔레포트 수리를 완료하면 현재 런 제작 해금. DEV-10 진행 상태를 사용하며 런 종료 시 초기화."
+    },
+    {
       "category": "도구",
       "craft_seconds": 5,
       "facility": "목재 작업대",
@@ -161,6 +185,34 @@
       "unlock_biome": "황무지",
       "unlock_biome_id": "wasteland",
       "unlock_condition": "황무지 핵심 던전 클리어 후 현재 런에서 수리·재활용 제작 해금"
+    },
+    {
+      "category": "방어구",
+      "craft_seconds": 5,
+      "facility": "목재 작업대",
+      "facility_item_ids": [
+        "wooden_workbench"
+      ],
+      "id": "snow_bamboo_overcoat",
+      "materials": [
+        {
+          "item_id": "cloth",
+          "quantity": 6
+        },
+        {
+          "item_id": "conifer_wood",
+          "quantity": 1
+        }
+      ],
+      "materials_note": "천 조각 6 + 침엽수 목재 1",
+      "name": "설죽 덧옷 제작",
+      "notion_id": "3d237369-9e66-81fa-afbe-d4925467a9b9",
+      "result_item_id": "snow_bamboo_overcoat",
+      "result_quantity": 1,
+      "status": "확정",
+      "unlock_biome": "설원",
+      "unlock_biome_id": "snowfield",
+      "unlock_condition": "설원 핵심 던전 해결(전투·평화 공통) 후 해당 텔레포트 수리를 완료하면 현재 런 제작 해금. DEV-10 진행 상태를 사용하며 런 종료 시 초기화."
     },
     {
       "category": "도구",

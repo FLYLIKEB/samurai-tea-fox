@@ -59,6 +59,13 @@ def main() -> int:
                 name: [client.flatten_page(page) for page in client.query_data_source(config["notion"]["source"])]
                 for name, config in runtime_datasets.items()
             }
+            for name, config in runtime_datasets.items():
+                material_source = config["notion"].get("material_relation_source")
+                if material_source:
+                    rows_by_dataset[f"{name}__material_relations"] = [
+                        client.flatten_page(page)
+                        for page in client.query_data_source(material_source)
+                    ]
             builder = CaptureBuilder(schema, id_map)
             capture = builder.build_from_rows(rows_by_dataset, args.data_version)
             written = pipeline.export(capture, args.output, args.profile)

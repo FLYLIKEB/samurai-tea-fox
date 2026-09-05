@@ -2,6 +2,7 @@ extends RefCounted
 
 const CraftingService = preload("res://src/crafting/crafting_service.gd")
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
+const EquipmentModel = preload("res://src/inventory/equipment_model.gd")
 const FacilityPlacementService = preload("res://src/world/placement/facility_placement_service.gd")
 const InventoryModel = preload("res://src/inventory/inventory_model.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
@@ -73,6 +74,7 @@ func _assert_generated_catalog_configures_crafting(asserts) -> void:
 		asserts.true_value(inventory.add_item("cloth", 2).ok, "generated cloth can be stocked")
 		asserts.true_value(service.craft("bandage", inventory, unlocked_context).ok, "generated bandage recipe executes")
 		asserts.equal(inventory.get_total_quantity("bandage"), 1, "cloth-to-bandage crafting grants bandage")
+		_assert_generated_catalog_armor_recipes_craft_and_equip(asserts, service, catalog)
 
 	var placement_result: Dictionary = FacilityPlacementService.from_catalog(catalog)
 	asserts.true_value(placement_result.ok, "placement service initializes from generated catalog")
@@ -298,6 +300,12 @@ func _assert_generated_catalog_extended_recipe_definitions(asserts, service: Cra
 			"facility_item_ids": ["mountain_kiln"],
 			"unlock_biome_id": "mountain_region"
 		},
+		"mountain_wind_layered_clothes": {
+			"result_item_id": "mountain_wind_layered_clothes",
+			"materials": [{"item_id": "cloth", "quantity": 4}],
+			"facility_item_ids": ["wooden_workbench"],
+			"unlock_biome_id": "mountain_region"
+		},
 		"mountain_iron_dagger": {
 			"result_item_id": "mountain_iron_dagger",
 			"materials": [{"item_id": "iron_ore", "quantity": 4}, {"item_id": "wood", "quantity": 2}],
@@ -321,6 +329,12 @@ func _assert_generated_catalog_extended_recipe_definitions(asserts, service: Cra
 			"materials": [{"item_id": "item_28", "quantity": 3}, {"item_id": "old_wood", "quantity": 1}],
 			"facility_item_ids": ["wooden_workbench"],
 			"unlock_biome_id": "wasteland"
+		},
+		"snow_bamboo_overcoat": {
+			"result_item_id": "snow_bamboo_overcoat",
+			"materials": [{"item_id": "cloth", "quantity": 6}, {"item_id": "conifer_wood", "quantity": 1}],
+			"facility_item_ids": ["wooden_workbench"],
+			"unlock_biome_id": "snowfield"
 		},
 		"wood_incense_burner": {
 			"result_item_id": "wood_incense_burner",
@@ -346,10 +360,12 @@ func _assert_generated_catalog_extended_recipe_read_model(asserts, service: Craf
 		"incense_sticks",
 		"insulated_tea_bottle",
 		"iron_kettle",
+		"mountain_wind_layered_clothes",
 		"mountain_iron_dagger",
 		"mountain_kiln",
 		"portable_brazier",
 		"repair_hammer",
+		"snow_bamboo_overcoat",
 		"wood_incense_burner"
 	]:
 		var craft_result: Dictionary = service.can_craft(recipe_id, inventory, unlocked_context)
@@ -358,6 +374,80 @@ func _assert_generated_catalog_extended_recipe_read_model(asserts, service: Craf
 		asserts.equal(model.detail.recipe_id, recipe_id, "extended generated recipe appears in read model: %s" % recipe_id)
 		asserts.equal(model.detail.reason, "missing_materials", "extended generated recipe read model reaches material shortage: %s" % recipe_id)
 		asserts.true_value(model.detail.reason != "invalid_recipe_definition", "extended generated recipe avoids definition error read model: %s" % recipe_id)
+
+func _assert_generated_catalog_armor_recipes_craft_and_equip(asserts, service: CraftingService, catalog: DataCatalog) -> void:
+	var mountain_inventory_result: Dictionary = InventoryModel.from_catalog(catalog)
+	asserts.true_value(mountain_inventory_result.ok, "generated inventory loads for mountain armor recipe")
+	var equipment_result: Dictionary = EquipmentModel.from_catalog(catalog)
+	asserts.true_value(equipment_result.ok, "generated equipment loads for crafted armor")
+	if not mountain_inventory_result.ok or not equipment_result.ok:
+		return
+	var mountain_inventory: InventoryModel = mountain_inventory_result.inventory
+	asserts.true_value(mountain_inventory.add_item("cloth", 4).ok, "mountain armor material can be stocked")
+	var facility_only := {"available_facility_item_ids": ["wooden_workbench"]}
+	var locked: Dictionary = service.can_craft("mountain_wind_layered_clothes", mountain_inventory, facility_only)
+	asserts.false_value(locked.ok, "mountain armor stays locked before current-run biome unlock")
+	asserts.equal(locked.reason, "locked", "mountain armor locked reason is stable")
+	var current_only := service.can_craft(
+		"mountain_wind_layered_clothes",
+		mountain_inventory,
+		{"current_biome_id": "mountain_region", "available_facility_item_ids": ["wooden_workbench"]}
+	)
+	asserts.false_value(current_only.ok, "current biome alone does not unlock mountain armor recipe")
+	var unlocked_no_facility := service.can_craft(
+		"mountain_wind_layered_clothes",
+		mountain_inventory,
+		{"unlocked_biome_ids": ["mountain_region"]}
+	)
+	asserts.false_value(unlocked_no_facility.ok, "mountain armor requires the workbench facility")
+	asserts.equal(unlocked_no_facility.reason, "missing_facilities", "mountain armor reports missing facility before craft")
+
+	var mountain_context := {"unlocked_biome_ids": ["mountain_region"], "available_facility_item_ids": ["wooden_workbench"]}
+	var crafted: Dictionary = service.craft("mountain_wind_layered_clothes", mountain_inventory, mountain_context)
+	asserts.true_value(crafted.ok, "mountain armor crafts after unlock, material, and facility requirements are met")
+	asserts.equal(mountain_inventory.get_total_quantity("cloth"), 0, "mountain armor craft consumes exactly four cloth")
+	asserts.equal(mountain_inventory.get_total_quantity("mountain_wind_layered_clothes"), 1, "mountain armor craft grants one armor item")
+	var equipment: EquipmentModel = equipment_result.equipment
+	var armor_slot_index := mountain_inventory.first_slot_with_item("mountain_wind_layered_clothes")
+	asserts.true_value(equipment.equip_from_inventory(mountain_inventory, armor_slot_index).ok, "crafted mountain armor equips through generated equipment definitions")
+	asserts.equal(
+		equipment.get_equipped_slot(EquipmentModel.SLOT_ARMOR).item_id,
+		"mountain_wind_layered_clothes",
+		"crafted mountain armor lands in the armor slot"
+	)
+
+	var snow_inventory_result: Dictionary = InventoryModel.from_catalog(catalog)
+	asserts.true_value(snow_inventory_result.ok, "generated inventory loads for snow armor recipe")
+	if not snow_inventory_result.ok:
+		return
+	var snow_inventory: InventoryModel = snow_inventory_result.inventory
+	asserts.true_value(snow_inventory.add_item("cloth", 6).ok, "snow armor cloth can be stocked")
+	var missing_materials: Dictionary = service.can_craft(
+		"snow_bamboo_overcoat",
+		snow_inventory,
+		{"unlocked_biome_ids": ["snowfield"], "available_facility_item_ids": ["wooden_workbench"]}
+	)
+	asserts.false_value(missing_materials.ok, "snow armor reports missing conifer wood before craft")
+	asserts.equal(missing_materials.reason, "missing_materials", "snow armor missing material reason is stable")
+	asserts.equal(missing_materials.missing_materials[0].item_id, "conifer_wood", "snow armor missing material identifies conifer wood")
+	asserts.true_value(snow_inventory.add_item("conifer_wood", 1).ok, "snow armor conifer wood can be stocked")
+	var snow_crafted := service.craft(
+		"snow_bamboo_overcoat",
+		snow_inventory,
+		{"unlocked_biome_ids": ["snowfield"], "available_facility_item_ids": ["wooden_workbench"]}
+	)
+	asserts.true_value(snow_crafted.ok, "snow armor crafts after unlock, material, and facility requirements are met")
+	asserts.equal(snow_inventory.get_total_quantity("cloth"), 0, "snow armor craft consumes exactly six cloth")
+	asserts.equal(snow_inventory.get_total_quantity("conifer_wood"), 0, "snow armor craft consumes one conifer wood")
+	asserts.equal(snow_inventory.get_total_quantity("snow_bamboo_overcoat"), 1, "snow armor craft grants one armor item")
+	var snow_equipment: EquipmentModel = EquipmentModel.from_catalog(catalog).equipment
+	var snow_armor_slot_index := snow_inventory.first_slot_with_item("snow_bamboo_overcoat")
+	asserts.true_value(snow_equipment.equip_from_inventory(snow_inventory, snow_armor_slot_index).ok, "crafted snow armor equips through generated equipment definitions")
+	asserts.equal(
+		snow_equipment.get_equipped_slot(EquipmentModel.SLOT_ARMOR).item_id,
+		"snow_bamboo_overcoat",
+		"crafted snow armor lands in the armor slot"
+	)
 
 func _fixture_placement_service() -> FacilityPlacementService:
 	var result: Dictionary = FacilityPlacementService.from_catalog(FakeCatalog.new({
