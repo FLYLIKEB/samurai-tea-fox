@@ -5,6 +5,13 @@ const TestAssert = preload("res://tests/support/test_assert.gd")
 const TESTS := [
 	preload("res://tests/unit/test_pointer_route_controller.gd"),
 	preload("res://tests/unit/test_spatial_interaction_resolver.gd"),
+	preload("res://tests/unit/test_action_command_result_effects.gd"),
+	preload("res://tests/unit/test_main_command_coordinator.gd"),
+	preload("res://tests/unit/test_run_state_snapshot_coordinator.gd"),
+	preload("res://tests/unit/test_dungeon_combatant_session.gd"),
+	preload("res://tests/unit/test_dungeon_command_coordinator.gd"),
+	preload("res://tests/unit/test_facility_biome_coordinator.gd"),
+	preload("res://tests/unit/test_game_progression_coordinator.gd"),
 	preload("res://tests/unit/test_facility_placement_session.gd"),
 	preload("res://tests/unit/test_main_feature_boundaries.gd"),
 	preload("res://tests/unit/test_command_layer.gd"),
