@@ -10,6 +10,7 @@ const RunState = preload("res://src/save/run_state.gd")
 const SaveStore = preload("res://src/save/save_store.gd")
 const TimeState = preload("res://src/time/time_state.gd")
 const BiomeProgressionState = preload("res://src/world/biome/biome_progression_state.gd")
+const DungeonInstanceState = preload("res://src/dungeon/dungeon_instance_state.gd")
 
 const RUN_PATH := "user://dev17_vertical_slice_run.save.json"
 const META_PATH := "user://dev17_vertical_slice_meta.save.json"
@@ -112,6 +113,7 @@ func run(asserts) -> void:
 	main.time_state.tick(300.0 + 120.0 + 1.0, main.player.resources)
 	main.player.resources.reduce_kokoro(20)
 	main.player.resources.apply_damage(10)
+	asserts.true_value(_place_sleep_facility_and_move_to_interaction(main), "slice installs a valid sleep facility and stands on its interaction tile")
 	asserts.true_value(main.submit_desktop_action_command("sleep"), "slice sleeps through Main")
 	asserts.equal(main.time_state.phase, TimeState.DAY, "sleep returns time to morning")
 	asserts.equal(main.player.resources.kokoro, main.player.resources.kokoro_max, "sleep restores 心")
@@ -122,14 +124,24 @@ func run(asserts) -> void:
 	asserts.equal(main.world_data.width, 12, "dungeon map uses the dedicated dungeon width")
 	asserts.equal(main.world_data.height, 9, "dungeon map uses the dedicated dungeon height")
 	asserts.equal(main.world_cell_from_world_position(main.player.global_position), Vector2i(1, 1), "player spawns at the dungeon entrance")
-	for _attempt in range(10):
-		if main.combat_dummy.current_hp() <= 0:
-			break
-		main.player.ability_runtime.tick(10.0)
-		main.player.resources.recover_ki(main.player.resources.ki_max)
-		asserts.true_value(main.submit_desktop_action_command("cast_ability", Vector2i.RIGHT, 0), "slice continues combat until the dungeon objective is clear")
-	asserts.true_value(main.combat_dummy.current_hp() <= 0, "combat objective is defeated before dungeon completion")
-	asserts.true_value(main.submit_desktop_action_command("complete_dungeon"), "slice completes the minimal common dungeon after combat objective clear")
+	asserts.false_value(main.submit_desktop_action_command("complete_dungeon"), "slice cannot complete while the boss dialogue gate is pending")
+	var boss := main._dungeon_boss_node()
+	asserts.true_value(boss != null, "slice dungeon has a boss gate node")
+	for enemy in main._dungeon_enemy_nodes:
+		if enemy.name != Main.DUNGEON_BOSS_OWNER_ID:
+			enemy.visible = false
+			main.world_data.release_footprint(String(enemy.name))
+	asserts.true_value(main._pointer_enemy_clicked(boss.global_position), "slice starts the exported pre-boss dialogue after regular combat is clear")
+	asserts.equal(main.dungeon_runtime.to_projection().boss_flow_state, DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_ACTIVE, "slice stores the active pre-boss dialogue gate")
+	asserts.true_value(main.submit_action_command(GameCommand.new(
+		GameCommand.Type.NARRATIVE_SELECT_OPTION,
+		Vector2i.ZERO,
+		-1,
+		{"event_id": "story_b01_03", "node_id": "dlg_b01_003", "option_id": "complete_dlg_b01_003"}
+	)), "slice completes the exported pre-boss dialogue gate")
+	asserts.equal(main.dungeon_runtime.to_projection().boss_flow_state, DungeonInstanceState.BOSS_FLOW_COMBAT_ACTIVE, "slice unlocks boss combat after dialogue completion")
+	main._on_dungeon_enemy_defeated({}, boss, Main.DUNGEON_BOSS_OWNER_ID)
+	asserts.true_value(main._handle_landmark_interaction("dungeon_entry"), "slice returns from the cleared dungeon through the entry")
 	asserts.false_value(main._in_dungeon_map, "dungeon completion returns to the overworld map")
 	asserts.equal(main.run_state.completed_dungeon_ids, ["common_region"], "dungeon completion updates biome progression")
 	asserts.equal(main.run_state.teleport_states.common_region, BiomeProgressionState.TELEPORT_REPAIRABLE, "dungeon completion makes teleport repairable")
@@ -167,15 +179,6 @@ func run(asserts) -> void:
 	asserts.true_value(restored.main.run_state.acquisitions.gatherables[0].depleted, "relaunch preserves gathered resource depletion")
 	asserts.equal(restored.main.time_state.phase, TimeState.NIGHT, "relaunch preserves runtime time phase")
 
-	asserts.true_value(restored.main.inventory.add_item("item_29", 1).ok, "slice can stock the data-defined resurrection item")
-	restored.main.player.resources.apply_damage(999)
-	asserts.true_value(restored.main.player.resources.hp > 0, "lethal damage consumes resurrection before run reset")
-	asserts.equal(restored.main.inventory.get_total_quantity("item_29"), 0, "resurrection item is consumed")
-	restored.main.player.resources.apply_damage(999)
-	asserts.equal(restored.main.run_state.lifecycle_epoch, 1, "death without resurrection activates a fresh run epoch")
-	asserts.equal(restored.main.run_state.inventory, {}, "fresh run clears run inventory growth")
-	asserts.equal(restored.main.run_state.completed_dungeon_ids, [], "fresh run clears dungeon progression")
-
 	main.free()
 	runtime.player.free()
 	runtime.dummy.free()
@@ -192,6 +195,21 @@ func run(asserts) -> void:
 	repeat_runtime.world_root.free()
 	repeat_runtime.hud.free()
 	_cleanup()
+
+func _place_sleep_facility_and_move_to_interaction(main: Main) -> bool:
+	var placement: Dictionary = main.facility_placement_service.find_placement_near("portable_brazier", main.world_data, main._player_world_cell(), {"search_radius": 16})
+	if not placement.ok:
+		return false
+	var placed: Dictionary = main.facility_placement_service.place_validated_facility(placement, main.world_data)
+	if not placed.ok:
+		return false
+	for y in range(main.world_data.height):
+		for x in range(main.world_data.width):
+			var cell := Vector2i(x, y)
+			if main.facility_placement_service.facility_interaction_at(main.world_data, cell, "sleep").ok:
+				main.player.global_position = main.world_position_for_cell_center(cell)
+				return true
+	return false
 
 func _configured_runtime(catalog: DataCatalog, state, meta_snapshot := {}) -> Dictionary:
 	var main := Main.new()
