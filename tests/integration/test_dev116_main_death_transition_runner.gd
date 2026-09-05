@@ -59,8 +59,7 @@ func run() -> void:
 	if not main._death_transition_active:
 		failures.append("lethal damage starts the death transition")
 
-	for _frame in range(12):
-		await process_frame
+	await _wait_for_start_screen()
 
 	var loaded := SaveStore.new(RUN_PATH, META_PATH).load_run()
 	if not loaded.ok:
@@ -90,6 +89,13 @@ func finish() -> void:
 	for failure in failures:
 		push_error(failure)
 	quit(1)
+
+func _wait_for_start_screen() -> void:
+	var deadline_msec := Time.get_ticks_msec() + 1000
+	while Time.get_ticks_msec() < deadline_msec:
+		if current_scene != null and current_scene.scene_file_path == START_SCREEN_SCENE_PATH:
+			return
+		await process_frame
 
 func _configured_tree_runtime() -> Dictionary:
 	var catalog := DataCatalog.new()
