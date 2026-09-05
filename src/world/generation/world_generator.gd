@@ -14,12 +14,6 @@ static var CHUNK_HEIGHT := RuntimeConstants.int_value("world.chunk_height")
 static var DEFAULT_RETRY_LIMIT := RuntimeConstants.int_value("world.generation_retry_limit")
 const TEMPLATE_PATH := "res://data/world_templates.json"
 static var TEMPLATE_BANK: Array = _load_template_bank()
-const BIOME_COMMON := "common_region"
-const BIOME_MOUNTAIN := "mountain_region"
-const BIOME_WASTELAND := "wasteland"
-const BIOME_SNOWFIELD := "snowfield"
-const BIOME_RAINFOREST := "rainforest"
-
 const CHUNK_RULE_COMMON_GRASS := "common_grass"
 const CHUNK_RULE_COMMON_FIELD := "common_field"
 const CHUNK_RULE_COMMON_FOREST := "common_forest"
