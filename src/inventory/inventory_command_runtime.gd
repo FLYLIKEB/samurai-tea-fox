@@ -16,8 +16,7 @@ const EQUIPPABLE_KINDS := {
 	"다구": true
 }
 const USABLE_KINDS := {
-	"소모품": true,
-	"찻잎": true
+	"소모품": true
 }
 
 var data_version := ""
@@ -201,7 +200,7 @@ func _row_for_slot(index: int, slot: Dictionary) -> Dictionary:
 	var kind := String(definition.get("kind", definition.get("type", "")))
 	var max_stack: int = max(1, int(definition.get("max_stack", slot.get("quantity", 1))))
 	var can_equip := bool(EQUIPPABLE_KINDS.get(kind, false))
-	var can_use := can_equip or bool(USABLE_KINDS.get(kind, false))
+	var can_use := can_equip or _can_use_consumable(kind, item_id)
 	return {
 		"slot_index": index,
 		"empty": false,
@@ -229,6 +228,12 @@ func _commands_for_slot(index: int, can_equip: bool, can_use: bool) -> Dictionar
 	if can_use:
 		commands["use"] = {"type": GameCommand.Type.USE_INVENTORY_SLOT, "slot": index, "payload": {"slot_index": index}}
 	return commands
+
+func _can_use_consumable(kind: String, item_id: String) -> bool:
+	return bool(USABLE_KINDS.get(kind, false)) \
+		and consumable_service != null \
+		and consumable_service.has_method("has_definition") \
+		and consumable_service.has_definition(item_id)
 
 func _equipment_read_model() -> Dictionary:
 	var result := {}
