@@ -59,6 +59,7 @@ func run(asserts) -> void:
 
 	asserts.equal(mobile.command_for_button("unknown"), null, "unknown mobile command is rejected")
 	asserts.equal(desktop.command_for_action("unknown"), null, "unknown desktop command is rejected")
+	_assert_desktop_frame_input_blocks(asserts, desktop)
 
 	var dispatcher := CommandDispatcher.new()
 	var received: Array = []
@@ -100,6 +101,33 @@ func _assert_command_result_policy(asserts, dispatcher: CommandDispatcher) -> vo
 	asserts.true_value(placement_recipe.accepted, "facility placement request is accepted")
 	asserts.false_value(placement_recipe.consumes_turn, "pending facility placement does not consume a turn yet")
 	asserts.false_value(placement_recipe.queues_enemy_turn, "pending facility placement does not queue enemies")
+
+func _assert_desktop_frame_input_blocks(asserts, desktop: DesktopCommandAdapter) -> void:
+	var frame_input := {
+		"movement_command": desktop.movement_command_from_strengths(0.0, 1.0, 0.0, 0.0),
+		"pressed": {
+			"attack": true,
+			"dodge": true,
+			"open_tea_brewing": true,
+			"tea_brew_next_leaf": true,
+			"open_inventory": true,
+			"inventory_next": true,
+			"inventory_use_selected": true,
+			"open_meta_codex": true,
+			"meta_codex_next": true,
+			"open_map": true
+		}
+	}
+	asserts.equal(desktop.movement_command_from_frame(frame_input).direction, Vector2i.RIGHT, "desktop frame preserves movement command")
+	asserts.true_value(desktop.frame_action_pressed(frame_input, "attack"), "desktop frame exposes attack press")
+	asserts.equal(desktop.general_front_action_names(frame_input), ["dodge", "open_tea_brewing"], "desktop frame general front actions keep current order")
+	asserts.equal(desktop.tea_brewing_action_names(frame_input, false), [], "closed tea menu emits no tea navigation")
+	asserts.equal(desktop.tea_brewing_action_names(frame_input, true), ["tea_brew_next_leaf"], "open tea menu emits same-frame tea navigation")
+	asserts.equal(desktop.general_middle_action_names(frame_input, false), [], "handled world interaction suppresses same-frame interact")
+	asserts.equal(desktop.menu_open_action_names(frame_input), ["open_inventory", "open_meta_codex"], "desktop frame menu open actions keep order")
+	asserts.equal(desktop.inventory_action_names(frame_input, true), ["inventory_next", "inventory_use_selected"], "desktop frame inventory actions keep navigation before selected use")
+	asserts.equal(desktop.meta_codex_action_names(frame_input, true), ["meta_codex_next"], "desktop frame meta codex actions keep navigation")
+	asserts.equal(desktop.general_back_action_names(frame_input), ["open_map"], "desktop frame general back actions keep order")
 
 func _assert_platform_commands_match(asserts, desktop: DesktopCommandAdapter, mobile: MobileCommandAdapter, action: String) -> void:
 	var payload := {"kind": "test", "tab": "items", "biome_id": "forest"}
