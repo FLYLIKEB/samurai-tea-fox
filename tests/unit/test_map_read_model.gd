@@ -106,9 +106,14 @@ func _assert_commands_and_hud_open_full_map(asserts) -> void:
 	asserts.true_value(_tree_has_text(hud, "텔레포트 · teleport_0"), "full map menu displays teleport marker")
 	var teleport_button := _marker_button(map_grid, "teleport_0") if map_grid != null else null
 	asserts.true_value(teleport_button != null, "teleport marker is clickable")
+	asserts.false_value(_tree_has_text(hud, "종류: 텔레포트"), "teleport marker detail is absent before click")
 	if teleport_button != null:
 		teleport_button.pressed.emit()
-		asserts.true_value(_tree_has_text(hud, "teleport_0"), "teleport marker click opens marker detail")
+		asserts.true_value(_tree_has_text(hud, "지도 정보"), "teleport marker click opens marker detail title")
+		asserts.true_value(_tree_has_text(hud, "종류: 텔레포트"), "teleport marker detail shows marker type")
+		asserts.true_value(_tree_has_text(hud, "좌표: (1, 4)"), "teleport marker detail shows coordinates")
+		asserts.true_value(_tree_has_text(hud, "상태: 확인됨"), "teleport marker detail shows full-map discovery status")
+		asserts.true_value(_tree_has_text(hud, "지도 돌아가기"), "teleport marker detail has a map back action")
 	hud.free()
 
 	var main := Main.new()
