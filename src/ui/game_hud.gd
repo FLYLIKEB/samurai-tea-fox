@@ -930,10 +930,13 @@ func _build_menu_panel(parent: PanelContainer) -> void:
 	rows.add_theme_constant_override("separation", 4)
 	parent.add_child(rows)
 	var header := HBoxContainer.new()
+	header.name = "MenuTitleBar"
 	_ignore_mouse(header)
 	header.add_theme_constant_override("separation", 8)
 	rows.add_child(header)
 	_labels.menu_title = _label("메뉴", 12)
+	_labels.menu_title.clip_text = true
+	_labels.menu_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	header.add_child(_labels.menu_title)
 	var spacer := Control.new()
 	_ignore_mouse(spacer)
@@ -1039,23 +1042,26 @@ func _inventory_rows() -> Array:
 	var model := _inventory_read_model()
 	if not model.is_empty():
 		rows.append(_section_label("차 & 도구 (인벤토리) · %d/%d · %s" % [int(model.capacity.used), int(model.capacity.total), String(model.filter_kind)]))
-		var toolbar := HBoxContainer.new()
+		var toolbar := GridContainer.new()
 		toolbar.name = "InventoryToolbar"
+		toolbar.columns = 3 if _inventory_uses_compact_layout() else 7
 		_ignore_mouse(toolbar)
-		toolbar.add_theme_constant_override("separation", 4)
-		toolbar.add_child(_inventory_command_button("이전", GameCommand.new(GameCommand.Type.INVENTORY_NAVIGATE, Vector2i.LEFT), ICON_SCROLL, Vector2(54, 30), "이전"))
-		toolbar.add_child(_inventory_command_button("다음", GameCommand.new(GameCommand.Type.INVENTORY_NAVIGATE, Vector2i.RIGHT), ICON_SCROLL, Vector2(54, 30), "다음"))
-		toolbar.add_child(_inventory_command_button("정렬", GameCommand.new(GameCommand.Type.INVENTORY_SORT), ICON_BAG, Vector2(54, 30), "정렬"))
+		toolbar.add_theme_constant_override("h_separation", 4)
+		toolbar.add_theme_constant_override("v_separation", 4)
+		var toolbar_button_size := Vector2(50, 30) if _inventory_uses_compact_layout() else Vector2(54, 30)
+		toolbar.add_child(_inventory_command_button("이전", GameCommand.new(GameCommand.Type.INVENTORY_NAVIGATE, Vector2i.LEFT), ICON_SCROLL, toolbar_button_size, "이전"))
+		toolbar.add_child(_inventory_command_button("다음", GameCommand.new(GameCommand.Type.INVENTORY_NAVIGATE, Vector2i.RIGHT), ICON_SCROLL, toolbar_button_size, "다음"))
+		toolbar.add_child(_inventory_command_button("정렬", GameCommand.new(GameCommand.Type.INVENTORY_SORT), ICON_BAG, toolbar_button_size, "정렬"))
 		for kind in model.available_filters:
 			var kind_id := String(kind)
-			toolbar.add_child(_inventory_command_button(_inventory_filter_label(kind_id), GameCommand.new(GameCommand.Type.INVENTORY_SET_FILTER, Vector2i.ZERO, -1, {"kind": kind_id}), _inventory_kind_icon_reference(kind_id), Vector2(54, 30), _inventory_filter_label(kind_id)))
+			toolbar.add_child(_inventory_command_button(_inventory_filter_label(kind_id), GameCommand.new(GameCommand.Type.INVENTORY_SET_FILTER, Vector2i.ZERO, -1, {"kind": kind_id}), _inventory_kind_icon_reference(kind_id), toolbar_button_size, _inventory_filter_label(kind_id)))
 		rows.append(toolbar)
 		var visible_rows: Array = _inventory_display_rows(model.slots, int(model.get("selected_slot_index", -1)))
 		var page_start := _inventory_page_start(visible_rows, int(model.get("selected_slot_index", -1)), 8)
 		var page_end := mini(visible_rows.size(), page_start + 8)
 		var slot_strip := GridContainer.new()
 		slot_strip.name = "InventorySlotStrip"
-		slot_strip.columns = 4
+		slot_strip.columns = 3 if _inventory_uses_compact_layout() else 4
 		_ignore_mouse(slot_strip)
 		slot_strip.add_theme_constant_override("h_separation", 5)
 		slot_strip.add_theme_constant_override("v_separation", 5)
@@ -1077,10 +1083,10 @@ func _inventory_slot_card(row: Dictionary) -> Button:
 		GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, int(row.slot_index), {"slot_index": int(row.slot_index)})
 	)
 	button.name = "InventorySlotCard%d" % int(row.get("slot_index", -1))
-	button.custom_minimum_size = Vector2(66, 60)
+	button.custom_minimum_size = Vector2(58, 56) if _inventory_uses_compact_layout() else Vector2(66, 60)
 	button.icon = _load_texture(_inventory_item_icon_reference(row))
 	button.expand_icon = true
-	button.add_theme_constant_override("icon_max_width", 28)
+	button.add_theme_constant_override("icon_max_width", 24 if _inventory_uses_compact_layout() else 28)
 	button.add_theme_font_size_override("font_size", 9)
 	button.add_theme_stylebox_override("normal", _menu_card_style(false))
 	button.add_theme_stylebox_override("hover", _menu_card_style(true))
@@ -1136,6 +1142,7 @@ func _selected_inventory_row(rows: Array, selected_slot_index: int) -> Dictionar
 
 func _inventory_detail_card(row: Dictionary) -> Control:
 	var card := _detail_card("선택한 항목")
+	card.custom_minimum_size = Vector2(220, 42) if _inventory_uses_compact_layout() else Vector2(288, 42)
 	var rows := card.get_node("Rows") as VBoxContainer
 	if not row.is_empty() and not bool(row.get("empty", false)):
 		rows.add_child(_icon_text_row(_inventory_item_icon_reference(row), String(row.get("name", row.get("item_id", ""))), 11))
@@ -1157,6 +1164,10 @@ func _inventory_detail_card(row: Dictionary) -> Control:
 			actions.add_child(_inventory_command_button("장착", GameCommand.new(GameCommand.Type.EQUIP_INVENTORY_SLOT, Vector2i.ZERO, slot_index, {"slot_index": slot_index}), _inventory_item_icon_reference(row), Vector2(54, 28), "장착"))
 	rows.add_child(actions)
 	return card
+
+func _inventory_uses_compact_layout() -> bool:
+	var viewport_size := get_viewport().get_visible_rect().size if get_viewport() != null else Vector2(640, 360)
+	return viewport_size.x <= 480.0
 
 func _inventory_command_button(text: String, command: GameCommand, icon_reference := "", min_size := Vector2(40, 24), tooltip := "") -> Button:
 	var button := Button.new()
@@ -2464,6 +2475,8 @@ func _build_time_dial_row(parent: Container) -> void:
 func _section_label(text: String) -> Label:
 	var label := _label(text, 11)
 	label.add_theme_color_override("font_color", Color(0.93, 0.83, 0.63, 1.0))
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return label
 
 func _card_frame(content: Control, selected := false) -> PanelContainer:

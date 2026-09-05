@@ -565,8 +565,12 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 		asserts.equal(int(round(menu_panel.anchor_top * 100.0)), 50, "fast menu anchors from the vertical center")
 		asserts.true_value(_panel_uses_dark_background(menu_panel), "fast menu uses the shared dark HUD panel background")
 	asserts.equal((hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll") as Control).mouse_filter, Control.MOUSE_FILTER_STOP, "menu scroll consumes touch input instead of moving the player")
+	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuTitleBar/CloseMenuButton") is Button, "fast menu exposes a stable close command button for layout checks")
 	asserts.true_value(_tree_has_text(hud, "차 & 도구 (인벤토리) · 3/14 · all"), "inventory menu renders the mockup-style inventory header")
-	var inventory_toolbar := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryToolbar")
+	var inventory_toolbar := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryToolbar") as GridContainer
+	asserts.true_value(inventory_toolbar != null, "inventory toolbar uses a wrapping grid container")
+	if inventory_toolbar != null:
+		asserts.equal(inventory_toolbar.columns, 7, "inventory toolbar keeps all controls on one row at the default logical viewport")
 	asserts.true_value(_tree_has_icon_button_with_text(inventory_toolbar, "정렬"), "inventory toolbar uses icon-backed touch commands")
 	var inventory_grid := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip") as GridContainer
 	asserts.true_value(inventory_grid != null and inventory_grid.columns == 4, "inventory menu renders a mobile-friendly four-column grid")
