@@ -8,12 +8,14 @@ const LAYER_ENTITIES := "entities"
 const LAYER_INTERACTABLES := "interactables"
 
 const LANDMARK_ENTRY := "entry"
+const LANDMARK_BOSS_ANCHOR := "boss_anchor"
 const LANDMARK_CORE_DUNGEON := "core_dungeon"
 const LANDMARK_RUIN := "ruin"
 const LANDMARK_TELEPORT_ZONE := "teleport_zone"
 
 const REQUIRED_LANDMARK_TYPES := [
 	LANDMARK_ENTRY,
+	LANDMARK_BOSS_ANCHOR,
 	LANDMARK_CORE_DUNGEON,
 	LANDMARK_RUIN,
 	LANDMARK_TELEPORT_ZONE

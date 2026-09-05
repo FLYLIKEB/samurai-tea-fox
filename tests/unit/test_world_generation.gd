@@ -20,7 +20,7 @@ func run(asserts) -> void:
 
 	var biome := catalog.find_by_id("biomes", "common_region")
 	var generator := WorldGenerator.new()
-	var options := {}
+	var options := _generation_options(catalog)
 	var a := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
 	var b := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
 	var c := generator.generate(11038, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
@@ -36,7 +36,7 @@ func run(asserts) -> void:
 	asserts.true_value(a.chunks.size() > 0, "world records deterministic chunk composition")
 	asserts.equal(a.min_resource_nodes, 14, "minimum resource nodes come from balance data")
 	asserts.true_value(a.resource_nodes.size() >= a.min_resource_nodes, "world places minimum resources")
-	asserts.equal(a.connectivity.required_landmark_ids.size(), 4, "entry, teleport, ruin, and core dungeon are required")
+	asserts.equal(a.connectivity.required_landmark_ids.size(), 5, "entry, teleport, ruin, core dungeon, and boss anchor are required")
 	asserts.equal(a.biome_generation_rule_id, "common_region", "common biome uses its own generation ruleset")
 	asserts.true_value(a.has("world_data"), "generator exposes pure world data")
 	asserts.false_value(a.has("renderer_input"), "generator does not own renderer input projection")
@@ -44,6 +44,7 @@ func run(asserts) -> void:
 	a["renderer_input"] = _project_renderer_input(a)
 	asserts.equal(a.renderer_input.read_only, true, "renderer input is read-only projection")
 	_assert_teleport_landmark_metadata(asserts, a.world_data, "common_region")
+	_assert_core_dungeon_contract(asserts, a, "common_region", "dungeon_4", "chr_3")
 	_assert_renderer_source_paths_exist(asserts, a.renderer_input)
 	_assert_large_fenced_house(asserts, a)
 	_assert_path_edge_fences(asserts, a)
@@ -67,7 +68,7 @@ func run(asserts) -> void:
 			biome,
 			catalog.get_definitions("balance"),
 			catalog.get_definitions("items"),
-			{"progression_projection": progression_result.progression_state.to_projection()}
+			_generation_options(catalog, {"progression_projection": progression_result.progression_state.to_projection()})
 		)
 		asserts.true_value(projected.ok, "world generation succeeds with progression projection")
 		projected["renderer_input"] = _project_renderer_input(projected, progression_result.progression_state.to_projection())
@@ -90,7 +91,7 @@ func run(asserts) -> void:
 		_assert_continuous_water_stroke(asserts, generated)
 		_assert_resources_near_templates(asserts, generated)
 
-	var impossible_options := {"min_resource_nodes": 5000, "retry_limit": 2, "max_resource_placement_attempts": 32}
+	var impossible_options := _generation_options(catalog, {"min_resource_nodes": 5000, "retry_limit": 2, "max_resource_placement_attempts": 32})
 	var failed := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), impossible_options)
 	asserts.false_value(failed.ok, "generator reports failure after retry cap")
 	asserts.equal(failed.retry_limit, 2, "failure records retry limit")
@@ -115,28 +116,49 @@ func run(asserts) -> void:
 	for item in catalog.get_definitions("balance"):
 		if item.get("id", "") != "biome_min_resource_nodes":
 			balance_without_minimum.append(item)
-	var missing_minimum := generator.generate(11037, catalog.data_version, biome, balance_without_minimum, catalog.get_definitions("items"))
+	var missing_minimum := generator.generate(11037, catalog.data_version, biome, balance_without_minimum, catalog.get_definitions("items"), options)
 	asserts.false_value(missing_minimum.ok, "minimum resource count is not hidden behind production fallback")
 	asserts.equal(missing_minimum.failure_reason, "missing_min_resource_nodes_config", "missing minimum resource count is explicit")
 
 	var unknown_biome := biome.duplicate(true)
 	unknown_biome.id = "unimplemented_region"
-	var unsupported := generator.generate(11037, catalog.data_version, unknown_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var unsupported := generator.generate(11037, catalog.data_version, unknown_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
 	asserts.false_value(unsupported.ok, "invalid profile identity is not silently treated as common terrain")
 	asserts.equal(unsupported.failure_reason, "invalid_biome_generation_profile_id", "invalid profile identity fails explicitly")
 
 	var unknown_chunk_rule_biome := biome.duplicate(true)
 	unknown_chunk_rule_biome.generation_chunk_rule_ids = ["unknown_chunk_rule"]
-	var unknown_rule := generator.generate(11037, catalog.data_version, unknown_chunk_rule_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var unknown_rule := generator.generate(11037, catalog.data_version, unknown_chunk_rule_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
+
+	var missing_dungeons := options.duplicate(true)
+	missing_dungeons.erase("dungeon_definitions")
+	var missing_core_dungeon := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), missing_dungeons)
+	asserts.false_value(missing_core_dungeon.ok, "core dungeon definitions are required")
+	asserts.equal(missing_core_dungeon.failure_reason, "missing_core_dungeon_definitions", "missing core dungeon definition failure is explicit")
+
+	var duplicate_options := _generation_options(catalog, {"dungeon_definitions": _with_duplicate_common_dungeon(catalog.get_definitions("dungeons"))})
+	var duplicate_core_dungeon := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), duplicate_options)
+	asserts.false_value(duplicate_core_dungeon.ok, "duplicate core dungeons for one biome fail")
+	asserts.equal(duplicate_core_dungeon.failure_reason, "duplicate_core_dungeon_definitions", "duplicate core dungeon failure is explicit")
+
+	var missing_boss_options := _generation_options(catalog, {"dungeon_definitions": _with_common_dungeon_boss_id(catalog.get_definitions("dungeons"), "")})
+	var missing_boss := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), missing_boss_options)
+	asserts.false_value(missing_boss.ok, "core dungeon without boss ID fails")
+	asserts.equal(missing_boss.failure_reason, "missing_core_dungeon_boss_id", "missing boss ID failure is explicit")
+
+	var cross_biome_options := _generation_options(catalog, {"dungeon_definitions": _with_common_dungeon_biomes(catalog.get_definitions("dungeons"), ["mountain_region"])})
+	var cross_biome := generator.generate(11037, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), cross_biome_options)
+	asserts.false_value(cross_biome.ok, "wrong biome core dungeon relation fails")
+	asserts.equal(cross_biome.failure_reason, "missing_core_dungeon_definition", "cross-biome core dungeon relation failure is explicit")
 	asserts.false_value(unknown_rule.ok, "unknown chunk rule IDs fail before generation")
 	asserts.equal(unknown_rule.failure_reason, "unsupported_biome_generation_chunk_rule", "unknown chunk rule failure is explicit")
 
 func _assert_mountain_generation(asserts, catalog, generator: WorldGenerator) -> void:
 	var mountain: Dictionary = catalog.find_by_id("biomes", "mountain_region")
 	asserts.false_value(mountain.is_empty(), "mountain biome definition exists")
-	var generated := generator.generate(22033, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	var repeated := generator.generate(22033, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	var alternate := generator.generate(22034, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var generated := generator.generate(22033, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
+	var repeated := generator.generate(22033, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
+	var alternate := generator.generate(22034, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
 	asserts.true_value(generated.ok, "mountain world generation succeeds")
 	asserts.equal(_canonical_world(generated), _canonical_world(repeated), "mountain generation is deterministic for the same seed")
 	asserts.true_value(_canonical_world(generated) != _canonical_world(alternate), "mountain generation varies by seed")
@@ -157,15 +179,16 @@ func _assert_mountain_generation(asserts, catalog, generator: WorldGenerator) ->
 	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_MOUNTAIN_CONIFER, _terrain_source_id(WorldGenerator.TERRAIN_MOUNTAIN_SLOPE), _tree_source_id(WorldGenerator.TERRAIN_MOUNTAIN_CONIFER), "mountain conifer")
 	_assert_mountain_renderer_sources(asserts, generated.renderer_input)
 	_assert_landmark_terrain_ids(asserts, generated.landmarks, mountain.generation_terrain_ids)
+	_assert_core_dungeon_contract(asserts, generated, "mountain_region", "dungeon_6", "chr_7")
 	_assert_resource_ids_resolve_to_mountain_materials(asserts, generated.resource_nodes, mountain, catalog.get_definitions("items"))
 	_assert_common_templates(asserts, generated)
 	_assert_continuous_water_stroke(asserts, generated)
 	_assert_resources_near_templates(asserts, generated)
 
 	for seed in range(22000, 22020):
-		var sampled := generator.generate(seed, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+		var sampled := generator.generate(seed, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
 		asserts.true_value(sampled.ok, "mountain seed %d generates successfully" % seed)
-		asserts.equal(_canonical_world(sampled), _canonical_world(generator.generate(seed, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"))), "mountain seed %d remains deterministic" % seed)
+		asserts.equal(_canonical_world(sampled), _canonical_world(generator.generate(seed, catalog.data_version, mountain, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))), "mountain seed %d remains deterministic" % seed)
 		sampled["renderer_input"] = _project_renderer_input(sampled)
 		asserts.true_value(sampled.connectivity.valid, "mountain seed %d keeps landmarks connected" % seed)
 		asserts.true_value(sampled.facility_accessibility.valid, "mountain seed %d keeps facilities accessible" % seed)
@@ -173,16 +196,16 @@ func _assert_mountain_generation(asserts, catalog, generator: WorldGenerator) ->
 
 	var missing_facility_biome: Dictionary = mountain.duplicate(true)
 	missing_facility_biome.generation_minimum_facility_nodes = 99
-	var missing_facility := generator.generate(22033, catalog.data_version, missing_facility_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var missing_facility := generator.generate(22033, catalog.data_version, missing_facility_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
 	asserts.false_value(missing_facility.ok, "mountain profile rejects impossible facility minimum")
 	asserts.equal(missing_facility.failure_reason, "invalid_biome_minimum_facility_nodes", "invalid mountain facility minimum fails explicitly")
 
 func _assert_wasteland_generation(asserts, catalog, generator: WorldGenerator) -> void:
 	var wasteland: Dictionary = catalog.find_by_id("biomes", "wasteland")
 	asserts.false_value(wasteland.is_empty(), "wasteland biome definition exists")
-	var generated := generator.generate(34033, catalog.data_version, wasteland, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	var repeated := generator.generate(34033, catalog.data_version, wasteland, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	var alternate := generator.generate(34034, catalog.data_version, wasteland, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var generated := generator.generate(34033, catalog.data_version, wasteland, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
+	var repeated := generator.generate(34033, catalog.data_version, wasteland, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
+	var alternate := generator.generate(34034, catalog.data_version, wasteland, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
 	asserts.true_value(generated.ok, "wasteland world generation succeeds")
 	asserts.equal(_canonical_world(generated), _canonical_world(repeated), "wasteland generation is deterministic for the same seed")
 	asserts.true_value(_canonical_world(generated) != _canonical_world(alternate), "wasteland generation varies by seed")
@@ -203,6 +226,7 @@ func _assert_wasteland_generation(asserts, catalog, generator: WorldGenerator) -
 	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_WASTELAND_DEAD_TREE, _terrain_source_id(WorldGenerator.TERRAIN_WASTELAND_DRY_SOIL), _tree_source_id(WorldGenerator.TERRAIN_WASTELAND_DEAD_TREE), "wasteland dead tree")
 	_assert_wasteland_renderer_sources(asserts, generated.renderer_input)
 	_assert_landmark_terrain_ids(asserts, generated.landmarks, wasteland.generation_terrain_ids)
+	_assert_core_dungeon_contract(asserts, generated, "wasteland", "dungeon_1", "chr_2")
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, wasteland, catalog.get_definitions("items"))
 	_assert_wasteland_chunk_features(asserts, generated.chunks)
 	_assert_common_templates(asserts, generated)
@@ -210,9 +234,9 @@ func _assert_wasteland_generation(asserts, catalog, generator: WorldGenerator) -
 	_assert_resources_near_templates(asserts, generated)
 
 	for seed in range(34000, 34025):
-		var sampled := generator.generate(seed, catalog.data_version, wasteland, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+		var sampled := generator.generate(seed, catalog.data_version, wasteland, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
 		asserts.true_value(sampled.ok, "wasteland seed %d generates successfully" % seed)
-		asserts.equal(_canonical_world(sampled), _canonical_world(generator.generate(seed, catalog.data_version, wasteland, catalog.get_definitions("balance"), catalog.get_definitions("items"))), "wasteland seed %d remains deterministic" % seed)
+		asserts.equal(_canonical_world(sampled), _canonical_world(generator.generate(seed, catalog.data_version, wasteland, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))), "wasteland seed %d remains deterministic" % seed)
 		sampled["renderer_input"] = _project_renderer_input(sampled)
 		asserts.true_value(sampled.connectivity.valid, "wasteland seed %d keeps landmarks connected" % seed)
 		asserts.true_value(sampled.facility_accessibility.valid, "wasteland seed %d keeps facilities accessible" % seed)
@@ -222,17 +246,17 @@ func _assert_wasteland_generation(asserts, catalog, generator: WorldGenerator) -
 	var missing_facility_biome: Dictionary = wasteland.duplicate(true)
 	missing_facility_biome.generation_facility_ids = []
 	missing_facility_biome.generation_minimum_facility_nodes = 1
-	var missing_facility := generator.generate(34033, catalog.data_version, missing_facility_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var missing_facility := generator.generate(34033, catalog.data_version, missing_facility_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
 	asserts.false_value(missing_facility.ok, "wasteland profile rejects a minimum above available facility IDs")
 	asserts.equal(missing_facility.failure_reason, "invalid_biome_minimum_facility_nodes", "invalid wasteland facility minimum fails explicitly")
 
 func _assert_snowfield_generation(asserts, catalog, generator: WorldGenerator) -> void:
 	var snowfield: Dictionary = catalog.find_by_id("biomes", "snowfield")
 	asserts.false_value(snowfield.is_empty(), "snowfield biome definition exists")
-	var generated := generator.generate(35033, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	var repeated := generator.generate(35033, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	var alternate := generator.generate(35034, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	var next_version := generator.generate(35033, "notion-2026-09-02", snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var generated := generator.generate(35033, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
+	var repeated := generator.generate(35033, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
+	var alternate := generator.generate(35034, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
+	var next_version := generator.generate(35033, "notion-2026-09-02", snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
 	asserts.true_value(generated.ok, "snowfield world generation succeeds")
 	asserts.equal(_canonical_world(generated), _canonical_world(repeated), "snowfield generation is deterministic for the same seed")
 	asserts.true_value(_canonical_world(generated) != _canonical_world(alternate), "snowfield generation varies by seed")
@@ -254,6 +278,7 @@ func _assert_snowfield_generation(asserts, catalog, generator: WorldGenerator) -
 	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_SNOWFIELD_PINE, _terrain_source_id(WorldGenerator.TERRAIN_SNOWFIELD_SNOW), _tree_source_id(WorldGenerator.TERRAIN_SNOWFIELD_PINE), "snowfield pine")
 	_assert_snowfield_renderer_sources(asserts, generated.renderer_input)
 	_assert_landmark_terrain_ids(asserts, generated.landmarks, snowfield.generation_terrain_ids)
+	_assert_core_dungeon_contract(asserts, generated, "snowfield", "dungeon_5", "chr_4")
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, snowfield, catalog.get_definitions("items"))
 	_assert_snowfield_chunk_features(asserts, generated.chunks)
 	_assert_no_temperature_state(asserts, generated)
@@ -262,9 +287,9 @@ func _assert_snowfield_generation(asserts, catalog, generator: WorldGenerator) -
 	_assert_resources_near_templates(asserts, generated)
 
 	for seed in range(35000, 35025):
-		var sampled := generator.generate(seed, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+		var sampled := generator.generate(seed, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
 		asserts.true_value(sampled.ok, "snowfield seed %d generates successfully" % seed)
-		asserts.equal(_canonical_world(sampled), _canonical_world(generator.generate(seed, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"))), "snowfield seed %d remains deterministic" % seed)
+		asserts.equal(_canonical_world(sampled), _canonical_world(generator.generate(seed, catalog.data_version, snowfield, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))), "snowfield seed %d remains deterministic" % seed)
 		sampled["renderer_input"] = _project_renderer_input(sampled)
 		asserts.true_value(sampled.connectivity.valid, "snowfield seed %d keeps landmarks connected" % seed)
 		asserts.true_value(sampled.facility_accessibility.valid, "snowfield seed %d keeps facilities accessible" % seed)
@@ -274,17 +299,17 @@ func _assert_snowfield_generation(asserts, catalog, generator: WorldGenerator) -
 	var missing_facility_biome: Dictionary = snowfield.duplicate(true)
 	missing_facility_biome.generation_facility_ids = []
 	missing_facility_biome.generation_minimum_facility_nodes = 1
-	var missing_facility := generator.generate(35033, catalog.data_version, missing_facility_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var missing_facility := generator.generate(35033, catalog.data_version, missing_facility_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
 	asserts.false_value(missing_facility.ok, "snowfield profile rejects a minimum above available facility IDs")
 	asserts.equal(missing_facility.failure_reason, "invalid_biome_minimum_facility_nodes", "invalid snowfield facility minimum fails explicitly")
 
 func _assert_rainforest_generation(asserts, catalog, generator: WorldGenerator) -> void:
 	var rainforest: Dictionary = catalog.find_by_id("biomes", "rainforest")
 	asserts.false_value(rainforest.is_empty(), "rainforest biome definition exists")
-	var generated := generator.generate(36033, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	var repeated := generator.generate(36033, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	var alternate := generator.generate(36034, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	var next_version := generator.generate(36033, "notion-2026-09-02", rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var generated := generator.generate(36033, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
+	var repeated := generator.generate(36033, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
+	var alternate := generator.generate(36034, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
+	var next_version := generator.generate(36033, "notion-2026-09-02", rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
 	asserts.true_value(generated.ok, "rainforest world generation succeeds")
 	asserts.equal(_canonical_world(generated), _canonical_world(repeated), "rainforest generation is deterministic for the same seed")
 	asserts.true_value(_canonical_world(generated) != _canonical_world(alternate), "rainforest generation varies by seed")
@@ -306,6 +331,7 @@ func _assert_rainforest_generation(asserts, catalog, generator: WorldGenerator) 
 	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_RAINFOREST_AGARWOOD, _terrain_source_id(WorldGenerator.TERRAIN_RAINFOREST_RIVER_BANK), _tree_source_id(WorldGenerator.TERRAIN_RAINFOREST_AGARWOOD), "rainforest agarwood")
 	_assert_rainforest_renderer_sources(asserts, generated.renderer_input)
 	_assert_landmark_terrain_ids(asserts, generated.landmarks, rainforest.generation_terrain_ids)
+	_assert_core_dungeon_contract(asserts, generated, "rainforest", "dungeon_3", "chr_6")
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, rainforest, catalog.get_definitions("items"))
 	_assert_rainforest_rare_resource_ids(asserts, generated.resource_nodes)
 	_assert_rainforest_chunk_features(asserts, generated.chunks)
@@ -315,9 +341,9 @@ func _assert_rainforest_generation(asserts, catalog, generator: WorldGenerator) 
 	_assert_resources_near_templates(asserts, generated)
 
 	for seed in range(36000, 36025):
-		var sampled := generator.generate(seed, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+		var sampled := generator.generate(seed, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
 		asserts.true_value(sampled.ok, "rainforest seed %d generates successfully" % seed)
-		asserts.equal(_canonical_world(sampled), _canonical_world(generator.generate(seed, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"))), "rainforest seed %d remains deterministic" % seed)
+		asserts.equal(_canonical_world(sampled), _canonical_world(generator.generate(seed, catalog.data_version, rainforest, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))), "rainforest seed %d remains deterministic" % seed)
 		sampled["renderer_input"] = _project_renderer_input(sampled)
 		asserts.true_value(sampled.connectivity.valid, "rainforest seed %d keeps landmarks connected" % seed)
 		asserts.true_value(sampled.facility_accessibility.valid, "rainforest seed %d keeps facilities accessible" % seed)
@@ -327,7 +353,7 @@ func _assert_rainforest_generation(asserts, catalog, generator: WorldGenerator) 
 	var missing_facility_biome: Dictionary = rainforest.duplicate(true)
 	missing_facility_biome.generation_facility_ids = []
 	missing_facility_biome.generation_minimum_facility_nodes = 1
-	var missing_facility := generator.generate(36033, catalog.data_version, missing_facility_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var missing_facility := generator.generate(36033, catalog.data_version, missing_facility_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), _generation_options(catalog))
 	asserts.false_value(missing_facility.ok, "rainforest profile rejects a minimum above available facility IDs")
 	asserts.equal(missing_facility.failure_reason, "invalid_biome_minimum_facility_nodes", "invalid rainforest facility minimum fails explicitly")
 
@@ -364,9 +390,10 @@ func _assert_profile_only_fixture_generation(asserts, catalog, generator: WorldG
 	fixture.generation_facility_ids = []
 	fixture.generation_facility_source_ids = []
 	fixture.generation_minimum_facility_nodes = 0
-	var generated := generator.generate(41037, catalog.data_version, fixture, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	var repeated := generator.generate(41037, catalog.data_version, fixture, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	var alternate := generator.generate(41038, catalog.data_version, fixture, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var fixture_options := _generation_options(catalog, {"dungeon_definitions": _fixture_dungeon_definitions()})
+	var generated := generator.generate(41037, catalog.data_version, fixture, catalog.get_definitions("balance"), catalog.get_definitions("items"), fixture_options)
+	var repeated := generator.generate(41037, catalog.data_version, fixture, catalog.get_definitions("balance"), catalog.get_definitions("items"), fixture_options)
+	var alternate := generator.generate(41038, catalog.data_version, fixture, catalog.get_definitions("balance"), catalog.get_definitions("items"), fixture_options)
 	asserts.true_value(generated.ok, "profile-only fixture biome generates without a generator biome branch")
 	asserts.equal(generated.biome_generation_rule_id, "fixture_bamboo_grove", "profile-only fixture records injected profile id")
 	asserts.equal(_canonical_world(generated), _canonical_world(repeated), "profile-only fixture is deterministic")
@@ -394,6 +421,33 @@ func _assert_resource_accessibility(asserts, world: Dictionary) -> void:
 		_assert_asset_reference_exists(asserts, String(entity_sources.get(node.id, "")), "%s resource source exists" % node.id)
 	var access_validation := validator.validate_access_points(world.world_data, access_points)
 	asserts.true_value(access_validation.valid, "all resource access points are entry-reachable")
+
+func _assert_core_dungeon_contract(asserts, world: Dictionary, biome_id: String, dungeon_id: String, boss_id: String) -> void:
+	asserts.equal(String(world.core_dungeon_contract.get("biome_id", "")), biome_id, "%s records core dungeon contract biome" % biome_id)
+	asserts.equal(String(world.core_dungeon_contract.get("dungeon_id", "")), dungeon_id, "%s records core dungeon id" % biome_id)
+	asserts.equal(String(world.core_dungeon_contract.get("boss_id", "")), boss_id, "%s records boss stable id" % biome_id)
+	asserts.true_value(world.core_dungeon_anchor_integrity.valid, "%s core dungeon anchors are valid" % biome_id)
+	var core_dungeons := []
+	var boss_anchors := []
+	var occupied_positions := _occupied_world_positions(world.world_data)
+	var reachable := ConnectivityValidator.new().reachable_cell_keys_from_entry(world.world_data)
+	for landmark in world.world_data.required_landmarks:
+		var kind := String(landmark.get("kind", ""))
+		if kind == WorldData.LANDMARK_CORE_DUNGEON:
+			core_dungeons.append(landmark)
+		elif kind == WorldData.LANDMARK_BOSS_ANCHOR:
+			boss_anchors.append(landmark)
+	asserts.equal(core_dungeons.size(), 1, "%s has exactly one core dungeon landmark" % biome_id)
+	asserts.equal(boss_anchors.size(), 1, "%s has exactly one boss anchor" % biome_id)
+	for landmark in core_dungeons + boss_anchors:
+		var metadata: Dictionary = landmark.get("metadata", {})
+		var position := _vector_from_dictionary(landmark.position)
+		asserts.equal(String(metadata.get("dungeon_id", "")), dungeon_id, "%s landmark carries core dungeon id" % landmark.id)
+		asserts.equal(String(metadata.get("boss_id", "")), boss_id, "%s landmark carries boss id" % landmark.id)
+		asserts.true_value(reachable.has(_key(position)), "%s landmark is reachable from entry" % landmark.id)
+		asserts.false_value(occupied_positions.has(_key(position)), "%s landmark is not occupied by an entity/facility" % landmark.id)
+	if not core_dungeons.is_empty() and not boss_anchors.is_empty():
+		asserts.equal(_manhattan_distance(core_dungeons[0].position, boss_anchors[0].position), 1, "%s boss anchor is adjacent to dungeon entrance" % biome_id)
 
 func _assert_large_fenced_house(asserts, world: Dictionary) -> void:
 	var house: Dictionary = world.get("large_house", {})
@@ -924,6 +978,62 @@ func _assert_no_forbidden_survival_state(asserts, world: Dictionary) -> void:
 	asserts.false_value(text.contains("disease"), "rainforest generation does not add disease state")
 	asserts.false_value(text.contains("독"), "rainforest generation does not add 독 state")
 	asserts.false_value(text.contains("질병"), "rainforest generation does not add 질병 state")
+
+func _generation_options(catalog, overrides := {}) -> Dictionary:
+	var options := {
+		"dungeon_definitions": catalog.get_definitions("dungeons"),
+		"boss_character_definitions": catalog.get_definitions("characters")
+	}
+	for key in overrides.keys():
+		options[key] = overrides[key]
+	return options
+
+func _with_duplicate_common_dungeon(dungeons: Array) -> Array:
+	var copied := dungeons.duplicate(true)
+	for dungeon in dungeons:
+		if dungeon is Dictionary and String(dungeon.get("id", "")) == "dungeon_4":
+			var duplicate: Dictionary = dungeon.duplicate(true)
+			duplicate.id = "duplicate_common_dungeon"
+			copied.append(duplicate)
+			break
+	return copied
+
+func _with_common_dungeon_boss_id(dungeons: Array, boss_id: String) -> Array:
+	var copied := []
+	for dungeon in dungeons:
+		var row = dungeon.duplicate(true) if dungeon is Dictionary else dungeon
+		if row is Dictionary and String(row.get("id", "")) == "dungeon_4":
+			row.boss_id = boss_id
+		copied.append(row)
+	return copied
+
+func _with_common_dungeon_biomes(dungeons: Array, biome_ids: Array) -> Array:
+	var copied := []
+	for dungeon in dungeons:
+		var row = dungeon.duplicate(true) if dungeon is Dictionary else dungeon
+		if row is Dictionary and String(row.get("id", "")) == "dungeon_4":
+			row.biome_ids = biome_ids.duplicate(true)
+		copied.append(row)
+	return copied
+
+func _fixture_dungeon_definitions() -> Array:
+	return [{
+		"id": "fixture_core_dungeon",
+		"name": "Fixture Core Dungeon",
+		"status": "확정",
+		"biome_ids": ["fixture_bamboo_grove"],
+		"boss": "Fixture Boss",
+		"boss_id": "chr_3"
+	}]
+
+func _occupied_world_positions(world_data: Dictionary) -> Dictionary:
+	var occupied := {}
+	for cell in world_data.get("cells", []):
+		var layers: Dictionary = cell.get("layers", {})
+		if layers.get(WorldData.LAYER_ENTITIES, []).is_empty() and layers.get(WorldData.LAYER_FACILITIES, []).is_empty():
+			continue
+		occupied[_key(_vector_from_dictionary(cell.position))] = true
+	return occupied
 
 func _manhattan_distance(a: Dictionary, b: Dictionary) -> int:
 	return abs(int(a.x) - int(b.x)) + abs(int(a.y) - int(b.y))

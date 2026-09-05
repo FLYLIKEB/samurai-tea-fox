@@ -1342,6 +1342,15 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(common["generation_resource_source_by_id"], {})
         self.assertEqual(common["generation_minimum_facility_nodes"], 0)
 
+    def test_dev_108_dungeon_export_preserves_boss_character_relation(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        dungeons = schema["datasets"]["dungeons"]
+        self.assertEqual(dungeons["relations"]["boss_id"], "characters")
+        self.assertEqual(
+            dungeons["notion"]["relation_map"]["보스 캐릭터"],
+            {"field": "boss_id", "target": "characters", "many": False},
+        )
+
     def test_dev_104_biome_generation_profile_rejects_missing_or_invalid_ids(self):
         invalid = copy.deepcopy(self.capture)
         biome = invalid["datasets"]["biomes"]["items"][0]

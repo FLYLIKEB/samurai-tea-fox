@@ -73,6 +73,8 @@ func _assert_world_generation_connects_spawn_pool(asserts, catalog: DataCatalog)
 	var biome: Dictionary = catalog.find_by_id("biomes", "common_region")
 	var options := {
 		"monster_definitions": catalog.get_definitions("monsters"),
+		"dungeon_definitions": catalog.get_definitions("dungeons"),
+		"boss_character_definitions": catalog.get_definitions("characters"),
 		"time_phase": "night"
 	}
 	var generated := generator.generate(42117, catalog.data_version, biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)

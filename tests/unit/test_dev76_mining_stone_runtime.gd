@@ -57,7 +57,11 @@ func _generate_world(catalog: DataCatalog, generator: WorldGenerator, biome_id: 
 		catalog.data_version,
 		biome,
 		catalog.get_definitions("balance"),
-		catalog.get_definitions("items")
+		catalog.get_definitions("items"),
+		{
+			"dungeon_definitions": catalog.get_definitions("dungeons"),
+			"boss_character_definitions": catalog.get_definitions("characters")
+		}
 	)
 	if bool(world.get("ok", false)):
 		world["renderer_input"] = WorldRendererProjection.new().project(world["world_data"])

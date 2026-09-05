@@ -127,6 +127,11 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 	var min_resource_nodes := int(min_resource_result.value)
 	var max_resource_placement_attempts := int(options.get("max_resource_placement_attempts", max(64, min_resource_nodes * 24)))
 	var core_dungeon_count := _balance_value(balance_definitions, "biome_core_dungeon_count", 1)
+	if int(core_dungeon_count) != 1:
+		return _failure(seed, data_version, biome_definition, retry_limit, "invalid_core_dungeon_count")
+	var core_contract_result := _core_dungeon_contract(biome_definition, options)
+	if not core_contract_result.ok:
+		return _failure(seed, data_version, biome_definition, retry_limit, core_contract_result.reason, core_contract_result)
 	# Every overworld must expose exactly one primary teleport zone, even when
 	# balance data is missing or temporarily sets the count to zero.
 	var teleport_zone_count := maxi(1, _balance_value(balance_definitions, "biome_teleport_zone_count", 1))
@@ -154,7 +159,8 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 			resource_ids,
 			progression_projection,
 			profile,
-			monster_spawn_pool
+			monster_spawn_pool,
+			core_contract_result.contract
 		)
 		if world.ok:
 			world.template_id = String(template.id)
@@ -162,13 +168,13 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 
 	return _failure(seed, data_version, biome_definition, retry_limit, "connectivity_or_resource_validation_failed")
 
-func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, layout_rng: DeterministicRng, content_rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, progression_projection: Dictionary, profile: Dictionary, monster_spawn_pool: Dictionary) -> Dictionary:
+func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, layout_rng: DeterministicRng, content_rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, progression_projection: Dictionary, profile: Dictionary, monster_spawn_pool: Dictionary, core_dungeon_contract: Dictionary) -> Dictionary:
 	var world_data := WorldData.new(MAP_WIDTH, MAP_HEIGHT, String(profile.default_terrain_id), bool(profile.default_walkable))
 	var chunks := _compose_chunks(layout_rng, world_data, profile)
 	_apply_map_boundary(world_data, profile, progression_projection.get("edge_exit_positions", []))
 	var templates := _apply_common_templates(world_data, layout_rng, chunks, profile)
 	var biome_id := String(biome_definition.get("id", ""))
-	var landmarks := _place_required_landmarks(world_data, layout_rng, core_dungeon_count, teleport_zone_count, biome_id, profile)
+	var landmarks := _place_required_landmarks(world_data, layout_rng, core_dungeon_count, teleport_zone_count, biome_id, profile, core_dungeon_contract)
 	_carve_landmark_paths(world_data, landmarks, profile)
 	var large_house_result := _place_large_fenced_house(world_data, layout_rng, profile)
 	if not large_house_result.ok:
@@ -201,27 +207,31 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 		"facility_nodes": _semantic_node_snapshots(facility_nodes),
 		"resource_nodes": _semantic_node_snapshots(resource_nodes),
 		"monster_spawn_pool": monster_spawn_pool.duplicate(true),
+		"core_dungeon_contract": core_dungeon_contract.duplicate(true),
 		"min_resource_nodes": min_resource_nodes,
 		"retry_attempt": attempt,
 		"retry_limit": retry_limit,
 		"facility_accessibility": {},
 		"resource_accessibility": {},
 		"connectivity": {},
+		"core_dungeon_anchor_integrity": {},
 		"world_data": _world_data_projection_snapshot(world_data)
 	}
 
 	world.connectivity = validator.validate(world)
 	world.facility_accessibility = validator.validate_access_points(world.world_data, facility_access_points)
 	world.resource_accessibility = validator.validate_access_points(world.world_data, access_points)
+	world.core_dungeon_anchor_integrity = _validate_core_dungeon_anchor_integrity(world.world_data, core_dungeon_contract)
 	world.ok = (
 		world.connectivity.valid
 		and world.facility_accessibility.valid
 		and world.resource_accessibility.valid
+		and world.core_dungeon_anchor_integrity.valid
 		and facility_nodes.size() >= int(profile.minimum_facility_nodes)
 		and resource_nodes.size() >= min_resource_nodes
 	)
 	if not world.ok:
-		world.failure_reason = _attempt_failure_reason(world.connectivity, world.facility_accessibility, world.resource_accessibility, facility_nodes.size(), int(profile.minimum_facility_nodes), resource_nodes.size(), min_resource_nodes)
+		world.failure_reason = _attempt_failure_reason(world.connectivity, world.facility_accessibility, world.resource_accessibility, world.core_dungeon_anchor_integrity, facility_nodes.size(), int(profile.minimum_facility_nodes), resource_nodes.size(), min_resource_nodes)
 	return world
 
 static func _load_template_bank() -> Array:
@@ -761,7 +771,7 @@ func _paint_shore_cell(world_data: WorldData, position: Vector2i, profile: Dicti
 	world_data.set_terrain(position, String(profile.shore_terrain_id), true)
 	shore_cells.append(position)
 
-func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, core_dungeon_count: int, teleport_zone_count: int, biome_id: String, profile: Dictionary) -> Array:
+func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, core_dungeon_count: int, teleport_zone_count: int, biome_id: String, profile: Dictionary, core_dungeon_contract: Dictionary) -> Array:
 	var landmarks := []
 	landmarks.append(_add_landmark(world_data, WorldData.LANDMARK_ENTRY, 0, Vector2i(3, rng.next_range(8, MAP_HEIGHT - 9)), profile))
 
@@ -786,13 +796,24 @@ func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, cor
 	))
 
 	for index in range(core_dungeon_count):
-		landmarks.append(_add_landmark(
+		var dungeon_position := Vector2i(rng.next_range(MAP_WIDTH - 6, MAP_WIDTH - 3), rng.next_range(6, MAP_HEIGHT - 7))
+		var dungeon_landmark := _add_landmark(
 			world_data,
 			WorldData.LANDMARK_CORE_DUNGEON,
 			index,
 			# Keep ruins in the far-east zone, well away from central teleports.
-			Vector2i(rng.next_range(MAP_WIDTH - 6, MAP_WIDTH - 3), rng.next_range(6, MAP_HEIGHT - 7)),
-			profile
+			dungeon_position,
+			profile,
+			_core_dungeon_landmark_metadata(core_dungeon_contract)
+		)
+		landmarks.append(dungeon_landmark)
+		landmarks.append(_add_landmark(
+			world_data,
+			WorldData.LANDMARK_BOSS_ANCHOR,
+			index,
+			dungeon_position + Vector2i.LEFT,
+			profile,
+			_boss_anchor_landmark_metadata(core_dungeon_contract, String(dungeon_landmark.id))
 		))
 
 	return landmarks
@@ -1031,9 +1052,16 @@ func _resource_candidate_positions(rng: DeterministicRng, templates: Array, land
 	for path_cell in _template_path_cells(templates):
 		if rng.next_range(0, 99) < 40:
 			candidates.append_array(_cardinal_positions_near(path_cell))
+	var landmark_positions := {}
 	for landmark in landmarks:
+		landmark_positions[_key(_vector_from_dictionary(landmark.get("position", {})))] = true
 		candidates.append_array(_cluster_positions_near(_vector_from_dictionary(landmark.get("position", {}))))
-	return _unique_positions(candidates)
+	var filtered := []
+	for candidate in candidates:
+		if landmark_positions.has(_key(candidate)):
+			continue
+		filtered.append(candidate)
+	return _unique_positions(filtered)
 
 func _resource_cluster_anchors(templates: Array) -> Array:
 	for template in templates:
@@ -1203,6 +1231,111 @@ func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 		"resource_type_allowlist": ["재료", "향"],
 		"minimum_facility_nodes": minimum_facility_nodes
 	})
+
+func _core_dungeon_contract(biome_definition: Dictionary, options: Dictionary) -> Dictionary:
+	var biome_id := String(biome_definition.get("id", ""))
+	var dungeon_definitions = options.get("dungeon_definitions", [])
+	if typeof(dungeon_definitions) != TYPE_ARRAY or dungeon_definitions.is_empty():
+		return {"ok": false, "reason": "missing_core_dungeon_definitions", "biome_id": biome_id}
+	var boss_character_definitions = options.get("boss_character_definitions", [])
+	if typeof(boss_character_definitions) != TYPE_ARRAY or boss_character_definitions.is_empty():
+		return {"ok": false, "reason": "missing_boss_character_definitions", "biome_id": biome_id}
+	var boss_character_ids := {}
+	for character in boss_character_definitions:
+		if character is Dictionary:
+			var character_id := String(character.get("id", ""))
+			if not character_id.is_empty():
+				boss_character_ids[character_id] = true
+	var matches := []
+	for dungeon in dungeon_definitions:
+		if dungeon is not Dictionary:
+			continue
+		if not _string_array_field(dungeon, "biome_ids").has(biome_id):
+			continue
+		if String(dungeon.get("status", "")) != "확정":
+			continue
+		matches.append(dungeon)
+	if matches.is_empty():
+		return {"ok": false, "reason": "missing_core_dungeon_definition", "biome_id": biome_id}
+	if matches.size() > 1:
+		return {"ok": false, "reason": "duplicate_core_dungeon_definitions", "biome_id": biome_id, "dungeon_ids": _definition_ids(matches)}
+	var dungeon: Dictionary = matches[0]
+	var dungeon_id := String(dungeon.get("id", ""))
+	if dungeon_id.is_empty():
+		return {"ok": false, "reason": "missing_core_dungeon_id", "biome_id": biome_id}
+	var boss_id := String(dungeon.get("boss_id", ""))
+	if boss_id.is_empty():
+		return {"ok": false, "reason": "missing_core_dungeon_boss_id", "biome_id": biome_id, "dungeon_id": dungeon_id}
+	if not boss_character_ids.has(boss_id):
+		return {"ok": false, "reason": "unknown_core_dungeon_boss_id", "biome_id": biome_id, "dungeon_id": dungeon_id, "boss_id": boss_id}
+	return {
+		"ok": true,
+		"contract": {
+			"biome_id": biome_id,
+			"dungeon_id": dungeon_id,
+			"dungeon_name": String(dungeon.get("name", "")),
+			"boss_id": boss_id,
+			"boss_name": String(dungeon.get("boss", ""))
+		}
+	}
+
+func _core_dungeon_landmark_metadata(contract: Dictionary) -> Dictionary:
+	return {
+		"biome_id": String(contract.get("biome_id", "")),
+		"dungeon_id": String(contract.get("dungeon_id", "")),
+		"dungeon_name": String(contract.get("dungeon_name", "")),
+		"boss_id": String(contract.get("boss_id", "")),
+		"boss_name": String(contract.get("boss_name", ""))
+	}
+
+func _boss_anchor_landmark_metadata(contract: Dictionary, dungeon_landmark_id: String) -> Dictionary:
+	var metadata := _core_dungeon_landmark_metadata(contract)
+	metadata["dungeon_landmark_id"] = dungeon_landmark_id
+	metadata["interaction"] = "boss_encounter"
+	return metadata
+
+func _validate_core_dungeon_anchor_integrity(world_data: Dictionary, contract: Dictionary) -> Dictionary:
+	var core_dungeons := []
+	var boss_anchors := []
+	for landmark in world_data.get("required_landmarks", []):
+		var kind := String(landmark.get("kind", landmark.get("type", "")))
+		if kind == WorldData.LANDMARK_CORE_DUNGEON:
+			core_dungeons.append(landmark)
+		elif kind == WorldData.LANDMARK_BOSS_ANCHOR:
+			boss_anchors.append(landmark)
+	if core_dungeons.size() != 1 or boss_anchors.size() != 1:
+		return {"valid": false, "reason": "invalid_core_dungeon_anchor_count", "core_dungeon_count": core_dungeons.size(), "boss_anchor_count": boss_anchors.size()}
+	for landmark in [core_dungeons[0], boss_anchors[0]]:
+		var metadata: Dictionary = landmark.get("metadata", {})
+		if String(metadata.get("dungeon_id", "")) != String(contract.get("dungeon_id", "")):
+			return {"valid": false, "reason": "core_dungeon_metadata_mismatch", "field": "dungeon_id"}
+		if String(metadata.get("boss_id", "")) != String(contract.get("boss_id", "")):
+			return {"valid": false, "reason": "core_dungeon_metadata_mismatch", "field": "boss_id"}
+		if _world_data_position_occupied(world_data, _vector_from_dictionary(landmark.get("position", {}))):
+			return {"valid": false, "reason": "core_dungeon_anchor_occupied", "landmark_id": String(landmark.get("id", ""))}
+	return {
+		"valid": true,
+		"dungeon_id": String(contract.get("dungeon_id", "")),
+		"boss_id": String(contract.get("boss_id", "")),
+		"core_dungeon_landmark_id": String(core_dungeons[0].get("id", "")),
+		"boss_anchor_landmark_id": String(boss_anchors[0].get("id", ""))
+	}
+
+func _world_data_position_occupied(world_data: Dictionary, position: Vector2i) -> bool:
+	for cell in world_data.get("cells", []):
+		var cell_position := _vector_from_dictionary(cell.get("position", {}))
+		if cell_position != position:
+			continue
+		var layers: Dictionary = cell.get("layers", {})
+		return not layers.get(WorldData.LAYER_ENTITIES, []).is_empty() or not layers.get(WorldData.LAYER_FACILITIES, []).is_empty()
+	return false
+
+func _definition_ids(definitions: Array) -> Array:
+	var ids := []
+	for definition in definitions:
+		if definition is Dictionary:
+			ids.append(String(definition.get("id", "")))
+	return ids
 
 func _profile_ok(profile: Dictionary) -> Dictionary:
 	return {"ok": true, "profile": profile}
@@ -1374,13 +1507,15 @@ func _minimum_resource_nodes(balance_definitions: Array, options: Dictionary) ->
 			return {"ok": true, "value": max(0, int(item.get("value", 0)))}
 	return {"ok": false, "reason": "missing_min_resource_nodes_config"}
 
-func _attempt_failure_reason(connectivity: Dictionary, facility_accessibility: Dictionary, resource_accessibility: Dictionary, facility_count: int, min_facility_nodes: int, resource_count: int, min_resource_nodes: int) -> String:
+func _attempt_failure_reason(connectivity: Dictionary, facility_accessibility: Dictionary, resource_accessibility: Dictionary, core_dungeon_anchor_integrity: Dictionary, facility_count: int, min_facility_nodes: int, resource_count: int, min_resource_nodes: int) -> String:
 	if not connectivity.valid:
 		return "connectivity_failed"
 	if not facility_accessibility.valid:
 		return "facility_accessibility_failed"
 	if not resource_accessibility.valid:
 		return "resource_accessibility_failed"
+	if not core_dungeon_anchor_integrity.valid:
+		return String(core_dungeon_anchor_integrity.get("reason", "core_dungeon_anchor_integrity_failed"))
 	if facility_count < min_facility_nodes:
 		return "minimum_facility_nodes_unmet"
 	if resource_count < min_resource_nodes:
