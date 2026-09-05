@@ -153,9 +153,18 @@ func run(asserts) -> void:
 	asserts.true_value(main.submit_action_command(GameCommand.new(GameCommand.Type.CRAFT_RECIPE, Vector2i.ZERO, -1, {"recipe_id": "bandage"})), "slice crafts a bandage through stable recipe ID")
 	main.player.resources.apply_damage(40)
 	var hp_before_bandage: int = main.player.resources.hp
+	var bandage_quantity_before_use: int = main.inventory.get_total_quantity("bandage")
 	asserts.true_value(main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.USE_CONSUMABLE)), "slice uses a bandage through Main quick consumable command")
+	asserts.false_value(main.consumable_service.to_snapshot().active_action.is_empty(), "bandage use starts a data-driven active action")
+	asserts.equal(main.player.resources.hp, hp_before_bandage, "bandage start does not heal before completion")
+	asserts.equal(main.inventory.get_total_quantity("bandage"), bandage_quantity_before_use, "bandage start does not consume before completion")
+	var bandage_action: Dictionary = main.consumable_service.to_snapshot().active_action
+	var bandage_use_seconds := float(bandage_action.get("use_seconds", 0.0))
+	asserts.true_value(bandage_use_seconds > 0.0, "bandage active action uses exported positive duration")
+	asserts.true_value(main.tick_consumable_runtime(bandage_use_seconds).completed, "bandage completes after its exported use duration")
 	asserts.true_value(main.player.resources.hp > hp_before_bandage, "bandage heals HP")
 	asserts.equal(main.inventory.get_total_quantity("bandage"), 0, "bandage use consumes the crafted item")
+	asserts.equal(main.consumable_service.to_snapshot().active_action, {}, "bandage completion clears active consumable action")
 	main.time_state.tick(300.0 + 120.0 + 1.0, main.player.resources)
 	asserts.equal(main.time_state.phase, TimeState.NIGHT, "slice can persist from night after daytime progress")
 
