@@ -3,6 +3,7 @@ extends SceneTree
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
+const WorldRendererProjection = preload("res://src/world/rendering/world_renderer_projection.gd")
 const WorldSceneRenderer = preload("res://src/world/rendering/world_scene_renderer.gd")
 
 const DEFAULT_OUTPUT_DIR := "res://artifacts/biome-previews"
@@ -68,17 +69,21 @@ func run() -> void:
 			catalog.data_version,
 			biome,
 			catalog.get_definitions("balance"),
-			catalog.get_definitions("items")
+			catalog.get_definitions("items"),
+			_generation_options(catalog)
 		)
 		if not generated.ok:
 			push_error("Biome generation failed: %s seed=%d result=%s" % [biome_id, seed, generated])
 			failures += 1
 			continue
+		var renderer_input := WorldRendererProjection.new().project(generated.get("world_data", {}))
+		generated["renderer_input"] = renderer_input
+		var owner_sources := _owner_sprite_sources(generated)
 
 		# Let the previous render finish before replacing the scene contents for
 		# the next biome, especially when the renderer queued old nodes for free.
 		await process_frame
-		var render_result: Dictionary = renderer.render(world_root, generated.renderer_input, _owner_sprite_sources(generated))
+		var render_result: Dictionary = renderer.render(world_root, renderer_input, owner_sources)
 		if not render_result.ok:
 			push_error("Biome render failed: %s seed=%d result=%s" % [biome_id, seed, render_result])
 			failures += 1
@@ -158,6 +163,12 @@ func _selected_specs() -> Array:
 			return [spec.duplicate(true)]
 	return []
 
+func _generation_options(catalog: DataCatalog) -> Dictionary:
+	return {
+		"dungeon_definitions": catalog.get_definitions("dungeons"),
+		"boss_character_definitions": catalog.get_definitions("characters")
+	}
+
 func _globalize_path(path: String) -> String:
 	if path.begins_with("res://"):
 		return ProjectSettings.globalize_path(path)
@@ -186,11 +197,12 @@ func _owner_sprite_sources(world: Dictionary) -> Dictionary:
 		WorldData.LANDMARK_ENTRY: "small_signpost",
 		WorldData.LANDMARK_CORE_DUNGEON: "asset_assets_sprites_objects_structures_warehouse_2x2_64x64_png",
 		WorldData.LANDMARK_RUIN: "asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png",
-		WorldData.LANDMARK_TELEPORT_ZONE: WorldGenerator.RENDER_TELEPORT_ZONE,
+		WorldData.LANDMARK_TELEPORT_ZONE: "asset_assets_tiles_sheets_biome_atlases_biome_tile_map_light_object_biome_map_atlas_crop_1261_363_32x32_resize_32x32_png",
 		"wood": "log_resource",
 		"stone": "small_rock_resource",
 		"clay": "mud_patch_resource"
 	}
+	_merge_projected_owner_sources(sources, world.get("renderer_input", {}))
 	for node in world.get("resource_nodes", []):
 		var owner_id := String(node.get("id", ""))
 		var resource_id := String(node.get("resource_id", ""))
@@ -211,3 +223,14 @@ func _owner_sprite_sources(world: Dictionary) -> Dictionary:
 		if not reservation_id.is_empty() and not reservation_source.is_empty():
 			sources[reservation_id] = reservation_source
 	return sources
+
+func _merge_projected_owner_sources(sources: Dictionary, renderer_input: Dictionary) -> void:
+	for layer in renderer_input.get("layers", []):
+		var layer_id := String(layer.get("id", ""))
+		if layer_id not in [WorldData.LAYER_FACILITIES, WorldData.LAYER_ENTITIES, WorldData.LAYER_INTERACTABLES]:
+			continue
+		for cell in layer.get("cells", []):
+			var owner_id := String(cell.get("owner_id", ""))
+			var source_id := String(cell.get("source_id", ""))
+			if not owner_id.is_empty() and not source_id.is_empty():
+				sources[owner_id] = source_id
