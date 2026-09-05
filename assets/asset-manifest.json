@@ -12341,6 +12341,615 @@
       "facility_interaction_id": "sleep",
       "source_sha256": "sha256:209e504dfbc155fcca01d97456b3aa13792cd38a99f69c6b18d1d5f0c1367d82",
       "rgba_sha256": "sha256:82549c6277a0d0bcefabf9303f2a48aed9f37cc9da4b6e5e10b1fd47739a29aa"
+    },
+    {
+      "id": "monster_foxfire_walk_4dir_8f",
+      "name": "monster_foxfire_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/foxfire/foxfire_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:273faa4627b404cc48d133c7e375c77680e26cd450a77a6177cb01e41d4cf205",
+      "rgba_sha256": "sha256:792a887adc394e6571b1aefa2d69db5aa9d4bc71ee5374e590d7ca72f8d80c35",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_abandoned_mine_samurai_walk_4dir_8f",
+      "name": "monster_abandoned_mine_samurai_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/abandoned_mine_samurai/abandoned_mine_samurai_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:67408e4591324fe8c6254418ccdbac0feacd22f55187005f84da36e095cbfb68",
+      "rgba_sha256": "sha256:245e9e4823f340495a731fb3d22d77cb8784e5de1aa232a82dd4e3fc9c4a8182",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_agarwood_thief_walk_4dir_8f",
+      "name": "monster_agarwood_thief_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/agarwood_thief/agarwood_thief_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:6b0618213f6f60b5ea3ab8dfc33f296f72389bc55aeb805b6ec8c0a773352218",
+      "rgba_sha256": "sha256:0bc10ac5ff45416b406312a9aecad9956701b4a40e88b457e8f0a7a5b505de25",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_ash_crow_flock_walk_4dir_8f",
+      "name": "monster_ash_crow_flock_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/ash_crow_flock/ash_crow_flock_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:a5c0d5df172bf5d03212d05f321cb82e2b61fcee9eb98457b35928c21aad89f4",
+      "rgba_sha256": "sha256:096731a1e4964a61e58b54e0ccd01ec3c4d3fc8d154a2ce8f91c8e69127a395a",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_empty_armor_yokai_walk_4dir_8f",
+      "name": "monster_empty_armor_yokai_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/empty_armor_yokai/empty_armor_yokai_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:2dab375a1ef766a87cd3c5be41f10f9fce8a7cb50f8d47ffec7950d738652f62",
+      "rgba_sha256": "sha256:6cde031ed797e3766e0d52d43dc86ca1df800f160edb5795dc0940e12c734f02",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_frost_lantern_yokai_walk_4dir_8f",
+      "name": "monster_frost_lantern_yokai_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/frost_lantern_yokai/frost_lantern_yokai_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:4240ec2110d4df1d37d808a5f35eb5893e6f37abe616a6ae4ede6fed99456e11",
+      "rgba_sha256": "sha256:9dae3be06630f5b092db253c67d0568ffac573cfe2fd1bbc0908e8d2eb2bfd10",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_monster_16_walk_4dir_8f",
+      "name": "monster_monster_16_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/monster_16/paddy_boar_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:5e2a55574e1c02c0451a4e0e466f1ceecb8f86fdf6212af036f6bf5533a8f574",
+      "rgba_sha256": "sha256:3deaa64ecdde56ff350dba1636f4cc76992ba87a3f57631963406e9ff19ca8a4",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_monster_17_walk_4dir_8f",
+      "name": "monster_monster_17_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/monster_17/cliff_eagle_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:ad163311905bd7405fb86eb020d4499f4182caea1f3332429a71db7c37673561",
+      "rgba_sha256": "sha256:10b3f2fffbce2fbc269f6808d3133203628b00fcad077941fa0c82bed34d52ec",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_monster_18_walk_4dir_8f",
+      "name": "monster_monster_18_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/monster_18/sand_armor_samurai_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:c066f4e6c419de9530f218a1a2de6c3e9288dd53c03ee8a72c2f09ee2366ec92",
+      "rgba_sha256": "sha256:b32515afad99663bd578c96aff36dd01340ee630785355885bbe5ce925215d8f",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_monster_19_walk_4dir_8f",
+      "name": "monster_monster_19_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/monster_19/wind_starved_bandit_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:ee05eab2fc44bd4e731ee26436a68940b9b2407311e5ee6081e134b050d7a316",
+      "rgba_sha256": "sha256:b75c1e9d1d9919c9789dfc24419cca745181b57cad069713811612ec0ea2c315",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_monster_20_walk_4dir_8f",
+      "name": "monster_monster_20_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/monster_20/snow_burrow_rabbit_yokai_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:ac68535ce83bac58aecb21b70c9a711bce71f9ae630c967fb5083471dd47d829",
+      "rgba_sha256": "sha256:98eacd29ae687b4015fedf800e5665bc3cf9706ca3474f3e3f79e7f945ef19c2",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_monster_21_walk_4dir_8f",
+      "name": "monster_monster_21_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/monster_21/incense_moth_yokai_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:778537af7ef58666d472f71a10c809047fe2244c0d8fbde4362cbe7d8b6b6f98",
+      "rgba_sha256": "sha256:19cc030071f3920a170abff45b9132710f2ebbf9a98f99aac2c224649ae29c9a",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_moss_tree_yokai_walk_4dir_8f",
+      "name": "monster_moss_tree_yokai_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/moss_tree_yokai/moss_tree_yokai_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:a381af084d7922c9961c825e5158d68bb244a07fbca6ba71970e35cb50ff0e41",
+      "rgba_sha256": "sha256:b10cdc2360cc402e633c2e3529240316563ba3dc23f371e6321604f2ffca34e7",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_mountain_boar_walk_4dir_8f",
+      "name": "monster_mountain_boar_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/mountain_boar/mountain_boar_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:9c1142ea0313d4d0fca2a1ccc802f513946c73c07b2387610de158a56d8b5c55",
+      "rgba_sha256": "sha256:382f70ae44131e11f56feacdd6e2b2d29ef06e7253926db0056762512fdec1f2",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_road_bandit_walk_4dir_8f",
+      "name": "monster_road_bandit_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/road_bandit/road_bandit_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:1b607b014f1209ebf6efbc628b369c63c5d1874b2a16cc9b2ebb2e07ce8ce68a",
+      "rgba_sha256": "sha256:f0f525846809627ce7971aca363629758f624ea8a1a6d5f0fd0836a7e7c9b01f",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_snow_path_assassin_walk_4dir_8f",
+      "name": "monster_snow_path_assassin_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/snow_path_assassin/snow_path_assassin_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:4f15c84b27b3efbcec48ba6a181b6ece93a488ea18d697acf05e9e7c3eedfe4a",
+      "rgba_sha256": "sha256:300af9698d933898f735e7cf3c4c903f455e1742d5844b11a24c4fa4bde989b4",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_snow_wolf_walk_4dir_8f",
+      "name": "monster_snow_wolf_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/snow_wolf/snow_wolf_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:cdbb8c0e65aa6a39da63c61f0a7baaa6843dac303a53ed50698a5d5b8e89e3a5",
+      "rgba_sha256": "sha256:c2f08591a5c253926a7c7dd2ee2c9c70fecfa757f344ffe2a177c9744a88f522",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_stonebound_yokai_walk_4dir_8f",
+      "name": "monster_stonebound_yokai_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/stonebound_yokai/stonebound_yokai_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:3d92ab20502f2abbde8cb3f1112ac583c34662919e28cf7f126544e70e6ff6ec",
+      "rgba_sha256": "sha256:83826f562c3b97fbf06c0ed4060a3761f40f6ac791c2add22fb43bc3429448f3",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_swamp_snake_walk_4dir_8f",
+      "name": "monster_swamp_snake_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/swamp_snake/swamp_snake_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:07f599471c55ffb18092922d3812ceda16bd4ff9b30f3ae1f201dd3929507b75",
+      "rgba_sha256": "sha256:512da789c99ba132d106891dff6a063f5d5feb3bf5a51cdfc53edd6c6ff8de75",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_wandering_ronin_walk_4dir_8f",
+      "name": "monster_wandering_ronin_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/wandering_ronin/wandering_ronin_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:03d46983a386b86c777c296ec2fcde8789d4358372cbfa0ffee699588d1e0417",
+      "rgba_sha256": "sha256:ee843c10fe7a8b049158b29f9441bebb9528c3a559a1cbbf78bd4f4fdaac6fa1",
+      "runtime_scale": 1
+    },
+    {
+      "id": "monster_wild_dog_walk_4dir_8f",
+      "name": "monster_wild_dog_walk_4dir_8f",
+      "status": "완료",
+      "kind": "character_animation",
+      "path": "res://assets/sprites/characters/monsters/wild_dog/wild_dog_walk_4dir_8f_32x32.png",
+      "width": 256,
+      "height": 128,
+      "direction_count": 4,
+      "frame_count": 32,
+      "frame_grid": {
+        "columns": 8,
+        "rows": 4,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "direction_rows": {
+        "south": 0,
+        "west": 1,
+        "east": 2,
+        "north": 3
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "source_sha256": "sha256:25f65efc2569a612f835a0b783e36112a5496d6ef44d6bde39c88d6876b27ad5",
+      "rgba_sha256": "sha256:e8c9a5826126a7d4ff9b0feed94f9e2da742e886efcaceb0f466a47708e66653",
+      "runtime_scale": 1
     }
   ]
 }
