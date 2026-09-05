@@ -63,6 +63,9 @@ func definition_for(item_id: String) -> Dictionary:
 	var definition: ConsumableDefinition = consumable_definitions[item_id]
 	return definition.to_dictionary()
 
+func has_active_use() -> bool:
+	return not _active_action.is_empty()
+
 func start_use(item_id: String, inventory, context := {}) -> Dictionary:
 	if not _active_action.is_empty():
 		return _fail_and_emit(_fail("active_consumable_action", "A consumable use action is already active."))

@@ -50,7 +50,7 @@ func _policy_for(command: GameCommand) -> Dictionary:
 		GameCommand.Type.DRINK_TEA:
 			return {"consumes_turn": true, "queues_enemy_turn": true, "feedback_beep": true}
 		GameCommand.Type.USE_CONSUMABLE:
-			return {"consumes_turn": true, "feedback_beep": true}
+			return {"feedback_beep": true}
 		GameCommand.Type.CRAFT_RECIPE:
 			return {"consumes_turn": true, "queues_enemy_turn": true, "feedback_beep": true}
 		GameCommand.Type.ATTACK, GameCommand.Type.DODGE:

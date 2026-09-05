@@ -170,10 +170,13 @@ func use_slot(slot_index: int) -> Dictionary:
 	if bool(row.can_equip):
 		return equip_slot(slot_index)
 	if consumable_service != null and consumable_service.has_method("start_use") and consumable_service.has_definition(String(row.item_id)):
-		var result: Dictionary = consumable_service.start_use(String(row.item_id), inventory, {"inventory_slot_index": slot_index})
-		if not result.ok:
-			return _fail_and_emit(result)
-		_emit_changed()
+		var result := {
+			"ok": true,
+			"use_intent": {
+				"item_id": String(row.item_id),
+				"inventory_slot_index": slot_index
+			}
+		}
 		result["read_model"] = read_model()
 		return result
 	return _fail_and_emit(_fail("unsupported_use", "Inventory slot use is not supported for item: %s" % String(row.item_id)))
