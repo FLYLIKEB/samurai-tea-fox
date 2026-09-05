@@ -130,6 +130,9 @@ func run(asserts) -> void:
 		"origin": {"x": 4, "y": 5},
 		"metadata": {"installed_by_player": true}
 	}]
+	state.world_interactions = {
+		"wasteland_abandoned_workbench": {"target_id": "wasteland_abandoned_workbench", "biome_id": "wasteland", "state": "repaired", "action_id": "repair_abandoned_workbench"}
+	}
 	state.trade_stock = {"shop_1": 2}
 	state.tail_state = _tail_snapshot(3, ["yokai_nature"])
 	state.tails = 3
@@ -155,6 +158,7 @@ func run(asserts) -> void:
 	asserts.true_value(decoded.run_state.biome_acquisitions.common_region.gatherables[0].depleted, "hydrated run state preserves per-biome acquisition snapshot")
 	asserts.equal(decoded.run_state.map_discovery_by_biome.mountain_region.discovered_cells, ["9,9"], "hydrated run state preserves per-biome map discovery snapshot")
 	asserts.equal(decoded.run_state.placed_facilities[0].facility_item_id, "wooden_workbench", "run save preserves player-installed facilities")
+	asserts.equal(decoded.run_state.world_interactions.wasteland_abandoned_workbench.state, "repaired", "run save preserves repair interaction target state")
 	asserts.equal(decoded.run_state.acquisitions.pickups[0].item_id, "wood", "hydrated run state preserves world pickups")
 	asserts.equal(decoded.run_state.trade_stock.shop_1, 2, "hydrated run state preserves trade stock")
 	asserts.equal(decoded.run_state.tail_state.stage, 3, "hydrated run state preserves tail stage")
@@ -166,6 +170,7 @@ func run(asserts) -> void:
 	progression_save.run.acquisitions.pickups[0].quantity = 99
 	progression_save.run.biome_acquisitions.common_region.gatherables[0].depleted = false
 	progression_save.run.map_discovery_by_biome.common_region.discovered_cells.append("3,4")
+	progression_save.run.world_interactions.wasteland_abandoned_workbench.state = "recycled"
 	progression_save.run.tail_state.path_flags.append("mutated_after_decode")
 	asserts.equal(decoded.run_state.equipment.slots.tea_ware.metadata.tea_ware_use_count, 4, "hydrated equipment state is detached from encoded payload")
 	asserts.equal(decoded.run_state.narrative_flags, ["met_sen_rikyu"], "hydrated narrative state is detached from encoded payload")
@@ -174,6 +179,7 @@ func run(asserts) -> void:
 	asserts.equal(decoded.run_state.acquisitions.pickups[0].quantity, 1, "hydrated acquisition state is detached from encoded payload")
 	asserts.true_value(decoded.run_state.biome_acquisitions.common_region.gatherables[0].depleted, "hydrated per-biome acquisition state is detached from encoded payload")
 	asserts.equal(decoded.run_state.map_discovery_by_biome.common_region.discovered_cells, ["1,2"], "hydrated per-biome map discovery state is detached from encoded payload")
+	asserts.equal(decoded.run_state.world_interactions.wasteland_abandoned_workbench.state, "repaired", "hydrated repair interaction state is detached from encoded payload")
 	asserts.equal(decoded.run_state.tail_state.path_flags, ["yokai_nature"], "hydrated tail state is detached from encoded payload")
 	state.reset_biome_progression()
 	asserts.equal(state.current_biome_id, "", "run state reset clears current biome")
@@ -186,6 +192,7 @@ func run(asserts) -> void:
 	asserts.equal(state.map_discovery_by_biome, {}, "run state reset clears per-biome map discovery snapshots")
 	asserts.equal(state.crafting_unlocks, [], "run state reset clears crafting unlocks")
 	asserts.equal(state.placed_facilities, [], "biome progression reset clears installed facilities")
+	asserts.equal(state.world_interactions, {}, "biome progression reset clears repair interaction target states")
 	state.reset_run_growth()
 	asserts.equal(state.tails, 1, "run growth reset returns tails to one")
 	asserts.equal(state.tail_state, TailState.default_dictionary(), "run growth reset returns tail state to default")

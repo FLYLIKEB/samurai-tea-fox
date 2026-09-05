@@ -608,7 +608,7 @@
         "rgba_sha256": "sha256:8806451b3e4175c6ffbbebec189faa72314b005bc2bb9715984cabab87012de5",
         "runtime_approved": true,
         "source_sha256": "sha256:ddb9ea788fc4e67bd4c39d8b8b89074f72494373062c05d8c5348ee7fe46e401",
-        "status": "초안",
+        "status": "확정",
         "width": 32
       },
       {
@@ -1244,7 +1244,7 @@
   },
   "content_hashes": {
     "asset_manifest": "sha256:26b44f79ce69b1cbaf8b65c126fd79cff7ef01c01c7dbe9632ba080930db6e7d",
-    "items": "9f558910cfa17d9ae45d4a56f68b4f95d1c6fd17f50e936a0b7e8a364bde45bf",
+    "items": "25bf32df5634f7d6e6b414d33988684b69e181d8baae0d1040b26a241ac7646f",
     "monsters": "b44646c65fca8a73ef29d0e908991986c7eb3387626b4bdb5f506919b1e28e9f"
   },
   "data_version": "notion-2026-09-04",

@@ -1,5 +1,5 @@
 {
-  "content_hash": "9f558910cfa17d9ae45d4a56f68b4f95d1c6fd17f50e936a0b7e8a364bde45bf",
+  "content_hash": "25bf32df5634f7d6e6b414d33988684b69e181d8baae0d1040b26a241ac7646f",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -525,10 +525,95 @@
       "effect": "버려진 재료와 파손된 시설을 다시 쓰기 위한 수선 도구.",
       "grade": "고급",
       "id": "repair_hammer",
+      "interaction_definition": {
+        "actions": [
+          {
+            "from": "broken",
+            "id": "repair_abandoned_workbench",
+            "materials": [
+              {
+                "item_id": "old_wood",
+                "quantity": 2
+              },
+              {
+                "item_id": "item_28",
+                "quantity": 1
+              }
+            ],
+            "result": {
+              "facility_item_id": "wooden_workbench",
+              "inventory_items": [],
+              "placed_at": "target"
+            },
+            "to": "repaired",
+            "turns": 1
+          },
+          {
+            "from": "broken",
+            "id": "recycle_abandoned_workbench",
+            "materials": [],
+            "result": {
+              "facility_enabled": false,
+              "inventory_items": [
+                {
+                  "item_id": "old_wood",
+                  "quantity": 2
+                },
+                {
+                  "item_id": "item_28",
+                  "quantity": 1
+                }
+              ]
+            },
+            "to": "recycled",
+            "turns": 1
+          }
+        ],
+        "atomic": true,
+        "bootstrap_materials_require_hammer": false,
+        "failure_mutates": false,
+        "failure_turns": 0,
+        "mutually_exclusive": true,
+        "precheck_output_capacity": true,
+        "required_tool_item_id": "repair_hammer",
+        "required_tool_quantity": 1,
+        "requires_equipment": false,
+        "reset_on_run_end": true,
+        "save_key": [
+          "world_seed",
+          "biome_id",
+          "target_instance_id"
+        ],
+        "save_scope": "run",
+        "schema_version": 1,
+        "target": {
+          "biome_id": "wasteland",
+          "blocks_progression": false,
+          "count_per_biome": 1,
+          "definition_id": "wasteland_abandoned_workbench",
+          "initial_state": "broken",
+          "movable": false,
+          "placement": "reachable_safe_clearing_near_core_dungeon_exit",
+          "repairable_after_repair": false,
+          "repaired_facility_pickup_allowed": false,
+          "source_facility_item_id": "wooden_workbench"
+        },
+        "teleport_repair_requires_hammer": false,
+        "tool_consumed": false,
+        "unlock": {
+          "biome_id": "wasteland",
+          "condition": "core_dungeon_resolved_and_teleport_repaired",
+          "routes": [
+            "combat",
+            "peaceful"
+          ],
+          "scope": "run"
+        }
+      },
       "max_stack": 1,
       "name": "수선 망치",
       "notion_id": "3cd37369-9e66-81d3-8ab2-eba41cf2013e",
-      "status": "초안",
+      "status": "확정",
       "type": "도구"
     },
     {

@@ -48,6 +48,7 @@ func run(asserts) -> void:
 	_assert_main_generates_current_biome(asserts, catalog, "snowfield")
 	_assert_main_generates_current_biome(asserts, catalog, "rainforest")
 	_assert_main_crafting_context_uses_current_run_unlocks(asserts)
+	_assert_repair_hammer_runtime_commands_save_and_reset(asserts, catalog)
 	_assert_biome_transition_scopes_acquisition_snapshots(asserts, catalog)
 	_assert_failed_biome_transition_rolls_back_acquisition_scope(asserts, catalog)
 	var runtime := _configured_runtime(catalog, RunState.new())
@@ -447,6 +448,53 @@ func _assert_main_crafting_context_uses_current_run_unlocks(asserts) -> void:
 	asserts.equal(runtime._crafting_context().unlocked_biome_ids, ["common_region"], "crafting context uses current-run crafting unlocks")
 	runtime.free()
 
+func _assert_repair_hammer_runtime_commands_save_and_reset(asserts, catalog: DataCatalog) -> void:
+	var repair_fixture := _configured_repair_runtime(catalog, "repair")
+	var repair_main: Main = repair_fixture.main
+	asserts.true_value(repair_fixture.result.ok, "repair hammer runtime fixture configures: %s" % repair_fixture.result.get("error", ""))
+	if not repair_fixture.result.ok:
+		_cleanup_repair_runtime(repair_fixture)
+		return
+	asserts.true_value(repair_main.inventory.add_item("repair_hammer", 1).ok, "runtime stocks repair hammer")
+	asserts.true_value(repair_main.inventory.add_item("old_wood", 2).ok, "runtime stocks repair wood")
+	asserts.true_value(repair_main.inventory.add_item("item_28", 1).ok, "runtime stocks repair iron scrap")
+	asserts.true_value(repair_main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": "wasteland_abandoned_workbench", "action_id": "repair_abandoned_workbench"})), "main routes repair command into repair interaction service")
+	asserts.equal(repair_main.inventory.get_total_quantity("repair_hammer"), 1, "main repair keeps the reusable tool")
+	asserts.equal(repair_main.inventory.get_total_quantity("old_wood"), 0, "main repair consumes old wood")
+	asserts.equal(repair_main.inventory.get_total_quantity("item_28"), 0, "main repair consumes iron scrap")
+	asserts.equal(repair_main.run_state.world_interactions.wasteland_abandoned_workbench.state, "repaired", "main repair stores repaired state in run save state")
+	asserts.true_value(repair_main._available_facility_item_ids().has("wooden_workbench"), "repaired target enables fixed wooden workbench crafting in place")
+	asserts.false_value(repair_main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": "wasteland_abandoned_workbench", "action_id": "recycle_abandoned_workbench"})), "main rejects recycle after repair")
+	var loaded_repair: Dictionary = repair_main.save_store.load_run()
+	asserts.true_value(loaded_repair.ok, "main repair command writes an explicit run save")
+	var restored_repair := _configured_repair_runtime(catalog, "repair-restored", loaded_repair.run_state, repair_fixture.paths)
+	asserts.true_value(restored_repair.result.ok, "main restores repaired target state")
+	asserts.true_value(restored_repair.main._available_facility_item_ids().has("wooden_workbench"), "restored repaired target keeps fixed workbench available")
+	restored_repair.main.run_state.reset_biome_progression()
+	asserts.equal(restored_repair.main.run_state.world_interactions, {}, "run reset clears repair target state")
+	asserts.equal(restored_repair.main.run_state.placed_facilities, [], "run reset clears fixed workbench availability")
+
+	var recycle_fixture := _configured_repair_runtime(catalog, "recycle")
+	var recycle_main: Main = recycle_fixture.main
+	asserts.true_value(recycle_fixture.result.ok, "recycle hammer runtime fixture configures: %s" % recycle_fixture.result.get("error", ""))
+	if recycle_fixture.result.ok:
+		asserts.true_value(recycle_main.inventory.add_item("repair_hammer", 1).ok, "runtime stocks recycle hammer")
+		asserts.true_value(recycle_main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": "wasteland_abandoned_workbench", "action_id": "recycle_abandoned_workbench"})), "main routes recycle command into repair interaction service")
+		asserts.equal(recycle_main.inventory.get_total_quantity("old_wood"), 2, "main recycle grants old wood")
+		asserts.equal(recycle_main.inventory.get_total_quantity("item_28"), 1, "main recycle grants iron scrap")
+		asserts.true_value(recycle_main.world_data.get_reservation("wasteland_abandoned_workbench").is_empty(), "main recycle depletes the target in the live world")
+		var loaded_recycle: Dictionary = recycle_main.save_store.load_run()
+		asserts.true_value(loaded_recycle.ok, "main recycle command writes an explicit run save")
+		var restored_recycle := _configured_repair_runtime(catalog, "recycle-restored", loaded_recycle.run_state, recycle_fixture.paths)
+		asserts.true_value(restored_recycle.result.ok, "main restores recycled target state")
+		asserts.true_value(restored_recycle.main.world_data.get_reservation("wasteland_abandoned_workbench").is_empty(), "restored recycled target remains depleted")
+		_cleanup_repair_runtime(restored_recycle, false)
+	_cleanup_repair_runtime(repair_fixture, false)
+	_cleanup_repair_runtime(restored_repair, false)
+	_cleanup_repair_runtime(recycle_fixture, false)
+	_cleanup_absolute_paths(repair_fixture.paths)
+	_cleanup_absolute_paths(recycle_fixture.paths)
+
 func _configured_runtime(catalog, state: RunState, resource_position := Vector2i.ZERO) -> Dictionary:
 	var runtime := Main.new()
 	runtime.catalog = catalog
@@ -464,6 +512,39 @@ func _configured_runtime(catalog, state: RunState, resource_position := Vector2i
 		"resource_nodes": [{"id": "resource_0", "resource_id": "wood", "position": {"x": resource_position.x, "y": resource_position.y}}]
 	}
 	return {"main": runtime, "result": runtime._configure_acquisition_for_generated_world()}
+
+func _configured_repair_runtime(catalog, label: String, state: RunState = null, paths := {}) -> Dictionary:
+	var save_paths: Dictionary = paths if typeof(paths) == TYPE_DICTIONARY and not paths.is_empty() else _absolute_save_paths(label)
+	var runtime := Main.new()
+	runtime.catalog = catalog
+	runtime.run_state = state if state != null else RunState.new()
+	runtime.run_state.current_biome_id = "wasteland"
+	runtime.run_state.crafting_unlocks = ["wasteland"]
+	runtime.run_state.teleport_states = {"wasteland": "repaired"}
+	runtime.save_store = SaveStore.new(save_paths.run, save_paths.meta)
+	runtime.player = MovementPlayer.new()
+	runtime.player.global_position = runtime.world_position_for_cell_center(Vector2i.ZERO)
+	runtime.world_visuals = Node2D.new()
+	var services: Dictionary = runtime._configure_run_services(catalog)
+	if not services.ok:
+		return {"main": runtime, "result": services, "paths": save_paths}
+	var world := WorldData.new(3, 1, "wasteland_dry_soil", true)
+	world.reserve_facility("wasteland_abandoned_workbench", Vector2i(1, 0), Vector2i.ONE, true, {
+		"repair_target_id": "wasteland_abandoned_workbench",
+		"source_facility_item_id": "wooden_workbench",
+		"source_id": "asset_assets_sprites_objects_crafting_workbench_32x32_png"
+	})
+	var world_snapshot := world.to_dictionary()
+	runtime.generated_world = {
+		"ok": true,
+		"biome_id": "wasteland",
+		"world_data": world_snapshot,
+		"renderer_input": WorldRendererProjection.new().project(world_snapshot),
+		"resource_nodes": [],
+		"repair_interaction_targets": [{"id": "wasteland_abandoned_workbench", "target_id": "wasteland_abandoned_workbench", "position": {"x": 1, "y": 0}}]
+	}
+	var result: Dictionary = runtime._configure_acquisition_for_generated_world()
+	return {"main": runtime, "result": result, "paths": save_paths}
 
 func _configured_tree_runtime(catalog, state = null) -> Dictionary:
 	var runtime := Main.new()
@@ -569,6 +650,29 @@ func _save_paths(label: String) -> Dictionary:
 		"run": "%s.run.save.json" % base,
 		"meta": "%s.meta.save.json" % base
 	}
+
+func _absolute_save_paths(label: String) -> Dictionary:
+	var base := OS.get_temp_dir().path_join("samurai-tea-fox-dev122-%s" % label)
+	return {
+		"run": "%s.run.save.json" % base,
+		"meta": "%s.meta.save.json" % base
+	}
+
+func _cleanup_repair_runtime(fixture: Dictionary, clean_paths := true) -> void:
+	var main: Main = fixture.main
+	if main.player != null:
+		main.player.free()
+	if main.world_visuals != null:
+		main.world_visuals.free()
+	main.free()
+	if clean_paths:
+		_cleanup_absolute_paths(fixture.paths)
+
+func _cleanup_absolute_paths(paths: Dictionary) -> void:
+	for path in [String(paths.get("run", "")), String(paths.get("meta", "")), "%s.invalidated.json" % String(paths.get("run", ""))]:
+		if path.is_empty() or not FileAccess.file_exists(path):
+			continue
+		DirAccess.remove_absolute(path)
 
 func _cleanup_transition_runtime(main: Main, clean_paths := true) -> void:
 	var paths := {"run": main.save_store.run_path, "meta": main.save_store.meta_path} if main.save_store != null else {}

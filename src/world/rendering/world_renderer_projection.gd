@@ -68,6 +68,7 @@ const FACILITY_SOURCE_BY_BIOME_FACILITY := {
 	"wasteland|wasteland_abandoned_outpost": "asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png",
 	"wasteland|wasteland_ruined_tea_room": "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png",
 	"wasteland|wasteland_battlefield_trace": "asset_assets_tiles_terrain_desert_bone_scatter_32x32_png",
+	"wasteland|wasteland_abandoned_workbench": "asset_assets_sprites_objects_crafting_workbench_32x32_png",
 	"snowfield|snowfield_lodge": "asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png",
 	"snowfield|snowfield_hot_spring": "asset_assets_sprites_objects_shrine_props_stone_water_basin_32x32_png",
 	"snowfield|snowfield_shrine": "asset_assets_sprites_objects_structures_shrine_torii_gate_2x2_64x64_png",

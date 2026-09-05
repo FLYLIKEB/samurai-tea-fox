@@ -161,7 +161,8 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 			progression_projection,
 			profile,
 			monster_spawn_pool,
-			core_contract_result.contract
+			core_contract_result.contract,
+			options.get("repair_interaction_targets", [])
 		)
 		if world.ok:
 			world.template_id = String(template.id)
@@ -169,7 +170,7 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 
 	return _failure(seed, data_version, biome_definition, retry_limit, "connectivity_or_resource_validation_failed")
 
-func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, layout_rng: DeterministicRng, content_rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, item_definitions: Array, progression_projection: Dictionary, profile: Dictionary, monster_spawn_pool: Dictionary, core_dungeon_contract: Dictionary) -> Dictionary:
+func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, layout_rng: DeterministicRng, content_rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, item_definitions: Array, progression_projection: Dictionary, profile: Dictionary, monster_spawn_pool: Dictionary, core_dungeon_contract: Dictionary, repair_interaction_targets := []) -> Dictionary:
 	var world_data := WorldData.new(MAP_WIDTH, MAP_HEIGHT, String(profile.default_terrain_id), bool(profile.default_walkable))
 	var chunks := _compose_chunks(layout_rng, world_data, profile)
 	_apply_map_boundary(world_data, profile, progression_projection.get("edge_exit_positions", []))
@@ -183,6 +184,7 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 	_place_path_edge_fences(world_data, layout_rng, templates, profile)
 	var validator := ConnectivityValidator.new()
 	var facility_nodes := _place_facility_nodes(world_data, layout_rng, landmarks, profile, validator.reachable_cell_keys_from_entry(world_data.to_dictionary()))
+	var repair_targets := _place_repair_interaction_targets(world_data, layout_rng, landmarks, profile, validator.reachable_cell_keys_from_entry(world_data.to_dictionary()), repair_interaction_targets)
 	var reachable_cells := validator.reachable_cell_keys_from_entry(world_data.to_dictionary())
 	var resource_nodes := _place_resource_nodes(world_data, content_rng, min_resource_nodes, max_resource_placement_attempts, resource_ids, item_definitions, reachable_cells, String(profile.id), templates, landmarks)
 	var access_points := []
@@ -191,6 +193,8 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 	var facility_access_points := []
 	for facility_node in facility_nodes:
 		facility_access_points.append(facility_node.access_position)
+	for repair_target in repair_targets:
+		facility_access_points.append(repair_target.access_position)
 
 	var world := {
 		"schema_version": 1,
@@ -206,6 +210,7 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 		"chunks": chunks,
 		"templates": _strip_presentation_sources(templates),
 		"facility_nodes": _semantic_node_snapshots(facility_nodes),
+		"repair_interaction_targets": _semantic_node_snapshots(repair_targets),
 		"resource_nodes": _semantic_node_snapshots(resource_nodes),
 		"monster_spawn_pool": monster_spawn_pool.duplicate(true),
 		"core_dungeon_contract": core_dungeon_contract.duplicate(true),
@@ -1182,6 +1187,64 @@ func _place_facility_near(world_data: WorldData, rng: DeterministicRng, anchor: 
 			}
 		}
 	return {"ok": false, "reason": "facility_placement_failed", "facility_id": facility_id}
+
+func _place_repair_interaction_targets(world_data: WorldData, rng: DeterministicRng, landmarks: Array, profile: Dictionary, reachable_cells: Dictionary, target_definitions) -> Array:
+	var nodes := []
+	if typeof(target_definitions) != TYPE_ARRAY or target_definitions.is_empty() or landmarks.is_empty():
+		return nodes
+	var anchor := _vector_from_dictionary(landmarks[landmarks.size() - 2].position) if landmarks.size() >= 2 else _vector_from_dictionary(landmarks[0].position)
+	for target_definition in target_definitions:
+		if typeof(target_definition) != TYPE_DICTIONARY:
+			continue
+		if String(target_definition.get("biome_id", "")) != String(profile.id):
+			continue
+		var count := maxi(0, int(target_definition.get("count_per_biome", 1)))
+		for index in range(count):
+			var target_id := String(target_definition.get("definition_id", ""))
+			var placed := _place_repair_interaction_target_near(world_data, rng, anchor, reachable_cells, index, target_id, String(profile.id), target_definition)
+			if placed.ok:
+				nodes.append(placed.node)
+	return nodes
+
+func _place_repair_interaction_target_near(world_data: WorldData, rng: DeterministicRng, anchor: Vector2i, reachable_cells: Dictionary, index: int, target_id: String, biome_rule_id: String, target_definition: Dictionary) -> Dictionary:
+	var offsets := _facility_candidate_offsets()
+	var start_offset := rng.next_range(0, offsets.size() - 1)
+	var cardinal_offsets := [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]
+	for attempt in range(offsets.size()):
+		var position: Vector2i = anchor + offsets[(start_offset + attempt) % offsets.size()]
+		if not world_data.contains(position) or not world_data.is_walkable(position):
+			continue
+		var access_position := _reachable_access_position(position, reachable_cells, cardinal_offsets)
+		if access_position == Vector2i(-1, -1):
+			continue
+		var owner_id := target_id if index == 0 else "%s_%d" % [target_id, index]
+		var metadata := {
+			"biome_rule_id": biome_rule_id,
+			"repair_target_id": target_id,
+			"facility_id": target_id,
+			"source_facility_item_id": String(target_definition.get("source_facility_item_id", "")),
+			"state": String(target_definition.get("initial_state", "broken")),
+			"source_id": "asset_assets_sprites_objects_crafting_workbench_32x32_png"
+		}
+		var reserved := world_data.reserve_facility(owner_id, position, Vector2i.ONE, true, metadata)
+		if not reserved.ok:
+			continue
+		var validation := ConnectivityValidator.new().validate_world_data(world_data.to_dictionary())
+		if not bool(validation.get("valid", false)):
+			world_data.release_footprint(owner_id)
+			continue
+		return {
+			"ok": true,
+			"node": {
+				"id": owner_id,
+				"target_id": target_id,
+				"position": _position_dictionary(position),
+				"access_position": _position_dictionary(access_position),
+				"placement_was_entry_reachable": true,
+				"interactable": true
+			}
+		}
+	return {"ok": false, "reason": "repair_interaction_target_placement_failed", "target_id": target_id}
 
 func _facility_candidate_offsets() -> Array:
 	return [

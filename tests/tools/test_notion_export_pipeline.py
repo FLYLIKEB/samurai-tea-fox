@@ -1253,6 +1253,28 @@ class NotionExportPipelineTests(unittest.TestCase):
         with self.assertRaisesRegex(ExportValidationError, "oribe_bowl.*cover every threshold"):
             self.pipeline.build_snapshots(bad_keys, "confirmed-test")
 
+    def test_dev_122_item_interaction_definition_exports_plain_json(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        self.assertEqual(
+            schema["datasets"]["items"]["notion"]["field_map"]["상호작용 정의 JSON"],
+            "interaction_definition",
+        )
+        capture = copy.deepcopy(self.capture)
+        capture["datasets"]["items"]["items"].append({
+            "id": "repair_hammer",
+            "name": "수선 망치",
+            "status": "확정",
+            "type": "도구",
+            "interaction_definition": '\\{"schema_version":1,"required_tool_item_id":"repair_hammer","target":\\{"definition_id":"wasteland_abandoned_workbench","source_facility_item_id":"wooden_workbench","initial_state":"broken","biome_id":"wasteland","count_per_biome":1\\},"actions":\\[\\{"id":"repair_abandoned_workbench","from":"broken","to":"repaired","materials":\\[\\{"item_id":"old_wood","quantity":2\\},\\{"item_id":"item_28","quantity":1\\}\\],"result":\\{"facility_item_id":"wooden_workbench","placed_at":"target","inventory_items":\\[\\]\\},"turns":1\\}\\],"mutually_exclusive":true\\}',
+        })
+        snapshots = self.pipeline.build_snapshots(capture, "confirmed-test")
+        item = next(item for item in snapshots["items"]["items"] if item["id"] == "repair_hammer")
+        self.assertEqual(item["interaction_definition"]["target"]["definition_id"], "wasteland_abandoned_workbench")
+        self.assertEqual(
+            item["interaction_definition"]["actions"][0]["materials"],
+            [{"item_id": "old_wood", "quantity": 2}, {"item_id": "item_28", "quantity": 1}],
+        )
+
     def test_dev_4_static_combat_exports_are_present(self):
         generated = ROOT / "data/generated"
         self.pipeline.validate_directory(generated)
