@@ -43,12 +43,13 @@ func run() -> void:
 
 	var main := packed_scene.instantiate()
 	if not _inject_isolated_save_store_before_tree_entry(main):
+		_free_detached_node(main)
 		finish()
 		return
 	root.set_meta(START_MODE_META, "new")
 	root.add_child(main)
 	if not await _wait_for_main_runtime_ready(main, 10000):
-		main.queue_free()
+		await _cleanup_tree_node(main)
 		_cleanup_lifecycle_files()
 		finish()
 		return
@@ -192,7 +193,7 @@ func run() -> void:
 	_assert_stale_full_death_retry_preserves_newer_run(main)
 	_assert_runtime_death_persists_fresh_run_for_transition(main, player)
 
-	main.queue_free()
+	await _cleanup_tree_node(main)
 	_cleanup_lifecycle_files()
 	finish()
 
@@ -356,11 +357,13 @@ func _assert_stale_full_death_retry_preserves_newer_run(main) -> void:
 	var lifecycle_result: Dictionary = RunLifecycleService.from_catalog(main.catalog)
 	if not lifecycle_result.ok:
 		failures.append("stale full-death fixture configures lifecycle service")
+		_free_detached_node(retry_main)
 		return
 	retry_main.run_lifecycle_service = lifecycle_result.run_lifecycle_service
 	var inventory_result: Dictionary = InventoryModel.from_catalog(main.catalog)
 	if not inventory_result.ok:
 		failures.append("stale full-death fixture configures inventory")
+		_free_detached_node(retry_main)
 		return
 	retry_main.inventory = inventory_result.inventory
 
@@ -371,10 +374,12 @@ func _assert_stale_full_death_retry_preserves_newer_run(main) -> void:
 	stale_run.inventory = _empty_inventory_snapshot(retry_main)
 	if not store.save_run(stale_run).ok or not store.invalidate_run(stale_run).ok:
 		failures.append("stale full-death fixture invalidates epoch zero")
+		_free_detached_node(retry_main)
 		return
 
 	if not retry_main.inventory.add_item("wood", 3).ok:
 		failures.append("stale full-death fixture creates non-default fresh inventory")
+		_free_detached_node(retry_main)
 		return
 	var preserved_run := RunState.new()
 	preserved_run.data_version = main.catalog.data_version
@@ -384,6 +389,7 @@ func _assert_stale_full_death_retry_preserves_newer_run(main) -> void:
 	preserved_run.inventory = retry_main.inventory.to_snapshot()
 	if not store.save_run(preserved_run).ok:
 		failures.append("stale full-death fixture persists newer non-default run")
+		_free_detached_node(retry_main)
 		return
 	var preserved_bytes := FileAccess.get_file_as_string(run_path)
 	retry_main.run_state = stale_run
@@ -399,11 +405,13 @@ func _assert_stale_full_death_retry_preserves_newer_run(main) -> void:
 	var restarted := SaveStore.new(run_path, meta_path).load_run()
 	if not restarted.ok:
 		failures.append("process restart loads preserved non-default run after stale full-death retry")
+		_free_detached_node(retry_main)
 		return
 	if restarted.state.lifecycle_epoch != 1 or restarted.state.seed != 8675309 or restarted.state.currency != 47:
 		failures.append("stale full-death retry preserves newer run identity and scalar payload")
 	if retry_main.run_state.lifecycle_epoch != 1 or retry_main.run_state.seed != 8675309 or retry_main.inventory.get_total_quantity("wood") != 3:
 		failures.append("main activates exact preserved epoch, seed, and inventory")
+	_free_detached_node(retry_main)
 
 func _cleanup_lifecycle_files() -> void:
 	if lifecycle_directory.is_empty() or not lifecycle_directory.begins_with("user://dev123_main_runtime_rendering_"):
@@ -420,6 +428,22 @@ func _has_property(object, property_name: String) -> bool:
 		if String(property.name) == property_name:
 			return true
 	return false
+
+func _cleanup_tree_node(node: Node) -> void:
+	if node == null or not is_instance_valid(node):
+		return
+	node.queue_free()
+	await process_frame
+	await physics_frame
+	await process_frame
+
+func _free_detached_node(node: Node) -> void:
+	if node == null or not is_instance_valid(node):
+		return
+	if node.is_inside_tree():
+		node.queue_free()
+		return
+	node.free()
 
 func _configure_isolated_paths() -> void:
 	var unique := "%d_%d" % [Time.get_unix_time_from_system(), Time.get_ticks_msec()]
