@@ -1,5 +1,5 @@
 {
-  "content_hash": "ebc093f85cec857c7d836589293ef11da4c79664810ca87fcbbed45192bdc404",
+  "content_hash": "9f558910cfa17d9ae45d4a56f68b4f95d1c6fd17f50e936a0b7e8a364bde45bf",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -153,6 +153,21 @@
       "effect": "차솥·도구의 금속 부품 제작 재료.",
       "grade": "일반",
       "id": "copper_ore",
+      "interaction_definition": {
+        "applies_to": "overworld_and_dungeon",
+        "failure_mutates": false,
+        "loot_and_shop_require_tool": false,
+        "rules": [
+          {
+            "action": "mine",
+            "node_kind": "ore_vein",
+            "required_tool_item_id": "stone_pickaxe"
+          }
+        ],
+        "schema_version": 1,
+        "success_depletes": true,
+        "tool_consumed": false
+      },
       "max_stack": 20,
       "name": "구리광석",
       "notion_id": "3cd37369-9e66-811c-b017-eb6621d0d9ed",
@@ -233,6 +248,21 @@
       "effect": "금속 가공의 기본 재료.",
       "grade": "일반",
       "id": "iron_ore",
+      "interaction_definition": {
+        "applies_to": "overworld_and_dungeon",
+        "failure_mutates": false,
+        "loot_and_shop_require_tool": false,
+        "rules": [
+          {
+            "action": "mine",
+            "node_kind": "ore_vein",
+            "required_tool_item_id": "stone_pickaxe"
+          }
+        ],
+        "schema_version": 1,
+        "success_depletes": true,
+        "tool_consumed": false
+      },
       "max_stack": 20,
       "name": "철광석",
       "notion_id": "3cd37369-9e66-8115-b205-fc8492bbcd0c",
@@ -550,6 +580,21 @@
       "effect": "설원 후반 제작에 쓰이는 단단한 광물.",
       "grade": "고급",
       "id": "snowfield_mineral",
+      "interaction_definition": {
+        "applies_to": "overworld_and_dungeon",
+        "failure_mutates": false,
+        "loot_and_shop_require_tool": false,
+        "rules": [
+          {
+            "action": "mine",
+            "node_kind": "mineral_deposit",
+            "required_tool_item_id": "stone_pickaxe"
+          }
+        ],
+        "schema_version": 1,
+        "success_depletes": true,
+        "tool_consumed": false
+      },
       "max_stack": 20,
       "name": "설원 광물",
       "notion_id": "3cd37369-9e66-813f-a38d-d75ef82efe8c",
@@ -566,6 +611,31 @@
       "effect": "기초 제작과 시설 배치에 쓰는 재료.",
       "grade": "일반",
       "id": "stone",
+      "interaction_definition": {
+        "applies_to": "overworld_and_dungeon",
+        "bootstrap": {
+          "biome_id": "common_region",
+          "exclude_core_dungeon_gate": true,
+          "quantity_per_loose_node": 1,
+          "reachable_loose_stone_minimum": 3
+        },
+        "failure_mutates": false,
+        "rules": [
+          {
+            "action": "pickup",
+            "node_kind": "loose_stone",
+            "required_tool_item_id": null
+          },
+          {
+            "action": "mine",
+            "node_kind": "rock",
+            "required_tool_item_id": "stone_pickaxe"
+          }
+        ],
+        "schema_version": 1,
+        "success_depletes": true,
+        "tool_consumed": false
+      },
       "name": "돌",
       "notion_id": "3cd37369-9e66-81df-b6b9-c0fdf547e204",
       "status": "확정",
@@ -580,6 +650,25 @@
       "max_stack": 1,
       "name": "돌도끼",
       "notion_id": "3d137369-9e66-81dc-926f-cfff17fbb39a",
+      "status": "확정",
+      "type": "도구"
+    },
+    {
+      "acquisition": "일반 지역 진입 후 손제작",
+      "biome_ids": [
+        "common_region"
+      ],
+      "core_tea_ware": false,
+      "craftable": true,
+      "effect": "암석·광맥 채굴용 재사용 도구. 인벤토리에 보유하면 사용하며 장착·소모·내구도는 없다. 도구 요구의 정본은 각 자원 아이템의 상호작용 정의 JSON을 참조한다.",
+      "effect_type": "탐험",
+      "equipment_slot": "",
+      "grade": "일반",
+      "id": "stone_pickaxe",
+      "max_owned": 1,
+      "max_stack": 1,
+      "name": "돌곡괭이",
+      "notion_id": "3d237369-9e66-8165-930e-fcdf1e909b16",
       "status": "확정",
       "type": "도구"
     },

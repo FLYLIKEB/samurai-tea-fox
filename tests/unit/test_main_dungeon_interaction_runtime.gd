@@ -57,8 +57,14 @@ func _assert_visible_house_accepts_e_before_attack(asserts, catalog: DataCatalog
 	runtime.main.player.global_position = runtime.main.world_position_for_cell_center(ore_cell + Vector2i.LEFT)
 	runtime.main.time_state = null
 	var ore_before: int = runtime.main.inventory.get_total_quantity("iron_ore")
+	var missing_tool_result: Dictionary = runtime.main.acquisition_service.gather("dungeon_iron_ore_0")
+	asserts.false_value(missing_tool_result.ok, "dungeon ore rejects mining without stone pickaxe")
+	asserts.equal(String(missing_tool_result.get("reason", "")), "missing_required_tool", "dungeon ore reports missing pickaxe")
+	asserts.equal(runtime.main.inventory.get_total_quantity("iron_ore"), ore_before, "failed dungeon mining grants no ore")
+	asserts.true_value(runtime.main.inventory.add_item("stone_pickaxe", 1).ok, "dungeon fixture stocks stone pickaxe")
 	asserts.true_value(runtime.main._try_dungeon_interaction_from_input(), "dungeon ore E interaction succeeds")
 	asserts.equal(runtime.main.inventory.get_total_quantity("iron_ore"), ore_before + 1, "dungeon ore is added to inventory")
+	asserts.equal(runtime.main.inventory.get_total_quantity("stone_pickaxe"), 1, "dungeon ore mining does not consume pickaxe")
 	_free_runtime(runtime)
 
 func _assert_visible_house_click_queues_entry(asserts, catalog: DataCatalog) -> void:

@@ -67,6 +67,7 @@ func run(asserts) -> void:
 		asserts.equal(gather_effect.position, runtime.main.world_position_for_cell_center(Vector2i.ZERO), "gathering effect appears at the resource position")
 		asserts.true_value((gather_effect.get_node("Caption") as Label).text.begins_with("채집 "), "gathering effect uses gathering feedback")
 	_assert_tree_terrain_requires_crafted_axe_and_disappears(asserts, catalog)
+	_assert_stone_pickaxe_crafts_from_bootstrap_stones_and_mines_ore(asserts, catalog)
 
 	var render_runtime := _configured_runtime(catalog, RunState.new())
 	asserts.true_value(render_runtime.result.ok, "visual acquisition fixture configures")
@@ -231,6 +232,52 @@ func _assert_tree_terrain_requires_crafted_axe_and_disappears(asserts, catalog: 
 	asserts.true_value(restored.main.acquisition_service.gatherable_for(tree_id).depleted, "restored tree terrain remains depleted")
 	asserts.true_value(restored.main.world_data.is_walkable(Vector2i(1, 0)), "restored harvested tree stays passable")
 	restored.main.free()
+	main.free()
+
+func _assert_stone_pickaxe_crafts_from_bootstrap_stones_and_mines_ore(asserts, catalog: DataCatalog) -> void:
+	var runtime := _transition_runtime(catalog, "dev120_pickaxe_bootstrap")
+	asserts.true_value(runtime.result.ok, "pickaxe bootstrap fixture configures")
+	if not runtime.result.ok:
+		runtime.main.free()
+		return
+	var main: Main = runtime.main
+	var reachable_stones := []
+	for node in main.generated_world.get("resource_nodes", []):
+		if String(node.get("resource_id", "")) == "stone":
+			asserts.equal(String(node.get("node_kind", "")), "loose_stone", "common generated stone node keeps pickup-specific node_kind")
+			reachable_stones.append(node)
+	asserts.true_value(reachable_stones.size() >= 3, "common fixed seed exposes at least three reachable loose stone pickups")
+	for index in range(min(3, reachable_stones.size())):
+		var node: Dictionary = reachable_stones[index]
+		asserts.equal(main.acquisition_service.gatherable_for(String(node.id)).definition_id, "stone", "loose stone registers against stable pickup definition")
+		asserts.true_value(main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": String(node.id)})), "loose stone pickup succeeds without pickaxe")
+	asserts.equal(main.inventory.get_total_quantity("stone"), 3, "bootstrap loose stones reach inventory")
+	asserts.true_value(main.inventory.add_item("wood", 1).ok, "fixture supplies recipe wood without changing tree rule")
+	asserts.true_value(main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.CRAFT_RECIPE, Vector2i.ZERO, -1, {"recipe_id": "stone_pickaxe"})), "stone pickaxe crafts from canonical stone and wood recipe")
+	asserts.equal(main.inventory.get_total_quantity("stone_pickaxe"), 1, "crafted stone pickaxe enters inventory")
+	asserts.equal(main.inventory.get_total_quantity("stone"), 1, "stone pickaxe recipe consumes exactly two stones")
+
+	var mountain_state: RunState = RunState.from_dictionary(main.snapshot_run_state())
+	mountain_state.current_biome_id = "mountain_region"
+	mountain_state.completed_dungeon_ids = ["common_region"]
+	mountain_state.teleport_states = {"common_region": "repaired", "mountain_region": "repaired"}
+	mountain_state.repaired_teleports = ["common_region", "mountain_region"]
+	mountain_state.crafting_unlocks = ["common_region", "mountain_region"]
+	var mountain_runtime := _transition_runtime(catalog, "dev120_pickaxe_mountain", mountain_state)
+	asserts.true_value(mountain_runtime.result.ok, "mountain mining fixture configures")
+	if mountain_runtime.result.ok:
+		var mineral_id := _first_gatherable_id_with_prefix(mountain_runtime.main, "terrain_mountain_mineral_")
+		asserts.true_value(not mineral_id.is_empty(), "mountain runtime registers mineable terrain mineral")
+		var mineral_before: Dictionary = mountain_runtime.main.acquisition_service.gatherable_for(mineral_id)
+		var item_id := String(mineral_before.get("item_id", ""))
+		var ore_before: int = mountain_runtime.main.inventory.get_total_quantity(item_id)
+		asserts.true_value(mountain_runtime.main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": mineral_id})), "mountain mineral mines with stone pickaxe")
+		var mined: Dictionary = mountain_runtime.main.acquisition_service.gatherable_for(mineral_id)
+		asserts.equal(mined.required_tool_item_id, "stone_pickaxe", "mountain mineral stores pickaxe requirement")
+		asserts.true_value(mined.depleted, "successful mountain mining depletes terrain mineral")
+		asserts.equal(mountain_runtime.main.inventory.get_total_quantity("stone_pickaxe"), 1, "mountain mining does not consume pickaxe")
+		asserts.equal(mountain_runtime.main.inventory.get_total_quantity(item_id), ore_before + 1, "mountain mining grants configured mineral")
+	mountain_runtime.main.free()
 	main.free()
 
 func _assert_biome_transition_scopes_acquisition_snapshots(asserts, catalog: DataCatalog) -> void:
@@ -452,6 +499,13 @@ func _configured_movement_runtime() -> Dictionary:
 	runtime.player = movement_player
 	movement_player.global_position = runtime.world_position_for_cell_center(Vector2i.ZERO)
 	return {"main": runtime, "player": movement_player}
+
+func _first_gatherable_id_with_prefix(main: Main, prefix: String) -> String:
+	for node in main.acquisition_service.to_snapshot().get("gatherables", []):
+		var node_id := String(node.get("node_id", ""))
+		if node_id.begins_with(prefix):
+			return node_id
+	return ""
 
 func _transition_runtime(catalog: DataCatalog, label: String, state: RunState = null, paths := {}, clean_paths := true) -> Dictionary:
 	var save_paths: Dictionary = paths if typeof(paths) == TYPE_DICTIONARY and not paths.is_empty() else _save_paths(label)

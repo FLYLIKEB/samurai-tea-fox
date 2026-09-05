@@ -53,6 +53,8 @@ func run(asserts) -> void:
 	_assert_common_templates(asserts, a)
 	_assert_continuous_water_stroke(asserts, a)
 	_assert_resources_near_templates(asserts, a)
+	_assert_resource_node_kind(asserts, a.resource_nodes, "stone", "loose_stone", "common stones are generated as no-tool loose pickup nodes", true)
+	_assert_resource_node_kind_policy(asserts, generator, catalog.get_definitions("items"))
 	_assert_mountain_generation(asserts, catalog, generator)
 	_assert_wasteland_generation(asserts, catalog, generator)
 	_assert_snowfield_generation(asserts, catalog, generator)
@@ -181,6 +183,8 @@ func _assert_mountain_generation(asserts, catalog, generator: WorldGenerator) ->
 	_assert_landmark_terrain_ids(asserts, generated.landmarks, mountain.generation_terrain_ids)
 	_assert_core_dungeon_contract(asserts, generated, "mountain_region", "dungeon_6", "chr_7")
 	_assert_resource_ids_resolve_to_mountain_materials(asserts, generated.resource_nodes, mountain, catalog.get_definitions("items"))
+	_assert_resource_node_kind(asserts, generated.resource_nodes, "stone", "rock", "mountain stones are generated as mineable rock nodes", false)
+	_assert_resource_node_kind(asserts, generated.resource_nodes, "iron_ore", "ore_vein", "mountain iron ore is generated as mineable ore veins", false)
 	_assert_common_templates(asserts, generated)
 	_assert_continuous_water_stroke(asserts, generated)
 	_assert_resources_near_templates(asserts, generated)
@@ -280,6 +284,7 @@ func _assert_snowfield_generation(asserts, catalog, generator: WorldGenerator) -
 	_assert_landmark_terrain_ids(asserts, generated.landmarks, snowfield.generation_terrain_ids)
 	_assert_core_dungeon_contract(asserts, generated, "snowfield", "dungeon_5", "chr_4")
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, snowfield, catalog.get_definitions("items"))
+	_assert_resource_node_kind(asserts, generated.resource_nodes, "snowfield_mineral", "mineral_deposit", "snowfield mineral is generated as a mineable deposit", false)
 	_assert_snowfield_chunk_features(asserts, generated.chunks)
 	_assert_no_temperature_state(asserts, generated)
 	_assert_common_templates(asserts, generated)
@@ -931,6 +936,38 @@ func _assert_resource_ids_resolve_to_biome_materials(asserts, resource_nodes: Ar
 			material_ids[String(item.get("id", ""))] = true
 	for node in resource_nodes:
 		asserts.true_value(material_ids.has(String(node.resource_id)), "%s uses an existing biome material item id" % node.id)
+
+func _assert_resource_node_kind(asserts, resource_nodes: Array, resource_id: String, node_kind: String, message: String, required: bool) -> void:
+	var matched := false
+	for node in resource_nodes:
+		if String(node.get("resource_id", "")) != resource_id:
+			continue
+		matched = true
+		asserts.equal(String(node.get("node_kind", "")), node_kind, message)
+	if required:
+		asserts.true_value(matched, "%s exists in generated resource nodes" % resource_id)
+
+func _assert_resource_node_kind_policy(asserts, generator: WorldGenerator, item_definitions: Array) -> void:
+	asserts.equal(
+		generator._node_kind_for_resource_context("stone", "common_region", item_definitions),
+		"loose_stone",
+		"common-region stone keeps no-tool loose pickup node kind"
+	)
+	asserts.equal(
+		generator._node_kind_for_resource_context("stone", "mountain_region", item_definitions),
+		"rock",
+		"non-bootstrap stone keeps mineable rock node kind"
+	)
+	asserts.equal(
+		generator._node_kind_for_resource_context("iron_ore", "mountain_region", item_definitions),
+		"ore_vein",
+		"iron ore keeps mineable ore vein node kind"
+	)
+	asserts.equal(
+		generator._node_kind_for_resource_context("snowfield_mineral", "snowfield", item_definitions),
+		"mineral_deposit",
+		"snowfield mineral keeps mineable deposit node kind"
+	)
 
 func _assert_rainforest_rare_resource_ids(asserts, resource_nodes: Array) -> void:
 	var has_incense := false

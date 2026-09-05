@@ -1,5 +1,5 @@
 {
-  "content_hash": "eb16668dfceebd7e1ec70b3831e7e8a6c39150fddfef96f1de779b16f64a5d0b",
+  "content_hash": "fde375a7b465924150036129801ae6e461e795ad6f7ca38d5d0f69ccdabdd363",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -224,6 +224,21 @@
       "result_item_id": "stone_axe",
       "result_quantity": 1,
       "status": "확정"
+    },
+    {
+      "category": "도구",
+      "craft_seconds": 2,
+      "facility": "손제작",
+      "id": "stone_pickaxe",
+      "materials_note": "돌 2 + 목재 1",
+      "name": "돌곡괭이 제작",
+      "notion_id": "3d237369-9e66-81c5-86f2-c809db3b1282",
+      "result_item_id": "stone_pickaxe",
+      "result_quantity": 1,
+      "status": "확정",
+      "unlock_biome": "일반",
+      "unlock_biome_id": "common_region",
+      "unlock_condition": "일반 지역 진입 시 현재 런에서 자동 해금. 던전·작업대 불필요."
     },
     {
       "category": "다구",
