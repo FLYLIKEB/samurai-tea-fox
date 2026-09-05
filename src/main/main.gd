@@ -3716,9 +3716,9 @@ func _available_facility_item_ids() -> Array:
 		var position := _vector_from_dictionary(node.get("position", {}))
 		if absi(player_cell.x - position.x) + absi(player_cell.y - position.y) > FacilityPlacementService.DEFAULT_USE_DISTANCE:
 			continue
-		var term := String(node.get("facility_term", ""))
-		if name_to_id.has(term) and not ids.has(String(name_to_id[term])):
-			ids.append(String(name_to_id[term]))
+		var facility_key := String(node.get("facility_id", node.get("facility_term", "")))
+		if name_to_id.has(facility_key) and not ids.has(String(name_to_id[facility_key])):
+			ids.append(String(name_to_id[facility_key]))
 	ids.sort()
 	return ids
 

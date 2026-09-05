@@ -20,6 +20,37 @@ const BIOME_WASTELAND := "wasteland"
 const BIOME_SNOWFIELD := "snowfield"
 const BIOME_RAINFOREST := "rainforest"
 
+const CHUNK_RULE_COMMON_GRASS := "common_grass"
+const CHUNK_RULE_COMMON_FIELD := "common_field"
+const CHUNK_RULE_COMMON_FOREST := "common_forest"
+const CHUNK_RULE_COMMON_PATH := "common_path"
+const CHUNK_RULE_COMMON_WATER := "common_water"
+const CHUNK_RULE_COMMON_GROUND := "common_ground"
+const CHUNK_RULE_MOUNTAIN_TRAIL := "mountain_trail"
+const CHUNK_RULE_ROCK_FIELD := "rock_field"
+const CHUNK_RULE_CLIFF_PASS := "cliff_pass"
+const CHUNK_RULE_CONIFER_FOREST := "conifer_forest"
+const CHUNK_RULE_VALLEY_WATER := "valley_water"
+const CHUNK_RULE_CAVE_GROUND := "cave_ground"
+const CHUNK_RULE_DRY_DETOUR := "dry_detour"
+const CHUNK_RULE_ASYMMETRIC_RUIN := "asymmetric_ruin"
+const CHUNK_RULE_LONG_DETOUR := "long_detour"
+const CHUNK_RULE_DEAD_END := "dead_end"
+const CHUNK_RULE_DRY_RIVER_BYPASS := "dry_river_bypass"
+const CHUNK_RULE_BATTLEFIELD_TRACE := "battlefield_trace"
+const CHUNK_RULE_SNOW_PATH_CROSSING := "snow_path_crossing"
+const CHUNK_RULE_FROZEN_RIVER_EDGE := "frozen_river_edge"
+const CHUNK_RULE_PINE_SILENCE := "pine_silence"
+const CHUNK_RULE_ICE_WALL_PASS := "ice_wall_pass"
+const CHUNK_RULE_SAFE_CLEARING := "safe_clearing"
+const CHUNK_RULE_SNOWY_MOUNTAIN_PATH := "snowy_mountain_path"
+const CHUNK_RULE_DENSE_JUNGLE_VINE_PATH := "dense_jungle_vine_path"
+const CHUNK_RULE_WIDE_RIVER_BANK := "wide_river_bank"
+const CHUNK_RULE_SWAMP_BOUNDARY := "swamp_boundary"
+const CHUNK_RULE_TEA_CULTIVATION := "tea_cultivation"
+const CHUNK_RULE_AGARWOOD_GROVE := "agarwood_grove"
+const CHUNK_RULE_RIVER_BYPASS := "river_bypass"
+
 const TERRAIN_GROUND := "common_ground"
 const TERRAIN_GRASS := "common_grass"
 const TERRAIN_PATH := "common_path"
@@ -74,7 +105,7 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 	if not profile_result.ok:
 		return _failure(seed, data_version, biome_definition, retry_limit, profile_result.reason, profile_result)
 	var profile: Dictionary = profile_result.profile
-	var resource_result := _biome_resource_item_ids(biome_definition, item_definitions, profile.get("resource_type_allowlist", ["재료"]))
+	var resource_result := _biome_resource_item_ids(profile, item_definitions)
 	if not resource_result.ok:
 		return _failure(seed, data_version, biome_definition, retry_limit, resource_result.reason, resource_result)
 	var resource_ids: Array = resource_result.ids
@@ -355,55 +386,58 @@ func _apply_map_boundary(world_data: WorldData, profile: Dictionary, edge_exit_p
 
 func _compose_chunks(rng: DeterministicRng, world_data: WorldData, profile: Dictionary) -> Array:
 	var chunks := []
-	var variant_count := int(profile.chunk_variant_count)
+	var chunk_rule_ids: Array = profile.get("chunk_rule_ids", [])
+	var variant_count := chunk_rule_ids.size()
 	for chunk_y in range(MAP_HEIGHT / CHUNK_HEIGHT):
 		for chunk_x in range(MAP_WIDTH / CHUNK_WIDTH):
 			var variant := rng.next_range(0, variant_count - 1)
+			var rule_id := String(chunk_rule_ids[variant])
 			var chunk := {
 				"id": "chunk_%d_%d" % [chunk_x, chunk_y],
 				"variant": variant,
+				"rule_id": rule_id,
+				"feature": rule_id,
 				"origin": {"x": chunk_x * CHUNK_WIDTH, "y": chunk_y * CHUNK_HEIGHT},
 				"size": {"x": CHUNK_WIDTH, "y": CHUNK_HEIGHT}
 			}
 			chunks.append(chunk)
-			_apply_chunk(world_data, chunk, rng, profile)
+			_apply_chunk_rule(world_data, chunk, rng, rule_id)
 	return chunks
 
-func _apply_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRng, profile: Dictionary) -> void:
-	match String(profile.id):
-		BIOME_MOUNTAIN:
-			_apply_mountain_chunk(world_data, chunk, rng)
-		BIOME_WASTELAND:
-			_apply_wasteland_chunk(world_data, chunk, rng)
-		BIOME_SNOWFIELD:
-			_apply_snowfield_chunk(world_data, chunk, rng)
-		BIOME_RAINFOREST:
-			_apply_rainforest_chunk(world_data, chunk, rng)
-		_:
-			_apply_common_chunk(world_data, chunk, rng)
+func _apply_chunk_rule(world_data: WorldData, chunk: Dictionary, rng: DeterministicRng, rule_id: String) -> void:
+	match rule_id:
+		CHUNK_RULE_COMMON_GRASS, CHUNK_RULE_COMMON_FIELD, CHUNK_RULE_COMMON_FOREST, CHUNK_RULE_COMMON_PATH, CHUNK_RULE_COMMON_WATER, CHUNK_RULE_COMMON_GROUND:
+			_apply_common_chunk(world_data, chunk, rng, rule_id)
+		CHUNK_RULE_MOUNTAIN_TRAIL, CHUNK_RULE_ROCK_FIELD, CHUNK_RULE_CLIFF_PASS, CHUNK_RULE_CONIFER_FOREST, CHUNK_RULE_VALLEY_WATER, CHUNK_RULE_CAVE_GROUND:
+			_apply_mountain_chunk(world_data, chunk, rng, rule_id)
+		CHUNK_RULE_DRY_DETOUR, CHUNK_RULE_ASYMMETRIC_RUIN, CHUNK_RULE_LONG_DETOUR, CHUNK_RULE_DEAD_END, CHUNK_RULE_DRY_RIVER_BYPASS, CHUNK_RULE_BATTLEFIELD_TRACE:
+			_apply_wasteland_chunk(world_data, chunk, rng, rule_id)
+		CHUNK_RULE_SNOW_PATH_CROSSING, CHUNK_RULE_FROZEN_RIVER_EDGE, CHUNK_RULE_PINE_SILENCE, CHUNK_RULE_ICE_WALL_PASS, CHUNK_RULE_SAFE_CLEARING, CHUNK_RULE_SNOWY_MOUNTAIN_PATH:
+			_apply_snowfield_chunk(world_data, chunk, rng, rule_id)
+		CHUNK_RULE_DENSE_JUNGLE_VINE_PATH, CHUNK_RULE_WIDE_RIVER_BANK, CHUNK_RULE_SWAMP_BOUNDARY, CHUNK_RULE_TEA_CULTIVATION, CHUNK_RULE_AGARWOOD_GROVE, CHUNK_RULE_RIVER_BYPASS:
+			_apply_rainforest_chunk(world_data, chunk, rng, rule_id)
 
-func _apply_common_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRng) -> void:
+func _apply_common_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRng, rule_id: String) -> void:
 	var origin := _vector_from_dictionary(chunk.origin)
-	var variant := int(chunk.variant)
 	for y in range(origin.y, origin.y + CHUNK_HEIGHT):
 		for x in range(origin.x, origin.x + CHUNK_WIDTH):
 			var position := Vector2i(x, y)
-			match variant:
-				0:
+			match rule_id:
+				CHUNK_RULE_COMMON_GRASS:
 					world_data.set_terrain(position, TERRAIN_GRASS, true)
-				1:
+				CHUNK_RULE_COMMON_FIELD:
 					world_data.set_terrain(position, TERRAIN_FIELD, true)
-				2:
+				CHUNK_RULE_COMMON_FOREST:
 					if rng.next_range(0, 99) < 32:
 						_set_tree_obstacle(world_data, position, TERRAIN_FOREST, TERRAIN_GRASS)
 					else:
 						world_data.set_terrain(position, TERRAIN_GRASS, true)
-				3:
+				CHUNK_RULE_COMMON_PATH:
 					if y == origin.y + CHUNK_HEIGHT / 2:
 						world_data.set_terrain(position, TERRAIN_PATH, true)
 					else:
 						world_data.set_terrain(position, TERRAIN_GROUND, true)
-				4:
+				CHUNK_RULE_COMMON_WATER:
 					if x == origin.x + CHUNK_WIDTH / 2:
 						world_data.set_terrain(position, TERRAIN_WATER, false)
 					else:
@@ -411,41 +445,40 @@ func _apply_common_chunk(world_data: WorldData, chunk: Dictionary, rng: Determin
 				_:
 					world_data.set_terrain(position, TERRAIN_GROUND, true)
 
-func _apply_mountain_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRng) -> void:
+func _apply_mountain_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRng, rule_id: String) -> void:
 	var origin := _vector_from_dictionary(chunk.origin)
-	var variant := int(chunk.variant)
 	for y in range(origin.y, origin.y + CHUNK_HEIGHT):
 		for x in range(origin.x, origin.x + CHUNK_WIDTH):
 			var position := Vector2i(x, y)
-			match variant:
-				0:
+			match rule_id:
+				CHUNK_RULE_MOUNTAIN_TRAIL:
 					if y == origin.y + CHUNK_HEIGHT / 2 or x == origin.x + CHUNK_WIDTH - 2:
 						world_data.set_terrain(position, TERRAIN_MOUNTAIN_PATH, true)
 					else:
 						world_data.set_terrain(position, TERRAIN_MOUNTAIN_SLOPE, true)
-				1:
+				CHUNK_RULE_ROCK_FIELD:
 					if rng.next_range(0, 99) < 40:
 						world_data.set_terrain(position, TERRAIN_MOUNTAIN_ROCK, false)
 					else:
 						world_data.set_terrain(position, TERRAIN_MOUNTAIN_SLOPE, true)
-				2:
+				CHUNK_RULE_CLIFF_PASS:
 					if x == origin.x or y == origin.y or rng.next_range(0, 99) < 24:
 						world_data.set_terrain(position, TERRAIN_MOUNTAIN_CLIFF, false)
 					else:
 						world_data.set_terrain(position, TERRAIN_MOUNTAIN_PATH, true)
-				3:
+				CHUNK_RULE_CONIFER_FOREST:
 					if rng.next_range(0, 99) < 35:
 						_set_tree_obstacle(world_data, position, TERRAIN_MOUNTAIN_CONIFER, TERRAIN_MOUNTAIN_SLOPE)
 					else:
 						world_data.set_terrain(position, TERRAIN_MOUNTAIN_SLOPE, true)
-				4:
+				CHUNK_RULE_VALLEY_WATER:
 					if x == origin.x + CHUNK_WIDTH / 2:
 						world_data.set_terrain(position, TERRAIN_MOUNTAIN_VALLEY_WATER, false)
 					elif abs(x - (origin.x + CHUNK_WIDTH / 2)) == 1:
 						world_data.set_terrain(position, TERRAIN_MOUNTAIN_PATH, true)
 					else:
 						world_data.set_terrain(position, TERRAIN_MOUNTAIN_SLOPE, true)
-				5:
+				CHUNK_RULE_CAVE_GROUND:
 					if y == origin.y + CHUNK_HEIGHT - 1:
 						world_data.set_terrain(position, TERRAIN_MOUNTAIN_PATH, true)
 					elif rng.next_range(0, 99) < 20:
@@ -455,29 +488,27 @@ func _apply_mountain_chunk(world_data: WorldData, chunk: Dictionary, rng: Determ
 				_:
 					world_data.set_terrain(position, TERRAIN_MOUNTAIN_SLOPE, true)
 
-func _apply_wasteland_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRng) -> void:
+func _apply_wasteland_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRng, rule_id: String) -> void:
 	var origin := _vector_from_dictionary(chunk.origin)
-	var variant := int(chunk.variant)
-	chunk["feature"] = _wasteland_feature_for_variant(variant)
 	for y in range(origin.y, origin.y + CHUNK_HEIGHT):
 		for x in range(origin.x, origin.x + CHUNK_WIDTH):
 			var position := Vector2i(x, y)
 			var local_x := x - origin.x
 			var local_y := y - origin.y
-			match variant:
-				0:
+			match rule_id:
+				CHUNK_RULE_DRY_DETOUR:
 					if local_y == 1 or (local_x >= 3 and local_y == 4):
 						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true)
 					else:
 						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true)
-				1:
+				CHUNK_RULE_ASYMMETRIC_RUIN:
 					if local_x >= 1 and local_x <= 5 and local_y >= 1 and local_y <= 3 and (local_x == 1 or local_x == 5 or local_y == 1 or local_y == 3):
 						world_data.set_terrain(position, TERRAIN_WASTELAND_RUIN, false)
 					elif local_x == 3 and local_y == 2:
 						world_data.set_terrain(position, TERRAIN_WASTELAND_CRACKED_GROUND, true)
 					else:
 						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true)
-				2:
+				CHUNK_RULE_LONG_DETOUR:
 					if local_x == CHUNK_WIDTH - 2 and local_y < CHUNK_HEIGHT - 1:
 						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true)
 					elif local_y == CHUNK_HEIGHT - 2 and local_x > 1:
@@ -486,7 +517,7 @@ func _apply_wasteland_chunk(world_data: WorldData, chunk: Dictionary, rng: Deter
 						world_data.set_terrain(position, TERRAIN_WASTELAND_CRACKED_GROUND, true)
 					else:
 						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true)
-				3:
+				CHUNK_RULE_DEAD_END:
 					if local_x == 2 and local_y <= 3:
 						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true)
 					elif local_x == 2 and local_y == 4:
@@ -495,14 +526,14 @@ func _apply_wasteland_chunk(world_data: WorldData, chunk: Dictionary, rng: Deter
 						_set_tree_obstacle(world_data, position, TERRAIN_WASTELAND_DEAD_TREE, TERRAIN_WASTELAND_DRY_SOIL)
 					else:
 						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true)
-				4:
+				CHUNK_RULE_DRY_RIVER_BYPASS:
 					if local_x == 3:
 						world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_RIVER, false)
 					elif local_x == 2 or local_x == 4:
 						world_data.set_terrain(position, TERRAIN_WASTELAND_DETOUR_PATH, true)
 					else:
 						world_data.set_terrain(position, TERRAIN_WASTELAND_CRACKED_GROUND, true)
-				5:
+				CHUNK_RULE_BATTLEFIELD_TRACE:
 					if local_x == 0 or local_y == 0 or (local_x == 6 and local_y < 5):
 						world_data.set_terrain(position, TERRAIN_WASTELAND_CAMP_TRACE, false)
 					elif local_y == 3 or local_x == 3:
@@ -512,63 +543,44 @@ func _apply_wasteland_chunk(world_data: WorldData, chunk: Dictionary, rng: Deter
 				_:
 					world_data.set_terrain(position, TERRAIN_WASTELAND_DRY_SOIL, true)
 
-func _wasteland_feature_for_variant(variant: int) -> String:
-	match variant:
-		0:
-			return "dry_detour"
-		1:
-			return "asymmetric_ruin"
-		2:
-			return "long_detour"
-		3:
-			return "dead_end"
-		4:
-			return "dry_river_bypass"
-		5:
-			return "battlefield_trace"
-		_:
-			return "dry_soil"
-
-func _apply_snowfield_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRng) -> void:
+func _apply_snowfield_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRng, rule_id: String) -> void:
 	var origin := _vector_from_dictionary(chunk.origin)
-	var variant := int(chunk.variant)
-	chunk["feature"] = _snowfield_feature_for_variant(variant)
 	for y in range(origin.y, origin.y + CHUNK_HEIGHT):
 		for x in range(origin.x, origin.x + CHUNK_WIDTH):
 			var position := Vector2i(x, y)
 			var local_x := x - origin.x
 			var local_y := y - origin.y
-			match variant:
-				0:
+			match rule_id:
+				CHUNK_RULE_SNOW_PATH_CROSSING:
 					if local_y == CHUNK_HEIGHT / 2 or local_x == CHUNK_WIDTH / 2:
 						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW_PATH, true)
 					else:
 						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true)
-				1:
+				CHUNK_RULE_FROZEN_RIVER_EDGE:
 					if local_x == 2 or local_x == 5:
 						world_data.set_terrain(position, TERRAIN_SNOWFIELD_ICE_EDGE, true)
 					elif local_x > 2 and local_x < 5:
 						world_data.set_terrain(position, TERRAIN_SNOWFIELD_ICE, false)
 					else:
 						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true)
-				2:
+				CHUNK_RULE_PINE_SILENCE:
 					if rng.next_range(0, 99) < 38:
 						_set_tree_obstacle(world_data, position, TERRAIN_SNOWFIELD_PINE, TERRAIN_SNOWFIELD_SNOW)
 					else:
 						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true)
-				3:
+				CHUNK_RULE_ICE_WALL_PASS:
 					if local_y == 0 or local_x == 0 or local_x == CHUNK_WIDTH - 1:
 						world_data.set_terrain(position, TERRAIN_SNOWFIELD_ICE_WALL, false)
 					elif local_y == 2 or local_x == 3:
 						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW_PATH, true)
 					else:
 						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true)
-				4:
+				CHUNK_RULE_SAFE_CLEARING:
 					if local_x >= 2 and local_x <= 5 and local_y >= 1 and local_y <= 4:
 						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SAFE_CLEARING, true)
 					else:
 						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true)
-				5:
+				CHUNK_RULE_SNOWY_MOUNTAIN_PATH:
 					if local_y == 1 or (local_x >= 4 and local_y == 4):
 						world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW_PATH, true)
 					elif local_x == 1 and local_y >= 2:
@@ -578,63 +590,44 @@ func _apply_snowfield_chunk(world_data: WorldData, chunk: Dictionary, rng: Deter
 				_:
 					world_data.set_terrain(position, TERRAIN_SNOWFIELD_SNOW, true)
 
-func _snowfield_feature_for_variant(variant: int) -> String:
-	match variant:
-		0:
-			return "snow_path_crossing"
-		1:
-			return "frozen_river_edge"
-		2:
-			return "pine_silence"
-		3:
-			return "ice_wall_pass"
-		4:
-			return "safe_clearing"
-		5:
-			return "snowy_mountain_path"
-		_:
-			return "snowfield"
-
-func _apply_rainforest_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRng) -> void:
+func _apply_rainforest_chunk(world_data: WorldData, chunk: Dictionary, rng: DeterministicRng, rule_id: String) -> void:
 	var origin := _vector_from_dictionary(chunk.origin)
-	var variant := int(chunk.variant)
-	chunk["feature"] = _rainforest_feature_for_variant(variant)
 	for y in range(origin.y, origin.y + CHUNK_HEIGHT):
 		for x in range(origin.x, origin.x + CHUNK_WIDTH):
 			var position := Vector2i(x, y)
 			var local_x := x - origin.x
 			var local_y := y - origin.y
-			match variant:
-				0:
+			match rule_id:
+				CHUNK_RULE_DENSE_JUNGLE_VINE_PATH:
 					if local_y == CHUNK_HEIGHT / 2 or (local_x == 5 and local_y > 1):
 						world_data.set_terrain(position, TERRAIN_RAINFOREST_VINE_PATH, true)
 					else:
 						world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, false)
-				1:
+				CHUNK_RULE_WIDE_RIVER_BANK:
 					if local_x == 3 or local_x == 4:
 						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER, false)
 					elif local_x == 2 or local_x == 5:
 						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER_BANK, true)
 					else:
 						world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, true)
-				2:
+				CHUNK_RULE_SWAMP_BOUNDARY:
 					if rng.next_range(0, 99) < 45:
 						world_data.set_terrain(position, TERRAIN_RAINFOREST_SWAMP, false)
 					else:
 						world_data.set_terrain(position, TERRAIN_RAINFOREST_RIVER_BANK, true)
-				3:
+				CHUNK_RULE_TEA_CULTIVATION:
 					if local_x >= 2 and local_x <= 5 and local_y >= 1 and local_y <= 4:
 						world_data.set_terrain(position, TERRAIN_RAINFOREST_TEA_FIELD, true)
 					else:
 						world_data.set_terrain(position, TERRAIN_RAINFOREST_VINE_PATH, true)
-				4:
+				CHUNK_RULE_AGARWOOD_GROVE:
 					if local_x == 1 or local_x == 6 or local_y == 1:
 						world_data.set_terrain(position, TERRAIN_RAINFOREST_VINE_PATH, true)
 					elif rng.next_range(0, 99) < 50:
 						_set_tree_obstacle(world_data, position, TERRAIN_RAINFOREST_AGARWOOD, TERRAIN_RAINFOREST_RIVER_BANK)
 					else:
 						world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, true)
-				5:
+				CHUNK_RULE_RIVER_BYPASS:
 					if local_y == 2 or (local_x >= 4 and local_y == 4):
 						world_data.set_terrain(position, TERRAIN_RAINFOREST_VINE_PATH, true)
 					elif local_x == 2:
@@ -645,23 +638,6 @@ func _apply_rainforest_chunk(world_data: WorldData, chunk: Dictionary, rng: Dete
 						world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, true)
 				_:
 					world_data.set_terrain(position, TERRAIN_RAINFOREST_JUNGLE, true)
-
-func _rainforest_feature_for_variant(variant: int) -> String:
-	match variant:
-		0:
-			return "dense_jungle_vine_path"
-		1:
-			return "wide_river_bank"
-		2:
-			return "swamp_boundary"
-		3:
-			return "tea_cultivation"
-		4:
-			return "agarwood_grove"
-		5:
-			return "river_bypass"
-		_:
-			return "rainforest"
 
 func _apply_common_templates(world_data: WorldData, rng: DeterministicRng, chunks: Array, profile: Dictionary) -> Array:
 	var templates := []
@@ -824,7 +800,7 @@ func _add_landmark(world_data: WorldData, kind: String, index: int, position: Ve
 	var id := "%s_%d" % [kind, index]
 	var landmark_metadata := metadata.duplicate(true)
 	landmark_metadata["biome_rule_id"] = String(profile.id)
-	landmark_metadata["terrain_terms"] = profile.required_terrain_terms.duplicate(true)
+	landmark_metadata["terrain_ids"] = profile.terrain_ids.duplicate(true)
 	world_data.add_required_landmark(kind, id, position, landmark_metadata)
 	return {
 		"id": id,
@@ -944,7 +920,7 @@ func _place_path_edge_fences(world_data: WorldData, rng: DeterministicRng, templ
 func _set_tree_obstacle(world_data: WorldData, position: Vector2i, terrain_id: String, base_terrain_id: String) -> bool:
 	# Wall cells are structural boundaries and must remain free of tree
 	# overlays/obstacles, regardless of the biome's tree placement pass.
-	if terrain_id.to_lower().contains("wall") or base_terrain_id.to_lower().contains("wall"):
+	if _is_structural_wall_terrain_id(terrain_id) or _is_structural_wall_terrain_id(base_terrain_id):
 		return false
 	_clear_generated_tree_obstacle(world_data, position)
 	world_data.set_terrain(position, terrain_id, true)
@@ -964,6 +940,9 @@ func _clear_generated_tree_obstacle(world_data: WorldData, position: Vector2i) -
 
 func _tree_owner_id(position: Vector2i) -> String:
 	return "terrain_tree_wood_%d_%d" % [position.x, position.y]
+
+func _is_structural_wall_terrain_id(terrain_id: String) -> bool:
+	return terrain_id in [TERRAIN_SNOWFIELD_ICE_WALL]
 
 func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, reachable_cells: Dictionary, biome_rule_id: String, templates := [], landmarks := []) -> Array:
 	var nodes := []
@@ -1097,18 +1076,18 @@ func _cardinal_positions_near(anchor: Vector2i) -> Array:
 
 func _place_facility_nodes(world_data: WorldData, rng: DeterministicRng, landmarks: Array, profile: Dictionary, reachable_cells: Dictionary) -> Array:
 	var nodes := []
-	var facility_terms: Array = profile.get("facility_terms", [])
-	if facility_terms.is_empty() or landmarks.is_empty():
+	var facility_ids: Array = profile.get("facility_ids", [])
+	if facility_ids.is_empty() or landmarks.is_empty():
 		return nodes
-	for index in range(facility_terms.size()):
-		var term := String(facility_terms[index])
+	for index in range(facility_ids.size()):
+		var facility_id := String(facility_ids[index])
 		var anchor: Dictionary = landmarks[index % landmarks.size()]
-		var placed := _place_facility_near(world_data, rng, _vector_from_dictionary(anchor.position), reachable_cells, index, term, String(profile.id))
+		var placed := _place_facility_near(world_data, rng, _vector_from_dictionary(anchor.position), reachable_cells, index, facility_id, String(profile.id))
 		if placed.ok:
 			nodes.append(placed.node)
 	return nodes
 
-func _place_facility_near(world_data: WorldData, rng: DeterministicRng, anchor: Vector2i, reachable_cells: Dictionary, index: int, term: String, biome_rule_id: String) -> Dictionary:
+func _place_facility_near(world_data: WorldData, rng: DeterministicRng, anchor: Vector2i, reachable_cells: Dictionary, index: int, facility_id: String, biome_rule_id: String) -> Dictionary:
 	var offsets := _facility_candidate_offsets()
 	var start_offset := rng.next_range(0, offsets.size() - 1)
 	var cardinal_offsets := [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]
@@ -1122,7 +1101,7 @@ func _place_facility_near(world_data: WorldData, rng: DeterministicRng, anchor: 
 		var owner_id := "facility_%d" % index
 		var metadata := {
 			"biome_rule_id": biome_rule_id,
-			"facility_term": term
+			"facility_id": facility_id
 		}
 		var reserved := world_data.reserve_facility(owner_id, position, Vector2i.ONE, true, metadata)
 		if not reserved.ok:
@@ -1135,14 +1114,14 @@ func _place_facility_near(world_data: WorldData, rng: DeterministicRng, anchor: 
 			"ok": true,
 			"node": {
 				"id": owner_id,
-				"facility_term": term,
+				"facility_id": facility_id,
 				"position": _position_dictionary(position),
 				"access_position": _position_dictionary(access_position),
 				"placement_was_entry_reachable": true,
 				"interactable": true
 			}
 		}
-	return {"ok": false, "reason": "facility_placement_failed", "facility_term": term}
+	return {"ok": false, "reason": "facility_placement_failed", "facility_id": facility_id}
 
 func _facility_candidate_offsets() -> Array:
 	return [
@@ -1177,149 +1156,210 @@ func _reachable_access_position(position: Vector2i, reachable_cells: Dictionary,
 
 func _biome_generation_profile(biome_definition: Dictionary) -> Dictionary:
 	var biome_id := String(biome_definition.get("id", ""))
-	match biome_id:
-		BIOME_COMMON:
-			return _profile_ok({
-				"id": BIOME_COMMON,
-				"chunk_variant_count": 6,
-				"default_terrain_id": TERRAIN_GROUND,
-				"default_walkable": true,
-				"path_terrain_id": TERRAIN_PATH,
-				"bridge_terrain_id": TERRAIN_BRIDGE,
-				"water_terrain_id": TERRAIN_WATER,
-				"water_walkable": false,
-				"shore_terrain_id": TERRAIN_GRASS,
-				"required_terrain_terms": [],
-				"facility_terms": [],
-				"resource_type_allowlist": ["재료"],
-				"minimum_facility_nodes": 0
-			})
-		BIOME_MOUNTAIN:
-			var required_terms := ["산길", "절벽", "바위지대", "계곡", "폭포", "침엽수림", "동굴"]
-			var terrain_text := String(biome_definition.get("terrain", ""))
-			for term in required_terms:
-				if not terrain_text.contains(term):
-					return {"ok": false, "reason": "missing_biome_generation_terms", "missing_term": term}
-			var facility_terms := ["광산", "산사", "폐광", "산중 찻집"]
-			var facility_text := String(biome_definition.get("facilities", ""))
-			for term in facility_terms:
-				if not facility_text.contains(term):
-					return {"ok": false, "reason": "missing_biome_facility_terms", "missing_term": term}
-			return _profile_ok({
-				"id": BIOME_MOUNTAIN,
-				"chunk_variant_count": 6,
-				"default_terrain_id": TERRAIN_MOUNTAIN_SLOPE,
-				"default_walkable": true,
-				"path_terrain_id": TERRAIN_MOUNTAIN_PATH,
-				"bridge_terrain_id": TERRAIN_MOUNTAIN_PATH,
-				"water_terrain_id": TERRAIN_MOUNTAIN_VALLEY_WATER,
-				"water_walkable": false,
-				"shore_terrain_id": TERRAIN_MOUNTAIN_PATH,
-				"required_terrain_terms": required_terms,
-				"facility_terms": facility_terms,
-				"resource_type_allowlist": ["재료"],
-				"minimum_facility_nodes": facility_terms.size()
-			})
-		BIOME_WASTELAND:
-			var required_terms := ["마른 흙", "갈라진 땅", "죽은 나무", "폐허", "말라붙은 하천", "군영 흔적"]
-			var terrain_text := String(biome_definition.get("terrain", ""))
-			for term in required_terms:
-				if not terrain_text.contains(term):
-					return {"ok": false, "reason": "missing_biome_generation_terms", "missing_term": term}
-			var facility_terms := ["폐촌", "버려진 초소", "무너진 다실", "전쟁터 흔적"]
-			var facility_text := String(biome_definition.get("facilities", ""))
-			for term in facility_terms:
-				if not facility_text.contains(term):
-					return {"ok": false, "reason": "missing_biome_facility_terms", "missing_term": term}
-			return _profile_ok({
-				"id": BIOME_WASTELAND,
-				"chunk_variant_count": 6,
-				"default_terrain_id": TERRAIN_WASTELAND_DRY_SOIL,
-				"default_walkable": true,
-				"path_terrain_id": TERRAIN_WASTELAND_DETOUR_PATH,
-				"bridge_terrain_id": TERRAIN_WASTELAND_DETOUR_PATH,
-				"water_terrain_id": TERRAIN_WASTELAND_DRY_RIVER,
-				"water_walkable": false,
-				"shore_terrain_id": TERRAIN_WASTELAND_DETOUR_PATH,
-				"required_terrain_terms": required_terms,
-				"facility_terms": facility_terms,
-				"resource_type_allowlist": ["재료"],
-				"minimum_facility_nodes": facility_terms.size()
-			})
-		BIOME_SNOWFIELD:
-			var required_terms := ["눈밭", "얼어붙은 강", "침엽수", "빙벽", "눈 덮인 산길"]
-			var terrain_text := String(biome_definition.get("terrain", ""))
-			for term in required_terms:
-				if not terrain_text.contains(term):
-					return {"ok": false, "reason": "missing_biome_generation_terms", "missing_term": term}
-			var facility_terms := ["산장", "온천", "설원 사당", "얼어붙은 광산"]
-			var facility_text := String(biome_definition.get("facilities", ""))
-			for term in facility_terms:
-				if not facility_text.contains(term):
-					return {"ok": false, "reason": "missing_biome_facility_terms", "missing_term": term}
-			return _profile_ok({
-				"id": BIOME_SNOWFIELD,
-				"chunk_variant_count": 6,
-				"default_terrain_id": TERRAIN_SNOWFIELD_SNOW,
-				"default_walkable": true,
-				"path_terrain_id": TERRAIN_SNOWFIELD_SNOW_PATH,
-				"bridge_terrain_id": TERRAIN_SNOWFIELD_ICE_EDGE,
-				"water_terrain_id": TERRAIN_SNOWFIELD_ICE,
-				"water_walkable": false,
-				"shore_terrain_id": TERRAIN_SNOWFIELD_ICE_EDGE,
-				"required_terrain_terms": required_terms,
-				"facility_terms": facility_terms,
-				"resource_type_allowlist": ["재료"],
-				"minimum_facility_nodes": facility_terms.size()
-			})
-		BIOME_RAINFOREST:
-			var required_terms := ["밀림", "습지", "넓은 강", "덩굴 통로", "차 재배지", "향목 숲"]
-			var terrain_text := String(biome_definition.get("terrain", ""))
-			for term in required_terms:
-				if not terrain_text.contains(term):
-					return {"ok": false, "reason": "missing_biome_generation_terms", "missing_term": term}
-			var facility_terms := ["차 재배지", "강변 취락", "숲속 다실", "향 문화 공간"]
-			var facility_text := String(biome_definition.get("facilities", ""))
-			for term in facility_terms:
-				if not facility_text.contains(term):
-					return {"ok": false, "reason": "missing_biome_facility_terms", "missing_term": term}
-			return _profile_ok({
-				"id": BIOME_RAINFOREST,
-				"chunk_variant_count": 6,
-				"default_terrain_id": TERRAIN_RAINFOREST_RIVER_BANK,
-				"default_walkable": true,
-				"path_terrain_id": TERRAIN_RAINFOREST_VINE_PATH,
-				"bridge_terrain_id": TERRAIN_RAINFOREST_RIVER_BANK,
-				"water_terrain_id": TERRAIN_RAINFOREST_RIVER,
-				"water_walkable": false,
-				"shore_terrain_id": TERRAIN_RAINFOREST_RIVER_BANK,
-				"required_terrain_terms": required_terms,
-				"facility_terms": facility_terms,
-				"resource_type_allowlist": ["재료", "향"],
-				"minimum_facility_nodes": facility_terms.size()
-			})
-		_:
-			return {"ok": false, "reason": "unsupported_biome_generation_rules", "biome_id": biome_id}
+	var profile_id := String(biome_definition.get("generation_profile_id", ""))
+	if profile_id == "":
+		return {"ok": false, "reason": "missing_biome_generation_profile_id", "biome_id": biome_id}
+	if profile_id != biome_id:
+		return {"ok": false, "reason": "invalid_biome_generation_profile_id", "biome_id": biome_id, "generation_profile_id": profile_id}
+	var terrain_ids_result := _required_string_array_field(biome_definition, "generation_terrain_ids", "missing_biome_generation_terrain_ids")
+	if not terrain_ids_result.ok:
+		return terrain_ids_result
+	var chunk_rule_ids_result := _required_string_array_field(biome_definition, "generation_chunk_rule_ids", "missing_biome_generation_chunk_rule_ids")
+	if not chunk_rule_ids_result.ok:
+		return chunk_rule_ids_result
+	var resource_ids_result := _required_string_array_field(biome_definition, "generation_resource_item_ids", "missing_biome_resource_item_ids")
+	if not resource_ids_result.ok:
+		return resource_ids_result
+	var walkability_rule_ids_result := _required_string_array_field(biome_definition, "generation_walkability_rule_ids", "missing_biome_generation_walkability_rule_ids")
+	if not walkability_rule_ids_result.ok:
+		return walkability_rule_ids_result
+	var chunk_validation := _validate_chunk_rule_ids(chunk_rule_ids_result.values)
+	if not chunk_validation.ok:
+		return chunk_validation
+	var terrain_roles := _terrain_roles_for_profile(terrain_ids_result.values, walkability_rule_ids_result.values)
+	if not terrain_roles.ok:
+		return terrain_roles
+	var facility_ids := _string_array_field(biome_definition, "generation_facility_ids")
+	var minimum_facility_nodes := int(biome_definition.get("generation_minimum_facility_nodes", 0))
+	if minimum_facility_nodes < 0 or minimum_facility_nodes > facility_ids.size():
+		return {"ok": false, "reason": "invalid_biome_minimum_facility_nodes", "biome_id": biome_id}
+	return _profile_ok({
+		"id": profile_id,
+		"chunk_rule_ids": chunk_rule_ids_result.values,
+		"default_terrain_id": String(terrain_roles.default_terrain_id),
+		"default_walkable": true,
+		"path_terrain_id": String(terrain_roles.path_terrain_id),
+		"bridge_terrain_id": String(terrain_roles.bridge_terrain_id),
+		"water_terrain_id": String(terrain_roles.water_terrain_id),
+		"water_walkable": false,
+		"shore_terrain_id": String(terrain_roles.shore_terrain_id),
+		"boundary_terrain_id": String(terrain_roles.boundary_terrain_id),
+		"terrain_ids": terrain_ids_result.values,
+		"facility_ids": facility_ids,
+		"resource_item_ids": resource_ids_result.values,
+		"resource_type_allowlist": ["재료", "향"],
+		"minimum_facility_nodes": minimum_facility_nodes
+	})
 
 func _profile_ok(profile: Dictionary) -> Dictionary:
 	return {"ok": true, "profile": profile}
 
-func _biome_resource_item_ids(biome_definition: Dictionary, item_definitions: Array, allowed_types: Array) -> Dictionary:
-	var resource_text := String(biome_definition.get("resources", ""))
-	if resource_text.strip_edges() == "":
-		return {"ok": false, "reason": "missing_biome_resources", "ids": []}
+func _required_string_array_field(source: Dictionary, field: String, reason: String) -> Dictionary:
+	var values := _string_array_field(source, field)
+	if values.is_empty():
+		return {"ok": false, "reason": reason, "field": field}
+	return {"ok": true, "values": values}
 
+func _string_array_field(source: Dictionary, field: String) -> Array:
 	var ids := []
+	var raw = source.get(field, [])
+	if raw is Array:
+		for value in raw:
+			var id := String(value).strip_edges()
+			if id != "" and not ids.has(id):
+				ids.append(id)
+	elif raw is String:
+		for value in String(raw).split(",", false):
+			var id := String(value).strip_edges()
+			if id != "" and not ids.has(id):
+				ids.append(id)
+	return ids
+
+func _validate_chunk_rule_ids(rule_ids: Array) -> Dictionary:
+	for rule_id in rule_ids:
+		if not _is_supported_chunk_rule_id(String(rule_id)):
+			return {"ok": false, "reason": "unsupported_biome_generation_chunk_rule", "chunk_rule_id": String(rule_id)}
+	return {"ok": true}
+
+func _is_supported_chunk_rule_id(rule_id: String) -> bool:
+	return rule_id in [
+		CHUNK_RULE_COMMON_GRASS,
+		CHUNK_RULE_COMMON_FIELD,
+		CHUNK_RULE_COMMON_FOREST,
+		CHUNK_RULE_COMMON_PATH,
+		CHUNK_RULE_COMMON_WATER,
+		CHUNK_RULE_COMMON_GROUND,
+		CHUNK_RULE_MOUNTAIN_TRAIL,
+		CHUNK_RULE_ROCK_FIELD,
+		CHUNK_RULE_CLIFF_PASS,
+		CHUNK_RULE_CONIFER_FOREST,
+		CHUNK_RULE_VALLEY_WATER,
+		CHUNK_RULE_CAVE_GROUND,
+		CHUNK_RULE_DRY_DETOUR,
+		CHUNK_RULE_ASYMMETRIC_RUIN,
+		CHUNK_RULE_LONG_DETOUR,
+		CHUNK_RULE_DEAD_END,
+		CHUNK_RULE_DRY_RIVER_BYPASS,
+		CHUNK_RULE_BATTLEFIELD_TRACE,
+		CHUNK_RULE_SNOW_PATH_CROSSING,
+		CHUNK_RULE_FROZEN_RIVER_EDGE,
+		CHUNK_RULE_PINE_SILENCE,
+		CHUNK_RULE_ICE_WALL_PASS,
+		CHUNK_RULE_SAFE_CLEARING,
+		CHUNK_RULE_SNOWY_MOUNTAIN_PATH,
+		CHUNK_RULE_DENSE_JUNGLE_VINE_PATH,
+		CHUNK_RULE_WIDE_RIVER_BANK,
+		CHUNK_RULE_SWAMP_BOUNDARY,
+		CHUNK_RULE_TEA_CULTIVATION,
+		CHUNK_RULE_AGARWOOD_GROVE,
+		CHUNK_RULE_RIVER_BYPASS
+	]
+
+func _terrain_roles_for_profile(terrain_ids: Array, walkability_rule_ids: Array) -> Dictionary:
+	var path_terrain_id := _first_supported_terrain(terrain_ids, [
+		TERRAIN_PATH,
+		TERRAIN_MOUNTAIN_PATH,
+		TERRAIN_WASTELAND_DETOUR_PATH,
+		TERRAIN_SNOWFIELD_SNOW_PATH,
+		TERRAIN_RAINFOREST_VINE_PATH
+	])
+	var water_terrain_id := _first_supported_terrain(terrain_ids, [
+		TERRAIN_WATER,
+		TERRAIN_MOUNTAIN_VALLEY_WATER,
+		TERRAIN_WASTELAND_DRY_RIVER,
+		TERRAIN_SNOWFIELD_ICE,
+		TERRAIN_RAINFOREST_RIVER
+	])
+	var default_terrain_id := _first_supported_terrain(terrain_ids, [
+		TERRAIN_GROUND,
+		TERRAIN_MOUNTAIN_SLOPE,
+		TERRAIN_WASTELAND_DRY_SOIL,
+		TERRAIN_SNOWFIELD_SNOW,
+		TERRAIN_RAINFOREST_RIVER_BANK,
+		TERRAIN_GRASS
+	])
+	var shore_terrain_id := _first_supported_terrain(terrain_ids, [
+		TERRAIN_GRASS,
+		TERRAIN_MOUNTAIN_PATH,
+		TERRAIN_WASTELAND_DETOUR_PATH,
+		TERRAIN_SNOWFIELD_ICE_EDGE,
+		TERRAIN_RAINFOREST_RIVER_BANK
+	])
+	var bridge_terrain_id := _first_supported_terrain(terrain_ids, [TERRAIN_BRIDGE])
+	if bridge_terrain_id == "":
+		bridge_terrain_id = shore_terrain_id if shore_terrain_id != "" else path_terrain_id
+	var boundary_terrain_id := _first_supported_terrain(terrain_ids, [
+		TERRAIN_MOUNTAIN_CLIFF,
+		TERRAIN_WASTELAND_CAMP_TRACE,
+		TERRAIN_SNOWFIELD_ICE_WALL,
+		TERRAIN_RAINFOREST_JUNGLE
+	])
+	if boundary_terrain_id == "":
+		boundary_terrain_id = TERRAIN_MOUNTAIN_CLIFF
+	if default_terrain_id == "" or path_terrain_id == "" or water_terrain_id == "" or shore_terrain_id == "" or bridge_terrain_id == "":
+		return {"ok": false, "reason": "invalid_biome_generation_terrain_roles"}
+	if not _has_supported_walkability_rules(walkability_rule_ids):
+		return {"ok": false, "reason": "invalid_biome_generation_walkability_rules"}
+	return {
+		"ok": true,
+		"default_terrain_id": default_terrain_id,
+		"path_terrain_id": path_terrain_id,
+		"bridge_terrain_id": bridge_terrain_id,
+		"water_terrain_id": water_terrain_id,
+		"shore_terrain_id": shore_terrain_id,
+		"boundary_terrain_id": boundary_terrain_id
+	}
+
+func _first_supported_terrain(terrain_ids: Array, candidates: Array) -> String:
+	for candidate in candidates:
+		if terrain_ids.has(String(candidate)):
+			return String(candidate)
+	return ""
+
+func _has_supported_walkability_rules(rule_ids: Array) -> bool:
+	for rule_id in rule_ids:
+		if String(rule_id) in [
+			"default_walkable",
+			"water_blocked",
+			"path_walkable",
+			"bridge_walkable",
+			"bridge_as_path",
+			"shore_walkable",
+			"dry_river_blocked",
+			"ice_blocked",
+			"bridge_ice_edge_walkable",
+			"river_blocked",
+			"swamp_blocked",
+			"bridge_as_river_bank"
+		]:
+			return true
+	return false
+
+func _biome_resource_item_ids(profile: Dictionary, item_definitions: Array) -> Dictionary:
+	var configured_ids: Array = profile.get("resource_item_ids", [])
+	var allowed_types: Array = profile.get("resource_type_allowlist", ["재료", "향"])
+	var known_ids := {}
 	for item in item_definitions:
 		if not allowed_types.has(String(item.get("type", ""))):
 			continue
 		var item_id := String(item.get("id", ""))
-		var item_name := String(item.get("name", ""))
-		if item_id == "" or item_name == "":
-			continue
-		if resource_text.contains(item_name):
-			ids.append(item_id)
-	if ids.is_empty():
+		if item_id != "":
+			known_ids[item_id] = true
+	var ids := []
+	for item_id in configured_ids:
+		if known_ids.has(String(item_id)):
+			ids.append(String(item_id))
+	if ids.size() != configured_ids.size():
 		return {"ok": false, "reason": "missing_biome_resource_item_definitions", "ids": []}
 	return {"ok": true, "ids": ids}
 

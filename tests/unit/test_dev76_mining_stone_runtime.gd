@@ -89,7 +89,7 @@ func _assert_mountain_mine_renderer_contract(asserts, world: Dictionary, asset_c
 	var interactable_sources := _layer_source_ids_by_owner(world.renderer_input, WorldData.LAYER_INTERACTABLES)
 	var mine_count := 0
 	for node in world.facility_nodes:
-		if String(node.get("facility_term", "")) != "광산":
+		if String(node.get("facility_id", "")) != "mountain_mine":
 			continue
 		mine_count += 1
 		var owner_id := String(node.get("id", ""))
@@ -204,8 +204,8 @@ func _dev76_signature(world: Dictionary) -> Dictionary:
 	var facility_rows := []
 	for node in world.get("facility_nodes", []):
 		facility_rows.append("%s|%s|%s|%s" % [
-			String(node.get("id", "")),
-			String(node.get("facility_term", "")),
+				String(node.get("id", "")),
+				String(node.get("facility_id", "")),
 			_key(_vector_from_dictionary(node.get("position", {}))),
 			_key(_vector_from_dictionary(node.get("access_position", {})))
 		])
