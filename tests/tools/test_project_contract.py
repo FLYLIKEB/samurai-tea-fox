@@ -58,12 +58,20 @@ class ProjectContractTests(unittest.TestCase):
     def test_platform_adapters_share_the_game_command_boundary(self):
         desktop = ROOT / "src/core/commands/desktop_command_adapter.gd"
         mobile = ROOT / "src/core/commands/mobile_command_adapter.gd"
+        factory = ROOT / "src/core/commands/action_command_factory.gd"
         command = ROOT / "src/core/commands/game_command.gd"
 
         self.assertTrue(desktop.is_file())
         for adapter in (desktop, mobile):
             source = adapter.read_text(encoding="utf-8")
-            self.assertIn('res://src/core/commands/game_command.gd', source)
+            self.assertIn('res://src/core/commands/action_command_factory.gd', source)
+            self.assertIn("ActionCommandFactory.command_for_action", source)
+            self.assertNotIn("GameCommand.new", source)
+        self.assertTrue(factory.is_file())
+        self.assertIn(
+            'res://src/core/commands/game_command.gd',
+            factory.read_text(encoding="utf-8"),
+        )
         self.assertTrue(command.is_file())
 
     def test_boss_export_contract_is_registered(self):
