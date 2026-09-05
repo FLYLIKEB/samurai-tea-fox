@@ -510,10 +510,11 @@ func _physics_process(_delta: float) -> void:
 	if has_pending_facility_placement():
 		return
 	_record_current_map_discovery()
-	var desktop_command = _desktop_adapter.poll_movement_command()
+	var desktop_frame: Dictionary = _desktop_adapter.poll_frame_input()
+	var desktop_command = _desktop_adapter.movement_command_from_frame(desktop_frame)
 	player.submit_command(movement_command_for_current_inputs(desktop_command))
 	var dungeon_interaction_handled := false
-	if Input.is_action_just_pressed("attack"):
+	if _desktop_adapter.frame_action_pressed(desktop_frame, "attack"):
 		_dungeon_debug("E/attack 입력 감지: player_cell=%s in_dungeon=%s" % [world_cell_from_world_position(player.global_position) if player != null else "nil", _in_dungeon_map])
 		dungeon_interaction_handled = _try_dungeon_interaction_from_input()
 		if not dungeon_interaction_handled:
@@ -521,67 +522,24 @@ func _physics_process(_delta: float) -> void:
 		_dungeon_debug("E/attack 처리 결과: dungeon_handled=%s in_dungeon=%s" % [dungeon_interaction_handled, _in_dungeon_map])
 		if not dungeon_interaction_handled:
 			submit_desktop_action_command("attack", desktop_command.direction)
-	if Input.is_action_just_pressed("dodge"):
-		submit_desktop_action_command("dodge", desktop_command.direction)
-	if Input.is_action_just_pressed("drink_tea"):
-		submit_desktop_action_command("drink_tea")
-	if Input.is_action_just_pressed("sleep"):
-		submit_desktop_action_command("sleep")
-	if Input.is_action_just_pressed("open_tea_brewing"):
-		submit_desktop_action_command("open_tea_brewing")
-	if _is_hud_menu_open("tea_brewing"):
-		if Input.is_action_just_pressed("tea_brew_previous_leaf"):
-			submit_desktop_action_command("tea_brew_previous_leaf")
-		if Input.is_action_just_pressed("tea_brew_next_leaf"):
-			submit_desktop_action_command("tea_brew_next_leaf")
-		if Input.is_action_just_pressed("tea_brew_previous_vessel"):
-			submit_desktop_action_command("tea_brew_previous_vessel")
-		if Input.is_action_just_pressed("tea_brew_next_vessel"):
-			submit_desktop_action_command("tea_brew_next_vessel")
-		if Input.is_action_just_pressed("tea_brew_previous_slot"):
-			submit_desktop_action_command("tea_brew_previous_slot")
-		if Input.is_action_just_pressed("tea_brew_next_slot"):
-			submit_desktop_action_command("tea_brew_next_slot")
-		if Input.is_action_just_pressed("brew_tea"):
-			submit_desktop_action_command("brew_tea")
-	if Input.is_action_just_pressed("use_consumable"):
-		submit_desktop_action_command("use_consumable")
-	if Input.is_action_just_pressed("cast_ability"):
-		submit_desktop_action_command("cast_ability", desktop_command.direction)
-	if Input.is_action_just_pressed("interact") and not dungeon_interaction_handled:
-		submit_desktop_action_command("interact", desktop_command.direction)
-	if Input.is_action_just_pressed("open_inventory"):
-		submit_desktop_action_command("open_inventory")
-	if Input.is_action_just_pressed("open_meta_codex"):
-		submit_desktop_action_command("open_meta_codex")
-	if _is_hud_menu_open("inventory"):
-		if Input.is_action_just_pressed("inventory_next"):
-			submit_desktop_action_command("inventory_next")
-		if Input.is_action_just_pressed("inventory_previous"):
-			submit_desktop_action_command("inventory_previous")
-		if Input.is_action_just_pressed("inventory_sort"):
-			submit_desktop_action_command("inventory_sort")
-		if Input.is_action_just_pressed("inventory_use_selected"):
-			submit_desktop_action_command("inventory_use_selected", Vector2i.ZERO, _selected_inventory_slot_index())
-		if Input.is_action_just_pressed("inventory_equip_selected"):
-			submit_desktop_action_command("inventory_equip_selected", Vector2i.ZERO, _selected_inventory_slot_index())
-		if Input.is_action_just_pressed("inventory_filter_all"):
-			submit_desktop_action_command("inventory_filter_all")
-		if Input.is_action_just_pressed("inventory_filter_consumable"):
-			submit_desktop_action_command("inventory_filter_consumable")
-		if Input.is_action_just_pressed("inventory_filter_equipment"):
-			submit_desktop_action_command("inventory_filter_equipment")
-	if _is_hud_menu_open("meta_codex"):
-		if Input.is_action_just_pressed("meta_codex_next"):
-			submit_desktop_action_command("meta_codex_next")
-		if Input.is_action_just_pressed("meta_codex_previous"):
-			submit_desktop_action_command("meta_codex_previous")
-	if Input.is_action_just_pressed("open_crafting"):
-		submit_desktop_action_command("open_crafting")
-	if Input.is_action_just_pressed("open_facilities"):
-		submit_desktop_action_command("open_facilities")
-	if Input.is_action_just_pressed("open_map"):
-		submit_desktop_action_command("open_map")
+	for action in _desktop_adapter.general_front_action_names(desktop_frame):
+		submit_desktop_action_command(action, desktop_command.direction)
+	var tea_brewing_open := _is_hud_menu_open("tea_brewing")
+	for action in _desktop_adapter.tea_brewing_action_names(desktop_frame, tea_brewing_open):
+		submit_desktop_action_command(action)
+	for action in _desktop_adapter.general_middle_action_names(desktop_frame, not dungeon_interaction_handled):
+		submit_desktop_action_command(action, desktop_command.direction)
+	for action in _desktop_adapter.menu_open_action_names(desktop_frame):
+		submit_desktop_action_command(action)
+	var inventory_open := _is_hud_menu_open("inventory")
+	for action in _desktop_adapter.inventory_action_names(desktop_frame, inventory_open):
+		var slot := _selected_inventory_slot_index() if action in ["inventory_use_selected", "inventory_equip_selected"] else 0
+		submit_desktop_action_command(action, Vector2i.ZERO, slot)
+	var meta_codex_open := _is_hud_menu_open("meta_codex")
+	for action in _desktop_adapter.meta_codex_action_names(desktop_frame, meta_codex_open):
+		submit_desktop_action_command(action)
+	for action in _desktop_adapter.general_back_action_names(desktop_frame):
+		submit_desktop_action_command(action)
 
 func _unhandled_input(event) -> void:
 	var handled := false
