@@ -117,6 +117,12 @@ func run(asserts) -> void:
 		"pickups": [{"pickup_id": "pickup_000001", "item_id": "wood", "quantity": 1, "position": {"x": 1, "y": 2}, "source": {"source_kind": "gatherable"}}],
 		"processed_drop_request_ids": []
 	}
+	state.biome_acquisitions = {
+		"common_region": state.acquisitions.duplicate(true),
+		"mountain_region": {"schema_version": 1, "next_pickup_id": 1, "gatherables": [], "pickups": [], "processed_drop_request_ids": []}
+	}
+	state.map_discovery = {"discovered_cells": ["1,2"]}
+	state.map_discovery_by_biome = {"common_region": {"discovered_cells": ["1,2"]}, "mountain_region": {"discovered_cells": ["9,9"]}}
 	state.placed_facilities = [{
 		"biome_id": "common_region",
 		"facility_item_id": "wooden_workbench",
@@ -146,6 +152,8 @@ func run(asserts) -> void:
 	asserts.equal(decoded.run_state.consumables.active_action.elapsed_seconds, 0.5, "hydrated run state preserves active consumable progress")
 	asserts.equal(decoded.run_state.time.phase, "night", "hydrated run state preserves time phase")
 	asserts.true_value(decoded.run_state.acquisitions.gatherables[0].depleted, "hydrated run state preserves gatherable depletion")
+	asserts.true_value(decoded.run_state.biome_acquisitions.common_region.gatherables[0].depleted, "hydrated run state preserves per-biome acquisition snapshot")
+	asserts.equal(decoded.run_state.map_discovery_by_biome.mountain_region.discovered_cells, ["9,9"], "hydrated run state preserves per-biome map discovery snapshot")
 	asserts.equal(decoded.run_state.placed_facilities[0].facility_item_id, "wooden_workbench", "run save preserves player-installed facilities")
 	asserts.equal(decoded.run_state.acquisitions.pickups[0].item_id, "wood", "hydrated run state preserves world pickups")
 	asserts.equal(decoded.run_state.trade_stock.shop_1, 2, "hydrated run state preserves trade stock")
@@ -156,12 +164,16 @@ func run(asserts) -> void:
 	progression_save.run.consumables.active_action.elapsed_seconds = 0.75
 	progression_save.run.time.phase = "day"
 	progression_save.run.acquisitions.pickups[0].quantity = 99
+	progression_save.run.biome_acquisitions.common_region.gatherables[0].depleted = false
+	progression_save.run.map_discovery_by_biome.common_region.discovered_cells.append("3,4")
 	progression_save.run.tail_state.path_flags.append("mutated_after_decode")
 	asserts.equal(decoded.run_state.equipment.slots.tea_ware.metadata.tea_ware_use_count, 4, "hydrated equipment state is detached from encoded payload")
 	asserts.equal(decoded.run_state.narrative_flags, ["met_sen_rikyu"], "hydrated narrative state is detached from encoded payload")
 	asserts.equal(decoded.run_state.consumables.active_action.elapsed_seconds, 0.5, "hydrated consumable state is detached from encoded payload")
 	asserts.equal(decoded.run_state.time.phase, "night", "hydrated time state is detached from encoded payload")
 	asserts.equal(decoded.run_state.acquisitions.pickups[0].quantity, 1, "hydrated acquisition state is detached from encoded payload")
+	asserts.true_value(decoded.run_state.biome_acquisitions.common_region.gatherables[0].depleted, "hydrated per-biome acquisition state is detached from encoded payload")
+	asserts.equal(decoded.run_state.map_discovery_by_biome.common_region.discovered_cells, ["1,2"], "hydrated per-biome map discovery state is detached from encoded payload")
 	asserts.equal(decoded.run_state.tail_state.path_flags, ["yokai_nature"], "hydrated tail state is detached from encoded payload")
 	state.reset_biome_progression()
 	asserts.equal(state.current_biome_id, "", "run state reset clears current biome")
@@ -169,6 +181,9 @@ func run(asserts) -> void:
 	asserts.equal(state.completed_runtime_dungeon_ids, [], "run state reset clears canonical dungeon completion")
 	asserts.equal(state.dungeon_runtime_state, {}, "run state reset clears active dungeon runtime")
 	asserts.equal(state.teleport_states, {}, "run state reset clears teleport states")
+	asserts.equal(state.acquisitions, {}, "run state reset clears current acquisition alias")
+	asserts.equal(state.biome_acquisitions, {}, "run state reset clears per-biome acquisition snapshots")
+	asserts.equal(state.map_discovery_by_biome, {}, "run state reset clears per-biome map discovery snapshots")
 	asserts.equal(state.crafting_unlocks, [], "run state reset clears crafting unlocks")
 	asserts.equal(state.placed_facilities, [], "biome progression reset clears installed facilities")
 	state.reset_run_growth()

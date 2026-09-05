@@ -151,7 +151,6 @@ func _assert_selected_biome_preview_matches_actual_entry_and_resume(asserts) -> 
 	asserts.true_value(main._biome_map_previews.has("mountain_region"), "mountain preview is cached from current run")
 	asserts.true_value(main._is_connected_biome("common_region", "mountain_region"), "mountain biome is connected after common teleport repair")
 	var preview_contract := _static_map_contract(main._biome_map_previews.mountain_region.world_data)
-	main.run_state.acquisitions = {}
 	var advance: Dictionary = main.biome_progression_state.apply_command(GameCommand.new(GameCommand.Type.ADVANCE_BIOME, Vector2i.ZERO, -1, {"biome_id": "common_region"}))
 	asserts.true_value(advance.ok, "runtime progression enters mountain biome: %s" % str(advance))
 	var mountain_world: Dictionary = main._configure_world_for_current_run()
@@ -209,17 +208,17 @@ func _assert_selected_biome_preview_does_not_reuse_current_map_cache(asserts) ->
 	asserts.false_value(missing.ok, "unvisited selected biome without preview is not backed by current map cache")
 	asserts.equal(missing.reason, "missing_biome_map_preview", "missing selected biome preview has stable reason")
 
+	var visited_state := RunState.new()
+	visited_state.current_biome_id = "common_region"
+	visited_state.map_discovery = state.map_discovery
+	visited_state.map_discovery_by_biome = {
+		"mountain_region": {"discovered_cells": ["7,5"]}
+	}
 	var visited_provider := GameHudReadModelProvider.new()
 	visited_provider.configure(player, {"biome_id": "common_region"}, {"counts": {}}, {
 		"map_read_model_builder": builder,
 		"world_data": current_world,
-		"run_state": {
-			"current_biome_id": "common_region",
-			"map_discovery": state.map_discovery,
-			"map_discovery_by_biome": {
-				"mountain_region": {"discovered_cells": ["7,5"]}
-			}
-		},
+		"run_state": visited_state,
 		"catalog": FakeCatalog.new(),
 		"biome_map_previews": {
 			"mountain_region": {"world_data": mountain_world.to_dictionary()}

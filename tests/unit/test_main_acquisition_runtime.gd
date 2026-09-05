@@ -5,6 +5,7 @@ const CombatDummy = preload("res://src/combat/combat_dummy.gd")
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const Main = preload("res://src/main/main.gd")
 const RunState = preload("res://src/save/run_state.gd")
+const SaveStore = preload("res://src/save/save_store.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 const WorldRendererProjection = preload("res://src/world/rendering/world_renderer_projection.gd")
@@ -12,6 +13,22 @@ const WorldRendererProjection = preload("res://src/world/rendering/world_rendere
 class DropSource:
 	extends Node
 	signal drop_requested(event: Dictionary)
+
+class TransitionDropSource:
+	extends Node2D
+	signal drop_requested(event: Dictionary)
+	var monster_id := "transition_probe"
+	var automatic_attacks := true
+	var collision_layer := 2
+	var collision_mask := 1
+	var combatant := TransitionCombatant.new()
+
+	func current_hp() -> int:
+		return combatant.hp
+
+class TransitionCombatant:
+	var hp := 1
+	var hp_max := 1
 
 class FailureProbe:
 	extends RefCounted
@@ -31,6 +48,8 @@ func run(asserts) -> void:
 	_assert_main_generates_current_biome(asserts, catalog, "snowfield")
 	_assert_main_generates_current_biome(asserts, catalog, "rainforest")
 	_assert_main_crafting_context_uses_current_run_unlocks(asserts)
+	_assert_biome_transition_scopes_acquisition_snapshots(asserts, catalog)
+	_assert_failed_biome_transition_rolls_back_acquisition_scope(asserts, catalog)
 	var runtime := _configured_runtime(catalog, RunState.new())
 	asserts.true_value(runtime.result.ok, "main configures acquisition against generated world data: %s" % runtime.result.get("error", ""))
 	if not runtime.result.ok:
@@ -214,6 +233,71 @@ func _assert_tree_terrain_requires_crafted_axe_and_disappears(asserts, catalog: 
 	restored.main.free()
 	main.free()
 
+func _assert_biome_transition_scopes_acquisition_snapshots(asserts, catalog: DataCatalog) -> void:
+	var fixture := _transition_runtime(catalog, "scope")
+	var main: Main = fixture.main
+	asserts.true_value(fixture.result.ok, "common transition fixture configures: %s" % fixture.result.get("error", ""))
+	if not fixture.result.ok:
+		_cleanup_transition_runtime(main)
+		return
+	asserts.true_value(main.acquisition_service.gather("resource_0").ok, "common resource can be gathered before biome transition")
+	asserts.true_value(main.run_state.acquisitions.gatherables[0].depleted, "common acquisition snapshot records depletion before transition")
+	var common_snapshot := main.run_state.acquisitions.duplicate(true)
+	asserts.true_value(main._handle_biome_progression_command(GameCommand.new(GameCommand.Type.ADVANCE_BIOME, Vector2i.ZERO, -1, {"biome_id": "common_region"})), "ADVANCE_BIOME succeeds with common acquisition snapshot still present")
+	asserts.equal(main.run_state.current_biome_id, "mountain_region", "advance enters mountain biome")
+	asserts.equal(main.generated_world.biome_id, "mountain_region", "advance configures destination biome world")
+	asserts.true_value(_snapshot_has_depleted_node(main.run_state.biome_acquisitions.common_region, "resource_0"), "previous biome acquisition snapshot is retained by biome id")
+	asserts.false_value(_snapshot_has_depleted_node(main.run_state.acquisitions, "resource_0"), "destination biome does not hydrate common depleted state into current alias")
+	asserts.true_value(main.save_current_run().ok, "scoped biome acquisition run saves")
+	var loaded: Dictionary = main.save_store.load_run()
+	asserts.true_value(loaded.ok, "scoped biome acquisition run reloads")
+
+	var restored := _transition_runtime(catalog, "scope-restored", loaded.run_state, fixture.paths, false)
+	asserts.true_value(restored.result.ok, "mountain resume configures without common acquisition leakage: %s" % restored.result.get("error", ""))
+	asserts.equal(restored.main.run_state.current_biome_id, "mountain_region", "resume keeps current destination biome")
+	asserts.false_value(_snapshot_has_depleted_node(restored.main.run_state.acquisitions, "resource_0"), "resume keeps current biome acquisition alias scoped to mountain")
+	asserts.true_value(_snapshot_has_depleted_node(restored.main.run_state.biome_acquisitions.common_region, "resource_0"), "resume preserves previous common acquisition snapshot")
+
+	asserts.true_value(restored.main._travel_to_biome("common_region", "ruin"), "revisit to completed common biome succeeds")
+	asserts.equal(restored.main.generated_world.biome_id, "common_region", "revisit regenerates common biome world")
+	asserts.true_value(_snapshot_has_depleted_node(restored.main.run_state.acquisitions, "resource_0"), "revisit restores common acquisition depletion state")
+	asserts.equal(restored.main.run_state.acquisitions.gatherables.size(), common_snapshot.gatherables.size(), "revisit restores common acquisition gatherable count")
+	asserts.true_value(restored.main.acquisition_service.gatherable_for("resource_0").depleted, "revisit preserves common gathered resource depletion")
+	_cleanup_transition_runtime(main, false)
+	_cleanup_transition_runtime(restored.main, false)
+	_cleanup_paths(fixture.paths)
+
+func _assert_failed_biome_transition_rolls_back_acquisition_scope(asserts, catalog: DataCatalog) -> void:
+	var fixture := _transition_runtime(catalog, "rollback")
+	var main: Main = fixture.main
+	var original_run_state: RunState = main.run_state
+	asserts.true_value(fixture.result.ok, "rollback transition fixture configures: %s" % fixture.result.get("error", ""))
+	if not fixture.result.ok:
+		_cleanup_transition_runtime(main)
+		return
+	asserts.true_value(main.acquisition_service.gather("resource_0").ok, "rollback fixture gathers common resource")
+	main.run_state.biome_acquisitions["mountain_region"] = {
+		"schema_version": 1,
+		"next_pickup_id": 1,
+		"gatherables": [{"node_id": "foreign_node", "definition_id": "foreign_node", "position": {"x": 99, "y": 99}, "depleted": false}],
+		"pickups": [],
+		"processed_drop_request_ids": []
+	}
+	var before_failure_snapshot := main.run_state.to_dictionary()
+	var before_failure_world_biome := String(main.generated_world.get("biome_id", ""))
+	var before_failure_world_contract := _generated_world_contract(main.generated_world)
+	asserts.false_value(main._handle_biome_progression_command(GameCommand.new(GameCommand.Type.ADVANCE_BIOME, Vector2i.ZERO, -1, {"biome_id": "common_region"})), "failed destination acquisition restore rejects transition")
+	asserts.true_value(main.run_state == original_run_state, "failed transition keeps the original RunState object identity")
+	asserts.equal(main.run_state.to_dictionary(), before_failure_snapshot, "failed transition restores the complete previous RunState snapshot")
+	asserts.equal(main.generated_world.get("biome_id", ""), before_failure_world_biome, "failed transition restores the previous generated world biome")
+	asserts.equal(_generated_world_contract(main.generated_world), before_failure_world_contract, "failed transition restores the previous generated world contract")
+	asserts.equal(main.run_state.current_biome_id, "common_region", "failed transition rolls current biome back")
+	asserts.true_value(_snapshot_has_depleted_node(main.run_state.acquisitions, "resource_0"), "failed transition rolls current acquisition alias back")
+	asserts.equal(main.run_state.biome_acquisitions.mountain_region.gatherables[0].node_id, "foreign_node", "failed transition preserves pre-existing destination acquisition alias without partial mutation")
+	asserts.equal(main.generated_world.biome_id, "common_region", "failed transition leaves current generated world on previous biome")
+	asserts.true_value(main.acquisition_service.gatherable_for("resource_0").depleted, "failed transition preserves previous biome acquisition runtime")
+	_cleanup_transition_runtime(main)
+
 func _assert_main_generates_current_biome(asserts, catalog: DataCatalog, biome_id: String) -> void:
 	var state := RunState.new()
 	state.current_biome_id = biome_id
@@ -368,3 +452,82 @@ func _configured_movement_runtime() -> Dictionary:
 	runtime.player = movement_player
 	movement_player.global_position = runtime.world_position_for_cell_center(Vector2i.ZERO)
 	return {"main": runtime, "player": movement_player}
+
+func _transition_runtime(catalog: DataCatalog, label: String, state: RunState = null, paths := {}, clean_paths := true) -> Dictionary:
+	var save_paths: Dictionary = paths if typeof(paths) == TYPE_DICTIONARY and not paths.is_empty() else _save_paths(label)
+	if clean_paths:
+		_cleanup_paths(save_paths)
+	var runtime := Main.new()
+	runtime.catalog = catalog
+	runtime.run_state = state if state != null else RunState.new()
+	runtime.run_state.seed = 424242 if runtime.run_state.seed == 0 else runtime.run_state.seed
+	if runtime.run_state.current_biome_id.is_empty():
+		runtime.run_state.current_biome_id = "common_region"
+		runtime.run_state.completed_dungeon_ids = ["common_region"]
+		runtime.run_state.teleport_states = {"common_region": "repaired", "mountain_region": "undiscovered"}
+		runtime.run_state.repaired_teleports = ["common_region"]
+		runtime.run_state.crafting_unlocks = ["common_region"]
+	runtime.save_store = SaveStore.new(save_paths.run, save_paths.meta)
+	runtime.combat_dummy = TransitionDropSource.new()
+	runtime.world_visuals = Node2D.new()
+	var services: Dictionary = runtime._configure_run_services(catalog)
+	if not services.ok:
+		return {"main": runtime, "result": services, "paths": save_paths}
+	var world_result: Dictionary = runtime._configure_world_for_current_run()
+	return {"main": runtime, "result": world_result, "paths": save_paths}
+
+func _snapshot_has_depleted_node(snapshot: Dictionary, node_id: String) -> bool:
+	for node in snapshot.get("gatherables", []):
+		if String(node.get("node_id", "")) == node_id and bool(node.get("depleted", false)):
+			return true
+	return false
+
+func _generated_world_contract(world: Dictionary) -> Dictionary:
+	return {
+		"biome_id": String(world.get("biome_id", "")),
+		"terrain_counts": _terrain_counts(world.get("world_data", {})),
+		"landmarks": _node_contract(world.get("landmarks", [])),
+		"resources": _node_contract(world.get("resource_nodes", []))
+	}
+
+func _terrain_counts(world_snapshot: Dictionary) -> Dictionary:
+	var counts := {}
+	for cell in world_snapshot.get("cells", []):
+		var terrain: Dictionary = cell.get("layers", {}).get("terrain", {})
+		var terrain_id := String(terrain.get("id", ""))
+		counts[terrain_id] = int(counts.get(terrain_id, 0)) + 1
+	return counts
+
+func _node_contract(nodes: Array) -> Array:
+	var result := []
+	for node in nodes:
+		result.append({
+			"id": String(node.get("id", "")),
+			"kind": String(node.get("kind", node.get("type", ""))),
+			"position": node.get("position", {})
+		})
+	result.sort_custom(func(a, b): return String(a.id) < String(b.id))
+	return result
+
+func _save_paths(label: String) -> Dictionary:
+	var base := "user://samurai-tea-fox-dev128/%s" % label
+	return {
+		"run": "%s.run.save.json" % base,
+		"meta": "%s.meta.save.json" % base
+	}
+
+func _cleanup_transition_runtime(main: Main, clean_paths := true) -> void:
+	var paths := {"run": main.save_store.run_path, "meta": main.save_store.meta_path} if main.save_store != null else {}
+	if main.combat_dummy != null:
+		main.combat_dummy.free()
+	if main.world_visuals != null:
+		main.world_visuals.free()
+	main.free()
+	if clean_paths:
+		_cleanup_paths(paths)
+
+func _cleanup_paths(paths: Dictionary) -> void:
+	for path in [String(paths.get("run", "")), String(paths.get("meta", "")), "%s.invalidated.json" % String(paths.get("run", ""))]:
+		if path.is_empty() or not FileAccess.file_exists(path):
+			continue
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))

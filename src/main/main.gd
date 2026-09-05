@@ -390,6 +390,7 @@ func _configure_world_for_current_run() -> Dictionary:
 	var current_biome: Dictionary = catalog.find_by_id("biomes", current_biome_id)
 	if current_biome.is_empty():
 		return {"ok": false, "reason": "missing_current_biome", "error": "No current biome data loaded for %s." % current_biome_id}
+	_prepare_runtime_state_aliases_for_biome(current_biome_id)
 	generated_world = _generate_world_for_biome(generator, current_biome, projection)
 	if not generated_world.get("ok", false):
 		return {"ok": false, "reason": "world_generation_failed", "error": String(generated_world.get("failure_reason", "World generation failed."))}
@@ -1092,6 +1093,8 @@ func snapshot_run_state() -> Dictionary:
 	var snapshot_result: Dictionary = run_runtime_state_binder.snapshot_to_run_state(run_state, _run_runtime_state_entries())
 	if not snapshot_result.ok:
 		push_error(snapshot_result.error)
+	else:
+		_store_current_biome_runtime_aliases()
 	return run_state.to_dictionary()
 
 func load_or_create_run_state() -> Dictionary:
@@ -2139,6 +2142,8 @@ func _normalize_reward_hook_result(result) -> Dictionary:
 func _configure_acquisition_for_generated_world() -> Dictionary:
 	if not generated_world.get("ok", false) or typeof(generated_world.get("world_data")) != TYPE_DICTIONARY:
 		return {"ok": false, "reason": "invalid_generated_world", "error": "Acquisition requires a generated world snapshot."}
+	var biome_id := String(generated_world.get("biome_id", run_state.current_biome_id if run_state != null else ""))
+	_prepare_runtime_state_aliases_for_biome(biome_id)
 	var saved_acquisitions := run_state.acquisitions.duplicate(true) if run_state != null else {}
 	world_data = WorldData.from_dictionary(generated_world.world_data)
 	var facility_restore_result := _restore_placed_facilities_for_current_biome()
@@ -2350,6 +2355,7 @@ func _on_combat_target_damaged(event: Dictionary, applied_damage: int) -> void:
 func _on_acquisition_changed(snapshot: Dictionary) -> void:
 	if run_state != null and not _in_dungeon_map:
 		run_state.acquisitions = snapshot.duplicate(true)
+		_store_current_biome_runtime_aliases()
 	_sync_runtime_world_render()
 
 func _on_acquisition_completed(result: Dictionary) -> void:
@@ -2586,6 +2592,52 @@ func _activate_run_state(state: RunState) -> Dictionary:
 
 func _vector_from_dictionary(data: Dictionary) -> Vector2i:
 	return Vector2i(int(data.get("x", 0)), int(data.get("y", 0)))
+
+func _prepare_runtime_state_aliases_for_biome(biome_id: String) -> void:
+	if run_state == null or biome_id.is_empty():
+		return
+	_migrate_legacy_runtime_aliases(biome_id)
+	run_state.acquisitions = _dictionary_value(run_state.biome_acquisitions.get(biome_id, {}))
+	run_state.map_discovery = _dictionary_value(run_state.map_discovery_by_biome.get(biome_id, {}))
+
+func _store_current_biome_runtime_aliases(biome_id := "") -> void:
+	if run_state == null:
+		return
+	var target_biome_id := biome_id
+	if target_biome_id.is_empty():
+		target_biome_id = _current_runtime_biome_id()
+	if target_biome_id.is_empty():
+		return
+	run_state.biome_acquisitions[target_biome_id] = run_state.acquisitions.duplicate(true)
+	run_state.map_discovery_by_biome[target_biome_id] = run_state.map_discovery.duplicate(true)
+
+func _migrate_legacy_runtime_aliases(biome_id: String) -> void:
+	if run_state == null:
+		return
+	if biome_id.is_empty():
+		return
+	if not run_state.acquisitions.is_empty() and run_state.biome_acquisitions.is_empty():
+		run_state.biome_acquisitions[biome_id] = run_state.acquisitions.duplicate(true)
+	if not run_state.map_discovery.is_empty() and run_state.map_discovery_by_biome.is_empty():
+		run_state.map_discovery_by_biome[biome_id] = run_state.map_discovery.duplicate(true)
+
+func _current_runtime_biome_id() -> String:
+	if run_state == null:
+		return ""
+	var world_biome_id := String(generated_world.get("biome_id", "")) if typeof(generated_world) == TYPE_DICTIONARY else ""
+	return world_biome_id if not world_biome_id.is_empty() else String(run_state.current_biome_id)
+
+func _restore_run_state_from_snapshot(snapshot: Dictionary) -> void:
+	if run_state == null:
+		run_state = RunState.new()
+	var restored: RunState = RunState.from_dictionary(snapshot)
+	for field in restored.to_dictionary().keys():
+		run_state.set(String(field), restored.get(String(field)))
+
+func _dictionary_value(value) -> Dictionary:
+	if typeof(value) != TYPE_DICTIONARY:
+		return {}
+	return value.duplicate(true)
 
 func _cell_key(cell: Vector2i) -> String:
 	return "%d,%d" % [cell.x, cell.y]
@@ -2942,13 +2994,24 @@ func _travel_to_biome(biome_id: String, travel_mode: String = "teleport") -> boo
 		if game_hud != null:
 			game_hud.show_command_feedback("텔레포트 연결 조건을 만족하지 않았습니다")
 		return false
+	var rollback_snapshot := run_state.to_dictionary()
+	var rollback_generated_world := generated_world.duplicate(true)
+	_store_current_biome_runtime_aliases(current_id)
 	run_state.current_biome_id = biome_id
 	if travel_mode != "ruin":
 		run_state.teleport_states[biome_id] = BiomeProgressionState.TELEPORT_BROKEN
+	biome_progression_state = null
 	_create_loading_overlay()
 	_set_loading_status("%s 지역으로 이동하는 중…" % _loading_biome_label())
 	var world_result := _configure_world_for_current_run()
 	if not world_result.ok:
+		_restore_run_state_from_snapshot(rollback_snapshot)
+		generated_world = rollback_generated_world.duplicate(true)
+		biome_progression_state = null
+		var rollback_world_result := _configure_world_for_current_run()
+		if not rollback_world_result.ok:
+			push_error(String(rollback_world_result.get("error", "Failed to restore previous biome world after travel failure.")))
+		_clear_loading_overlay()
 		return false
 	_clear_loading_overlay()
 	save_current_run()
@@ -3583,6 +3646,11 @@ func _handle_biome_progression_command(command: GameCommand) -> bool:
 		str(run_state.completed_dungeon_ids if run_state != null else []),
 		str(run_state.teleport_states if run_state != null else {})
 	])
+	var rollback_snapshot := run_state.to_dictionary() if run_state != null else {}
+	var rollback_generated_world := generated_world.duplicate(true)
+	var previous_biome_id := String(run_state.current_biome_id) if run_state != null else ""
+	if command.type == GameCommand.Type.ADVANCE_BIOME:
+		_store_current_biome_runtime_aliases(previous_biome_id)
 	var result: Dictionary = biome_progression_state.apply_command(command)
 	if not result.ok:
 		_dungeon_debug("바이옴 진행 명령 실패: type=%s biome=%s reason=%s" % [command.type, String(command.payload.get("biome_id", "")), String(result.get("reason", "unknown"))])
@@ -3591,6 +3659,13 @@ func _handle_biome_progression_command(command: GameCommand) -> bool:
 		return false
 	var world_result := _configure_world_for_current_run()
 	if not world_result.ok:
+		if command.type == GameCommand.Type.ADVANCE_BIOME and not rollback_snapshot.is_empty():
+			_restore_run_state_from_snapshot(rollback_snapshot)
+			generated_world = rollback_generated_world.duplicate(true)
+			biome_progression_state = null
+			var rollback_world_result := _configure_world_for_current_run()
+			if not rollback_world_result.ok:
+				push_error(String(rollback_world_result.get("error", "Failed to restore previous biome world after transition failure.")))
 		return false
 	save_current_run()
 	if game_hud != null and command.type == GameCommand.Type.ADVANCE_BIOME:
@@ -3702,6 +3777,7 @@ func _record_current_map_discovery() -> void:
 	if not world_data.contains(current_cell):
 		return
 	run_state.map_discovery = MapReadModelBuilder.discover_cells(run_state.map_discovery, current_cell)
+	_store_current_biome_runtime_aliases()
 
 func _crafting_context() -> Dictionary:
 	return {
