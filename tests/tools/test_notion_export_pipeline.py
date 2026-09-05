@@ -1359,7 +1359,7 @@ class NotionExportPipelineTests(unittest.TestCase):
         capture = self._minimal_event_capture()
         capture["datasets"]["characters"] = {
             "source": "collection://characters",
-            "items": [{"id": "chr_3", "name": "오리베", "status": "확정"}],
+            "items": [{"id": "chr_3", "character_id": "CHR-3", "name": "오리베", "status": "확정", "meta_memory": False}],
         }
         capture["datasets"]["dungeons"] = {
             "source": "collection://dungeons",
