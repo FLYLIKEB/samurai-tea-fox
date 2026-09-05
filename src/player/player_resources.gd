@@ -144,6 +144,19 @@ func load_snapshot(snapshot: Dictionary) -> Dictionary:
 		return {"ok": false, "reason": "resource_definition_mismatch", "error": "Resource maximums do not match the current catalog."}
 	if int(snapshot.kokoro_low_threshold) < 0 or int(snapshot.kokoro_low_threshold) > kokoro_max:
 		return {"ok": false, "reason": "invalid_resource_snapshot", "error": "Kokoro threshold is outside the current resource bounds."}
+	for bounds in [
+		{"field": "hp", "maximum_field": "hp_max"},
+		{"field": "ki", "maximum_field": "ki_max"},
+		{"field": "kokoro", "maximum_field": "kokoro_max"},
+	]:
+		var current := int(snapshot[bounds.field])
+		var maximum := int(snapshot[bounds.maximum_field])
+		if current < 0 or current > maximum:
+			return {
+				"ok": false,
+				"reason": "invalid_resource_snapshot",
+				"error": "Resource snapshot field is outside its bounds: %s" % bounds.field
+			}
 	_set_resource_current(_hp, int(snapshot.hp))
 	_set_resource_current(_ki, int(snapshot.ki))
 	_set_resource_current(_kokoro, int(snapshot.kokoro))
