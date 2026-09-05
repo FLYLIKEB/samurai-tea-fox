@@ -642,17 +642,30 @@ class NotionExportPipelineTests(unittest.TestCase):
                     "런타임 이벤트 ID": "father_memory",
                     "이벤트 이름": "아버지의 기억",
                     "재실행 정책": "repeat",
+                    "챕터": "프롤로그",
+                    "챕터 표시": "00 · 프롤로그",
+                    "스토리 순서": 0,
+                    "장면 키": "PRO-01",
+                    "장면 순서": 1,
                     "시작 노드": True,
                     "노드 ID": "start",
                     "라인 순서": 1,
+                    "대사 키": "DLG-PRO-001",
+                    "다음 대사 키": "DLG-PRO-002",
                     "본문 KO": "물을 올려라.",
                     "화자 ID": "CHR-1",
+                    "화자 표시명": "아버지",
                     "선택 ID": "remember",
                     "선택 문구": "기억한다",
                     "조건 JSON": "`[]`",
                     "결과 JSON": "`[{\"type\":\"set_run_flag\",\"id\":\"father_remembered\"}]`",
                     "다음 노드 ID": "",
                     "이벤트 완료": True,
+                    "연출 명령 JSON": "`{\"camera\":\"kettle\"}`",
+                    "Meta 기억 필요": "__YES__",
+                    "일회성": "__YES__",
+                    "스킵 가능": "__YES__",
+                    "자동 진행": "__NO__",
                 },
                 {
                     "_notion_id": "line-2",
@@ -661,17 +674,29 @@ class NotionExportPipelineTests(unittest.TestCase):
                     "런타임 이벤트 ID": "father_memory",
                     "이벤트 이름": "아버지의 기억",
                     "재실행 정책": "repeat",
+                    "챕터": "프롤로그",
+                    "챕터 표시": "00 · 프롤로그",
+                    "스토리 순서": 0,
+                    "장면 키": "PRO-01",
+                    "장면 순서": 1,
                     "시작 노드": False,
                     "노드 ID": "start",
                     "라인 순서": 2,
+                    "대사 키": "DLG-PRO-002",
+                    "다음 대사 키": "END",
                     "본문 KO": "물을 올려라.",
                     "화자 ID": "CHR-1",
+                    "화자 표시명": "아버지",
                     "선택 ID": "leave",
                     "선택 문구": "떠난다",
                     "조건 JSON": "[]",
                     "결과 JSON": "[]",
                     "다음 노드 ID": "",
                     "이벤트 완료": True,
+                    "Meta 기억 필요": "__NO__",
+                    "일회성": "__YES__",
+                    "스킵 가능": "__YES__",
+                    "자동 진행": "__NO__",
                 },
                 {
                     "_notion_id": "draft-package",
@@ -691,6 +716,13 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(event["replay_policy"], "repeat")
         self.assertEqual(event["start_node_id"], "start")
         self.assertEqual(event["nodes"][0]["speaker_id"], "CHR-1")
+        self.assertEqual(event["nodes"][0]["speaker_display_name"], "아버지")
+        self.assertEqual(event["source_lines"][0]["notion_id"], "line-1")
+        self.assertEqual(event["source_lines"][0]["dialogue_key"], "DLG-PRO-001")
+        self.assertEqual(event["source_lines"][0]["speaker_display_name"], "아버지")
+        self.assertEqual(event["source_lines"][0]["text"], "물을 올려라.")
+        self.assertEqual(event["source_lines"][0]["presentation_commands"], {"camera": "kettle"})
+        self.assertEqual(event["source_lines"][1]["next_dialogue_key"], "END")
         self.assertEqual(
             [option["id"] for option in event["nodes"][0]["options"]],
             ["remember", "leave"],
@@ -703,6 +735,39 @@ class NotionExportPipelineTests(unittest.TestCase):
         rows["events"][1]["라인 순서"] = 1
         with self.assertRaisesRegex(ExportValidationError, "duplicate 라인 순서"):
             CaptureBuilder(schema).build_from_rows(rows, "notion-live-test")
+
+    def test_event_source_lines_are_validated_against_generated_nodes(self):
+        capture = self._minimal_event_capture()
+        event = capture["datasets"]["events"]["items"][0]
+        event["source_lines"] = [{
+            "notion_id": "line-start",
+            "dialogue_key": "DLG-SAMPLE-001",
+            "next_dialogue_key": "END",
+            "node_id": "start",
+            "option_id": "take",
+            "speaker_id": "",
+            "speaker_display_name": "화자",
+            "text": "start",
+            "line_order": 1,
+            "presentation_commands": {},
+        }]
+        event["notion_ids"] = ["line-start"]
+
+        snapshots = self.pipeline.build_snapshots(capture, "confirmed-test")
+        self.assertEqual(
+            snapshots["events"]["items"][0]["source_lines"][0]["text"],
+            "start",
+        )
+
+        broken_text = copy.deepcopy(capture)
+        broken_text["datasets"]["events"]["items"][0]["source_lines"][0]["text"] = "edited"
+        with self.assertRaisesRegex(ExportValidationError, "text does not match node text"):
+            self.pipeline.build_snapshots(broken_text, "confirmed-test")
+
+        missing_next = copy.deepcopy(capture)
+        missing_next["datasets"]["events"]["items"][0]["source_lines"][0]["next_dialogue_key"] = "DLG-MISSING"
+        with self.assertRaisesRegex(ExportValidationError, "next_dialogue_key targets missing line"):
+            self.pipeline.build_snapshots(missing_next, "confirmed-test")
 
     def test_event_capture_rejects_missing_runtime_id_outside_explicit_ignored_status(self):
         schema = json.loads(SCHEMA.read_text(encoding="utf-8"))

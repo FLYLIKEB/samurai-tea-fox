@@ -89,7 +89,17 @@
       "notion": {
         "source": "collection://671bff29-b822-4706-87b2-64fc4cff057d", "title_field": "이벤트 이름", "status_field": "상태", "stable_id_field": "런타임 이벤트 ID", "id_prefix": "event",
         "capture_mode": "event_lines", "event_metadata_field": "이벤트 메타 JSON", "ignored_statuses": ["검토 필요"],
-        "field_map": {"재실행 정책": "replay_policy", "시작 노드 ID": "start_node_id", "노드": "nodes"}
+        "field_map": {
+          "재실행 정책": "replay_policy",
+          "시작 노드 ID": "start_node_id",
+          "노드": "nodes",
+          "출처 라인": "source_lines",
+          "챕터": "chapter",
+          "챕터 표시": "chapter_label",
+          "스토리 순서": "story_order",
+          "장면 키": "scene_key",
+          "장면 순서": "scene_order"
+        }
       }
     },
     "items": {

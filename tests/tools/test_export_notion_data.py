@@ -67,6 +67,26 @@ class ExportedNotionDataTests(unittest.TestCase):
         self.assertEqual(len(event_page_ids), 75)
         self.assertEqual(len(set(event_page_ids)), 75)
 
+    def test_generated_dialogue_covers_all_story_chapters(self):
+        events = self._items_by_id("events.json")
+        expected_chapter_events = {
+            "프롤로그": "story_pro_01",
+            "일반": "story_b01_01",
+            "산악": "story_b02_01",
+            "황무지": "story_b03_01",
+            "설원": "story_b04_01",
+            "열대우림": "story_b05_01",
+            "최종 다실": "story_fin_01",
+        }
+
+        for chapter_name, event_id in expected_chapter_events.items():
+            with self.subTest(chapter=chapter_name):
+                self.assertIn(event_id, events)
+                self.assertTrue(events[event_id].get("notion_ids"))
+
+        self.assertEqual(events["story_pro_01"]["nodes"][0]["text"], "아버지?")
+        self.assertEqual(events["story_fin_06"]["nodes"][0]["text"], "내 답을 찾지 말고, 네가 누구와 마실지 정해라.")
+
     def test_newly_exported_canonical_rows_are_present(self):
         balance = self._items_by_id("balance.json")
         dungeons = self._items_by_id("dungeons.json")
