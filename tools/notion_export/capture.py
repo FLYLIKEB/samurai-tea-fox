@@ -123,7 +123,9 @@ class CaptureBuilder:
         ordered_rows = sorted(
             rows,
             key=lambda row: (
-                self._number_or_zero(row.get("라인 순서")),
+                self._number_or_end(row.get("스토리 순서")),
+                self._number_or_end(row.get("장면 순서")),
+                self._number_or_end(row.get("라인 순서")),
                 str(row.get("노드 ID", "")),
                 str(row.get("_notion_id", "")),
             ),
@@ -131,6 +133,11 @@ class CaptureBuilder:
         event_name = self._consistent_value(dataset_name, event_id, rows, "이벤트 이름")
         status = self._consistent_value(dataset_name, event_id, rows, "상태")
         replay_policy = self._consistent_value(dataset_name, event_id, rows, "재실행 정책")
+        chapter = self._first_non_empty(rows, "챕터")
+        chapter_label = self._first_non_empty(rows, "챕터 표시")
+        scene_key = self._first_non_empty(rows, "장면 키")
+        story_order = self._first_non_empty(rows, "스토리 순서")
+        scene_order = self._first_non_empty(rows, "장면 순서")
         start_rows = [row for row in rows if self._checkbox_value(row.get("시작 노드"))]
         if len(start_rows) != 1:
             raise ExportValidationError(
@@ -144,6 +151,7 @@ class CaptureBuilder:
 
         nodes_by_id: dict[str, dict[str, Any]] = {}
         node_order: dict[str, tuple[float, str]] = {}
+        source_lines: list[dict[str, Any]] = []
         for row in ordered_rows:
             node_id = row.get("노드 ID")
             option_id = row.get("선택 ID")
@@ -153,6 +161,7 @@ class CaptureBuilder:
                 raise ExportValidationError(f"{dataset_name} item {event_id}: missing 선택 ID")
             text = row.get("본문 KO")
             speaker_id = row.get("화자 ID")
+            speaker_display_name = row.get("화자 표시명")
             node = nodes_by_id.setdefault(
                 node_id,
                 {"id": node_id, "text": text, "options": []},
@@ -168,6 +177,13 @@ class CaptureBuilder:
                         f"{dataset_name} item {event_id}: inconsistent 화자 ID for node {node_id}"
                     )
                 node["speaker_id"] = speaker_id
+            if isinstance(speaker_display_name, str) and speaker_display_name:
+                existing_display_name = node.get("speaker_display_name")
+                if existing_display_name not in (None, speaker_display_name):
+                    raise ExportValidationError(
+                        f"{dataset_name} item {event_id}: inconsistent 화자 표시명 for node {node_id}"
+                    )
+                node["speaker_display_name"] = speaker_display_name
             node["options"].append({
                 "id": option_id,
                 "display_text": row.get("선택 문구"),
@@ -180,6 +196,7 @@ class CaptureBuilder:
                 "next_node_id": row.get("다음 노드 ID") or "",
                 "completes_event": self._checkbox_value(row.get("이벤트 완료")),
             })
+            source_lines.append(self._build_event_source_line(row, node_id, option_id))
             node_order.setdefault(
                 node_id,
                 (self._number_or_zero(row.get("라인 순서")), node_id),
@@ -214,11 +231,72 @@ class CaptureBuilder:
             "재실행 정책": replay_policy,
             "시작 노드 ID": start_node_id,
             "노드": nodes,
+            "출처 라인": source_lines,
+            "챕터": chapter,
+            "챕터 표시": chapter_label,
+            "스토리 순서": story_order,
+            "장면 키": scene_key,
+            "장면 순서": scene_order,
+        }
+
+    def _build_event_source_line(
+        self,
+        row: dict[str, Any],
+        node_id: str,
+        option_id: str,
+    ) -> dict[str, Any]:
+        return {
+            "notion_id": str(row["_notion_id"]),
+            "dialogue_key": row.get("대사 키") or "",
+            "next_dialogue_key": row.get("다음 대사 키") or "",
+            "node_id": node_id,
+            "option_id": option_id,
+            "speaker_id": row.get("화자 ID") or "",
+            "speaker_display_name": row.get("화자 표시명") or "",
+            "text": row.get("본문 KO") or "",
+            "localization_key": row.get("현지화 키") or "",
+            "chapter": row.get("챕터") or "",
+            "chapter_label": row.get("챕터 표시") or "",
+            "story_order": row.get("스토리 순서"),
+            "scene_key": row.get("장면 키") or "",
+            "scene_order": row.get("장면 순서"),
+            "line_order": row.get("라인 순서"),
+            "dialogue_type": row.get("대사 유형") or "",
+            "trigger_timing": row.get("발생 시점") or "",
+            "hook_key": row.get("대사 Hook Key") or "",
+            "biome_id": row.get("바이옴 ID") or "",
+            "boss_id": row.get("보스 ID") or "",
+            "trigger_condition": row.get("발동 조건") or "",
+            "presentation_commands": self._parse_optional_json_field(
+                "events",
+                str(row.get("런타임 이벤트 ID", "")),
+                "연출 명령 JSON",
+                row.get("연출 명령 JSON"),
+                dict,
+            ),
+            "record_run_flag": row.get("기록 Run Flag") or "",
+            "meta_memory_required": self._checkbox_value(row.get("Meta 기억 필요")),
+            "one_shot": self._checkbox_value(row.get("일회성")),
+            "skippable": self._checkbox_value(row.get("스킵 가능")),
+            "auto_advance": self._checkbox_value(row.get("자동 진행")),
+            "source_event_id": row.get("출처 이벤트 ID") or "",
+            "source_document": row.get("출처 문서") or "",
         }
 
     @staticmethod
     def _number_or_zero(value: Any) -> float:
         return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else 0.0
+
+    @staticmethod
+    def _number_or_end(value: Any) -> float:
+        return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else float("inf")
+
+    @staticmethod
+    def _first_non_empty(rows: list[dict[str, Any]], field: str) -> Any:
+        values = [row.get(field) for row in rows if row.get(field) not in (None, "", [])]
+        if not values:
+            return None
+        return values[0]
 
     @staticmethod
     def _checkbox_value(value: Any) -> bool:
@@ -279,6 +357,18 @@ class CaptureBuilder:
                 f"{dataset_name} item {item_id}: invalid {field}"
             )
         return parsed
+
+    def _parse_optional_json_field(
+        self,
+        dataset_name: str,
+        item_id: str,
+        field: str,
+        value: Any,
+        expected_type: type,
+    ) -> Any:
+        if value in (None, ""):
+            return {} if expected_type is dict else []
+        return self._parse_json_field(dataset_name, item_id, field, value, expected_type)
 
     def _build_runtime_id_index(
         self,

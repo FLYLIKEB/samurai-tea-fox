@@ -175,7 +175,23 @@ class ExportPipeline:
             seen_ids.add(item_id)
             included.append(copy_json_value(normalized_row))
 
+        if dataset_name == "events":
+            return sorted(included, key=self._event_sort_key)
         return sorted(included, key=lambda item: item["id"])
+
+    @staticmethod
+    def _event_sort_key(item: dict[str, Any]) -> tuple[float, float, float, str]:
+        source_lines = item.get("source_lines", [])
+        line_order = 0.0
+        if isinstance(source_lines, list) and source_lines:
+            first_line = source_lines[0] if isinstance(source_lines[0], dict) else {}
+            line_order = _number_or_end(first_line.get("line_order"))
+        return (
+            _number_or_end(item.get("story_order")),
+            _number_or_end(item.get("scene_order")),
+            line_order,
+            str(item.get("id", "")),
+        )
 
     def _validate_row_contract(self, dataset_name: str, row: dict[str, Any]) -> None:
         if dataset_name == "biomes":
@@ -889,7 +905,93 @@ class ExportPipeline:
                         raise ExportValidationError(
                             f"events item {event['id']} node {node_id} option {option['id']}: next_node_id targets missing node {next_node_id}"
                         )
+            self._validate_event_source_lines(event, nodes_by_id)
             self._validate_event_completion_paths(event["id"], start_node_id, nodes_by_id)
+
+    def _validate_event_source_lines(
+        self,
+        event: dict[str, Any],
+        nodes_by_id: dict[str, dict[str, Any]],
+    ) -> None:
+        source_lines = event.get("source_lines", [])
+        if source_lines in (None, []):
+            return
+        if not isinstance(source_lines, list):
+            raise ExportValidationError(f"events item {event['id']}: source_lines must be an array")
+        notion_ids = event.get("notion_ids", [])
+        if not isinstance(notion_ids, list):
+            raise ExportValidationError(f"events item {event['id']}: notion_ids must be an array")
+        line_notion_ids: set[str] = set()
+        dialogue_keys: dict[str, str] = {}
+        for line_index, line in enumerate(source_lines):
+            if not isinstance(line, dict):
+                raise ExportValidationError(f"events item {event['id']}: source_lines[{line_index}] must be an object")
+            notion_id = line.get("notion_id")
+            if not isinstance(notion_id, str) or not notion_id:
+                raise ExportValidationError(f"events item {event['id']}: source_lines[{line_index}] missing notion_id")
+            if notion_id in line_notion_ids:
+                raise ExportValidationError(f"events item {event['id']}: duplicate source line notion_id {notion_id}")
+            line_notion_ids.add(notion_id)
+            node_id = line.get("node_id")
+            if not isinstance(node_id, str) or node_id not in nodes_by_id:
+                raise ExportValidationError(f"events item {event['id']}: source line {notion_id} targets missing node")
+            node = nodes_by_id[node_id]
+            if line.get("text") != node.get("text"):
+                raise ExportValidationError(
+                    f"events item {event['id']} source line {notion_id}: text does not match node text"
+                )
+            if line.get("speaker_id") not in (None, "", node.get("speaker_id", "")):
+                raise ExportValidationError(
+                    f"events item {event['id']} source line {notion_id}: speaker_id does not match node"
+                )
+            option_id = line.get("option_id")
+            option_ids = {
+                option.get("id")
+                for option in node.get("options", [])
+                if isinstance(option, dict)
+            }
+            if not isinstance(option_id, str) or option_id not in option_ids:
+                raise ExportValidationError(
+                    f"events item {event['id']} source line {notion_id}: option_id targets missing option"
+                )
+            dialogue_key = line.get("dialogue_key", "")
+            if dialogue_key:
+                if not isinstance(dialogue_key, str):
+                    raise ExportValidationError(
+                        f"events item {event['id']} source line {notion_id}: dialogue_key must be a string"
+                    )
+                if dialogue_key in dialogue_keys:
+                    raise ExportValidationError(
+                        f"events item {event['id']}: duplicate dialogue_key {dialogue_key}"
+                    )
+                dialogue_keys[dialogue_key] = notion_id
+            next_dialogue_key = line.get("next_dialogue_key", "")
+            if next_dialogue_key not in ("", "END") and next_dialogue_key not in dialogue_keys:
+                pending = {
+                    pending_line.get("dialogue_key")
+                    for pending_line in source_lines[line_index + 1 :]
+                    if isinstance(pending_line, dict)
+                }
+                if next_dialogue_key not in pending:
+                    raise ExportValidationError(
+                        f"events item {event['id']} source line {notion_id}: next_dialogue_key targets missing line {next_dialogue_key}"
+                    )
+            for numeric_field in ("story_order", "scene_order", "line_order"):
+                value = line.get(numeric_field)
+                if value is not None and (not isinstance(value, (int, float)) or isinstance(value, bool)):
+                    raise ExportValidationError(
+                        f"events item {event['id']} source line {notion_id}: {numeric_field} must be numeric"
+                    )
+            for json_field in ("presentation_commands",):
+                value = line.get(json_field, {})
+                if value is not None and not isinstance(value, dict):
+                    raise ExportValidationError(
+                        f"events item {event['id']} source line {notion_id}: {json_field} must be an object"
+                    )
+        if set(notion_ids) != line_notion_ids:
+            raise ExportValidationError(
+                f"events item {event['id']}: source_lines must match notion_ids exactly"
+            )
 
     def _validate_event_conditions(
         self,
@@ -1023,6 +1125,10 @@ class ExportPipeline:
 
 def copy_json_value(value: Any) -> Any:
     return json.loads(json.dumps(value, ensure_ascii=False))
+
+
+def _number_or_end(value: Any) -> float:
+    return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else float("inf")
 
 
 def normalize_structured_fields(dataset_name: str, row: dict[str, Any]) -> dict[str, Any]:
