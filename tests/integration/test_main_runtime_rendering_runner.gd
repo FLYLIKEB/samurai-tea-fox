@@ -23,12 +23,8 @@ func run() -> void:
 
 	var main := packed_scene.instantiate()
 	root.add_child(main)
-	if not await _wait_for_main_runtime_ready(main):
-		failures.append("main scene completes async runtime initialization before rendering assertions")
-		main.queue_free()
-		_cleanup_lifecycle_files()
-		finish()
-		return
+	await process_frame
+	await physics_frame
 
 	var world_visuals := main.get_node_or_null("WorldVisuals") as Node2D
 	if world_visuals == null:
@@ -184,15 +180,6 @@ func finish() -> void:
 		push_error(failure)
 	quit(1)
 
-func _wait_for_main_runtime_ready(main) -> bool:
-	var deadline_msec := Time.get_ticks_msec() + 3000
-	while Time.get_ticks_msec() < deadline_msec:
-		if main != null and main.world_data != null and not main.generated_world.is_empty() and main.world_render_result.get("ok", false):
-			await physics_frame
-			return true
-		await process_frame
-	return false
-
 func _texture_rect_count(node: Node) -> int:
 	var count := 1 if node is TextureRect and (node as TextureRect).texture != null else 0
 	for child in node.get_children():
@@ -311,16 +298,16 @@ func _assert_runtime_death_replaces_run(main, player) -> void:
 		return
 	if loaded.state.lifecycle_epoch != 1 or loaded.state.seed != 0:
 		failures.append("real main death path advances lifecycle epoch and replaces run data")
-	if main.run_state.lifecycle_epoch != 0 or main.run_state.seed != 701:
-		failures.append("real main death path leaves the old runtime attached until the start screen transition")
-	if main.run_lifecycle_service != lifecycle_before or not main.run_lifecycle_service.death_confirmed:
-		failures.append("real main death path keeps the confirmed lifecycle visible during the transition")
-	if main.inventory != inventory_before or main.acquisition_service != acquisition_before:
-		failures.append("real main death path does not reinitialize run-owned services before the start screen transition")
-	if main.inventory.get_total_quantity("wood") != 1:
-		failures.append("real main death path keeps old run-only inventory only in the outgoing runtime")
-	if not main._death_transition_active or main.get_node_or_null("DeathTransition") == null:
-		failures.append("real main death path shows a start-screen transition instead of immediate fresh-run activation")
+	if main.run_state.lifecycle_epoch != 1 or main.run_state.seed != 0:
+		failures.append("real main runtime activates the persisted fresh run")
+	if main.run_lifecycle_service == lifecycle_before or main.run_lifecycle_service.death_confirmed:
+		failures.append("real main death path reinitializes lifecycle service")
+	if main.inventory == inventory_before or main.acquisition_service == acquisition_before:
+		failures.append("real main death path reinitializes run-owned services")
+	if main.inventory.get_total_quantity("wood") != 0:
+		failures.append("real main death path clears run-only inventory")
+	if player.resources.hp != player.resources.hp_max:
+		failures.append("real main death path reinitializes player resources")
 	if FileAccess.get_file_as_string(META_PATH) != meta_before:
 		failures.append("real main death replacement preserves meta save")
 	var marker = JSON.parse_string(FileAccess.get_file_as_string(RUN_PATH + ".invalidated.json"))
