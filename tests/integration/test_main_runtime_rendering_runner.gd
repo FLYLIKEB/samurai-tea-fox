@@ -23,8 +23,12 @@ func run() -> void:
 
 	var main := packed_scene.instantiate()
 	root.add_child(main)
-	await process_frame
-	await physics_frame
+	if not await _wait_for_main_runtime_ready(main):
+		failures.append("main scene completes async runtime initialization before rendering assertions")
+		main.queue_free()
+		_cleanup_lifecycle_files()
+		finish()
+		return
 
 	var world_visuals := main.get_node_or_null("WorldVisuals") as Node2D
 	if world_visuals == null:
@@ -179,6 +183,15 @@ func finish() -> void:
 	for failure in failures:
 		push_error(failure)
 	quit(1)
+
+func _wait_for_main_runtime_ready(main) -> bool:
+	var deadline_msec := Time.get_ticks_msec() + 3000
+	while Time.get_ticks_msec() < deadline_msec:
+		if main != null and main.world_data != null and not main.generated_world.is_empty() and main.world_render_result.get("ok", false):
+			await physics_frame
+			return true
+		await process_frame
+	return false
 
 func _texture_rect_count(node: Node) -> int:
 	var count := 1 if node is TextureRect and (node as TextureRect).texture != null else 0
