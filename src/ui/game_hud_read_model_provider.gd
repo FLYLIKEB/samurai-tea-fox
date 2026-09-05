@@ -2,6 +2,7 @@ extends RefCounted
 class_name GameHudReadModelProvider
 
 const WorldData = preload("res://src/world/data/world_data.gd")
+const MapReadModelBuilder = preload("res://src/world/map/map_read_model_builder.gd")
 
 signal changed(read_model: Dictionary)
 
@@ -111,9 +112,21 @@ func facility_nodes() -> Array:
 func map_read_model(options := {}, selected_biome_id := "") -> Dictionary:
 	var selected_id := selected_biome_id if not selected_biome_id.is_empty() else current_biome_id()
 	var map_source = world_data
-	if selected_id != current_biome_id() and biome_map_previews.has(selected_id):
+	var selected_run_state = run_state
+	var selected_options: Dictionary = _dictionary_value(options)
+	var uses_selected_preview := false
+	if selected_id != current_biome_id():
+		if not biome_map_previews.has(selected_id):
+			return {"ok": false, "reason": "missing_biome_map_preview", "biome_id": selected_id}
 		map_source = WorldData.from_dictionary(biome_map_previews[selected_id].get("world_data", {}))
-	return _map_read_model(options, map_source)
+		selected_run_state = _read_state_for_selected_biome(selected_id)
+		if not bool(selected_options.get("reveal_all", false)):
+			selected_options["discovery_radius"] = -1
+		uses_selected_preview = true
+	var model := _map_read_model(selected_options, map_source, selected_run_state)
+	if uses_selected_preview:
+		model = _without_current_player_marker(model)
+	return model
 
 func current_biome_id() -> String:
 	var biome_id := String(world.get("biome_id", ""))
@@ -314,11 +327,52 @@ func combat_target_read_model() -> Dictionary:
 		"attack": int(_object_property(combatant, "attack", 0))
 	}
 
-func _map_read_model(options := {}, source_world_data = null) -> Dictionary:
+func _map_read_model(options := {}, source_world_data = null, source_run_state = null) -> Dictionary:
 	if map_read_model_builder == null or not map_read_model_builder.has_method("build"):
 		return {"ok": false, "reason": "missing_map_read_model_builder"}
 	var selected_source = source_world_data if source_world_data != null else (world_data if world_data != null else world)
-	return _dictionary_value(map_read_model_builder.build(selected_source, run_state, _player_cell(), options))
+	var selected_run_state = source_run_state if source_run_state != null else run_state
+	return _dictionary_value(map_read_model_builder.build(selected_source, selected_run_state, _player_cell(), options))
+
+func _read_state_for_selected_biome(biome_id: String) -> Dictionary:
+	var state := {
+		"current_biome_id": biome_id,
+		"completed_dungeon_ids": [],
+		"teleport_states": {},
+		"crafting_unlocks": [],
+		"map_discovery": {}
+	}
+	if run_state == null:
+		return state
+	state["completed_dungeon_ids"] = _array_property(run_state, "completed_dungeon_ids")
+	state["teleport_states"] = _object_property(run_state, "teleport_states", {})
+	state["crafting_unlocks"] = _array_property(run_state, "crafting_unlocks")
+	var discovery_by_biome: Dictionary = _object_property(run_state, "map_discovery_by_biome", {})
+	if discovery_by_biome.has(biome_id):
+		state["map_discovery"] = _dictionary_value(discovery_by_biome[biome_id])
+	return state
+
+func _without_current_player_marker(model: Dictionary) -> Dictionary:
+	var result := _dictionary_value(model)
+	var markers := []
+	for raw_marker in _array_value(result.get("markers", [])):
+		var marker: Dictionary = raw_marker
+		if String(marker.get("marker_type", "")) == MapReadModelBuilder.MARKER_PLAYER:
+			continue
+		markers.append(marker)
+	result["markers"] = markers
+	result["player"] = {}
+	if result.has("minimap"):
+		var minimap: Dictionary = _dictionary_value(result.minimap)
+		var minimap_markers := []
+		for raw_marker in _array_value(minimap.get("markers", [])):
+			var marker: Dictionary = raw_marker
+			if String(marker.get("marker_type", "")) == MapReadModelBuilder.MARKER_PLAYER:
+				continue
+			minimap_markers.append(marker)
+		minimap["markers"] = minimap_markers
+		result["minimap"] = minimap
+	return result
 
 func _player_cell() -> Vector2i:
 	var position := Vector2.ZERO
@@ -370,6 +424,9 @@ func _on_runtime_changed(_arg1 = null, _arg2 = null, _arg3 = null) -> void:
 	changed.emit(read_model())
 
 func _object_property(object, property: String, fallback = null):
+	if typeof(object) == TYPE_DICTIONARY:
+		var dictionary: Dictionary = object
+		return dictionary.get(property, fallback)
 	if object == null or not object.has_method("get"):
 		return fallback
 	var value = object.get(property)

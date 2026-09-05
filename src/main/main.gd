@@ -390,13 +390,7 @@ func _configure_world_for_current_run() -> Dictionary:
 	var current_biome: Dictionary = catalog.find_by_id("biomes", current_biome_id)
 	if current_biome.is_empty():
 		return {"ok": false, "reason": "missing_current_biome", "error": "No current biome data loaded for %s." % current_biome_id}
-	generated_world = generator.generate(run_state.seed, catalog.data_version, current_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), {
-		"progression_projection": projection,
-		"monster_definitions": catalog.get_definitions("monsters"),
-		"dungeon_definitions": catalog.get_definitions("dungeons"),
-		"boss_character_definitions": catalog.get_definitions("characters"),
-		"time_phase": String(time_state.phase) if time_state != null else "day"
-	})
+	generated_world = _generate_world_for_biome(generator, current_biome, projection)
 	if not generated_world.get("ok", false):
 		return {"ok": false, "reason": "world_generation_failed", "error": String(generated_world.get("failure_reason", "World generation failed."))}
 	generated_world["renderer_input"] = WorldRendererProjection.new().project(generated_world["world_data"], projection)
@@ -405,12 +399,7 @@ func _configure_world_for_current_run() -> Dictionary:
 		var preview_id := String(biome_definition.get("id", ""))
 		if preview_id.is_empty() or preview_id == current_biome_id:
 			continue
-		var preview_seed := int(run_state.seed) ^ (preview_id.hash() & 0x7fffffff)
-		var preview := generator.generate(preview_seed, catalog.data_version, biome_definition, catalog.get_definitions("balance"), catalog.get_definitions("items"), {
-			"progression_projection": projection,
-			"dungeon_definitions": catalog.get_definitions("dungeons"),
-			"boss_character_definitions": catalog.get_definitions("characters")
-		})
+		var preview := _generate_world_for_biome(generator, biome_definition, projection)
 		if bool(preview.get("ok", false)):
 			preview["renderer_input"] = WorldRendererProjection.new().project(preview["world_data"], projection)
 			_biome_map_previews[preview_id] = preview
@@ -433,6 +422,18 @@ func _configure_world_for_current_run() -> Dictionary:
 	_record_current_map_discovery()
 	_configure_game_hud()
 	return {"ok": true}
+
+func _generate_world_for_biome(generator: WorldGenerator, biome_definition: Dictionary, projection: Dictionary) -> Dictionary:
+	return generator.generate(run_state.seed, catalog.data_version, biome_definition, catalog.get_definitions("balance"), catalog.get_definitions("items"), _world_generation_options(projection))
+
+func _world_generation_options(projection: Dictionary) -> Dictionary:
+	return {
+		"progression_projection": projection,
+		"monster_definitions": catalog.get_definitions("monsters"),
+		"dungeon_definitions": catalog.get_definitions("dungeons"),
+		"boss_character_definitions": catalog.get_definitions("characters"),
+		"time_phase": String(time_state.phase) if time_state != null else "day"
+	}
 
 func _configure_overworld_combat_from_spawn_pool() -> Dictionary:
 	if combat_dummy == null or not combat_dummy.has_method("configure_combat"):
