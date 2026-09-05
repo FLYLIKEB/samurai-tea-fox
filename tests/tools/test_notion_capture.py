@@ -28,9 +28,11 @@ class NotionCaptureTests(unittest.TestCase):
                         "status_field": "설정 상태",
                         "unique_id_field": "아이템 ID",
                         "id_prefix": "item",
+                        "stable_id_field": "런타임 ID",
                         "field_map": {
                             "종류": "type",
                             "장비 슬롯": "equipment_slot",
+                            "상호작용 정의 JSON": "interaction_definition",
                             "정붙음 단계 임계값": "attachment_stage_thresholds",
                             "정붙음 설명 키": "attachment_description_keys",
                             "태그": "tags",
@@ -205,6 +207,24 @@ class NotionCaptureTests(unittest.TestCase):
         item = ExportPipeline(self.schema).build_snapshots(capture)["items"]["items"][0]
 
         self.assertEqual(item["attachment_stage_thresholds"], [0, 3, 7])
+
+    def test_item_runtime_id_and_plain_interaction_json_export(self):
+        rows = copy_rows(self.rows)
+        rows["items"][0].update(
+            {
+                "런타임 ID": "stone_pickaxe",
+                "상호작용 정의 JSON": '{"schema_version":1,"rules":[{"node_kind":"rock","action":"mine","required_tool_item_id":"stone_pickaxe"}],"tool_consumed":false}',
+            }
+        )
+
+        capture = CaptureBuilder(self.schema).build_from_rows(rows, "notion-fixture-v1")
+        item = ExportPipeline(self.schema).build_snapshots(capture)["items"]["items"][0]
+
+        self.assertEqual(item["id"], "stone_pickaxe")
+        self.assertEqual(
+            item["interaction_definition"]["rules"][0]["required_tool_item_id"],
+            "stone_pickaxe",
+        )
 
 
 if __name__ == "__main__":

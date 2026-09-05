@@ -20,6 +20,7 @@ class FakeCatalog:
 				{"id": "clay", "name": "점토", "type": "재료", "max_stack": 10},
 				{"id": "fixture_ore_item", "name": "테스트 광물", "type": "재료", "max_stack": 10},
 				{"id": "stone_axe", "name": "돌도끼", "type": "도구", "max_stack": 1},
+				{"id": "stone_pickaxe", "name": "돌곡괭이", "type": "도구", "max_stack": 1, "max_owned": 1},
 				{"id": "filler", "name": "테스트 채움재", "type": "재료", "max_stack": 1}
 			],
 			"teas": [
@@ -45,6 +46,7 @@ func run(asserts) -> void:
 	_assert_invalid_definitions_are_atomic(asserts)
 	_assert_generated_resource_reservation_can_be_adopted(asserts)
 	_assert_gatherable_can_require_a_tool_and_clear_terrain(asserts)
+	_assert_mining_requires_pickaxe_without_consuming_it(asserts)
 	_assert_interaction_kind_alone_cannot_be_adopted(asserts)
 	_assert_failed_snapshot_restore_is_atomic(asserts)
 	_assert_multi_grant_drop_rolls_back_on_world_failure(asserts)
@@ -189,6 +191,25 @@ func _assert_gatherable_can_require_a_tool_and_clear_terrain(asserts) -> void:
 	asserts.equal(runtime.inventory.get_total_quantity("wood"), 1, "tree harvest grants wood")
 	asserts.true_value(runtime.world.is_walkable(Vector2i.ZERO), "successful tree harvest clears the blocking tree terrain")
 
+func _assert_mining_requires_pickaxe_without_consuming_it(asserts) -> void:
+	var runtime := _runtime(4, Vector2i(2, 1))
+	asserts.true_value(runtime.service.register_gatherable("ore_requires_pickaxe", "fixture_ore_requires_pickaxe", Vector2i.ZERO).ok, "pickaxe-gated ore registers")
+	var before_inventory: Dictionary = runtime.inventory.to_snapshot()
+	var before_service: Dictionary = runtime.service.to_snapshot()
+	var before_world: Dictionary = runtime.world.to_dictionary()
+	var missing_tool: Dictionary = runtime.service.gather("ore_requires_pickaxe")
+	asserts.false_value(missing_tool.ok, "ore mining is rejected without stone pickaxe")
+	asserts.equal(missing_tool.reason, "missing_required_tool", "missing pickaxe reports stable reason")
+	asserts.equal(runtime.inventory.to_snapshot(), before_inventory, "failed mining preserves inventory")
+	asserts.equal(runtime.service.to_snapshot(), before_service, "failed mining preserves gatherable depletion state")
+	asserts.equal(runtime.world.to_dictionary(), before_world, "failed mining preserves world reservation")
+	asserts.true_value(runtime.inventory.add_item("stone_pickaxe", 1).ok, "fixture stocks stone pickaxe")
+	var mined: Dictionary = runtime.service.gather("ore_requires_pickaxe")
+	asserts.true_value(mined.ok, "ore mining succeeds with stone pickaxe")
+	asserts.equal(mined.required_tool_item_id, "stone_pickaxe", "mining result records pickaxe requirement")
+	asserts.equal(runtime.inventory.get_total_quantity("stone_pickaxe"), 1, "stone pickaxe is not consumed by mining")
+	asserts.equal(runtime.inventory.get_total_quantity("fixture_ore_item"), 1, "mining grants ore after tool validation")
+
 func _assert_interaction_kind_alone_cannot_be_adopted(asserts) -> void:
 	var runtime := _runtime(2, Vector2i(2, 1))
 	asserts.true_value(runtime.world.reserve_entity("resource_kind_only", Vector2i.ZERO, Vector2i.ONE, true, {"interaction_kind": "gatherable"}).ok, "kind-only fixture reserves the cell")
@@ -251,6 +272,7 @@ func _gatherable_definitions() -> Array:
 		{"id": "fixture_tree_common", "item_id": "wood", "quantity": 1, "policy": "direct", "material_tag": "wood"},
 		{"id": "fixture_tree_requires_axe", "item_id": "wood", "quantity": 1, "policy": "direct", "material_tag": "wood", "required_tool_item_id": "stone_axe", "depleted_terrain": {"id": "common_grass", "walkable": true}},
 		{"id": "fixture_ore_mountain", "item_id": "fixture_ore_item", "quantity": 1, "policy": "direct", "material_tag": "stone"},
+		{"id": "fixture_ore_requires_pickaxe", "item_id": "fixture_ore_item", "quantity": 1, "policy": "direct", "material_tag": "stone", "required_tool_item_id": "stone_pickaxe"},
 		{"id": "fixture_clay_common", "item_id": "clay", "quantity": 1, "policy": "pickup"},
 		{"id": "fixture_tea_leaf_common", "item_id": "fixture_tea_leaf_item", "quantity": 1, "policy": "direct"}
 	]
