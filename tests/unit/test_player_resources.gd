@@ -78,7 +78,63 @@ func run(asserts) -> void:
 	resources.recover_ki(1)
 	resources.reduce_kokoro(1)
 	asserts.equal(resources.hp, damaged_hp, "other state changes do not naturally recover HP")
+	_assert_load_snapshot_rejects_invalid_current_values_atomically(asserts)
+	_assert_load_snapshot_accepts_zero_and_maximum_values(asserts)
 	_assert_snapshot_delta_publish_is_prevalidated_and_emission_only(asserts)
+
+func _assert_load_snapshot_rejects_invalid_current_values_atomically(asserts) -> void:
+	for invalid in [
+		{"field": "hp", "value": -1},
+		{"field": "hp", "value": 101},
+		{"field": "ki", "value": -1},
+		{"field": "ki", "value": 101},
+		{"field": "kokoro", "value": -1},
+		{"field": "kokoro", "value": 101},
+	]:
+		var resources := PlayerResources.new(100, 100, 100, 20)
+		resources.apply_damage(23)
+		resources.spend_ki(17)
+		resources.reduce_kokoro(11)
+		var before: Dictionary = resources.to_dictionary()
+		var snapshot := {
+			"hp": 50,
+			"hp_max": 100,
+			"ki": 60,
+			"ki_max": 100,
+			"kokoro": 70,
+			"kokoro_max": 100,
+			"kokoro_low_threshold": 20
+		}
+		snapshot[invalid.field] = invalid.value
+		var result: Dictionary = resources.load_snapshot(snapshot)
+		asserts.false_value(result.ok, "%s=%s snapshot is rejected" % [invalid.field, invalid.value])
+		asserts.equal(result.reason, "invalid_resource_snapshot", "%s=%s rejection uses resource snapshot reason" % [invalid.field, invalid.value])
+		asserts.equal(resources.to_dictionary(), before, "%s=%s rejection leaves every resource unchanged" % [invalid.field, invalid.value])
+
+func _assert_load_snapshot_accepts_zero_and_maximum_values(asserts) -> void:
+	var resources := PlayerResources.new(100, 100, 100, 20)
+	var zero_snapshot := {
+		"hp": 0,
+		"hp_max": 100,
+		"ki": 0,
+		"ki_max": 100,
+		"kokoro": 0,
+		"kokoro_max": 100,
+		"kokoro_low_threshold": 0
+	}
+	asserts.true_value(resources.load_snapshot(zero_snapshot).ok, "zero resource snapshot loads")
+	asserts.equal(resources.to_dictionary(), zero_snapshot, "zero resource snapshot round-trips")
+	var max_snapshot := {
+		"hp": 100,
+		"hp_max": 100,
+		"ki": 100,
+		"ki_max": 100,
+		"kokoro": 100,
+		"kokoro_max": 100,
+		"kokoro_low_threshold": 100
+	}
+	asserts.true_value(resources.load_snapshot(max_snapshot).ok, "maximum resource snapshot loads")
+	asserts.equal(resources.to_dictionary(), max_snapshot, "maximum resource snapshot round-trips")
 
 func _assert_snapshot_delta_publish_is_prevalidated_and_emission_only(asserts) -> void:
 	var resources := PlayerResources.new(100, 100, 100, 20)

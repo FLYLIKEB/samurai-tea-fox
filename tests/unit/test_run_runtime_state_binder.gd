@@ -2,6 +2,7 @@ extends RefCounted
 
 const RunRuntimeStateBinder = preload("res://src/save/run_runtime_state_binder.gd")
 const Main = preload("res://src/main/main.gd")
+const PlayerResources = preload("res://src/player/player_resources.gd")
 const RunState = preload("res://src/save/run_state.gd")
 const SaveCodec = preload("res://src/save/save_codec.gd")
 
@@ -21,9 +22,23 @@ class FakeRuntime:
 		snapshot = next_snapshot.duplicate(true)
 		return {"ok": true}
 
+class PlayerResourcesRuntime:
+	extends RefCounted
+	var resources: PlayerResources
+
+	func _init(initial_resources: PlayerResources) -> void:
+		resources = initial_resources
+
+	func to_snapshot() -> Dictionary:
+		return resources.to_dictionary()
+
+	func load_snapshot(next_snapshot: Dictionary) -> Dictionary:
+		return resources.load_snapshot(next_snapshot)
+
 func run(asserts) -> void:
 	_assert_snapshot_to_run_state(asserts)
 	_assert_hydrate_rolls_back_partial_failure(asserts)
+	_assert_hydrate_preserves_resource_state_after_invalid_snapshot(asserts)
 	_assert_hydrate_success_canonicalizes_runtime_snapshots(asserts)
 	_assert_main_wrappers_use_runtime_binder(asserts)
 
@@ -70,6 +85,39 @@ func _assert_hydrate_rolls_back_partial_failure(asserts) -> void:
 	asserts.equal(equipment.to_snapshot().slots, {}, "equipment runtime rolls back to pre-hydrate snapshot")
 	asserts.equal(tea.to_snapshot().quick_slots, [], "failing runtime keeps its pre-hydrate snapshot")
 	asserts.equal(result.applied_fields, ["inventory", "equipment"], "failure reports fields applied before rollback")
+
+func _assert_hydrate_preserves_resource_state_after_invalid_snapshot(asserts) -> void:
+	var binder := RunRuntimeStateBinder.new()
+	var state := RunState.new()
+	state.seed = 101
+	state.inventory = {"schema_version": 1, "slots": [{"item_id": "charcoal", "quantity": 1}]}
+	state.player_resources = {
+		"hp": 120,
+		"hp_max": 100,
+		"ki": 60,
+		"ki_max": 100,
+		"kokoro": 70,
+		"kokoro_max": 100,
+		"kokoro_low_threshold": 20
+	}
+	var inventory := FakeRuntime.new({"schema_version": 1, "slots": [{"item_id": "wood", "quantity": 2}]})
+	var resources := PlayerResources.new(100, 100, 100, 20)
+	resources.apply_damage(25)
+	resources.spend_ki(30)
+	resources.reduce_kokoro(40)
+	var resources_before: Dictionary = resources.to_dictionary()
+
+	var result: Dictionary = binder.hydrate_from_run_state(state, [
+		{"field": "inventory", "runtime": inventory},
+		{"field": "player_resources", "runtime": PlayerResourcesRuntime.new(resources)}
+	])
+
+	asserts.false_value(result.ok, "binder rejects invalid player resource hydrate")
+	asserts.equal(result.reason, "invalid_resource_snapshot", "resource hydrate failure keeps its reason")
+	asserts.true_value(bool(result.get("rollback_ok", false)), "binder rolls back runtimes after invalid resource hydrate")
+	asserts.equal(inventory.to_snapshot().slots[0].item_id, "wood", "inventory runtime rolls back before resource hydrate failure")
+	asserts.equal(resources.to_dictionary(), resources_before, "invalid resource hydrate preserves pre-hydrate resources")
+	asserts.equal(result.applied_fields, ["inventory"], "resource failure reports fields applied before rollback")
 
 func _assert_hydrate_success_canonicalizes_runtime_snapshots(asserts) -> void:
 	var binder := RunRuntimeStateBinder.new()
