@@ -30,6 +30,8 @@ func run(asserts) -> void:
 		var item_id := String(definition.get("id", ""))
 		if String(definition.get("type", "")) == "재료":
 			asserts.equal(runtime.inventory.get_total_quantity(item_id), 99, "cheat start grants 99 of material %s" % item_id)
+		elif item_id == "bandage":
+			asserts.equal(runtime.inventory.get_total_quantity("bandage"), 200, "cheat start grants 200 bandages")
 		else:
 			asserts.equal(runtime.inventory.get_total_quantity(item_id), 0, "cheat start does not bypass ownership rules for %s" % item_id)
 	asserts.equal(runtime.run_state.inventory.slot_count, 1000, "cheat inventory capacity enters run state")
@@ -37,7 +39,6 @@ func run(asserts) -> void:
 	asserts.true_value(runtime.run_state.completed_dungeon_ids.has("mountain_region"), "cheat start unlocks the mountain dungeon clear")
 	asserts.equal(runtime.run_state.teleport_states.get("common_region", ""), "repaired", "cheat start repairs the first teleport")
 	asserts.equal(runtime.run_state.teleport_states.get("mountain_region", ""), "repaired", "cheat start repairs the mountain teleport")
-	asserts.equal(runtime.inventory.get_total_quantity("bandage"), 200, "cheat start grants 200 bandages")
 	asserts.equal(runtime.equipment.get_equipped_slot("weapon").get("item_id", ""), "mountain_iron_dagger", "cheat start equips the strongest weapon")
 
 	var normal_runtime := Main.new()

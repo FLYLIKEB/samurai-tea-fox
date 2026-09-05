@@ -138,9 +138,12 @@ func _assert_drink_completed_signal_accounts_without_manual_call(asserts) -> voi
 		"teas": _tea_rows(),
 		"recipes": [
 			{"id": "clay", "name": "점토 묶음", "status": "테스트", "materials": [], "facility": "손제작", "result_item_id": "clay", "result_quantity": 1}
+		],
+		"events": [
+			{"id": "first_run_prologue", "name": "첫 런 프롤로그", "status": "테스트", "replay_policy": "once", "start_node_id": "start", "run_start": {"min_run_count": 0, "max_run_count": 0, "priority": 1}, "nodes": [{"id": "start", "speaker": "father", "text": "테스트 시작", "options": [{"id": "continue", "display_text": "계속", "completes_event": true, "results": []}]}]}
 		]
 	}))
-	asserts.true_value(configure_result.ok, "production runtime services configure")
+	asserts.true_value(configure_result.ok, "production runtime services configure: %s" % JSON.stringify(configure_result))
 	asserts.true_value(runtime.inventory.add_item("green_tea", 1).ok, "signal test tea leaf add succeeds")
 	asserts.true_value(runtime.inventory.add_item("travel_bottle", 1).ok, "signal test tea ware add succeeds")
 	asserts.true_value(runtime.equipment.equip_from_inventory(runtime.inventory, 1).ok, "signal test tea ware equips")
@@ -272,7 +275,7 @@ func _assert_tea_ware_attachment_rejects_invalid_stage_data(asserts) -> void:
 	asserts.false_value(EquipmentModel.from_catalog(FakeCatalog.new({"items": too_few_stages})).ok, "tea ware attachment requires at least three stages")
 
 	var missing_stages := _item_rows()
-	missing_stages.append({"id": "missing_stage_bowl", "name": "누락 사발", "status": "테스트", "type": "다구", "equipment_slot": "다구", "max_stack": 1, "effect_type": "차 운용", "effect_value": 0})
+	missing_stages.append({"id": "missing_stage_bowl", "name": "누락 사발", "status": "테스트", "type": "다구", "equipment_slot": "다구", "max_stack": 1, "effect_type": "차 운용", "effect_value": 0, "attachment_description_keys": ["a", "b", "c"]})
 	asserts.false_value(EquipmentModel.from_catalog(FakeCatalog.new({"items": missing_stages})).ok, "tea ware attachment stage data is required")
 
 	var unordered_stages := _item_rows()

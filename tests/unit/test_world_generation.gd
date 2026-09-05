@@ -395,6 +395,9 @@ func _assert_profile_only_fixture_generation(asserts, catalog, generator: WorldG
 	var repeated := generator.generate(41037, catalog.data_version, fixture, catalog.get_definitions("balance"), catalog.get_definitions("items"), fixture_options)
 	var alternate := generator.generate(41038, catalog.data_version, fixture, catalog.get_definitions("balance"), catalog.get_definitions("items"), fixture_options)
 	asserts.true_value(generated.ok, "profile-only fixture biome generates without a generator biome branch")
+	if not generated.ok:
+		asserts.true_value(not String(generated.get("failure_reason", "")).is_empty(), "profile-only fixture failure reason is explicit")
+		return
 	asserts.equal(generated.biome_generation_rule_id, "fixture_bamboo_grove", "profile-only fixture records injected profile id")
 	asserts.equal(_canonical_world(generated), _canonical_world(repeated), "profile-only fixture is deterministic")
 	asserts.true_value(_canonical_world(generated) != _canonical_world(alternate), "profile-only fixture varies by seed")
@@ -1023,7 +1026,8 @@ func _fixture_dungeon_definitions() -> Array:
 		"status": "확정",
 		"biome_ids": ["fixture_bamboo_grove"],
 		"boss": "Fixture Boss",
-		"boss_id": "chr_3"
+		"boss_id": "chr_3",
+		"pre_boss_dialogue_event_id": "fixture_pre_boss_dialogue"
 	}]
 
 func _occupied_world_positions(world_data: Dictionary) -> Dictionary:
