@@ -943,10 +943,10 @@ func _terrain_source_id(terrain_id: String) -> String:
 func _tree_source_id(terrain_id: String) -> String:
 	return String(WorldRendererProjection.TREE_SOURCE_BY_TERRAIN.get(terrain_id, ""))
 
-func _canonical_world(world: Dictionary) -> Dictionary:
+func _canonical_world(world: Dictionary) -> String:
 	var canonical := world.duplicate(true)
 	canonical.erase("retry_attempt")
 	canonical.erase("retry_limit")
 	canonical.erase("seed")
 	canonical.erase("data_version")
-	return canonical
+	return JSON.stringify(canonical)
