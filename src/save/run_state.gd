@@ -23,6 +23,7 @@ var dungeon_runtime_state := {}
 var teleport_states := {}
 var repaired_teleports := []
 var map_discovery := {}
+var map_discovery_by_biome := {}
 var crafting_unlocks := []
 var narrative_flags := []
 var narrative_event_counts := {}
@@ -38,6 +39,7 @@ var philosophy_marks := []
 var final_room_effects := []
 var core_tea_ware_collection := {}
 var acquisitions := {}
+var biome_acquisitions := {}
 var placed_facilities := []
 
 static func from_dictionary(data: Dictionary):
@@ -66,6 +68,7 @@ static func from_dictionary(data: Dictionary):
 	state.teleport_states = _dictionary_value(data.get("teleport_states", {}))
 	state.repaired_teleports = _array_value(data.get("repaired_teleports", []))
 	state.map_discovery = _dictionary_value(data.get("map_discovery", {}))
+	state.map_discovery_by_biome = _dictionary_value(data.get("map_discovery_by_biome", {}))
 	state.crafting_unlocks = _array_value(data.get("crafting_unlocks", []))
 	state.narrative_flags = _array_value(data.get("narrative_flags", []))
 	state.narrative_event_counts = _dictionary_value(data.get("narrative_event_counts", {}))
@@ -81,6 +84,7 @@ static func from_dictionary(data: Dictionary):
 	state.final_room_effects = _array_value(data.get("final_room_effects", []))
 	state.core_tea_ware_collection = _dictionary_value(data.get("core_tea_ware_collection", {}))
 	state.acquisitions = _dictionary_value(data.get("acquisitions", {}))
+	state.biome_acquisitions = _dictionary_value(data.get("biome_acquisitions", {}))
 	state.placed_facilities = _array_value(data.get("placed_facilities", []))
 	return state
 
@@ -92,7 +96,10 @@ func reset_biome_progression() -> void:
 	teleport_states.clear()
 	repaired_teleports.clear()
 	map_discovery.clear()
+	map_discovery_by_biome.clear()
 	crafting_unlocks.clear()
+	acquisitions.clear()
+	biome_acquisitions.clear()
 	placed_facilities.clear()
 
 func reset_run_growth() -> void:
@@ -124,6 +131,7 @@ func to_dictionary() -> Dictionary:
 		"teleport_states": teleport_states.duplicate(true),
 		"repaired_teleports": repaired_teleports.duplicate(true),
 		"map_discovery": map_discovery.duplicate(true),
+		"map_discovery_by_biome": map_discovery_by_biome.duplicate(true),
 		"crafting_unlocks": crafting_unlocks.duplicate(true),
 		"narrative_flags": narrative_flags.duplicate(true),
 		"narrative_event_counts": narrative_event_counts.duplicate(true),
@@ -139,6 +147,7 @@ func to_dictionary() -> Dictionary:
 		"final_room_effects": final_room_effects.duplicate(true),
 		"core_tea_ware_collection": core_tea_ware_collection.duplicate(true),
 		"acquisitions": acquisitions.duplicate(true),
+		"biome_acquisitions": biome_acquisitions.duplicate(true),
 		"placed_facilities": placed_facilities.duplicate(true)
 	}
 

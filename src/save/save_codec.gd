@@ -30,6 +30,7 @@ const RUN_FIELD_TYPES := {
 	"teleport_states": TYPE_DICTIONARY,
 	"repaired_teleports": TYPE_ARRAY,
 	"map_discovery": TYPE_DICTIONARY,
+	"map_discovery_by_biome": TYPE_DICTIONARY,
 	"crafting_unlocks": TYPE_ARRAY,
 	"narrative_flags": TYPE_ARRAY,
 	"narrative_event_counts": TYPE_DICTIONARY,
@@ -45,6 +46,7 @@ const RUN_FIELD_TYPES := {
 	"final_room_effects": TYPE_ARRAY,
 	"core_tea_ware_collection": TYPE_DICTIONARY,
 	"acquisitions": TYPE_DICTIONARY,
+	"biome_acquisitions": TYPE_DICTIONARY,
 	"placed_facilities": TYPE_ARRAY
 }
 
