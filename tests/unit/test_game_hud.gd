@@ -2,6 +2,7 @@ extends RefCounted
 
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const GameHud = preload("res://src/ui/game_hud.gd")
+const GameHudReadModelProvider = preload("res://src/ui/game_hud_read_model_provider.gd")
 
 class FakeResources:
 	signal hp_changed(previous: int, current: int, maximum: int)
@@ -233,6 +234,8 @@ class FakeCatalog:
 		return {}
 
 func run(asserts) -> void:
+	_assert_read_model_provider_owns_runtime_traversal(asserts)
+	_assert_hud_renders_provider_snapshot_without_runtime_access(asserts)
 	_assert_read_model_uses_runtime_and_balance_sources(asserts)
 	_assert_inventory_item_icons_use_content_image_map(asserts)
 	_assert_crafting_result_icons_use_content_image_map(asserts)
@@ -250,6 +253,47 @@ func run(asserts) -> void:
 	_assert_status_toasts_use_event_models_icons_and_queue_limits(asserts)
 	_assert_narrative_dialogue_emits_option_commands(asserts)
 	_assert_major_character_portraits_follow_speaker_ids(asserts)
+
+func _assert_read_model_provider_owns_runtime_traversal(asserts) -> void:
+	var provider := GameHudReadModelProvider.new()
+	var runtime := FakeInventoryCommandRuntime.new()
+	var inventory := FakeInventory.new()
+	var player := FakePlayer.new()
+	provider.configure(player, {"biome_id": "common_region"}, {"counts": {"terrain": 5, "entities": 2}}, {
+		"catalog": FakeCatalog.new(),
+		"inventory": inventory,
+		"inventory_command_runtime": runtime,
+		"tea_service": FakeTeaService.new(),
+		"time_state": FakeTimeState.new()
+	})
+	var model := provider.read_model()
+	asserts.equal(model.hp, 82, "provider reads HP from runtime resources")
+	asserts.equal(model.equipment.weapon.item_id, "mountain_iron_dagger", "provider projects equipment into HUD read model")
+	model.equipment.weapon.item_id = "mutated_by_view"
+	asserts.equal(provider.read_model().equipment.weapon.item_id, "mountain_iron_dagger", "provider returns immutable snapshots to the HUD")
+	var changed_models := []
+	provider.changed.connect(func(read_model: Dictionary): changed_models.append(read_model))
+	runtime.set_equipment_slot("weapon", {})
+	asserts.equal(changed_models.size(), 1, "provider emits a read-model refresh when runtime read model changes")
+	asserts.equal(changed_models[0].equipment.weapon.size(), 0, "provider refresh payload reflects the runtime update")
+
+func _assert_hud_renders_provider_snapshot_without_runtime_access(asserts) -> void:
+	var provider := GameHudReadModelProvider.new()
+	var runtime := FakeInventoryCommandRuntime.new()
+	provider.configure(FakePlayer.new(), {"biome_id": "common_region"}, {"counts": {}}, {
+		"catalog": FakeCatalog.new(),
+		"inventory": FakeInventory.new(),
+		"inventory_command_runtime": runtime,
+		"tea_service": FakeTeaService.new(),
+		"time_state": FakeTimeState.new()
+	})
+	var hud := GameHud.new()
+	hud.configure(null, {}, {}, {"read_model_provider": provider})
+	asserts.equal(hud.runtime_read_model().equipment.weapon.item_id, "mountain_iron_dagger", "HUD exposes provider read model without owning runtime traversal")
+	runtime.set_equipment_slot("weapon", {})
+	var snapshot: Dictionary = hud.equipment_hud_snapshot()
+	asserts.equal(snapshot.weapon.item_id, "", "HUD refreshes rendering from provider change signals")
+	hud.free()
 
 func _assert_inventory_item_icons_use_content_image_map(asserts) -> void:
 	var hud := _configured_hud()
@@ -301,7 +345,7 @@ func _assert_equipment_strip_reads_runtime_equipment(asserts) -> void:
 	asserts.equal(snapshot.tea_ware.display_text, "다 소박한", "tea ware slot keeps a visible slot cue and short item name")
 	asserts.true_value(bool(snapshot.weapon.icon_has_texture), "equipped weapon slot loads a runtime texture")
 	asserts.true_value(String(snapshot.tea_ware.tooltip).contains("소박한 흙찻잔"), "equipment tooltip keeps the full item name")
-	var runtime := hud.inventory_command_runtime as FakeInventoryCommandRuntime
+	var runtime := hud.read_model_provider.inventory_command_runtime as FakeInventoryCommandRuntime
 	runtime.set_equipment_slot("weapon", {})
 	snapshot = hud.equipment_hud_snapshot()
 	asserts.equal(snapshot.weapon.item_id, "", "unequip read_model_changed immediately clears the weapon item id")
@@ -408,14 +452,14 @@ func _assert_time_uses_circular_dial(asserts) -> void:
 
 func _assert_runtime_signals_refresh_labels(asserts) -> void:
 	var hud := _configured_hud()
-	var resources = hud.player.resources
+	var resources = hud.read_model_provider.player.resources
 	resources.set_hp(61)
 	var hp_label := hud.get("_labels").get("hp") as Label
 	asserts.equal(hp_label.text, "체력", "resource signals keep the permanent HUD label compact")
 	var fourth_heart := hud.get_node_or_null("Root/StatusPanel/StatusBody/StatusRows/HealthDisplay/Icons/Icon4") as TextureRect
 	asserts.true_value(is_equal_approx(float(fourth_heart.get_meta("fill_ratio")), 0.05), "resource signals refresh partial heart fill")
-	hud.time_state.phase = &"dusk"
-	hud.time_state.phase_changed.emit(&"night", &"dusk")
+	hud.read_model_provider.time_state.phase = &"dusk"
+	hud.read_model_provider.time_state.phase_changed.emit(&"night", &"dusk")
 	var time_label := hud.get("_labels").get("time_phase") as Label
 	asserts.true_value(time_label.text.begins_with("해질녘"), "time phase events refresh the HUD")
 	hud.free()
@@ -426,7 +470,7 @@ func _assert_reconfigure_clears_missing_time_context(asserts) -> void:
 	var time_label := hud.get("_labels").get("time_phase") as Label
 	asserts.true_value(time_label.get_parent().get_parent().visible, "HUD shows time while a runtime time state is supplied")
 	hud.configure(FakePlayer.new(), {"biome_id": "common_region"}, {"counts": {}}, {})
-	asserts.equal(hud.time_state, null, "HUD clears a stale time observer when the new runtime context omits it")
+	asserts.equal(hud.read_model_provider.time_state, null, "HUD clears a stale time observer when the new runtime context omits it")
 	asserts.false_value(time_label.get_parent().get_parent().visible, "HUD hides the time row after its runtime time state is removed")
 	hud.free()
 
@@ -495,7 +539,7 @@ func _assert_mobile_controls_emit_shared_commands(asserts) -> void:
 	asserts.equal(received[13].type, GameCommand.Type.SLEEP, "sleep control emits shared sleep command")
 	asserts.equal(received[14].type, GameCommand.Type.COMPLETE_DUNGEON, "dungeon control emits shared dungeon command")
 	var untouched_hud := _configured_hud()
-	asserts.equal(untouched_hud.player.resources.hp, 82, "HUD button emission does not mutate player resources")
+	asserts.equal(untouched_hud.read_model_provider.read_model().hp, 82, "HUD button emission does not mutate player resources")
 	untouched_hud.free()
 	hud.free()
 
