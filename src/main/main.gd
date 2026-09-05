@@ -393,6 +393,8 @@ func _configure_world_for_current_run() -> Dictionary:
 	generated_world = generator.generate(run_state.seed, catalog.data_version, current_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), {
 		"progression_projection": projection,
 		"monster_definitions": catalog.get_definitions("monsters"),
+		"dungeon_definitions": catalog.get_definitions("dungeons"),
+		"boss_character_definitions": catalog.get_definitions("characters"),
 		"time_phase": String(time_state.phase) if time_state != null else "day"
 	})
 	if not generated_world.get("ok", false):
@@ -404,7 +406,11 @@ func _configure_world_for_current_run() -> Dictionary:
 		if preview_id.is_empty() or preview_id == current_biome_id:
 			continue
 		var preview_seed := int(run_state.seed) ^ (preview_id.hash() & 0x7fffffff)
-		var preview := generator.generate(preview_seed, catalog.data_version, biome_definition, catalog.get_definitions("balance"), catalog.get_definitions("items"), {"progression_projection": projection})
+		var preview := generator.generate(preview_seed, catalog.data_version, biome_definition, catalog.get_definitions("balance"), catalog.get_definitions("items"), {
+			"progression_projection": projection,
+			"dungeon_definitions": catalog.get_definitions("dungeons"),
+			"boss_character_definitions": catalog.get_definitions("characters")
+		})
 		if bool(preview.get("ok", false)):
 			preview["renderer_input"] = WorldRendererProjection.new().project(preview["world_data"], projection)
 			_biome_map_previews[preview_id] = preview

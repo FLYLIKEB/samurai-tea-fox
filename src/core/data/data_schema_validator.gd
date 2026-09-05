@@ -220,6 +220,8 @@ func _validate_event_conditions(event: Dictionary, node: Dictionary, option: Dic
 func _validate_item_contract(dataset_name: String, item: Dictionary) -> Dictionary:
 	if dataset_name == "biomes":
 		return _validate_biome_contract(item)
+	if dataset_name == "dungeons":
+		return _validate_dungeon_contract(item)
 	if dataset_name == "characters":
 		if typeof(item.get("character_id")) != TYPE_STRING or not _stable_character_id(String(item.get("character_id", ""))):
 			return {"ok": false, "error": "characters item '%s' character_id must match CHR-<number>." % item.id}
@@ -288,6 +290,15 @@ func _validate_facility_interaction_data(item: Dictionary) -> Dictionary:
 		var tile_index = metadata.get("tile_index", 0)
 		if typeof(tile_index) not in [TYPE_INT, TYPE_FLOAT] or not is_finite(float(tile_index)) or float(tile_index) != floor(float(tile_index)) or int(tile_index) < 0:
 			return {"ok": false, "error": "items item '%s' facility interaction '%s' tile_index must be a non-negative integer." % [item.id, capability_id]}
+	return {"ok": true}
+
+func _validate_dungeon_contract(item: Dictionary) -> Dictionary:
+	if not item.has("boss_id"):
+		return {"ok": true}
+	if String(item.get("boss_id", "")).is_empty():
+		return {"ok": false, "error": "dungeons item '%s' boss_id must be non-empty when present." % item.id}
+	if not _stable_id(String(item.get("boss_id", ""))):
+		return {"ok": false, "error": "dungeons item '%s' boss_id must be a stable id." % item.id}
 	return {"ok": true}
 
 func _validate_biome_contract(item: Dictionary) -> Dictionary:

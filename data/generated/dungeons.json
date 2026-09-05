@@ -1,5 +1,5 @@
 {
-  "content_hash": "399b7ab1fdfd63bbf566bffaaf3eec608096e2d8bf937e297402384efa29a5a5",
+  "content_hash": "b447949ed87fec9fc11cea275b29d1196e807bc4f0aa35df40fda90c4270fc87",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -9,6 +9,7 @@
         "wasteland"
       ],
       "boss": "다이묘",
+      "boss_id": "chr_2",
       "boss_hp": 850,
       "choice_ids": [
         "daimyo_defeat",
@@ -39,6 +40,7 @@
         "rainforest"
       ],
       "boss": "요괴 다인",
+      "boss_id": "chr_6",
       "boss_hp": 1300,
       "choice_ids": [
         "yokai_defeat",
@@ -69,6 +71,7 @@
         "common_region"
       ],
       "boss": "후루타 오리베",
+      "boss_id": "chr_3",
       "boss_hp": 450,
       "choice_ids": [
         "oribe_defeat",
@@ -99,6 +102,7 @@
         "snowfield"
       ],
       "boss": "승려",
+      "boss_id": "chr_4",
       "boss_hp": 1050,
       "choice_ids": [
         "monk_defeat",
@@ -129,6 +133,7 @@
         "mountain_region"
       ],
       "boss": "도공",
+      "boss_id": "chr_7",
       "boss_hp": 650,
       "choice_ids": [
         "potter_defeat",
@@ -156,6 +161,7 @@
       "base_attack": 32,
       "biome": "최종",
       "boss": "센리큐",
+      "boss_id": "chr_5",
       "boss_hp": 1800,
       "choice_ids": [
         "rikyu_accept_control",
