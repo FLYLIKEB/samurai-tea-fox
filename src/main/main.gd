@@ -360,6 +360,7 @@ func _on_player_attack_feedback(swing: Dictionary) -> void:
 	_play_sfx_event(SfxEventRouter.EVENT_ATTACK_SWING, swing, String(swing.get("swing_id", "attack")))
 
 func _on_player_damage_feedback(event: Dictionary, applied_damage: int) -> void:
+	_interrupt_consumable_use("hit")
 	_play_sfx_event(SfxEventRouter.EVENT_PLAYER_HIT, {"event": event, "applied_damage": applied_damage}, String(event.get("source_id", "player_hit")))
 
 func _on_player_dodge_feedback(direction: Vector2, distance_pixels: float) -> void:
@@ -502,6 +503,7 @@ func _physics_process(_delta: float) -> void:
 	if _death_transition_active:
 		return
 	tick_tea_runtime(_delta)
+	tick_consumable_runtime(_delta)
 	_update_dungeon_sign_visibility()
 	if has_pending_facility_placement():
 		return
@@ -3025,29 +3027,72 @@ func tick_tea_runtime(delta_seconds: float) -> Dictionary:
 		_configure_game_hud()
 	return {"ok": true, "changed": changed, "active": is_tea_drink_active()}
 
+func is_consumable_use_active() -> bool:
+	return consumable_service != null \
+		and consumable_service.has_method("has_active_use") \
+		and consumable_service.has_active_use()
+
+func tick_consumable_runtime(delta_seconds: float) -> Dictionary:
+	if consumable_service == null or not is_consumable_use_active():
+		return {"ok": true, "changed": false, "active": false}
+	if inventory == null or player == null or player.resources == null:
+		return {"ok": false, "reason": "consumable_runtime_unavailable", "error": "Consumable use requires inventory and player resources."}
+	var result: Dictionary = consumable_service.tick_use(delta_seconds, inventory, player.resources)
+	if not result.ok:
+		if String(result.get("reason", "")) != "invalid_delta":
+			var interrupt_result: Dictionary = _interrupt_consumable_use("failed_%s" % String(result.get("reason", "unknown")))
+			result["interrupted"] = bool(interrupt_result.get("interrupted", false))
+		return result
+	if bool(result.get("consumed", false)):
+		_advance_time_for_turn()
+		_queue_enemy_turn_after_player_action()
+		_configure_game_hud()
+		save_current_run()
+	return {
+		"ok": true,
+		"changed": true,
+		"active": is_consumable_use_active(),
+		"completed": bool(result.get("consumed", false)),
+		"result": result
+	}
+
+func _interrupt_consumable_use(reason := "hit") -> Dictionary:
+	if consumable_service == null or not is_consumable_use_active():
+		return {"ok": true, "interrupted": false}
+	var result: Dictionary = consumable_service.interrupt_use(reason)
+	if not result.ok:
+		return result
+	_sync_consumable_runtime_state()
+	save_current_run()
+	_configure_game_hud()
+	return {"ok": true, "interrupted": true, "result": result}
+
 func _handle_consumable_command(command: GameCommand) -> bool:
 	if consumable_service == null or inventory == null or player == null or player.resources == null:
 		return false
 	var item_id := _consumable_item_id_for_command(command)
 	if item_id.is_empty():
 		return false
-	var start: Dictionary = consumable_service.start_use(item_id, inventory, {"command_slot": command.slot})
-	if not start.ok:
-		return false
-	var completed: Dictionary = consumable_service.complete_use(inventory, player.resources)
-	_sync_inventory_runtime_state()
-	_sync_consumable_runtime_state()
+	var start: Dictionary = _start_consumable_use(item_id, {"command_slot": command.slot, "source": "quickslot"})
 	if game_hud != null:
 		game_hud.show_command_feedback(
-			"소모품 사용: %s" % item_id
-			if completed.ok
-			else "소모품 실패: %s" % String(completed.get("reason", "unknown"))
+			"소모품 사용 중: %s" % item_id
+			if start.ok
+			else "소모품 실패: %s" % String(start.get("reason", "unknown"))
 		)
-	if not completed.ok:
-		return false
+	return bool(start.ok)
+
+func _start_consumable_use(item_id: String, context := {}) -> Dictionary:
+	if consumable_service == null or inventory == null:
+		return {"ok": false, "reason": "missing_consumable_runtime", "error": "Consumable runtime is not configured."}
+	var start: Dictionary = consumable_service.start_use(item_id, inventory, context)
+	if not start.ok:
+		return start
+	_sync_inventory_runtime_state()
+	_sync_consumable_runtime_state()
 	save_current_run()
 	_configure_game_hud()
-	return true
+	return start
 
 func _consumable_item_id_for_command(command: GameCommand) -> String:
 	var requested := String(command.payload.get("item_id", ""))
@@ -3432,6 +3477,18 @@ func _handle_inventory_command(command: GameCommand) -> bool:
 	if inventory_command_runtime == null:
 		return false
 	var result: Dictionary = inventory_command_runtime.handle_command(command)
+	var started_consumable := false
+	if result.ok and command.type == GameCommand.Type.USE_INVENTORY_SLOT and result.has("use_intent"):
+		var intent: Dictionary = result.get("use_intent", {})
+		var start_result: Dictionary = _start_consumable_use(String(intent.get("item_id", "")), {
+			"inventory_slot_index": int(intent.get("inventory_slot_index", command.slot)),
+			"command_slot": command.slot,
+			"source": "inventory"
+		})
+		if not start_result.ok:
+			result = start_result
+		else:
+			started_consumable = true
 	if game_hud != null:
 		game_hud.show_command_feedback(
 			"인벤토리 갱신"
@@ -3440,10 +3497,11 @@ func _handle_inventory_command(command: GameCommand) -> bool:
 		)
 	if not result.ok:
 		return false
-	_sync_inventory_runtime_state()
-	if game_hud != null:
-		game_hud.show_inventory_menu()
-	save_current_run()
+	if not started_consumable:
+		_sync_inventory_runtime_state()
+		if game_hud != null:
+			game_hud.show_inventory_menu()
+		save_current_run()
 	return true
 
 func _handle_complete_dungeon_command(command: GameCommand) -> bool:

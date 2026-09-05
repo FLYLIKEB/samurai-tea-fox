@@ -66,18 +66,30 @@ class FakeInventory:
 
 class FakeConsumableService:
 	extends RefCounted
+	var active := false
 
 	func has_definition(item_id: String) -> bool:
 		return item_id == "bandage"
 
 	func start_use(item_id: String, _inventory, _context := {}) -> Dictionary:
-		return {"ok": item_id == "bandage", "item_id": item_id}
+		if item_id != "bandage":
+			return {"ok": false}
+		active = true
+		return {"ok": true, "item_id": item_id, "action": {"item_id": item_id}}
+
+	func has_active_use() -> bool:
+		return active
+
+	func tick_use(_delta_seconds: float, _inventory, _resources) -> Dictionary:
+		active = false
+		return {"ok": true, "consumed": true, "action": {"item_id": "bandage", "completed": true}}
 
 	func complete_use(_inventory, _resources) -> Dictionary:
-		return {"ok": true, "applied": true}
+		active = false
+		return {"ok": true, "applied": true, "consumed": true}
 
 	func to_snapshot() -> Dictionary:
-		return {}
+		return {"schema_version": 1, "active_action": {"item_id": "bandage"} if active else {}}
 
 class FakeAcquisitionService:
 	extends RefCounted
@@ -153,7 +165,9 @@ func _assert_only_successful_turn_commands_advance_time(asserts) -> void:
 	asserts.equal(main.time_state.phase_elapsed_seconds, 4.0, "failed interaction does not advance time")
 
 	asserts.true_value(main.submit_action_command(GameCommand.new(GameCommand.Type.USE_CONSUMABLE, Vector2i.ZERO, -1, {"item_id": "bandage"})), "successful consumable command is accepted")
-	asserts.equal(main.time_state.phase_elapsed_seconds, 5.0, "successful consumable use advances time exactly once")
+	asserts.equal(main.time_state.phase_elapsed_seconds, 4.0, "consumable start command does not advance time before completion")
+	asserts.true_value(main.tick_consumable_runtime(1.0).ok, "consumable completion tick succeeds")
+	asserts.equal(main.time_state.phase_elapsed_seconds, 5.0, "successful consumable completion advances time exactly once")
 
 	main.game_hud.free()
 	player.free()

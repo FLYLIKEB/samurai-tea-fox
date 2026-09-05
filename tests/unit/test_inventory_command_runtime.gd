@@ -43,6 +43,7 @@ func _assert_read_model_filter_sort_and_capacity(asserts) -> void:
 func _assert_common_commands_select_use_and_equip(asserts) -> void:
 	var fixture := _fixture_runtime()
 	var runtime: InventoryCommandRuntime = fixture[0]
+	var consumable: ConsumableService = fixture[3]
 	var desktop := DesktopCommandAdapter.new()
 	var mobile := MobileCommandAdapter.new()
 	asserts.equal(desktop.command_for_action("inventory_sort").type, mobile.command_for_button("inventory_sort").type, "desktop and mobile share inventory sort command")
@@ -56,8 +57,9 @@ func _assert_common_commands_select_use_and_equip(asserts) -> void:
 	asserts.equal(runtime.read_model().selected_slot_index, 3, "navigation advances selected slot")
 
 	var use_result: Dictionary = runtime.handle_command(GameCommand.new(GameCommand.Type.USE_INVENTORY_SLOT, Vector2i.ZERO, 0, {"slot_index": 0}))
-	asserts.true_value(use_result.ok, "use command starts consumable use through inventory command runtime")
-	asserts.equal(use_result.action.item_id, "bandage", "use command targets selected consumable item")
+	asserts.true_value(use_result.ok, "use command exposes consumable use intent through inventory command runtime")
+	asserts.equal(use_result.use_intent.item_id, "bandage", "use command targets selected consumable item")
+	asserts.equal(consumable.to_snapshot().active_action, {}, "inventory runtime leaves consumable lifecycle ownership to Main")
 
 	var equip_result: Dictionary = runtime.handle_command(GameCommand.new(GameCommand.Type.EQUIP_INVENTORY_SLOT, Vector2i.ZERO, 1, {"slot_index": 1}))
 	asserts.true_value(equip_result.ok, "equip command equips an inventory slot")
@@ -93,8 +95,9 @@ func _assert_can_use_matches_actual_item_capability(asserts) -> void:
 	asserts.equal(consumable.to_snapshot(), before_consumable, "direct tea leaf use does not start a consumable action")
 
 	var bandage_result: Dictionary = runtime.handle_command(GameCommand.new(GameCommand.Type.USE_INVENTORY_SLOT, Vector2i.ZERO, int(consumable_row.slot_index), {"slot_index": int(consumable_row.slot_index)}))
-	asserts.true_value(bandage_result.ok, "valid consumable direct use still starts")
-	asserts.equal(bandage_result.action.item_id, "bandage", "valid consumable use targets bandage")
+	asserts.true_value(bandage_result.ok, "valid consumable direct use still emits intent")
+	asserts.equal(bandage_result.use_intent.item_id, "bandage", "valid consumable use targets bandage")
+	asserts.equal(consumable.to_snapshot().active_action, before_consumable.active_action, "direct use intent does not start consumable service inside inventory runtime")
 
 func _assert_main_routes_inventory_commands_and_saves_equipment(asserts) -> void:
 	var catalog := _catalog()
