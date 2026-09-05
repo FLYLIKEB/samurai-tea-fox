@@ -157,6 +157,7 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 			min_resource_nodes,
 			max_resource_placement_attempts,
 			resource_ids,
+			item_definitions,
 			progression_projection,
 			profile,
 			monster_spawn_pool,
@@ -169,7 +170,7 @@ func generate(seed: int, data_version: String, biome_definition: Dictionary, bal
 
 	return _failure(seed, data_version, biome_definition, retry_limit, "connectivity_or_resource_validation_failed")
 
-func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, layout_rng: DeterministicRng, content_rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, progression_projection: Dictionary, profile: Dictionary, monster_spawn_pool: Dictionary, core_dungeon_contract: Dictionary, repair_interaction_targets := []) -> Dictionary:
+func _generate_attempt(seed: int, data_version: String, biome_definition: Dictionary, layout_rng: DeterministicRng, content_rng: DeterministicRng, attempt: int, retry_limit: int, core_dungeon_count: int, teleport_zone_count: int, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, item_definitions: Array, progression_projection: Dictionary, profile: Dictionary, monster_spawn_pool: Dictionary, core_dungeon_contract: Dictionary, repair_interaction_targets := []) -> Dictionary:
 	var world_data := WorldData.new(MAP_WIDTH, MAP_HEIGHT, String(profile.default_terrain_id), bool(profile.default_walkable))
 	var chunks := _compose_chunks(layout_rng, world_data, profile)
 	_apply_map_boundary(world_data, profile, progression_projection.get("edge_exit_positions", []))
@@ -185,7 +186,7 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 	var facility_nodes := _place_facility_nodes(world_data, layout_rng, landmarks, profile, validator.reachable_cell_keys_from_entry(world_data.to_dictionary()))
 	var repair_targets := _place_repair_interaction_targets(world_data, layout_rng, landmarks, profile, validator.reachable_cell_keys_from_entry(world_data.to_dictionary()), repair_interaction_targets)
 	var reachable_cells := validator.reachable_cell_keys_from_entry(world_data.to_dictionary())
-	var resource_nodes := _place_resource_nodes(world_data, content_rng, min_resource_nodes, max_resource_placement_attempts, resource_ids, reachable_cells, String(profile.id), templates, landmarks)
+	var resource_nodes := _place_resource_nodes(world_data, content_rng, min_resource_nodes, max_resource_placement_attempts, resource_ids, item_definitions, reachable_cells, String(profile.id), templates, landmarks)
 	var access_points := []
 	for resource_node in resource_nodes:
 		access_points.append(resource_node.access_position)
@@ -973,7 +974,7 @@ func _tree_owner_id(position: Vector2i) -> String:
 func _is_structural_wall_terrain_id(terrain_id: String) -> bool:
 	return terrain_id in [TERRAIN_SNOWFIELD_ICE_WALL]
 
-func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, reachable_cells: Dictionary, biome_rule_id: String, templates := [], landmarks := []) -> Array:
+func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_resource_nodes: int, max_resource_placement_attempts: int, resource_ids: Array, item_definitions: Array, reachable_cells: Dictionary, biome_rule_id: String, templates := [], landmarks := []) -> Array:
 	var nodes := []
 	var max_attempts: int = max(0, max_resource_placement_attempts)
 	var cardinal_offsets := [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]
@@ -994,7 +995,7 @@ func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_res
 		var access_position := _reachable_access_position(position, reachable_cells, cardinal_offsets)
 		if access_position == Vector2i(-1, -1):
 			continue
-		_try_place_resource_node(world_data, position, access_position, resource_ids, biome_rule_id, nodes)
+		_try_place_resource_node(world_data, position, access_position, resource_ids, item_definitions, biome_rule_id, nodes)
 	while nodes.size() < min_resource_nodes and attempt < max_attempts:
 		attempt += 1
 		var position := Vector2i(rng.next_range(2, MAP_WIDTH - 3), rng.next_range(2, MAP_HEIGHT - 3))
@@ -1005,7 +1006,7 @@ func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_res
 		var access_position := _reachable_access_position(position, reachable_cells, cardinal_offsets)
 		if access_position == Vector2i(-1, -1):
 			continue
-		_try_place_resource_node(world_data, position, access_position, resource_ids, biome_rule_id, nodes)
+		_try_place_resource_node(world_data, position, access_position, resource_ids, item_definitions, biome_rule_id, nodes)
 	return nodes
 
 func _template_path_key_set(templates: Array) -> Dictionary:
@@ -1014,14 +1015,17 @@ func _template_path_key_set(templates: Array) -> Dictionary:
 		path_keys[_key(position)] = true
 	return path_keys
 
-func _try_place_resource_node(world_data: WorldData, position: Vector2i, access_position: Vector2i, resource_ids: Array, biome_rule_id: String, nodes: Array) -> bool:
+func _try_place_resource_node(world_data: WorldData, position: Vector2i, access_position: Vector2i, resource_ids: Array, item_definitions: Array, biome_rule_id: String, nodes: Array) -> bool:
 	var owner_id := "resource_%d" % nodes.size()
 	var resource_id: String = String(resource_ids[nodes.size() % resource_ids.size()])
 	# Stones are common roadside pickups: bias the deterministic rotation so
 	# roughly one out of every three generated nodes is a stone when available.
 	if resource_ids.has("stone") and nodes.size() % 3 == 0:
 		resource_id = "stone"
+	var node_kind := _node_kind_for_resource_context(resource_id, biome_rule_id, item_definitions)
 	var metadata := {"resource_id": resource_id, "biome_rule_id": biome_rule_id}
+	if not node_kind.is_empty():
+		metadata["node_kind"] = node_kind
 	var reserved := world_data.reserve_entity(owner_id, position, Vector2i.ONE, true, metadata)
 	if not reserved.ok:
 		return false
@@ -1046,8 +1050,33 @@ func _try_place_resource_node(world_data: WorldData, position: Vector2i, access_
 		"placement_was_entry_reachable": true,
 		"interactable": true
 	}
+	if not node_kind.is_empty():
+		node["node_kind"] = node_kind
 	nodes.append(node)
 	return true
+
+func _node_kind_for_resource_context(resource_id: String, biome_rule_id: String, item_definitions: Array) -> String:
+	var item := _item_definition_by_id(item_definitions, resource_id)
+	var interaction: Dictionary = item.get("interaction_definition", {})
+	var bootstrap: Dictionary = interaction.get("bootstrap", {})
+	var rules: Array = interaction.get("rules", [])
+	if String(bootstrap.get("biome_id", "")) == biome_rule_id:
+		for rule in rules:
+			if rule is Dictionary and String(rule.get("action", "")) == "pickup":
+				return String(rule.get("node_kind", ""))
+	for rule in rules:
+		if rule is Dictionary and String(rule.get("action", "")) == "mine":
+			return String(rule.get("node_kind", ""))
+	for rule in rules:
+		if rule is Dictionary:
+			return String(rule.get("node_kind", ""))
+	return ""
+
+func _item_definition_by_id(item_definitions: Array, item_id: String) -> Dictionary:
+	for item in item_definitions:
+		if item is Dictionary and String(item.get("id", "")) == item_id:
+			return item
+	return {}
 
 func _resource_candidate_positions(rng: DeterministicRng, templates: Array, landmarks: Array) -> Array:
 	var candidates := []

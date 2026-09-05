@@ -296,7 +296,9 @@
     "3d137369-9e66-8199-9317-e55315007579": "consumable_use_base_seconds",
     "3d137369-9e66-81b3-a58c-e2f91b560109": "stone_axe",
     "3d137369-9e66-81d5-9014-edfff4ace97c": "metal_workbench",
-    "3d137369-9e66-81dc-926f-cfff17fbb39a": "stone_axe"
+    "3d137369-9e66-81dc-926f-cfff17fbb39a": "stone_axe",
+    "3d237369-9e66-8165-930e-fcdf1e909b16": "stone_pickaxe",
+    "3d237369-9e66-81c5-86f2-c809db3b1282": "stone_pickaxe"
   },
   "legacy_names": {
     "abilities": {
@@ -395,6 +397,7 @@
       "철 조각": "item_28",
       "침향": "item_5",
       "돌도끼": "stone_axe",
+      "돌곡괭이": "stone_pickaxe",
       "금속 가공대": "metal_workbench",
       "대장간": "blacksmith_forge"
     },
@@ -435,7 +438,8 @@
       "목향 향로 제작": "wood_incense_burner",
       "선향 제작": "incense_sticks",
       "천 붕대 제작": "bandage",
-      "돌도끼 제작": "stone_axe"
+      "돌도끼 제작": "stone_axe",
+      "돌곡괭이 제작": "stone_pickaxe"
     },
     "teas": {
       "아버지의 봄 덖음차": "father_spring_pan_fired_tea",

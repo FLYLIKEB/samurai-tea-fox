@@ -75,6 +75,8 @@ func register_gatherable(node_id: String, definition_id: String, position: Vecto
 	gatherables[node_id] = {
 		"node_id": node_id,
 		"definition_id": definition_id,
+		"item_id": String(gatherable_definitions[definition_id].item_id),
+		"required_tool_item_id": String(gatherable_definitions[definition_id].get("required_tool_item_id", "")),
 		"position": _position_dictionary(position),
 		"depleted": false
 	}
@@ -501,6 +503,8 @@ func _normalize_gatherable_snapshot(rows) -> Dictionary:
 		values[node_id] = {
 			"node_id": node_id,
 			"definition_id": definition_id,
+			"item_id": String(gatherable_definitions[definition_id].item_id),
+			"required_tool_item_id": String(gatherable_definitions[definition_id].get("required_tool_item_id", "")),
 			"position": row.position.duplicate(true),
 			"depleted": bool(row.get("depleted", false))
 		}

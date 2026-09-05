@@ -21,10 +21,10 @@ class ExportedNotionDataTests(unittest.TestCase):
         "drops": 34,
         "dungeons": 6,
         "events": 56,
-        "items": 39,
+        "items": 40,
         "meta_unlocks": 13,
         "monsters": 21,
-        "recipes": 12,
+        "recipes": 15,
         "shops": 14,
         "teas": 17,
     }
@@ -103,8 +103,17 @@ class ExportedNotionDataTests(unittest.TestCase):
         self.assertNotIn("item_32", items)
         self.assertEqual(items["bandage"]["use_seconds"], 1)
         self.assertEqual(items["stone_axe"]["max_owned"], 1)
+        self.assertEqual(items["stone_pickaxe"]["type"], "도구")
+        self.assertEqual(items["stone_pickaxe"]["max_owned"], 1)
+        self.assertIsNone(items["stone"]["interaction_definition"]["rules"][0]["required_tool_item_id"])
+        self.assertEqual(items["stone"]["interaction_definition"]["rules"][1]["required_tool_item_id"], "stone_pickaxe")
+        self.assertEqual(items["iron_ore"]["interaction_definition"]["rules"][0]["required_tool_item_id"], "stone_pickaxe")
+        self.assertEqual(items["copper_ore"]["interaction_definition"]["rules"][0]["required_tool_item_id"], "stone_pickaxe")
+        self.assertEqual(items["snowfield_mineral"]["interaction_definition"]["rules"][0]["required_tool_item_id"], "stone_pickaxe")
         self.assertEqual(items["mountain_iron_dagger"]["base_damage"], 18)
         self.assertEqual(recipes["stone_axe"]["result_item_id"], "stone_axe")
+        self.assertEqual(recipes["stone_pickaxe"]["result_item_id"], "stone_pickaxe")
+        self.assertEqual(recipes["stone_pickaxe"]["materials_note"], "돌 2 + 목재 1")
         self.assertEqual(
             meta_unlocks["meta_10"]["reward_target"],
             "yokai_old_incense_dialogue",

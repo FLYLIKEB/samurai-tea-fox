@@ -1619,7 +1619,8 @@ func _ensure_current_dungeon_entered() -> Dictionary:
 		var source_id := DUNGEON_STONE_SOURCE_ID if is_stone else DUNGEON_IRON_SOURCE_ID
 		var reservation := layout.reserve_entity(resource_id, resource_cell, Vector2i.ONE, true, {"source_id": source_id, "interaction_kind": AcquisitionService.GATHERABLE_KIND, "definition_id": resource_id})
 		if reservation.ok:
-			_dungeon_resources.append({"id": resource_id, "resource_id": item_id, "position": {"x": resource_cell.x, "y": resource_cell.y}, "source_id": source_id, "material_tag": "stone"})
+			var node_kind := _node_kind_for_resource_action(item_id, "mine")
+			_dungeon_resources.append({"id": resource_id, "resource_id": item_id, "position": {"x": resource_cell.x, "y": resource_cell.y}, "source_id": source_id, "material_tag": "stone", "node_kind": node_kind})
 			resource_index += 1
 	for enemy in [{"id": "dungeon_enemy_0", "cell": Vector2i(7, 2)}, {"id": "dungeon_enemy_1", "cell": Vector2i(9, 5)}, {"id": "dungeon_enemy_2", "cell": Vector2i(5, 7)}, {"id": DUNGEON_BOSS_OWNER_ID, "cell": Vector2i(10, 7)}]:
 		layout.reserve_entity(String(enemy.id), enemy.cell, Vector2i.ONE, false, {"role": "boss" if enemy.id == DUNGEON_BOSS_OWNER_ID else "dungeon_enemy"})
@@ -1797,7 +1798,11 @@ func _enter_dungeon_map(layout: WorldData, definition: Dictionary, is_new_entry 
 		acquisition_service = AcquisitionService.new()
 		var dungeon_definitions := []
 		for node in _dungeon_resources:
-			dungeon_definitions.append({"id": String(node.id), "item_id": String(node.get("resource_id", "iron_ore")), "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT, "material_tag": String(node.get("material_tag", ""))})
+			var item_id := String(node.get("resource_id", "iron_ore"))
+			var node_kind := String(node.get("node_kind", ""))
+			if node_kind.is_empty():
+				node_kind = _node_kind_for_resource_action(item_id, "mine")
+			dungeon_definitions.append({"id": String(node.id), "item_id": item_id, "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT, "material_tag": String(node.get("material_tag", "")), "required_tool_item_id": _required_tool_for_resource_interaction(item_id, node_kind)})
 		var dungeon_acquisition_result: Dictionary = acquisition_service.configure(inventory, world_data, dungeon_definitions, _generated_drop_definitions())
 		if not dungeon_acquisition_result.ok:
 			_dungeon_debug("광석 상호작용 설정 실패: %s" % dungeon_acquisition_result)
@@ -2199,7 +2204,7 @@ func _confirmed_generated_resource_definitions(resource_nodes: Array) -> Array:
 		var item: Dictionary = catalog.find_by_id("items", resource_id)
 		if String(item.get("status", "")) != "확정" or not _is_generated_resource_item_type(String(item.get("type", ""))):
 			continue
-		definitions.append({"id": resource_id, "item_id": resource_id, "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT, "material_tag": String(node.get("material_tag", ""))})
+		definitions.append({"id": resource_id, "item_id": resource_id, "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT, "material_tag": String(node.get("material_tag", "")), "required_tool_item_id": _required_tool_for_resource_node(resource_id, node)})
 		seen[resource_id] = true
 	return definitions
 
@@ -2267,10 +2272,53 @@ func _mountain_mineral_gatherable_definitions() -> Array:
 			"quantity": 1,
 			"policy": AcquisitionService.POLICY_DIRECT,
 			"material_tag": "stone",
-			"required_tool_item_id": "stone_axe",
+			"required_tool_item_id": _required_tool_for_resource_interaction(item_id, _node_kind_for_resource_action(item_id, "mine")),
 			"depleted_terrain": {"id": WorldGenerator.TERRAIN_MOUNTAIN_SLOPE, "walkable": true}
 		})
 	return definitions
+
+func _required_tool_for_resource_node(resource_id: String, node: Dictionary) -> String:
+	var node_kind := String(node.get("node_kind", ""))
+	if node_kind.is_empty():
+		node_kind = _node_kind_for_resource_context(resource_id, String(generated_world.get("biome_id", "")))
+	return _required_tool_for_resource_interaction(resource_id, node_kind)
+
+func _node_kind_for_resource_context(item_id: String, biome_id: String) -> String:
+	if item_id.is_empty() or catalog == null:
+		return ""
+	var item: Dictionary = catalog.find_by_id("items", item_id)
+	var interaction_definition: Dictionary = item.get("interaction_definition", {})
+	var bootstrap: Dictionary = interaction_definition.get("bootstrap", {})
+	if String(bootstrap.get("biome_id", "")) == biome_id:
+		var pickup_kind := _node_kind_for_resource_action(item_id, "pickup")
+		if not pickup_kind.is_empty():
+			return pickup_kind
+	return _node_kind_for_resource_action(item_id, "mine")
+
+func _node_kind_for_resource_action(item_id: String, action: String) -> String:
+	if item_id.is_empty() or catalog == null:
+		return ""
+	var item: Dictionary = catalog.find_by_id("items", item_id)
+	var interaction_definition: Dictionary = item.get("interaction_definition", {})
+	for rule in interaction_definition.get("rules", []):
+		if rule is Dictionary and String(rule.get("action", "")) == action:
+			return String(rule.get("node_kind", ""))
+	for rule in interaction_definition.get("rules", []):
+		if rule is Dictionary:
+			return String(rule.get("node_kind", ""))
+	return ""
+
+func _required_tool_for_resource_interaction(item_id: String, node_kind: String) -> String:
+	if item_id.is_empty() or node_kind.is_empty() or catalog == null:
+		return ""
+	var item: Dictionary = catalog.find_by_id("items", item_id)
+	var interaction_definition: Dictionary = item.get("interaction_definition", {})
+	for rule in interaction_definition.get("rules", []):
+		if not rule is Dictionary or String(rule.get("node_kind", "")) != node_kind:
+			continue
+		var required_tool = rule.get("required_tool_item_id", "")
+		return String(required_tool) if required_tool != null else ""
+	return ""
 
 func _register_mountain_mineral_gatherables(definition_ids: Dictionary) -> Dictionary:
 	if world_data == null or acquisition_service == null:

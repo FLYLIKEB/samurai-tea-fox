@@ -1060,6 +1060,142 @@ class NotionExportPipelineTests(unittest.TestCase):
         with self.assertRaisesRegex(ExportValidationError, "recipes.*materials_note"):
             self.pipeline.build_snapshots(invalid, "confirmed-test")
 
+    def test_recipe_export_uses_runtime_id_and_material_relations(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        recipe_notion = schema["datasets"]["recipes"]["notion"]
+        self.assertEqual(recipe_notion["stable_id_field"], "런타임 ID")
+        self.assertEqual(
+            recipe_notion["material_relation_source"],
+            "collection://f887f200-38df-47b9-8fb5-f466a3664829",
+        )
+        rows = {
+            "items": [
+                {"_notion_id": "item-cloth", "아이템 ID": {"prefix": "ITM", "number": 1}, "이름": "천 조각", "설정 상태": "확정", "종류": "재료"},
+                {"_notion_id": "item-armor", "아이템 ID": {"prefix": "ITM", "number": 2}, "이름": "산바람 겹옷", "설정 상태": "확정", "종류": "방어구", "장비 슬롯": "방어구", "방어값": 7},
+                {"_notion_id": "item-workbench", "아이템 ID": {"prefix": "ITM", "number": 3}, "이름": "목재 작업대", "설정 상태": "확정", "종류": "도구"},
+            ],
+            "biomes": [
+                {"_notion_id": "biome-mountain", "지역 ID": {"prefix": "BIO", "number": 2}, "이름": "산악", "설정 상태": "확정"}
+            ],
+            "recipes": [
+                {
+                    "_notion_id": "recipe-armor",
+                    "제작법 ID": {"prefix": "RCP", "number": 14},
+                    "런타임 ID": "mountain_wind_layered_clothes",
+                    "이름": "산바람 겹옷 제작",
+                    "설정 상태": "확정",
+                    "분류": "방어구",
+                    "결과 아이템": ["item-armor"],
+                    "결과 수량": 2,
+                    "제작 시설": "목재 작업대",
+                    "제작 시설 아이템": ["item-workbench"],
+                    "필요 재료": "천 조각 4",
+                    "해금 바이옴": "산악",
+                    "해금 지역 관계": ["biome-mountain"],
+                }
+            ],
+            "recipes__material_relations": [
+                {
+                    "_notion_id": "ingredient-armor-cloth",
+                    "이름": "산바람 겹옷 — 천 조각",
+                    "제작법": ["recipe-armor"],
+                    "재료 아이템": ["item-cloth"],
+                    "수량": 4,
+                }
+            ],
+        }
+        overrides = {
+            "item-cloth": "cloth",
+            "item-armor": "mountain_wind_layered_clothes",
+            "item-workbench": "wooden_workbench",
+            "biome-mountain": "mountain_region",
+        }
+        capture = CaptureBuilder(schema, overrides).build_from_rows(rows, "notion-recipe-material-fixture")
+        snapshots = ExportPipeline(schema).build_snapshots(capture, "confirmed")
+        recipe = snapshots["recipes"]["items"][0]
+
+        self.assertEqual(recipe["id"], "mountain_wind_layered_clothes")
+        self.assertEqual(recipe["result_item_id"], "mountain_wind_layered_clothes")
+        self.assertEqual(recipe["result_quantity"], 2)
+        self.assertEqual(recipe["materials"], [{"item_id": "cloth", "quantity": 4}])
+        self.assertEqual(recipe["materials_note"], "천 조각 4")
+        self.assertEqual(recipe["facility_item_ids"], ["wooden_workbench"])
+        self.assertEqual(recipe["unlock_biome_id"], "mountain_region")
+
+    def test_dev_120_exports_runtime_ids_interaction_json_and_recipe_quantity(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        self.assertEqual(schema["datasets"]["items"]["notion"]["stable_id_field"], "런타임 ID")
+        self.assertEqual(
+            schema["datasets"]["items"]["notion"]["field_map"]["상호작용 정의 JSON"],
+            "interaction_definition",
+        )
+        self.assertEqual(schema["datasets"]["recipes"]["notion"]["stable_id_field"], "런타임 ID")
+        self.assertEqual(
+            schema["datasets"]["recipes"]["notion"]["field_map"]["결과 수량"],
+            "result_quantity",
+        )
+
+        rows = {
+            "items": [
+                {
+                    "_notion_id": "page-stone-pickaxe",
+                    "아이템 ID": {"prefix": "ITM", "number": 40},
+                    "런타임 ID": "stone_pickaxe",
+                    "이름": "돌곡괭이",
+                    "설정 상태": "확정",
+                    "종류": "도구",
+                    "장비 슬롯": "없음",
+                    "제작 가능": True,
+                    "최대 스택": 1,
+                    "최대 보유": 1,
+                },
+                {
+                    "_notion_id": "page-stone",
+                    "아이템 ID": {"prefix": "ITM", "number": 26},
+                    "런타임 ID": "stone",
+                    "이름": "돌",
+                    "설정 상태": "확정",
+                    "종류": "재료",
+                    "상호작용 정의 JSON": '{"schema_version":1,"rules":[{"node_kind":"loose_stone","action":"pickup","required_tool_item_id":null},{"node_kind":"rock","action":"mine","required_tool_item_id":"stone_pickaxe"}],"tool_consumed":false,"failure_mutates":false}',
+                },
+            ],
+            "biomes": [
+                {
+                    "_notion_id": "page-common",
+                    "지역 ID": {"prefix": "BIO", "number": 1},
+                    "이름": "일반 지역",
+                    "설정 상태": "확정",
+                },
+            ],
+            "recipes": [
+                {
+                    "_notion_id": "page-stone-pickaxe-recipe",
+                    "제작법 ID": {"prefix": "RCP", "number": 13},
+                    "런타임 ID": "stone_pickaxe",
+                    "이름": "돌곡괭이 제작",
+                    "설정 상태": "확정",
+                    "분류": "도구",
+                    "제작 시설": "손제작",
+                    "필요 재료": "돌 2 + 목재 1",
+                    "결과 수량": 1,
+                    "결과 아이템": ["page-stone-pickaxe"],
+                    "해금 지역 관계": ["page-common"],
+                },
+            ],
+        }
+        capture = CaptureBuilder(schema).build_from_rows(rows, "dev120-fixture-v1")
+        snapshots = ExportPipeline(schema).build_snapshots(capture, "confirmed-test")
+        items = {item["id"]: item for item in snapshots["items"]["items"]}
+        recipes = {item["id"]: item for item in snapshots["recipes"]["items"]}
+
+        self.assertEqual(items["stone_pickaxe"]["equipment_slot"], "")
+        self.assertEqual(items["stone_pickaxe"]["max_owned"], 1)
+        self.assertIsNone(items["stone"]["interaction_definition"]["rules"][0]["required_tool_item_id"])
+        self.assertEqual(items["stone"]["interaction_definition"]["rules"][1]["required_tool_item_id"], "stone_pickaxe")
+        self.assertEqual(recipes["stone_pickaxe"]["result_item_id"], "stone_pickaxe")
+        self.assertEqual(recipes["stone_pickaxe"]["result_quantity"], 1)
+        self.assertEqual(recipes["stone_pickaxe"]["materials_note"], "돌 2 + 목재 1")
+
     def test_equipment_tea_ware_attachment_fields_accept_flattened_notion_strings(self):
         flattened = copy.deepcopy(self.capture)
         item = next(item for item in flattened["datasets"]["items"]["items"] if item["id"] == "oribe_bowl")
@@ -1480,6 +1616,8 @@ class NotionExportPipelineTests(unittest.TestCase):
         self.assertEqual(recipes["wooden_workbench"]["unlock_biome"], "일반")
         self.assertEqual(recipes["wooden_workbench"]["unlock_biome_id"], "common_region")
         self.assertEqual(recipes["mountain_kiln"]["unlock_biome_id"], "mountain_region")
+        self.assertEqual(recipes["stone_pickaxe"]["result_item_id"], "stone_pickaxe")
+        self.assertEqual(recipes["stone_pickaxe"]["materials_note"], "돌 2 + 목재 1")
         self.assertEqual(recipes["repair_hammer"]["unlock_biome_id"], "wasteland")
         self.assertEqual(recipes["insulated_tea_bottle"]["unlock_biome_id"], "snowfield")
         self.assertEqual(recipes["incense_sticks"]["unlock_biome_id"], "rainforest")

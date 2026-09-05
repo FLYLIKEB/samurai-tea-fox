@@ -79,11 +79,12 @@ func _assert_common_stone_renderer_contract(asserts, world: Dictionary, asset_ca
 		stone_count += 1
 		var owner_id := String(node.get("id", ""))
 		asserts.false_value(node.has("source_id"), "DEV-76 common stone node stays semantic-only")
+		asserts.equal(String(node.get("node_kind", "")), "loose_stone", "DEV-120 common stone remains a no-tool loose pickup node")
 		asserts.equal(String(entity_sources.get(owner_id, "")), COMMON_STONE_SOURCE_ID, "DEV-76 common stone appears in renderer entity layer")
 		asserts.equal(String(interactable_sources.get(owner_id, "")), COMMON_STONE_SOURCE_ID, "DEV-76 common stone appears in renderer interactable layer")
 		asserts.true_value(not asset_catalog.id_for_reference(COMMON_STONE_SOURCE_ID).is_empty(), "DEV-76 common stone source resolves to an existing promoted asset")
 		_assert_access_point_valid(asserts, world, node.get("access_position", {}), "DEV-76 common stone access point is reachable")
-	asserts.true_value(stone_count >= 1, "DEV-76 common biome places at least one visible stone resource")
+	asserts.true_value(stone_count >= 3, "DEV-120 common biome places at least three visible loose stone pickups")
 
 func _assert_mountain_mine_renderer_contract(asserts, world: Dictionary, asset_catalog: AssetCatalog) -> void:
 	asserts.true_value(world.connectivity.valid, "DEV-76 mountain required landmarks remain connected")
@@ -126,6 +127,7 @@ func _assert_stone_command_and_save_load(asserts, catalog: DataCatalog, generate
 	asserts.true_value(mobile_runtime.result.ok, "DEV-76 mobile stone runtime configures acquisition service")
 	if mobile_runtime.result.ok:
 		asserts.equal(mobile_runtime.main.acquisition_service.gatherable_for(stone_id).definition_id, "stone", "DEV-76 stone registers by stable item id")
+		asserts.equal(String(mobile_runtime.main.acquisition_service.gatherable_for(stone_id).get("required_tool_item_id", "")), "", "DEV-120 loose stone pickup does not require a pickaxe")
 		asserts.true_value(mobile_runtime.main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": stone_id})), "DEV-76 mobile INTERACT target gathers stone")
 		asserts.equal(mobile_runtime.main.inventory.get_total_quantity("stone"), 1, "DEV-76 mobile INTERACT increases stone inventory")
 		asserts.true_value(mobile_runtime.main.acquisition_service.gatherable_for(stone_id).depleted, "DEV-76 gathered stone becomes depleted")

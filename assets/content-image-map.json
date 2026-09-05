@@ -1,21 +1,22 @@
 {
   "audit": {
-    "art_review_required": 42,
+    "art_review_required": 43,
     "by_resolution": {
       "dedicated_facility_sprite": 2,
       "dedicated_facility_state_sprite": 1,
       "dedicated_interaction_indicator": 1,
       "dedicated_item_icon": 38,
+      "kind_fallback_exception": 1,
       "monster_id_convention": 21
     },
-    "dedicated_asset_missing": 0,
+    "dedicated_asset_missing": 1,
     "facility_interactions": 3,
-    "items": 39,
+    "items": 40,
     "missing_or_broken": 0,
     "monsters": 21,
     "path_integrity_missing_or_broken": 0,
     "runtime_approved": 63,
-    "runtime_target_rows": 63
+    "runtime_target_rows": 64
   },
   "content": {
     "facility_interactions": [
@@ -607,7 +608,7 @@
         "rgba_sha256": "sha256:8806451b3e4175c6ffbbebec189faa72314b005bc2bb9715984cabab87012de5",
         "runtime_approved": true,
         "source_sha256": "sha256:ddb9ea788fc4e67bd4c39d8b8b89074f72494373062c05d8c5348ee7fe46e401",
-        "status": "초안",
+        "status": "확정",
         "width": 32
       },
       {
@@ -704,6 +705,25 @@
         "source_sha256": "sha256:82a2ba777c45e61f8c0b7bf520cb8c252e9756d1b2d7a8d596c603fd0307df43",
         "status": "확정",
         "width": 32
+      },
+      {
+        "art_review_required": true,
+        "asset_id": "asset_assets_ui_icons_atlas_low_table_png",
+        "asset_status": "완료",
+        "content_id": "stone_pickaxe",
+        "dataset": "items",
+        "dedicated_asset_missing": true,
+        "exception_reason": "No item-specific exported image field exists; use the type fallback until art review creates a dedicated row.",
+        "height": 53,
+        "kind": "도구",
+        "name": "돌곡괭이",
+        "path": "res://assets/ui/icons/atlas/low_table.png",
+        "resolution": "kind_fallback_exception",
+        "rgba_sha256": "sha256:2f33abb97332ab15f9c8aa55108d3fb24f92c28c06af91f431ee7b5b4eee3a9e",
+        "runtime_approved": false,
+        "source_sha256": "sha256:564abfad73437827d2ae734f056a02998dbbb7e7ccfa57fb45f25e79f6f5aa68",
+        "status": "확정",
+        "width": 60
       },
       {
         "art_review_required": true,
@@ -1223,8 +1243,8 @@
     ]
   },
   "content_hashes": {
-    "asset_manifest": "sha256:a4e6225bda4aff80d34d29fee220f712c7cce8dc5f5329eba8dda96e457ba7aa",
-    "items": "ebc093f85cec857c7d836589293ef11da4c79664810ca87fcbbed45192bdc404",
+    "asset_manifest": "sha256:26b44f79ce69b1cbaf8b65c126fd79cff7ef01c01c7dbe9632ba080930db6e7d",
+    "items": "25bf32df5634f7d6e6b414d33988684b69e181d8baae0d1040b26a241ac7646f",
     "monsters": "b44646c65fca8a73ef29d0e908991986c7eb3387626b4bdb5f506919b1e28e9f"
   },
   "data_version": "notion-2026-09-04",

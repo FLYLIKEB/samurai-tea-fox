@@ -35,11 +35,14 @@ class CaptureBuilder:
         if not isinstance(data_version, str) or not data_version:
             raise ExportValidationError("capture data_version must be a non-empty string")
 
+        schema_dataset_names = set(self.schema["datasets"])
         prepared_rows = {
             dataset_name: self._prepare_rows(dataset_name, rows)
             for dataset_name, rows in rows_by_dataset.items()
+            if dataset_name in schema_dataset_names
         }
         runtime_ids = self._build_runtime_id_index(prepared_rows)
+        self._apply_material_relation_rows(prepared_rows, rows_by_dataset, runtime_ids)
         self.resolved_runtime_ids = runtime_ids
         datasets: dict[str, dict[str, Any]] = {}
         for dataset_name, rows in prepared_rows.items():
@@ -58,6 +61,94 @@ class CaptureBuilder:
             "data_version": data_version,
             "datasets": datasets,
         }
+
+    def _apply_material_relation_rows(
+        self,
+        prepared_rows: dict[str, list[dict[str, Any]]],
+        rows_by_dataset: dict[str, list[dict[str, Any]]],
+        runtime_ids: dict[str, dict[str, str]],
+    ) -> None:
+        for dataset_name, config in self.schema["datasets"].items():
+            notion = config.get("notion", {})
+            relation_source = notion.get("material_relation_source")
+            if not relation_source:
+                continue
+            relation_rows = rows_by_dataset.get(f"{dataset_name}__material_relations", [])
+            if not relation_rows:
+                continue
+            recipe_field = notion.get("material_relation_recipe_field", "제작법")
+            item_field = notion.get("material_relation_item_field", "재료 아이템")
+            quantity_field = notion.get("material_relation_quantity_field", "수량")
+            materials_by_recipe = self._materials_by_recipe(
+                dataset_name,
+                relation_rows,
+                runtime_ids,
+                recipe_field,
+                item_field,
+                quantity_field,
+            )
+            for row in prepared_rows.get(dataset_name, []):
+                page_id = str(row.get("_notion_id", ""))
+                if page_id in materials_by_recipe:
+                    extra = row.setdefault("_capture_extra", {})
+                    if not isinstance(extra, dict):
+                        raise ExportValidationError(
+                            f"{dataset_name} page {page_id}: _capture_extra must be an object"
+                        )
+                    extra["materials"] = materials_by_recipe[page_id]
+
+    def _materials_by_recipe(
+        self,
+        dataset_name: str,
+        relation_rows: list[dict[str, Any]],
+        runtime_ids: dict[str, dict[str, str]],
+        recipe_field: str,
+        item_field: str,
+        quantity_field: str,
+    ) -> dict[str, list[dict[str, Any]]]:
+        materials_by_recipe: dict[str, list[dict[str, Any]]] = {}
+        recipe_ids = runtime_ids.get(dataset_name, {})
+        item_ids = runtime_ids.get("items", {})
+        for row in relation_rows:
+            recipe_pages = row.get(recipe_field) or []
+            item_pages = row.get(item_field) or []
+            if not isinstance(recipe_pages, list) or len(recipe_pages) != 1:
+                raise ExportValidationError(
+                    f"{dataset_name} material row {row.get('_notion_id', '')}: must target exactly one recipe"
+                )
+            if not isinstance(item_pages, list) or len(item_pages) != 1:
+                raise ExportValidationError(
+                    f"{dataset_name} material row {row.get('_notion_id', '')}: must target exactly one item"
+                )
+            recipe_page_id = str(recipe_pages[0])
+            item_page_id = str(item_pages[0])
+            recipe_id = recipe_ids.get(recipe_page_id, self.page_overrides.get(recipe_page_id))
+            item_id = item_ids.get(item_page_id, self.page_overrides.get(item_page_id))
+            if recipe_id is None:
+                raise ExportValidationError(
+                    f"{dataset_name} material row {row.get('_notion_id', '')}: targets missing recipe {recipe_page_id}"
+                )
+            if item_id is None:
+                raise ExportValidationError(
+                    f"{dataset_name} material row {row.get('_notion_id', '')}: targets missing item {item_page_id}"
+                )
+            quantity = row.get(quantity_field)
+            if (
+                not isinstance(quantity, (int, float))
+                or isinstance(quantity, bool)
+                or int(quantity) != quantity
+                or int(quantity) <= 0
+            ):
+                raise ExportValidationError(
+                    f"{dataset_name} material row {row.get('_notion_id', '')}: quantity must be a positive integer"
+                )
+            materials_by_recipe.setdefault(recipe_page_id, []).append({
+                "item_id": str(item_id),
+                "quantity": int(quantity),
+            })
+        for recipe_page_id, materials in materials_by_recipe.items():
+            materials.sort(key=lambda material: str(material["item_id"]))
+        return materials_by_recipe
 
     def _prepare_rows(
         self,

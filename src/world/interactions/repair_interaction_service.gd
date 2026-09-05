@@ -18,6 +18,8 @@ static func from_catalog(catalog) -> Dictionary:
 		var interaction = row.get("interaction_definition", {})
 		if typeof(interaction) != TYPE_DICTIONARY or interaction.is_empty():
 			continue
+		if not interaction.has("target") or not interaction.has("actions"):
+			continue
 		var normalized: Dictionary = _normalize_definition(interaction, String(row.get("id", "")))
 		var validation: Dictionary = _validate_definition(normalized)
 		if not validation.ok:

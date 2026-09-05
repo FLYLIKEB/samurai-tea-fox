@@ -1,5 +1,5 @@
 {
-  "content_hash": "74fc574985b6c2ea6b058f38c30710c4cc7b192354bfa8f5fef4e6f855551cc3",
+  "content_hash": "25bf32df5634f7d6e6b414d33988684b69e181d8baae0d1040b26a241ac7646f",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -153,6 +153,21 @@
       "effect": "차솥·도구의 금속 부품 제작 재료.",
       "grade": "일반",
       "id": "copper_ore",
+      "interaction_definition": {
+        "applies_to": "overworld_and_dungeon",
+        "failure_mutates": false,
+        "loot_and_shop_require_tool": false,
+        "rules": [
+          {
+            "action": "mine",
+            "node_kind": "ore_vein",
+            "required_tool_item_id": "stone_pickaxe"
+          }
+        ],
+        "schema_version": 1,
+        "success_depletes": true,
+        "tool_consumed": false
+      },
       "max_stack": 20,
       "name": "구리광석",
       "notion_id": "3cd37369-9e66-811c-b017-eb6621d0d9ed",
@@ -233,6 +248,21 @@
       "effect": "금속 가공의 기본 재료.",
       "grade": "일반",
       "id": "iron_ore",
+      "interaction_definition": {
+        "applies_to": "overworld_and_dungeon",
+        "failure_mutates": false,
+        "loot_and_shop_require_tool": false,
+        "rules": [
+          {
+            "action": "mine",
+            "node_kind": "ore_vein",
+            "required_tool_item_id": "stone_pickaxe"
+          }
+        ],
+        "schema_version": 1,
+        "success_depletes": true,
+        "tool_consumed": false
+      },
       "max_stack": 20,
       "name": "철광석",
       "notion_id": "3cd37369-9e66-8115-b205-fc8492bbcd0c",
@@ -495,43 +525,11 @@
       "effect": "버려진 재료와 파손된 시설을 다시 쓰기 위한 수선 도구.",
       "grade": "고급",
       "id": "repair_hammer",
-      "max_stack": 1,
-      "name": "수선 망치",
-      "notion_id": "3cd37369-9e66-81d3-8ab2-eba41cf2013e",
-      "status": "확정",
-      "type": "도구",
       "interaction_definition": {
-        "schema_version": 1,
-        "required_tool_item_id": "repair_hammer",
-        "required_tool_quantity": 1,
-        "tool_consumed": false,
-        "requires_equipment": false,
-        "unlock": {
-          "biome_id": "wasteland",
-          "condition": "core_dungeon_resolved_and_teleport_repaired",
-          "routes": [
-            "combat",
-            "peaceful"
-          ],
-          "scope": "run"
-        },
-        "target": {
-          "definition_id": "wasteland_abandoned_workbench",
-          "source_facility_item_id": "wooden_workbench",
-          "initial_state": "broken",
-          "biome_id": "wasteland",
-          "count_per_biome": 1,
-          "placement": "reachable_safe_clearing_near_core_dungeon_exit",
-          "blocks_progression": false,
-          "movable": false,
-          "repairable_after_repair": false,
-          "repaired_facility_pickup_allowed": false
-        },
         "actions": [
           {
-            "id": "repair_abandoned_workbench",
             "from": "broken",
-            "to": "repaired",
+            "id": "repair_abandoned_workbench",
             "materials": [
               {
                 "item_id": "old_wood",
@@ -544,17 +542,18 @@
             ],
             "result": {
               "facility_item_id": "wooden_workbench",
-              "placed_at": "target",
-              "inventory_items": []
+              "inventory_items": [],
+              "placed_at": "target"
             },
+            "to": "repaired",
             "turns": 1
           },
           {
-            "id": "recycle_abandoned_workbench",
             "from": "broken",
-            "to": "recycled",
+            "id": "recycle_abandoned_workbench",
             "materials": [],
             "result": {
+              "facility_enabled": false,
               "inventory_items": [
                 {
                   "item_id": "old_wood",
@@ -564,27 +563,58 @@
                   "item_id": "item_28",
                   "quantity": 1
                 }
-              ],
-              "facility_enabled": false
+              ]
             },
+            "to": "recycled",
             "turns": 1
           }
         ],
-        "mutually_exclusive": true,
         "atomic": true,
-        "precheck_output_capacity": true,
+        "bootstrap_materials_require_hammer": false,
         "failure_mutates": false,
         "failure_turns": 0,
-        "save_scope": "run",
+        "mutually_exclusive": true,
+        "precheck_output_capacity": true,
+        "required_tool_item_id": "repair_hammer",
+        "required_tool_quantity": 1,
+        "requires_equipment": false,
+        "reset_on_run_end": true,
         "save_key": [
           "world_seed",
           "biome_id",
           "target_instance_id"
         ],
-        "reset_on_run_end": true,
+        "save_scope": "run",
+        "schema_version": 1,
+        "target": {
+          "biome_id": "wasteland",
+          "blocks_progression": false,
+          "count_per_biome": 1,
+          "definition_id": "wasteland_abandoned_workbench",
+          "initial_state": "broken",
+          "movable": false,
+          "placement": "reachable_safe_clearing_near_core_dungeon_exit",
+          "repairable_after_repair": false,
+          "repaired_facility_pickup_allowed": false,
+          "source_facility_item_id": "wooden_workbench"
+        },
         "teleport_repair_requires_hammer": false,
-        "bootstrap_materials_require_hammer": false
-      }
+        "tool_consumed": false,
+        "unlock": {
+          "biome_id": "wasteland",
+          "condition": "core_dungeon_resolved_and_teleport_repaired",
+          "routes": [
+            "combat",
+            "peaceful"
+          ],
+          "scope": "run"
+        }
+      },
+      "max_stack": 1,
+      "name": "수선 망치",
+      "notion_id": "3cd37369-9e66-81d3-8ab2-eba41cf2013e",
+      "status": "확정",
+      "type": "도구"
     },
     {
       "acquisition": "런 시작 기본 장비",
@@ -635,6 +665,21 @@
       "effect": "설원 후반 제작에 쓰이는 단단한 광물.",
       "grade": "고급",
       "id": "snowfield_mineral",
+      "interaction_definition": {
+        "applies_to": "overworld_and_dungeon",
+        "failure_mutates": false,
+        "loot_and_shop_require_tool": false,
+        "rules": [
+          {
+            "action": "mine",
+            "node_kind": "mineral_deposit",
+            "required_tool_item_id": "stone_pickaxe"
+          }
+        ],
+        "schema_version": 1,
+        "success_depletes": true,
+        "tool_consumed": false
+      },
       "max_stack": 20,
       "name": "설원 광물",
       "notion_id": "3cd37369-9e66-813f-a38d-d75ef82efe8c",
@@ -651,6 +696,31 @@
       "effect": "기초 제작과 시설 배치에 쓰는 재료.",
       "grade": "일반",
       "id": "stone",
+      "interaction_definition": {
+        "applies_to": "overworld_and_dungeon",
+        "bootstrap": {
+          "biome_id": "common_region",
+          "exclude_core_dungeon_gate": true,
+          "quantity_per_loose_node": 1,
+          "reachable_loose_stone_minimum": 3
+        },
+        "failure_mutates": false,
+        "rules": [
+          {
+            "action": "pickup",
+            "node_kind": "loose_stone",
+            "required_tool_item_id": null
+          },
+          {
+            "action": "mine",
+            "node_kind": "rock",
+            "required_tool_item_id": "stone_pickaxe"
+          }
+        ],
+        "schema_version": 1,
+        "success_depletes": true,
+        "tool_consumed": false
+      },
       "name": "돌",
       "notion_id": "3cd37369-9e66-81df-b6b9-c0fdf547e204",
       "status": "확정",
@@ -665,6 +735,25 @@
       "max_stack": 1,
       "name": "돌도끼",
       "notion_id": "3d137369-9e66-81dc-926f-cfff17fbb39a",
+      "status": "확정",
+      "type": "도구"
+    },
+    {
+      "acquisition": "일반 지역 진입 후 손제작",
+      "biome_ids": [
+        "common_region"
+      ],
+      "core_tea_ware": false,
+      "craftable": true,
+      "effect": "암석·광맥 채굴용 재사용 도구. 인벤토리에 보유하면 사용하며 장착·소모·내구도는 없다. 도구 요구의 정본은 각 자원 아이템의 상호작용 정의 JSON을 참조한다.",
+      "effect_type": "탐험",
+      "equipment_slot": "",
+      "grade": "일반",
+      "id": "stone_pickaxe",
+      "max_owned": 1,
+      "max_stack": 1,
+      "name": "돌곡괭이",
+      "notion_id": "3d237369-9e66-8165-930e-fcdf1e909b16",
       "status": "확정",
       "type": "도구"
     },

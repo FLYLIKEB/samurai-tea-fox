@@ -37,6 +37,8 @@ func _assert_exported_definition_matches_notion_contract(asserts, catalog: DataC
 	asserts.equal(String(definition.get("target", {}).get("definition_id", "")), TARGET_ID, "repair hammer targets the abandoned wasteland workbench")
 	asserts.equal(_item_quantities(definition.get("actions", [])[0].materials), {"old_wood": 2, "item_28": 1}, "repair costs the confirmed old wood and iron scrap quantities")
 	asserts.equal(_item_quantities(definition.get("actions", [])[1].result.inventory_items), {"old_wood": 2, "item_28": 1}, "recycle grants the confirmed output quantities")
+	var service: RepairInteractionService = RepairInteractionService.from_catalog(catalog).repair_interaction_service
+	asserts.false_value(service.has_target("copper_ore"), "mining interaction definitions are not registered as repair targets")
 
 func _assert_repair_success_and_duplicate_rejection(asserts, catalog: DataCatalog) -> void:
 	var fixture := _fixture(catalog)
