@@ -4,7 +4,7 @@ class_name GameHud
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const MobileCommandAdapter = preload("res://src/core/commands/mobile_command_adapter.gd")
 const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
-const WorldData = preload("res://src/world/data/world_data.gd")
+const GameHudReadModelProvider = preload("res://src/ui/game_hud_read_model_provider.gd")
 
 const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
 const ICON_HP := "ui_hp_heart_icon"
@@ -147,18 +147,6 @@ signal mobile_command_issued(command)
 
 signal movement_button_changed(direction: Vector2i)
 
-var player
-var world: Dictionary = {}
-var render_result: Dictionary = {}
-var catalog
-var inventory
-var inventory_command_runtime
-var map_read_model_builder
-var world_data
-var world_origin := Vector2.ZERO
-var combat_target
-var run_state
-var tea_service
 var asset_catalog := AssetCatalog.new()
 var _asset_catalog_ready := false
 var _content_image_map_ready := false
@@ -170,15 +158,8 @@ var _toast_panel: PanelContainer
 var _toast_remaining := 0.0
 var _crafting_filter := "all"
 var _selected_recipe_id := ""
-var tea_brewing_command_runtime
-var meta_codex_command_runtime
-var crafting_service
-var crafting_context: Dictionary = {}
-var biome_progression_state
-var cheat_mode := false
-var biome_map_previews: Dictionary = {}
 var _selected_map_biome_id := ""
-var time_state
+var read_model_provider := GameHudReadModelProvider.new()
 var _labels: Dictionary = {}
 var _panels: Dictionary = {}
 var _equipment_slots: Dictionary = {}
@@ -216,27 +197,12 @@ func _ready() -> void:
 
 func configure(player_node, generated_world: Dictionary, generated_render_result: Dictionary, runtime_context := {}) -> void:
 	_unbind_runtime_signals()
-	player = player_node
-	world = generated_world.duplicate(true)
-	render_result = generated_render_result.duplicate(true)
-	if typeof(runtime_context) == TYPE_DICTIONARY:
-		catalog = runtime_context.get("catalog", null)
-		inventory = runtime_context.get("inventory", null)
-		inventory_command_runtime = runtime_context.get("inventory_command_runtime", null)
-		map_read_model_builder = runtime_context.get("map_read_model_builder", null)
-		world_data = runtime_context.get("world_data", null)
-		world_origin = runtime_context.get("world_origin", Vector2.ZERO)
-		combat_target = runtime_context.get("combat_target", null)
-		run_state = runtime_context.get("run_state", null)
-		tea_service = runtime_context.get("tea_service", null)
-		tea_brewing_command_runtime = runtime_context.get("tea_brewing_command_runtime", null)
-		meta_codex_command_runtime = runtime_context.get("meta_codex_command_runtime", null)
-		crafting_service = runtime_context.get("crafting_service", null)
-		crafting_context = runtime_context.get("crafting_context", {}).duplicate(true)
-		biome_progression_state = runtime_context.get("biome_progression_state", null)
-		cheat_mode = bool(runtime_context.get("cheat_mode", false))
-		biome_map_previews = runtime_context.get("biome_map_previews", {}).duplicate(true)
-		time_state = runtime_context.get("time_state", null)
+	var injected_provider = runtime_context.get("read_model_provider", null) if typeof(runtime_context) == TYPE_DICTIONARY else null
+	if injected_provider != null:
+		read_model_provider = injected_provider
+	else:
+		read_model_provider = GameHudReadModelProvider.new()
+		read_model_provider.configure(player_node, generated_world, generated_render_result, runtime_context)
 	_build()
 	_rebuild_action_buttons()
 	_apply_safe_area_layout()
@@ -244,31 +210,9 @@ func configure(player_node, generated_world: Dictionary, generated_render_result
 	_update()
 
 func runtime_read_model() -> Dictionary:
-	var resources = _object_property(player, "resources")
-	var phase_name := String(_object_property(time_state, "phase", "day"))
-	return {
-		"hp": int(_object_property(resources, "hp", 0)),
-		"hp_max": int(_object_property(resources, "hp_max", 0)),
-		"ki": int(_object_property(resources, "ki", 0)),
-		"ki_max": int(_object_property(resources, "ki_max", 0)),
-		"kokoro": int(_object_property(resources, "kokoro", 0)),
-		"kokoro_max": int(_object_property(resources, "kokoro_max", 0)),
-		"inventory_slot_count": _inventory_slot_count(),
-		"inventory_used_slots": _inventory_used_slots(),
-		"tea_quickslot_count": _tea_quickslot_count(),
-		"tea_ready_slots": _tea_ready_slots(),
-		"consumable_ready": _consumable_ready(),
-		"ability_slot_count": _balance_integer(BALANCE_ABILITY_SLOTS_ID),
-		"time_phase": phase_name,
-		"time_phase_label": _time_phase_label(phase_name),
-		"time_progress_percent": _time_progress_percent(),
-		"combat_target": _combat_target_read_model(),
-		"equipment": _equipment_read_model(),
-		"biome_label": _biome_label(String(world.get("biome_id", "common_region"))),
-		"terrain_count": _render_count("terrain"),
-		"object_count": _render_count("entities") + _render_count("Landmarks"),
-		"minimap": _minimap_read_model()
-	}
+	if read_model_provider == null:
+		return {}
+	return read_model_provider.read_model()
 
 func equipment_hud_snapshot() -> Dictionary:
 	var snapshot := {}
@@ -344,7 +288,7 @@ func show_meta_codex_menu() -> bool:
 
 func show_map_menu() -> bool:
 	_open_menu_id = "map"
-	_selected_map_biome_id = String(world.get("biome_id", ""))
+	_selected_map_biome_id = _current_biome_id()
 	_show_menu("지도", _map_rows())
 	return true
 
@@ -542,9 +486,7 @@ func _floor_toast_model(event: Dictionary) -> Dictionary:
 	}
 
 func _catalog_definition(dataset: String, stable_id: String) -> Dictionary:
-	if catalog != null and catalog.has_method("find_by_id"):
-		return catalog.find_by_id(dataset, stable_id)
-	return {}
+	return read_model_provider.catalog_definition(dataset, stable_id) if read_model_provider != null else {}
 
 func _content_icon_reference(dataset: String, stable_id: String, definition: Dictionary) -> String:
 	var icon_reference := String(definition.get("icon_asset_id", ""))
@@ -582,7 +524,8 @@ func _process(delta: float) -> void:
 		_toast_remaining -= maxf(delta, 0.0)
 		if _toast_remaining <= 0.0:
 			_advance_status_toast()
-	if time_state == null:
+	var model := runtime_read_model()
+	if not bool(model.get("time_visible", false)):
 		return
 	_time_refresh_elapsed += maxf(delta, 0.0)
 	if _time_refresh_elapsed < 0.25:
@@ -822,9 +765,9 @@ func _update() -> void:
 	_set_label("enemy_attack", "무기 공격 %d" % int(combat_model.get("attack", 0)))
 	var time_label := _labels.get("time_phase") as Label
 	if time_label != null:
-		time_label.get_parent().get_parent().visible = time_state != null
+		time_label.get_parent().get_parent().visible = bool(model.get("time_visible", false))
 	var map_panel := _panels.get("map") as Control
-	var map_height := MAP_PANEL_TIME_HEIGHT if time_state != null else MAP_PANEL_SIZE.y
+	var map_height := MAP_PANEL_TIME_HEIGHT if bool(model.get("time_visible", false)) else MAP_PANEL_SIZE.y
 	if map_panel != null and not is_equal_approx(map_panel.custom_minimum_size.y, map_height):
 		map_panel.custom_minimum_size.y = map_height
 		_apply_safe_area_layout()
@@ -837,57 +780,20 @@ func _update() -> void:
 	_set_label("abilities", "요술 %d" % model.ability_slot_count)
 
 func _bind_runtime_signals() -> void:
-	var resources = _object_property(player, "resources")
-	_connect_runtime_signal(resources, &"hp_changed", Callable(self, "_on_resources_changed"))
-	_connect_runtime_signal(resources, &"ki_changed", Callable(self, "_on_resources_changed"))
-	_connect_runtime_signal(resources, &"kokoro_changed", Callable(self, "_on_resources_changed"))
-	_connect_runtime_signal(inventory, &"changed", Callable(self, "_on_snapshot_changed"))
-	_connect_runtime_signal(inventory_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
-	_connect_runtime_signal(combat_target, &"damaged", Callable(self, "_on_combat_target_damaged"))
-	_connect_runtime_signal(combat_target, &"defeated", Callable(self, "_on_combat_target_defeated"))
-	_connect_runtime_signal(tea_service, &"changed", Callable(self, "_on_snapshot_changed"))
-	_connect_runtime_signal(tea_brewing_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
-	_connect_runtime_signal(meta_codex_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
-	_connect_runtime_signal(time_state, &"phase_changed", Callable(self, "_on_phase_changed"))
+	if read_model_provider != null and read_model_provider.has_signal("changed"):
+		var callback := Callable(self, "_on_provider_changed")
+		if not read_model_provider.is_connected("changed", callback):
+			read_model_provider.connect("changed", callback)
 
 func _unbind_runtime_signals() -> void:
-	var resources = _object_property(player, "resources")
-	_disconnect_runtime_signal(resources, &"hp_changed", Callable(self, "_on_resources_changed"))
-	_disconnect_runtime_signal(resources, &"ki_changed", Callable(self, "_on_resources_changed"))
-	_disconnect_runtime_signal(resources, &"kokoro_changed", Callable(self, "_on_resources_changed"))
-	_disconnect_runtime_signal(inventory, &"changed", Callable(self, "_on_snapshot_changed"))
-	_disconnect_runtime_signal(inventory_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
-	_disconnect_runtime_signal(combat_target, &"damaged", Callable(self, "_on_combat_target_damaged"))
-	_disconnect_runtime_signal(combat_target, &"defeated", Callable(self, "_on_combat_target_defeated"))
-	_disconnect_runtime_signal(tea_service, &"changed", Callable(self, "_on_snapshot_changed"))
-	_disconnect_runtime_signal(tea_brewing_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
-	_disconnect_runtime_signal(meta_codex_command_runtime, &"read_model_changed", Callable(self, "_on_snapshot_changed"))
-	_disconnect_runtime_signal(time_state, &"phase_changed", Callable(self, "_on_phase_changed"))
+	if read_model_provider != null and read_model_provider.has_signal("changed"):
+		var callback := Callable(self, "_on_provider_changed")
+		if read_model_provider.is_connected("changed", callback):
+			read_model_provider.disconnect("changed", callback)
 
-func _connect_runtime_signal(source, signal_name: StringName, callback: Callable) -> void:
-	if source != null and source.has_signal(signal_name) and not source.is_connected(signal_name, callback):
-		source.connect(signal_name, callback)
-
-func _disconnect_runtime_signal(source, signal_name: StringName, callback: Callable) -> void:
-	if source != null and source.has_signal(signal_name) and source.is_connected(signal_name, callback):
-		source.disconnect(signal_name, callback)
-
-func _on_resources_changed(_previous, _current, _maximum) -> void:
-	_update()
-
-func _on_snapshot_changed(_snapshot) -> void:
+func _on_provider_changed(_read_model: Dictionary) -> void:
 	_update()
 	_refresh_open_menu()
-
-func _on_combat_target_damaged(_event: Dictionary, _applied_damage: int) -> void:
-	_update()
-
-func _on_combat_target_defeated() -> void:
-	_update()
-
-func _on_phase_changed(_previous, _current) -> void:
-	_time_refresh_elapsed = 0.0
-	_update()
 
 func _build_dpad(parent: PanelContainer) -> void:
 	var board := Control.new()
@@ -1299,8 +1205,8 @@ func _refresh_open_menu() -> void:
 
 func _inventory_rows() -> Array:
 	var rows: Array = []
-	if inventory_command_runtime != null and inventory_command_runtime.has_method("read_model"):
-		var model: Dictionary = inventory_command_runtime.read_model()
+	var model := _inventory_read_model()
+	if not model.is_empty():
 		rows.append(_section_label("차 & 도구 (인벤토리) · %d/%d · %s" % [int(model.capacity.used), int(model.capacity.total), String(model.filter_kind)]))
 		var toolbar := HBoxContainer.new()
 		toolbar.name = "InventoryToolbar"
@@ -1472,10 +1378,10 @@ func _inventory_page_start(rows: Array, selected_slot_index: int, page_size: int
 
 func _tea_brewing_rows() -> Array:
 	var rows: Array = []
-	if tea_brewing_command_runtime == null or not tea_brewing_command_runtime.has_method("read_model"):
+	var model := _tea_brewing_read_model()
+	if model.is_empty():
 		rows.append(_label("차 우리기 read model 없음", 11))
 		return rows
-	var model: Dictionary = tea_brewing_command_runtime.read_model()
 	rows.append(_label("찻잎 %d · 다구 %d · 휴대칸 %d · 장소 %s" % [
 		_array_value(model.get("leaves", [])).size(),
 		_array_value(model.get("vessels", [])).size(),
@@ -1575,10 +1481,10 @@ func _tea_brewing_preview_label(preview: Dictionary) -> String:
 
 func _meta_codex_rows() -> Array:
 	var rows: Array = []
-	if meta_codex_command_runtime == null or not meta_codex_command_runtime.has_method("read_model"):
+	var model := _meta_codex_read_model()
+	if model.is_empty():
 		rows.append(_label("도감 read model 없음", 11))
 		return rows
-	var model: Dictionary = meta_codex_command_runtime.read_model()
 	rows.append(_label("탭 %s · 필터 %s · 발견 %d · 엔딩 %d" % [
 		String(model.get("selected_tab", "")),
 		String(model.get("filter_mode", "")),
@@ -1682,12 +1588,9 @@ func _meta_tab_label(tab: String) -> String:
 
 func _crafting_rows() -> Array:
 	var rows: Array = []
-	if crafting_service == null or not crafting_service.has_method("read_model"):
+	var model := _crafting_read_model(_crafting_filter, _selected_recipe_id)
+	if model.is_empty():
 		return rows
-	var model: Dictionary = crafting_service.read_model(inventory, crafting_context, {
-		"category": _crafting_filter,
-		"selected_recipe_id": _selected_recipe_id
-	})
 	if not bool(model.get("ok", false)):
 		rows.append(_label("제작 read model 없음", 11))
 		return rows
@@ -1885,7 +1788,7 @@ func _facility_rows() -> Array:
 	facility_strip.name = "FacilityCardStrip"
 	_ignore_mouse(facility_strip)
 	facility_strip.add_theme_constant_override("separation", 5)
-	for node in world.get("facility_nodes", []):
+	for node in _facility_nodes():
 		var position: Dictionary = node.get("position", {})
 		facility_strip.add_child(_detail_card_with_text("지도 시설", "%s (%d,%d)" % [
 			String(node.get("facility_term", node.get("id", ""))),
@@ -1894,8 +1797,8 @@ func _facility_rows() -> Array:
 		]))
 	if facility_strip.get_child_count() > 0:
 		rows.append(facility_strip)
-	if crafting_service != null and crafting_service.has_method("read_model"):
-		var model: Dictionary = crafting_service.read_model(inventory, crafting_context)
+	var model := _crafting_read_model("all", "")
+	if not model.is_empty():
 		var facilities := {}
 		for recipe in model.get("rows", []):
 			for facility in recipe.get("facilities", []):
@@ -1920,34 +1823,23 @@ func _facility_rows() -> Array:
 
 func _map_rows() -> Array:
 	var rows: Array = []
-	var selected_id := _selected_map_biome_id if not _selected_map_biome_id.is_empty() else String(world.get("biome_id", ""))
-	var map_source = world_data
-	if selected_id != String(world.get("biome_id", "")) and biome_map_previews.has(selected_id):
-		map_source = WorldData.from_dictionary(biome_map_previews[selected_id].get("world_data", {}))
-	var model := _map_read_model({"minimap_width": 48, "minimap_height": 28, "reveal_all": true}, map_source)
+	var current_biome_id := _current_biome_id()
+	var selected_id := _selected_map_biome_id if not _selected_map_biome_id.is_empty() else current_biome_id
+	var model := _map_read_model({"minimap_width": 48, "minimap_height": 28, "reveal_all": true}, selected_id)
 	if not bool(model.get("ok", false)):
 		rows.append(_label("지도 read model 없음", 11))
 		return rows
 	rows.append(_section_label("전체 지도 · 접근 가능한 지역을 선택하세요"))
 	rows.append(_biome_map_selector())
 	var selected := _biome_definition(selected_id)
-	rows.append(_label("현재 보기: %s%s" % [String(selected.get("name", selected_id)), " · 현재 위치" if selected_id == String(world.get("biome_id", "")) else ""], 12))
-	if selected_id != String(world.get("biome_id", "")) and not _is_biome_map_accessible(selected_id):
+	rows.append(_label("현재 보기: %s%s" % [String(selected.get("name", selected_id)), " · 현재 위치" if selected_id == current_biome_id else ""], 12))
+	if selected_id != current_biome_id and not _is_biome_map_accessible(selected_id):
 		rows.append(_label("이 지역은 아직 잠겨 있습니다. 해금 후 상세 지도가 표시됩니다.", 10))
 		return rows
 	var bounds: Dictionary = model.bounds
 	rows.append(_label("지도 %dx%d · 발견 %d · 안개 %d" % [int(bounds.width), int(bounds.height), int(model.discovered_count), int(model.fog_count)], 11))
 	rows.append(_label("플레이어 (%d,%d)" % [int(model.player.position.x), int(model.player.position.y)], 11))
-	var current_biome_id := String(world.get("biome_id", ""))
-	if current_biome_id.is_empty() and run_state != null:
-		current_biome_id = String(run_state.current_biome_id)
-	# Cheat mode represents a fully-completed save regardless of legacy/stale
-	# progression fields that may have been loaded before the HUD was configured.
-	var dungeon_cleared: bool = cheat_mode or (run_state != null and run_state.completed_dungeon_ids.has(current_biome_id))
-	if run_state != null:
-		dungeon_cleared = dungeon_cleared or String(run_state.teleport_states.get(current_biome_id, "")) in ["repairable", "repaired"]
-		dungeon_cleared = dungeon_cleared or run_state.crafting_unlocks.has(current_biome_id)
-	rows.append(_label("현재 던전: %s" % ("클리어" if dungeon_cleared else "미클리어"), 11))
+	rows.append(_label("현재 던전: %s" % ("클리어" if _dungeon_cleared_for_current_biome() else "미클리어"), 11))
 	rows.append(_map_color_grid(model.minimap, Vector2(8, 8)))
 	var markers: Array = model.markers
 	rows.append(_label("중요 오브젝트", 11))
@@ -1992,10 +1884,8 @@ func _map_back_button() -> Button:
 
 func _ruin_travel_rows() -> Array:
 	var rows: Array = [_label("수리된 다른 유적을 선택하세요", 11)]
-	var current_id := String(world.get("biome_id", ""))
-	var repaired_ids: Array = []
-	if run_state != null:
-		repaired_ids = run_state.completed_dungeon_ids
+	var current_id := _current_biome_id()
+	var repaired_ids := _repaired_ruin_biome_ids()
 	for definition in _ordered_biome_definitions():
 		var destination_id := String(definition.get("id", ""))
 		if destination_id.is_empty() or destination_id == current_id or not repaired_ids.has(destination_id):
@@ -2014,12 +1904,12 @@ func _ruin_travel_rows() -> Array:
 
 func _teleport_travel_rows() -> Array:
 	var rows: Array = [_label("수리된 텔레포트 · 연결된 일반 지역을 선택하세요", 11)]
-	if biome_progression_state == null:
+	var projection := _biome_progression_projection()
+	if projection.is_empty():
 		rows.append(_label("바이옴 연결 정보 없음", 11))
 		return rows
-	var projection: Dictionary = biome_progression_state.to_projection()
 	var order: Array = projection.get("biome_order", [])
-	var current_id := String(world.get("biome_id", ""))
+	var current_id := _current_biome_id()
 	var current_index := order.find(current_id)
 	var destinations: Array = []
 	for index in [current_index - 1, current_index + 1]:
@@ -2056,7 +1946,7 @@ func _biome_map_selector() -> Control:
 		button.text = String(definition.get("name", biome_id))
 		button.tooltip_text = "선택하여 지역 지도 보기"
 		button.custom_minimum_size = Vector2(86, 30)
-		button.disabled = biome_id == String(world.get("biome_id", "")) and _selected_map_biome_id == biome_id
+		button.disabled = biome_id == _current_biome_id() and _selected_map_biome_id == biome_id
 		button.pressed.connect(func():
 			_selected_map_biome_id = biome_id
 			_show_menu("지도", _map_rows())
@@ -2066,84 +1956,17 @@ func _biome_map_selector() -> Control:
 		strip.add_child(_label("지역 데이터 없음", 10))
 	return strip
 
-func _ordered_biome_definitions() -> Array:
-	if catalog == null or not catalog.has_method("get_definitions"):
-		return []
-	var definitions: Array = catalog.get_definitions("biomes")
-	definitions.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
-		var left_order = left.get("progression_order", 999)
-		var right_order = right.get("progression_order", 999)
-		var left_value: int = 999 if left_order == null else int(left_order)
-		var right_value: int = 999 if right_order == null else int(right_order)
-		return left_value < right_value
-	)
-	return definitions
-
-func _biome_definition(biome_id: String) -> Dictionary:
-	for definition in _ordered_biome_definitions():
-		if String(definition.get("id", "")) == biome_id:
-			return definition
-	return {}
-
-func _is_biome_map_accessible(biome_id: String) -> bool:
-	if cheat_mode:
-		return true
-	var current_id := String(world.get("biome_id", ""))
-	if biome_id == current_id:
-		return true
-	if run_state != null and run_state.crafting_unlocks.has(biome_id):
-		return true
-	if biome_progression_state != null and biome_progression_state.has_method("teleport_state_for"):
-		return String(biome_progression_state.teleport_state_for(biome_id)) == "repaired"
-	return false
-
 func _minimap_read_model() -> Dictionary:
-	var model := _map_read_model({"minimap_width": 11, "minimap_height": 7})
-	if not bool(model.get("ok", false)):
-		return model
-	return {
-		"ok": true,
-		"discovered_count": int(model.discovered_count),
-		"marker_count": _array_value(model.get("markers", [])).size(),
-		"minimap": model.minimap
-	}
+	return read_model_provider.minimap_read_model() if read_model_provider != null else {}
 
-func _map_read_model(options := {}, source_world_data = null) -> Dictionary:
-	if map_read_model_builder == null or not map_read_model_builder.has_method("build"):
-		return {"ok": false, "reason": "missing_map_read_model_builder"}
-	var selected_source = source_world_data if source_world_data != null else (world_data if world_data != null else world)
-	return map_read_model_builder.build(selected_source, run_state, _player_cell(), options)
+func _map_read_model(options := {}, selected_biome_id := "") -> Dictionary:
+	return read_model_provider.map_read_model(options, selected_biome_id) if read_model_provider != null else {}
 
 func _combat_target_read_model() -> Dictionary:
-	var combatant = _object_property(combat_target, "combatant")
-	if combatant == null:
-		return {"visible": false}
-	var hp := int(_object_property(combatant, "hp", 0))
-	var hp_max := int(_object_property(combatant, "hp_max", 0))
-	if hp_max <= 0:
-		return {"visible": false}
-	var definition_id := String(_object_property(combatant, "definition_id", _object_property(combat_target, "monster_id", "")))
-	var definition := {}
-	if catalog != null and catalog.has_method("find_by_id") and not definition_id.is_empty():
-		definition = catalog.find_by_id("monsters", definition_id)
-	return {
-		"visible": hp > 0,
-		"id": definition_id,
-		"name": String(definition.get("name", definition_id if not definition_id.is_empty() else "적")),
-		"hp": hp,
-		"hp_max": hp_max,
-		"attack": int(_object_property(combatant, "attack", 0))
-	}
+	return read_model_provider.combat_target_read_model() if read_model_provider != null else {"visible": false}
 
 func _player_cell() -> Vector2i:
-	var position := Vector2.ZERO
-	if player != null and player.has_method("get"):
-		position = player.get("global_position")
-	var tile_size := 32
-	if world_data != null and world_data.has_method("get"):
-		tile_size = max(1, int(world_data.get("tile_size")))
-	var local_position := position - world_origin
-	return Vector2i(int(floor(local_position.x / float(tile_size))), int(floor(local_position.y / float(tile_size))))
+	return read_model_provider._player_cell() if read_model_provider != null else Vector2i.ZERO
 
 func _marker_label(marker_type: String) -> String:
 	match marker_type:
@@ -2280,17 +2103,10 @@ func _minimap_marker_color(marker_type: String) -> Color:
 			return Color(0.95, 0.72, 0.32, 1.0)
 
 func _inventory_definition(item_id: String) -> Dictionary:
-	if inventory != null and inventory.has_method("definition_for"):
-		return inventory.definition_for(item_id)
-	if catalog != null and catalog.has_method("find_by_id"):
-		return catalog.find_by_id("items", item_id)
-	return {"id": item_id, "name": item_id}
+	return read_model_provider.inventory_definition(item_id) if read_model_provider != null else {"id": item_id, "name": item_id}
 
 func _equipment_read_model() -> Dictionary:
-	if inventory_command_runtime == null or not inventory_command_runtime.has_method("read_model"):
-		return {}
-	var model: Dictionary = inventory_command_runtime.read_model()
-	return _dictionary_value(model.get("equipment", {})).duplicate(true)
+	return read_model_provider.equipment_read_model() if read_model_provider != null else {}
 
 func _build_equipment_strip() -> HBoxContainer:
 	var strip := HBoxContainer.new()
@@ -2937,11 +2753,7 @@ func _set_label(id: String, text: String) -> void:
 		label.text = text
 
 func _speaker_label(speaker_id: String) -> String:
-	if catalog != null and catalog.has_method("find_character_by_id"):
-		var character: Dictionary = catalog.find_character_by_id(speaker_id)
-		if not character.is_empty():
-			return String(character.get("name", speaker_id))
-	return speaker_id
+	return read_model_provider.speaker_label(speaker_id) if read_model_provider != null else speaker_id
 
 func _pixel_theme() -> Theme:
 	return PixelUiTheme.create()
@@ -2998,104 +2810,70 @@ func _parchment_style() -> StyleBoxFlat:
 	return style
 
 func _biome_label(id: String) -> String:
-	match id:
-		"common_region":
-			return "초록 평원"
-		"mountain_region":
-			return "산악 지대"
-		"snowfield":
-			return "설원"
-		"rainforest":
-			return "열대 우림"
-		"wasteland":
-			return "황무지"
-		_:
-			return id
+	return read_model_provider.biome_label(id) if read_model_provider != null else id
 
 func _time_phase_label(id: String) -> String:
-	match id:
-		"day":
-			return "낮"
-		"dusk":
-			return "해질녘"
-		"night":
-			return "밤"
-		"late_night":
-			return "깊은 밤"
-		_:
-			return id
+	return read_model_provider.time_phase_label(id) if read_model_provider != null else id
 
 func _render_count(key: String) -> int:
-	var counts: Dictionary = render_result.get("counts", {})
-	return int(counts.get(key, 0))
+	return read_model_provider.render_count(key) if read_model_provider != null else 0
 
 func _inventory_slot_count() -> int:
-	return int(_object_property(inventory, "slot_count", 0))
+	return read_model_provider.inventory_slot_count() if read_model_provider != null else 0
 
 func _inventory_used_slots() -> int:
-	var slots = _object_property(inventory, "slots", [])
-	if typeof(slots) != TYPE_ARRAY:
-		return 0
-	var count := 0
-	for slot in slots:
-		if typeof(slot) == TYPE_DICTIONARY and not slot.is_empty():
-			count += 1
-	return count
+	return read_model_provider.inventory_used_slots() if read_model_provider != null else 0
 
 func _tea_quickslot_count() -> int:
-	return int(_object_property(tea_service, "quickslot_count", 0))
+	return read_model_provider.tea_quickslot_count() if read_model_provider != null else 0
 
 func _tea_ready_slots() -> int:
-	var slots = _object_property(tea_service, "quick_slots", [])
-	if typeof(slots) != TYPE_ARRAY:
-		return 0
-	var count := 0
-	for slot in slots:
-		if typeof(slot) == TYPE_DICTIONARY and not slot.is_empty():
-			count += 1
-	return count
+	return read_model_provider.tea_ready_slots() if read_model_provider != null else 0
 
 func _balance_integer(id: String) -> int:
-	if catalog == null or not catalog.has_method("find_by_id"):
-		return 0
-	var definition: Dictionary = catalog.find_by_id("balance", id)
-	return int(definition.get("value", 0))
+	return read_model_provider.balance_integer(id) if read_model_provider != null else 0
 
 func _consumable_ready() -> bool:
-	var slots = _object_property(inventory, "slots", [])
-	if typeof(slots) != TYPE_ARRAY:
-		return false
-	for slot in slots:
-		if typeof(slot) != TYPE_DICTIONARY or int(slot.get("quantity", 0)) <= 0:
-			continue
-		var item_id := String(slot.get("item_id", ""))
-		var definition := {}
-		if inventory != null and inventory.has_method("definition_for"):
-			definition = inventory.definition_for(item_id)
-		elif catalog != null and catalog.has_method("find_by_id"):
-			definition = catalog.find_by_id("items", item_id)
-		if String(definition.get("type", "")) == "소모품":
-			return true
-	return false
+	return read_model_provider.consumable_ready() if read_model_provider != null else false
 
 func _time_progress_percent() -> int:
-	if time_state == null:
-		return 0
-	var phase := StringName(_object_property(time_state, "phase", "day"))
-	var elapsed := float(_object_property(time_state, "phase_elapsed_seconds", 0.0))
-	var config = _object_property(time_state, "config")
-	if config == null or not config.has_method("phase_duration_seconds"):
-		return 0
-	var duration := float(config.phase_duration_seconds(phase))
-	if duration <= 0.0:
-		return 0
-	return clampi(int(round((elapsed / duration) * 100.0)), 0, 100)
+	return read_model_provider.time_progress_percent() if read_model_provider != null else 0
 
-func _object_property(object, property: String, fallback = null):
-	if object == null or not object.has_method("get"):
-		return fallback
-	var value = object.get(property)
-	return fallback if value == null else value
+func _inventory_read_model() -> Dictionary:
+	return read_model_provider.inventory_read_model() if read_model_provider != null else {}
+
+func _tea_brewing_read_model() -> Dictionary:
+	return read_model_provider.tea_brewing_read_model() if read_model_provider != null else {}
+
+func _meta_codex_read_model() -> Dictionary:
+	return read_model_provider.meta_codex_read_model() if read_model_provider != null else {}
+
+func _crafting_read_model(filter: String, selected_recipe_id: String) -> Dictionary:
+	return read_model_provider.crafting_read_model(filter, selected_recipe_id) if read_model_provider != null else {}
+
+func _facility_nodes() -> Array:
+	return read_model_provider.facility_nodes() if read_model_provider != null else []
+
+func _current_biome_id() -> String:
+	return read_model_provider.current_biome_id() if read_model_provider != null else "common_region"
+
+func _dungeon_cleared_for_current_biome() -> bool:
+	return read_model_provider.dungeon_cleared_for_current_biome() if read_model_provider != null else false
+
+func _repaired_ruin_biome_ids() -> Array:
+	return read_model_provider.repaired_ruin_biome_ids() if read_model_provider != null else []
+
+func _biome_progression_projection() -> Dictionary:
+	return read_model_provider.biome_progression_projection() if read_model_provider != null else {}
+
+func _ordered_biome_definitions() -> Array:
+	return read_model_provider.ordered_biome_definitions() if read_model_provider != null else []
+
+func _biome_definition(biome_id: String) -> Dictionary:
+	return read_model_provider.biome_definition(biome_id) if read_model_provider != null else {}
+
+func _is_biome_map_accessible(biome_id: String) -> bool:
+	return read_model_provider.is_biome_map_accessible(biome_id) if read_model_provider != null else false
 
 func _array_value(value) -> Array:
 	if typeof(value) != TYPE_ARRAY:
