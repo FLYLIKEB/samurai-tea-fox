@@ -298,16 +298,16 @@ func _assert_runtime_death_replaces_run(main, player) -> void:
 		return
 	if loaded.state.lifecycle_epoch != 1 or loaded.state.seed != 0:
 		failures.append("real main death path advances lifecycle epoch and replaces run data")
-	if main.run_state.lifecycle_epoch != 1 or main.run_state.seed != 0:
-		failures.append("real main runtime activates the persisted fresh run")
-	if main.run_lifecycle_service == lifecycle_before or main.run_lifecycle_service.death_confirmed:
-		failures.append("real main death path reinitializes lifecycle service")
-	if main.inventory == inventory_before or main.acquisition_service == acquisition_before:
-		failures.append("real main death path reinitializes run-owned services")
-	if main.inventory.get_total_quantity("wood") != 0:
-		failures.append("real main death path clears run-only inventory")
-	if player.resources.hp != player.resources.hp_max:
-		failures.append("real main death path reinitializes player resources")
+	if main.run_state.lifecycle_epoch != 0 or main.run_state.seed != 701:
+		failures.append("real main death path leaves the old runtime attached until the start screen transition")
+	if main.run_lifecycle_service != lifecycle_before or not main.run_lifecycle_service.death_confirmed:
+		failures.append("real main death path keeps the confirmed lifecycle visible during the transition")
+	if main.inventory != inventory_before or main.acquisition_service != acquisition_before:
+		failures.append("real main death path does not reinitialize run-owned services before the start screen transition")
+	if main.inventory.get_total_quantity("wood") != 1:
+		failures.append("real main death path keeps old run-only inventory only in the outgoing runtime")
+	if not main._death_transition_active or main.get_node_or_null("DeathTransition") == null:
+		failures.append("real main death path shows a start-screen transition instead of immediate fresh-run activation")
 	if FileAccess.get_file_as_string(META_PATH) != meta_before:
 		failures.append("real main death replacement preserves meta save")
 	var marker = JSON.parse_string(FileAccess.get_file_as_string(RUN_PATH + ".invalidated.json"))
