@@ -1157,9 +1157,9 @@
         "name": "돌붙이 요괴",
         "path": "res://assets/sprites/characters/monsters/stonebound_yokai/stonebound_yokai_front_idle_32x32.png",
         "resolution": "monster_id_convention",
-        "rgba_sha256": "sha256:c6550439dcd777582cae8c20ac004de9830f4af7da1e7f9959b02d2495b99fd9",
+        "rgba_sha256": "sha256:729ff1b590bed2628070b300bd84cf4d53fffb204d2c6f8a946a281180bd79ea",
         "runtime_approved": true,
-        "source_sha256": "sha256:cffccb999073881f1efad11727552a476379150c320cfbdaac5bce77972aab2b",
+        "source_sha256": "sha256:3c4c28bdc6ad66aa181c78a1d1bf72fcb6fa77c58387ba9ebb3d6cc3e0bcb8ad",
         "status": "테스트",
         "width": 32
       },
@@ -1176,9 +1176,9 @@
         "name": "습지 뱀",
         "path": "res://assets/sprites/characters/monsters/swamp_snake/swamp_snake_front_idle_32x32.png",
         "resolution": "monster_id_convention",
-        "rgba_sha256": "sha256:1bdff53458fe8d293b6c2c69c0cff4458cebc59beae2030ba25c7d3f9029bdfd",
+        "rgba_sha256": "sha256:551aa9784734e94b204d2b2302a8a99173acf9db261d6f0e8ab35b27edba1abf",
         "runtime_approved": true,
-        "source_sha256": "sha256:8d7ca154fdacb8ded7fb2227059539887610c5478ed1d948a6877eb6250fd761",
+        "source_sha256": "sha256:bd2ffb5ce0d3ff2f128fe05e341df2e19b1fbde018384e583504839be9a6a9f1",
         "status": "테스트",
         "width": 32
       },
@@ -1195,9 +1195,9 @@
         "name": "떠돌이 낭인",
         "path": "res://assets/sprites/characters/monsters/wandering_ronin/wandering_ronin_front_idle_32x32.png",
         "resolution": "monster_id_convention",
-        "rgba_sha256": "sha256:da4d414858ff9bdb3a38e2fb30e28ea26c5723d6503ef87d5734560993a76fda",
+        "rgba_sha256": "sha256:35617ae5f9da91ad53f20bd206731b74b2ac79a3a9c2f1c38c89ea1e69e3d04c",
         "runtime_approved": true,
-        "source_sha256": "sha256:fee85140367783ed851b51ba1f5257715c6d216a8b9ac5dd0eea99d233d318ed",
+        "source_sha256": "sha256:c3c26c81a13c4218a8f3f8f29d6eae0da0c268e7fd02b83d230f863120d49c5b",
         "status": "테스트",
         "width": 32
       },
@@ -1214,16 +1214,16 @@
         "name": "들개",
         "path": "res://assets/sprites/characters/monsters/wild_dog/wild_dog_front_idle_32x32.png",
         "resolution": "monster_id_convention",
-        "rgba_sha256": "sha256:d74ae1fb6aed45c960504f9f56338c76a2333d8fc119e7f8d9d71272e11518c1",
+        "rgba_sha256": "sha256:21d5010b3098407da0231fe09219dcc6546be089f5da1a58c7693824841d293f",
         "runtime_approved": true,
-        "source_sha256": "sha256:e53a9b67e8d711fa9358cfb889e99c3d3da99cba183557a9b51fa7fb1074ee7c",
+        "source_sha256": "sha256:9f3cf83589bb090b3ad69e833798b9ef8f5968d923c569de4fdc7c00f1229cde",
         "status": "테스트",
         "width": 32
       }
     ]
   },
   "content_hashes": {
-    "asset_manifest": "sha256:c9adbdba4237581b0a048af3fa350353cf0d7b1ab54bbfdbb37b12b44661e310",
+    "asset_manifest": "sha256:97b22e4e9885dee5bb6ac45a37bea83d22598178c39ea56a6ce51ba1d9b58e39",
     "items": "ebc093f85cec857c7d836589293ef11da4c79664810ca87fcbbed45192bdc404",
     "monsters": "b44646c65fca8a73ef29d0e908991986c7eb3387626b4bdb5f506919b1e28e9f"
   },
