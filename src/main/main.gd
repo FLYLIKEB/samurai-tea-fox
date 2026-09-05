@@ -1177,6 +1177,11 @@ func _apply_cheat_start_inventory() -> Dictionary:
 			return bandage_result
 	var weapon_id := _strongest_weapon_id_for_cheat_start()
 	if not weapon_id.is_empty() and equipment != null:
+		if _inventory_slot_for_item(weapon_id) < 0:
+			var weapon_result: Dictionary = inventory.add_item(weapon_id, 1)
+			if not weapon_result.ok:
+				inventory.load_snapshot(inventory_before)
+				return weapon_result
 		var weapon_slot := _inventory_slot_for_item(weapon_id)
 		if weapon_slot >= 0:
 			var equip_result: Dictionary = equipment.equip_from_inventory(inventory, weapon_slot)
