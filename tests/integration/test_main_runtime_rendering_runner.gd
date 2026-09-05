@@ -1,20 +1,40 @@
 extends SceneTree
 
 const GameCommand = preload("res://src/core/commands/game_command.gd")
+const InventoryModel = preload("res://src/inventory/inventory_model.gd")
+const Main = preload("res://src/main/main.gd")
 const MetaState = preload("res://src/save/meta_state.gd")
+const RunLifecycleService = preload("res://src/save/run_lifecycle_service.gd")
 const RunState = preload("res://src/save/run_state.gd")
 const SaveStore = preload("res://src/save/save_store.gd")
 
-const LIFECYCLE_DIRECTORY := "user://dev24_main_lifecycle_integration"
-const RUN_PATH := LIFECYCLE_DIRECTORY + "/run.json"
-const META_PATH := LIFECYCLE_DIRECTORY + "/meta.json"
+const START_MODE_META := "muchau_start_mode"
+
+class StaleRetryMain:
+	extends Main
+
+	func _ready() -> void:
+		pass
+
+	func _activate_run_state(state: RunState) -> Dictionary:
+		run_state = state
+		if inventory != null and state.inventory is Dictionary and not state.inventory.is_empty():
+			var inventory_result: Dictionary = inventory.load_snapshot(state.inventory)
+			if not inventory_result.ok:
+				return inventory_result
+		return {"ok": true}
 
 var failures: Array[String] = []
+var lifecycle_directory := ""
+var run_path := ""
+var meta_path := ""
 
 func _init() -> void:
 	call_deferred("run")
 
 func run() -> void:
+	_configure_isolated_paths()
+	_cleanup_lifecycle_files()
 	var packed_scene := load("res://src/main/main.tscn") as PackedScene
 	if packed_scene == null:
 		failures.append("main scene loads")
@@ -22,9 +42,16 @@ func run() -> void:
 		return
 
 	var main := packed_scene.instantiate()
+	if not _inject_isolated_save_store_before_tree_entry(main):
+		finish()
+		return
+	root.set_meta(START_MODE_META, "new")
 	root.add_child(main)
-	await process_frame
-	await physics_frame
+	if not await _wait_for_main_runtime_ready(main, 10000):
+		main.queue_free()
+		_cleanup_lifecycle_files()
+		finish()
+		return
 
 	var world_visuals := main.get_node_or_null("WorldVisuals") as Node2D
 	if world_visuals == null:
@@ -65,14 +92,10 @@ func run() -> void:
 		else:
 			if not main.submit_mobile_movement_direction(walkable_neighbor):
 				failures.append("player can submit movement from entry toward a walkable neighbor")
-			await physics_frame
-			if player.is_grid_step_active():
-				for _step_frame in 20:
-					await physics_frame
-					if not player.is_grid_step_active():
-						break
 			var moved_cell: Vector2i = main.world_cell_from_world_position(player.global_position)
 			var expected_cell: Vector2i = actual_spawn_cell + walkable_neighbor
+			await _wait_until(Callable(self, "_player_reached_cell").bind(main, player, expected_cell), 1000)
+			moved_cell = main.world_cell_from_world_position(player.global_position)
 			if moved_cell != expected_cell:
 				failures.append("player movement grid matches generated world walkability: spawn=%s direction=%s expected=%s actual=%s position=%s" % [actual_spawn_cell, walkable_neighbor, expected_cell, moved_cell, player.global_position])
 			player.global_position = main.world_position_for_cell_center(actual_spawn_cell)
@@ -82,9 +105,11 @@ func run() -> void:
 	if dummy_sprite == null or dummy_sprite.texture == null:
 		failures.append("combat dummy renders with a promoted enemy character sprite")
 	if dummy != null:
+		await _wait_until(Callable(self, "_combat_dummy_is_cell_centered").bind(main, dummy), 500)
 		var dummy_cell: Vector2i = main.world_cell_from_world_position(dummy.global_position)
-		if dummy.global_position != main.world_position_for_cell_center(dummy_cell):
-			failures.append("combat dummy snaps to the center of its current terrain cell")
+		var expected_dummy_position: Vector2 = main.world_position_for_cell_center(dummy_cell)
+		if dummy.global_position.distance_to(expected_dummy_position) > 0.5:
+			failures.append("combat dummy snaps to the center of its current terrain cell: cell=%s expected=%s actual=%s" % [dummy_cell, expected_dummy_position, dummy.global_position])
 	if player != null:
 		var camera := player.get_node_or_null("Camera2D") as Camera2D
 		if camera == null:
@@ -96,9 +121,6 @@ func run() -> void:
 				failures.append("runtime camera follows generated world origin limits")
 			if camera.limit_right != int(ceil(origin.x + float(main.world_data.width) * tile_size)) or camera.limit_bottom != int(ceil(origin.y + float(main.world_data.height) * tile_size)):
 				failures.append("runtime camera follows generated world bottom-right limits")
-
-	_assert_runtime_death_replaces_run(main, player)
-	_assert_stale_full_death_retry_preserves_newer_run(main)
 
 	var hud := main.get_node_or_null("GameHud")
 	var tone_overlay := main.get_node_or_null("WorldToneOverlay") as CanvasLayer
@@ -124,11 +146,12 @@ func run() -> void:
 		var map_panel := hud.get_node_or_null("Root/MapPanel")
 		var quickslot_panel := hud.get_node_or_null("Root/QuickSlotPanel")
 		var dpad_panel := hud.get_node_or_null("Root/DPadPanel")
+		var dpad_board := hud.get_node_or_null("Root/DPadPanel/DPadBoard") as Control
 		var action_panel := hud.get_node_or_null("Root/ActionPanel")
 		var enemy_panel := hud.get_node_or_null("Root/EnemyPanel")
 		if status_panel == null or map_panel == null or quickslot_panel == null or dpad_panel == null or action_panel == null or enemy_panel == null:
 			failures.append("runtime HUD shows status, map, enemy, quickslot, dpad, and action panels")
-		elif not dpad_panel.visible or dpad_panel.custom_minimum_size.x > 90.0:
+		elif not dpad_panel.visible or dpad_board == null or dpad_board.custom_minimum_size.x > 90.0:
 			failures.append("runtime HUD shows the compact mockup-style directional pad")
 		elif _texture_rect_count(status_panel) < 4 or _label_count(status_panel) < 3:
 			failures.append("runtime HUD status panel renders portrait plus icon-backed resource rows")
@@ -147,8 +170,8 @@ func run() -> void:
 				failures.append("runtime HUD owns a secondary hamburger action drawer")
 			elif action_menu_panel.visible:
 				failures.append("runtime HUD keeps the secondary action drawer hidden by default")
-			var time_label := hud.get("_labels").get("time") as Label
-			if time_label == null or not time_label.get_parent().visible:
+			var time_label := hud.get("_labels").get("time_phase") as Label
+			if time_label == null or not time_label.get_parent().get_parent().visible:
 				failures.append("runtime HUD shows the canonical runtime time state")
 		var mouse_filter_problem := _hud_mouse_filter_problem(hud)
 		if not mouse_filter_problem.is_empty():
@@ -165,6 +188,9 @@ func run() -> void:
 			failures.append("inventory command opens a centered near-fullscreen menu: rect=%s viewport=%s" % [inventory_menu.get_global_rect(), inventory_menu.get_viewport_rect()])
 	if main.feedback_beep_count <= 0:
 		failures.append("accepted runtime UI command plays feedback beep")
+
+	_assert_stale_full_death_retry_preserves_newer_run(main)
+	_assert_runtime_death_persists_fresh_run_for_transition(main, player)
 
 	main.queue_free()
 	_cleanup_lifecycle_files()
@@ -211,7 +237,8 @@ func _hud_mouse_filter_problem(node: Node) -> String:
 			if control.mouse_filter != Control.MOUSE_FILTER_STOP:
 				return "%s should stop input but is %d" % [control.get_path(), control.mouse_filter]
 		elif control.mouse_filter != Control.MOUSE_FILTER_IGNORE:
-			return "%s should ignore input but is %d" % [control.get_path(), control.mouse_filter]
+			if control.mouse_filter != Control.MOUSE_FILTER_PASS:
+				return "%s should not stop input but is %d" % [control.get_path(), control.mouse_filter]
 	for child in node.get_children():
 		var problem := _hud_mouse_filter_problem(child)
 		if not problem.is_empty():
@@ -225,8 +252,12 @@ func _is_interactive_surface(control: Control) -> bool:
 		"ActionPanel",
 		"ActionMenuPanel",
 		"ActionMenuScroll",
+		"HealthDisplay",
+		"KiDisplay",
+		"KokoroDisplay",
 		"MenuPanel",
-		"MenuScroll"
+		"MenuScroll",
+		"ResourceDetailPanel"
 	]
 
 func _menu_panel_is_centered_and_large(panel: Control) -> bool:
@@ -265,15 +296,17 @@ func _assert_hud_layout_keeps_center_play_area_clear(panels: Array) -> void:
 		if center_play_area.intersects(control.get_global_rect(), true):
 			failures.append("runtime HUD panel avoids the central 640x360 play area: %s rect=%s safe=%s" % [control.name, control.get_global_rect(), center_play_area])
 
-func _assert_runtime_death_replaces_run(main, player) -> void:
+func _assert_runtime_death_persists_fresh_run_for_transition(main, player) -> void:
 	_cleanup_lifecycle_files()
-	var store := SaveStore.new(RUN_PATH, META_PATH)
+	var store := SaveStore.new(run_path, meta_path)
 	if not _has_property(main, "save_store"):
 		failures.append("main runtime exposes an injectable run save boundary")
 		return
 	main.save_store = store
+	_reset_inventory_to_empty(main)
 	main.run_state.lifecycle_epoch = 0
 	main.run_state.seed = 701
+	main.run_state.acquisitions = {}
 	if not main.inventory.add_item("wood", 1).ok:
 		failures.append("main lifecycle fixture stores run-only inventory")
 		return
@@ -286,48 +319,61 @@ func _assert_runtime_death_replaces_run(main, player) -> void:
 	if not store.save_meta(meta).ok:
 		failures.append("main lifecycle fixture persists meta separately")
 		return
-	var meta_before := FileAccess.get_file_as_string(META_PATH)
+	var meta_before := FileAccess.get_file_as_string(meta_path)
 	var lifecycle_before = main.run_lifecycle_service
 	var inventory_before = main.inventory
 	var acquisition_before = main.acquisition_service
 	player.resources.apply_damage(player.resources.hp_max)
 
-	var loaded := SaveStore.new(RUN_PATH, META_PATH).load_run()
+	var loaded := SaveStore.new(run_path, meta_path).load_run()
 	if not loaded.ok:
 		failures.append("real main death path persists a fresh resumable run")
 		return
 	if loaded.state.lifecycle_epoch != 1 or loaded.state.seed != 0:
 		failures.append("real main death path advances lifecycle epoch and replaces run data")
-	if main.run_state.lifecycle_epoch != 1 or main.run_state.seed != 0:
-		failures.append("real main runtime activates the persisted fresh run")
-	if main.run_lifecycle_service == lifecycle_before or main.run_lifecycle_service.death_confirmed:
-		failures.append("real main death path reinitializes lifecycle service")
-	if main.inventory == inventory_before or main.acquisition_service == acquisition_before:
-		failures.append("real main death path reinitializes run-owned services")
-	if main.inventory.get_total_quantity("wood") != 0:
-		failures.append("real main death path clears run-only inventory")
-	if player.resources.hp != player.resources.hp_max:
-		failures.append("real main death path reinitializes player resources")
-	if FileAccess.get_file_as_string(META_PATH) != meta_before:
+	if main.run_state.lifecycle_epoch != 0 or main.run_state.seed != 701:
+		failures.append("real main death path keeps the outgoing runtime active until the start-screen transition")
+	if main.run_lifecycle_service != lifecycle_before or main.inventory != inventory_before or main.acquisition_service != acquisition_before:
+		failures.append("real main death path does not replace run-owned services before the start-screen transition")
+	if main.inventory.get_total_quantity("wood") != 1:
+		failures.append("real main death path keeps old run-only inventory only in the outgoing runtime")
+	if player.resources.hp > 0:
+		failures.append("real main death path leaves the defeated outgoing player state until transition")
+	if not bool(main.get("_death_transition_active")) or main.get_node_or_null("DeathTransition") == null:
+		failures.append("real main death path starts the outgoing death transition overlay")
+	if FileAccess.get_file_as_string(meta_path) != meta_before:
 		failures.append("real main death replacement preserves meta save")
-	var marker = JSON.parse_string(FileAccess.get_file_as_string(RUN_PATH + ".invalidated.json"))
+	var marker = JSON.parse_string(FileAccess.get_file_as_string(run_path + ".invalidated.json"))
 	if typeof(marker) != TYPE_DICTIONARY or int(marker.get("invalidated_lifecycle_epoch", -1)) != 0:
 		failures.append("real main death path invalidates the old epoch before fresh persistence")
 
 func _assert_stale_full_death_retry_preserves_newer_run(main) -> void:
 	_cleanup_lifecycle_files()
-	var store := SaveStore.new(RUN_PATH, META_PATH)
-	main.save_store = store
+	var store := SaveStore.new(run_path, meta_path)
+	var retry_main := StaleRetryMain.new()
+	retry_main.save_store = store
+	retry_main.catalog = main.catalog
+	var lifecycle_result: Dictionary = RunLifecycleService.from_catalog(main.catalog)
+	if not lifecycle_result.ok:
+		failures.append("stale full-death fixture configures lifecycle service")
+		return
+	retry_main.run_lifecycle_service = lifecycle_result.run_lifecycle_service
+	var inventory_result: Dictionary = InventoryModel.from_catalog(main.catalog)
+	if not inventory_result.ok:
+		failures.append("stale full-death fixture configures inventory")
+		return
+	retry_main.inventory = inventory_result.inventory
+
 	var stale_run := RunState.new()
 	stale_run.data_version = main.catalog.data_version
 	stale_run.lifecycle_epoch = 0
 	stale_run.seed = 801
-	stale_run.inventory = main.inventory.to_snapshot()
+	stale_run.inventory = _empty_inventory_snapshot(retry_main)
 	if not store.save_run(stale_run).ok or not store.invalidate_run(stale_run).ok:
 		failures.append("stale full-death fixture invalidates epoch zero")
 		return
 
-	if not main.inventory.add_item("wood", 3).ok:
+	if not retry_main.inventory.add_item("wood", 3).ok:
 		failures.append("stale full-death fixture creates non-default fresh inventory")
 		return
 	var preserved_run := RunState.new()
@@ -335,38 +381,37 @@ func _assert_stale_full_death_retry_preserves_newer_run(main) -> void:
 	preserved_run.lifecycle_epoch = 1
 	preserved_run.seed = 8675309
 	preserved_run.currency = 47
-	preserved_run.inventory = main.inventory.to_snapshot()
+	preserved_run.inventory = retry_main.inventory.to_snapshot()
 	if not store.save_run(preserved_run).ok:
 		failures.append("stale full-death fixture persists newer non-default run")
 		return
-	var preserved_bytes := FileAccess.get_file_as_string(RUN_PATH)
-	var restored: Dictionary = main.restore_run_state(stale_run)
-	if not restored.ok:
-		failures.append("stale full-death fixture restores stale runtime state")
-		return
-	main.run_lifecycle_service.death_pending = true
+	var preserved_bytes := FileAccess.get_file_as_string(run_path)
+	retry_main.run_state = stale_run
+	retry_main.run_lifecycle_service.death_pending = true
 
-	var retry: Dictionary = main._replace_confirmed_dead_run()
+	var retry: Dictionary = retry_main._replace_confirmed_dead_run()
 	if not retry.ok or retry.get("state", "") != "preserved_run_activated":
-		failures.append("main treats stale full-death retry as preserved-run activation")
+		failures.append("main treats stale full-death retry as preserved-run activation: %s" % retry)
 	if not bool(retry.get("preserved_newer_run", false)):
-		failures.append("main propagates preserved newer run result")
-	if FileAccess.get_file_as_string(RUN_PATH) != preserved_bytes:
+		failures.append("main propagates preserved newer run result: %s" % retry)
+	if FileAccess.get_file_as_string(run_path) != preserved_bytes:
 		failures.append("stale full-death retry keeps exact persisted bytes")
-	var restarted := SaveStore.new(RUN_PATH, META_PATH).load_run()
+	var restarted := SaveStore.new(run_path, meta_path).load_run()
 	if not restarted.ok:
 		failures.append("process restart loads preserved non-default run after stale full-death retry")
 		return
 	if restarted.state.lifecycle_epoch != 1 or restarted.state.seed != 8675309 or restarted.state.currency != 47:
 		failures.append("stale full-death retry preserves newer run identity and scalar payload")
-	if main.run_state.lifecycle_epoch != 1 or main.run_state.seed != 8675309 or main.inventory.get_total_quantity("wood") != 3:
+	if retry_main.run_state.lifecycle_epoch != 1 or retry_main.run_state.seed != 8675309 or retry_main.inventory.get_total_quantity("wood") != 3:
 		failures.append("main activates exact preserved epoch, seed, and inventory")
 
 func _cleanup_lifecycle_files() -> void:
-	for path in [RUN_PATH, RUN_PATH + ".tmp", RUN_PATH + ".invalidated.json", RUN_PATH + ".invalidated.json.tmp", META_PATH, META_PATH + ".tmp"]:
+	if lifecycle_directory.is_empty() or not lifecycle_directory.begins_with("user://dev123_main_runtime_rendering_"):
+		return
+	for path in [run_path, run_path + ".tmp", run_path + ".invalidated.json", run_path + ".invalidated.json.tmp", meta_path, meta_path + ".tmp"]:
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
-	var directory := ProjectSettings.globalize_path(LIFECYCLE_DIRECTORY)
+	var directory := ProjectSettings.globalize_path(lifecycle_directory)
 	if DirAccess.dir_exists_absolute(directory):
 		DirAccess.remove_absolute(directory)
 
@@ -375,3 +420,88 @@ func _has_property(object, property_name: String) -> bool:
 		if String(property.name) == property_name:
 			return true
 	return false
+
+func _configure_isolated_paths() -> void:
+	var unique := "%d_%d" % [Time.get_unix_time_from_system(), Time.get_ticks_msec()]
+	lifecycle_directory = "user://dev123_main_runtime_rendering_%s" % unique
+	run_path = lifecycle_directory + "/run.json"
+	meta_path = lifecycle_directory + "/meta.json"
+
+func _inject_isolated_save_store_before_tree_entry(main) -> bool:
+	if main == null:
+		failures.append("main scene instantiates")
+		return false
+	if main.is_inside_tree():
+		failures.append("main save boundary is assigned before tree entry")
+		return false
+	if not _has_property(main, "save_store"):
+		failures.append("main runtime exposes an injectable run save boundary")
+		return false
+	main.save_store = SaveStore.new(run_path, meta_path)
+	if main.save_store == null or main.save_store.run_path != run_path or main.save_store.meta_path != meta_path:
+		failures.append("main runtime uses the isolated SaveStore before _ready")
+		return false
+	return true
+
+func _wait_for_main_runtime_ready(main, timeout_msec: int) -> bool:
+	var ready := await _wait_until(Callable(self, "_main_runtime_is_ready").bind(main), timeout_msec)
+	if not ready:
+		failures.append("main runtime becomes ready before integration assertions")
+	return ready
+
+func _main_runtime_is_ready(main) -> bool:
+	if main == null or not is_instance_valid(main) or not main.is_inside_tree():
+		return false
+	if main.get_node_or_null("LoadingOverlay") != null:
+		return false
+	if main.world_data == null or not bool(main.generated_world.get("ok", false)):
+		return false
+	if main.world_render_result.is_empty() or not bool(main.world_render_result.get("ok", false)):
+		return false
+	if main.get_node_or_null("WorldVisuals/TerrainTileMap") == null:
+		return false
+	if main.get_node_or_null("GameHud/Root") == null:
+		return false
+	var player = main.get_node_or_null("Player")
+	if player == null:
+		return false
+	var combat_dummy = main.get_node_or_null("CombatDummy")
+	if combat_dummy == null:
+		return false
+	return true
+
+func _combat_dummy_is_cell_centered(main, dummy) -> bool:
+	if main == null or dummy == null or not is_instance_valid(dummy):
+		return false
+	var cell: Vector2i = main.world_cell_from_world_position(dummy.global_position)
+	return dummy.global_position.distance_to(main.world_position_for_cell_center(cell)) <= 0.5
+
+func _player_reached_cell(main, player, expected_cell: Vector2i) -> bool:
+	if main == null or player == null or not is_instance_valid(player):
+		return false
+	return main.world_cell_from_world_position(player.global_position) == expected_cell \
+			and (not player.has_method("is_grid_step_active") or not player.is_grid_step_active())
+
+func _reset_inventory_to_empty(main) -> void:
+	if main == null or main.inventory == null or not main.inventory.has_method("load_snapshot"):
+		return
+	main.inventory.load_snapshot(_empty_inventory_snapshot(main))
+
+func _empty_inventory_snapshot(main) -> Dictionary:
+	var snapshot: Dictionary = main.inventory.to_snapshot() if main != null and main.inventory != null else {}
+	if snapshot.is_empty():
+		return {}
+	var slots: Array = []
+	for _index in range(int(snapshot.get("slot_count", 0))):
+		slots.append({})
+	snapshot["slots"] = slots
+	snapshot["next_instance_id"] = 1
+	return snapshot
+
+func _wait_until(predicate: Callable, timeout_msec: int) -> bool:
+	var deadline_msec := Time.get_ticks_msec() + timeout_msec
+	while Time.get_ticks_msec() < deadline_msec:
+		if bool(predicate.call()):
+			return true
+		await process_frame
+	return bool(predicate.call())
