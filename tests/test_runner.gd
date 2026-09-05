@@ -3,6 +3,10 @@ extends SceneTree
 const TestAssert = preload("res://tests/support/test_assert.gd")
 
 const TESTS := [
+	preload("res://tests/unit/test_pointer_route_controller.gd"),
+	preload("res://tests/unit/test_spatial_interaction_resolver.gd"),
+	preload("res://tests/unit/test_facility_placement_session.gd"),
+	preload("res://tests/unit/test_main_feature_boundaries.gd"),
 	preload("res://tests/unit/test_command_layer.gd"),
 	preload("res://tests/unit/test_game_hud.gd"),
 	preload("res://tests/unit/test_world_tone_overlay.gd"),

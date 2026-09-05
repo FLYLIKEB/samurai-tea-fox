@@ -78,3 +78,7 @@ The generator creates world data. A later renderer is responsible for TileMapLay
 
 Death discards run save and updates only eligible meta records. Mid-run save is for continuing the current run, not death rollback.
 
+
+## Main 기능 구성
+
+Main의 기능별 협력 객체, 상태 소유권, 장면 전환 순서는 [Main의 기능별 구성](main-composition.md)을 따른다.

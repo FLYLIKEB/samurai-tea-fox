@@ -1,17 +1,22 @@
 extends Node2D
 
+const PlayerItemActions = preload("res://src/main/player_item_actions.gd")
+
+const RunServiceFactory = preload("res://src/main/run_service_factory.gd")
+
+const WorldPresentation = preload("res://src/main/world_presentation.gd")
+
+const CheatStartConfigurator = preload("res://src/main/cheat_start_configurator.gd")
+const AcquisitionDefinitionBuilder = preload("res://src/main/acquisition_definition_builder.gd")
+
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
 const RuntimeConstants = preload("res://src/core/config/runtime_constants.gd")
 const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
-const CoreTeaWareCollection = preload("res://src/dungeon/core_tea_ware_collection.gd")
 const CommandDispatcher = preload("res://src/core/commands/command_dispatcher.gd")
 const DesktopCommandAdapter = preload("res://src/core/commands/desktop_command_adapter.gd")
 const DungeonRuntime = preload("res://src/dungeon/dungeon_runtime.gd")
-const FinalRoomStateBuilder = preload("res://src/meta/final_room_state_builder.gd")
 const GameCommand = preload("res://src/core/commands/game_command.gd")
-const EquipmentModel = preload("res://src/inventory/equipment_model.gd")
 const InventoryCommandRuntime = preload("res://src/inventory/inventory_command_runtime.gd")
-const InventoryModel = preload("res://src/inventory/inventory_model.gd")
 const MapReadModelBuilder = preload("res://src/world/map/map_read_model_builder.gd")
 const MovementCommandSelector = preload("res://src/core/commands/movement_command_selector.gd")
 const MemoryTeaCutsceneRuntime = preload("res://src/narrative/memory_tea_cutscene_runtime.gd")
@@ -20,9 +25,6 @@ const RunStartEventSelector = preload("res://src/narrative/run_start_event_selec
 const EndingRouteRuntime = preload("res://src/meta/ending_route_runtime.gd")
 const PlayerMovementState = preload("res://src/player/player_movement_state.gd")
 const TeaBrewingCommandRuntime = preload("res://src/tea/tea_brewing_command_runtime.gd")
-const TeaService = preload("res://src/tea/tea_service.gd")
-const TimeConfig = preload("res://src/time/time_config.gd")
-const TimeState = preload("res://src/time/time_state.gd")
 const MetaCodexCommandRuntime = preload("res://src/meta/meta_codex_command_runtime.gd")
 const BiomeProgressionState = preload("res://src/world/biome/biome_progression_state.gd")
 const DungeonInstanceState = preload("res://src/dungeon/dungeon_instance_state.gd")
@@ -32,102 +34,35 @@ const SenRikyuPhaseOneRuntime = preload("res://src/dungeon/sen_rikyu_phase_one_r
 const SenRikyuPhaseTwoRuntime = preload("res://src/dungeon/sen_rikyu_phase_two_runtime.gd")
 const SenRikyuPhaseThreeRuntime = preload("res://src/dungeon/sen_rikyu_phase_three_runtime.gd")
 const AcquisitionService = preload("res://src/world/interactions/acquisition_service.gd")
-const RepairInteractionService = preload("res://src/world/interactions/repair_interaction_service.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 const WorldRendererProjection = preload("res://src/world/rendering/world_renderer_projection.gd")
 const WorldSceneRenderer = preload("res://src/world/rendering/world_scene_renderer.gd")
 const RunLifecycleService = preload("res://src/save/run_lifecycle_service.gd")
 const SaveStore = preload("res://src/save/save_store.gd")
-const CraftingService = preload("res://src/crafting/crafting_service.gd")
-const FacilityPlacementService = preload("res://src/world/placement/facility_placement_service.gd")
-const ConsumableService = preload("res://src/consumable/consumable_service.gd")
+const FacilityPlacementSession = preload("res://src/main/facility_placement_session.gd")
+const FacilityPlacementPreview = preload("res://src/presentation/facility_placement_preview.gd")
 const AcquisitionEffect = preload("res://src/presentation/acquisition_effect.gd")
-const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
+const MainSceneOverlays = preload("res://src/main/main_scene_overlays.gd")
 const SfxEventRouter = preload("res://src/audio/sfx_event_router.gd")
-
-class FacilityPlacementPreview extends Node2D:
-	var origin := Vector2i(-1, -1)
-	var footprint := Vector2i.ONE
-	var tile_size := RuntimeConstants.float_value("world.tile_size_pixels")
-	var valid := false
-	var sprite: Sprite2D
-
-	func _ensure_sprite() -> void:
-		if sprite != null:
-			return
-		sprite = Sprite2D.new()
-		sprite.name = "FacilityGhostSprite"
-		sprite.centered = true
-		sprite.modulate = Color(1.0, 1.0, 1.0, 0.58)
-		add_child(sprite)
-
-	func configure(next_origin: Vector2i, next_footprint: Vector2i, next_tile_size: float, next_valid: bool, texture: Texture2D, rotation_quarter_turns: int) -> void:
-		origin = next_origin
-		footprint = next_footprint
-		tile_size = next_tile_size
-		valid = next_valid
-		_ensure_sprite()
-		sprite.texture = texture
-		sprite.visible = texture != null
-		sprite.position = Vector2(origin) * tile_size + Vector2(footprint) * tile_size * 0.5
-		sprite.rotation = float(rotation_quarter_turns) * PI * 0.5
-		sprite.modulate = Color(1.0, 1.0, 1.0, 0.58) if valid else Color(1.0, 0.32, 0.28, 0.58)
-		queue_redraw()
-
-	func clear() -> void:
-		origin = Vector2i(-1, -1)
-		if sprite != null:
-			sprite.visible = false
-		queue_redraw()
-
-	func _draw() -> void:
-		if origin.x < 0 or origin.y < 0:
-			return
-		var fill := Color(0.20, 0.78, 0.34, 0.28) if valid else Color(0.88, 0.12, 0.10, 0.38)
-		var outline := Color(0.40, 1.0, 0.48, 0.95) if valid else Color(1.0, 0.18, 0.12, 0.95)
-		var rect := Rect2(Vector2(origin) * tile_size, Vector2(footprint) * tile_size)
-		draw_rect(rect, fill, true)
-		draw_rect(rect, outline, false, 2.0)
+const DungeonDefinitionResolver = preload("res://src/main/dungeon_definition_resolver.gd")
+const DungeonLayoutBuilder = preload("res://src/main/dungeon_layout_builder.gd")
+const NarrativeSession = preload("res://src/main/narrative_session.gd")
+const PointerRouteController = preload("res://src/main/pointer_route_controller.gd")
+const SpatialInteractionResolver = preload("res://src/main/spatial_interaction_resolver.gd")
 
 static var DEFAULT_RUN_SEED := RuntimeConstants.int_value("world.default_seed")
 const FRESH_RUN_SEED := 0
 static var POINTER_MOVE_STOP_DISTANCE_PIXELS := RuntimeConstants.float_value("input.pointer_stop_distance_pixels")
-static var FEEDBACK_BEEP_MIX_RATE := RuntimeConstants.float_value("audio.feedback_mix_rate")
-static var FEEDBACK_BEEP_SECONDS := RuntimeConstants.float_value("audio.feedback_beep_seconds")
-static var FEEDBACK_BEEP_FREQUENCY := RuntimeConstants.float_value("audio.feedback_beep_frequency")
-const FIRST_RUN_PROLOGUE_EVENT_ID := "first_run_prologue"
 const START_MODE_META := "muchau_start_mode"
 const START_MODE_NEW := "new"
 const START_MODE_CHEAT := "cheat"
 const START_MODE_RESUME := "resume"
-const CHEAT_INVENTORY_SLOT_COUNT := 1000
-const CHEAT_RESOURCE_QUANTITY := 99
-const CHEAT_RESOURCE_ITEM_TYPE := "재료"
-const CHEAT_BANDAGE_QUANTITY := 200
-const TREE_HARVEST_TOOL_ITEM_ID := "stone_axe"
-const TREE_HARVEST_DEFINITION_PREFIX := "terrain_tree_wood"
 const DUNGEON_DEBUG_LOGGING := true
 const DUNGEON_TILESET_SOURCE_ID := "terrain_dungeon_mossy_dojo_tileset"
-const DUNGEON_IRON_SOURCE_ID := "asset_assets_sprites_objects_mining_iron_ore_32x32_png"
-const DUNGEON_STONE_SOURCE_ID := "small_rock_resource"
-const DUNGEON_BOSS_OWNER_ID := "dungeon_boss"
-const DUNGEON_FLOOR_ATLAS_COORDS := [
-	Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)
-]
+const DUNGEON_BOSS_OWNER_ID = DungeonLayoutBuilder.BOSS_OWNER_ID
 const START_SCREEN_SCENE_PATH := "res://scenes/ui/start_screen.tscn"
 static var THE_END_DURATION_SECONDS := RuntimeConstants.float_value("narrative.the_end_duration_seconds")
-const LARGE_HOUSE_DUNGEON_OWNER_IDS := [
-	"large_fenced_house",
-	"large_house_fence_nw",
-	"large_house_fence_ne",
-	"large_house_fence_sw",
-	"large_house_fence_se",
-	"large_house_fence_n",
-	"large_house_fence_s",
-	"large_house_fence_w",
-	"large_house_fence_e"
-]
 
 @onready var player = $Player
 @onready var combat_dummy = $CombatDummy
@@ -161,6 +96,9 @@ var repair_interaction_service
 var dungeon_runtime
 var run_lifecycle_service
 var run_runtime_state_binder := RunRuntimeStateBinder.new()
+var dungeon_definition_resolver := DungeonDefinitionResolver.new()
+var dungeon_layout_builder := DungeonLayoutBuilder.new()
+var narrative_session := NarrativeSession.new()
 var biome_progression_state
 var save_store = SaveStore.new()
 var run_state: RunState
@@ -180,31 +118,79 @@ var _dungeon_enemy_nodes: Array = []
 var _desktop_adapter := DesktopCommandAdapter.new()
 var _command_dispatcher := CommandDispatcher.new()
 var _movement_selector := MovementCommandSelector.new()
-var _has_pointer_move_target := false
-var _pointer_move_target_world := Vector2.ZERO
-var _pointer_move_route: Array = []
-var _pending_pointer_interaction_target_id := ""
-var _pending_pointer_interaction_cell := Vector2i.ZERO
-var _pending_facility_placement: Dictionary = {}
-var _pending_facility_origin := Vector2i(-1, -1)
-var _pending_facility_result: Dictionary = {}
-var _pending_facility_rotation := 0
+var _pointer_route_controller := PointerRouteController.new()
+var _spatial_resolver := SpatialInteractionResolver.new()
+var _has_pointer_move_target: bool:
+	get:
+		return _pointer_route_controller.has_pointer_move_target
+	set(value):
+		_pointer_route_controller.has_pointer_move_target = value
+var _pointer_move_target_world: Vector2:
+	get:
+		return _pointer_route_controller.pointer_move_target_world
+	set(value):
+		_pointer_route_controller.pointer_move_target_world = value
+var _pointer_move_route: Array:
+	get:
+		return _pointer_route_controller.pointer_move_route
+	set(value):
+		_pointer_route_controller.pointer_move_route = value
+var _pending_pointer_interaction_target_id: String:
+	get:
+		return _pointer_route_controller.pending_pointer_interaction_target_id
+	set(value):
+		_pointer_route_controller.pending_pointer_interaction_target_id = value
+var _pending_pointer_interaction_cell: Vector2i:
+	get:
+		return _pointer_route_controller.pending_pointer_interaction_cell
+	set(value):
+		_pointer_route_controller.pending_pointer_interaction_cell = value
+var _facility_placement_session := FacilityPlacementSession.new()
+var _pending_facility_placement: Dictionary:
+	get:
+		return _facility_placement_session.pending_placement
+	set(value):
+		_facility_placement_session.pending_placement = value
+var _pending_facility_origin: Vector2i:
+	get:
+		return _facility_placement_session.pending_origin
+	set(value):
+		_facility_placement_session.pending_origin = value
+var _pending_facility_result: Dictionary:
+	get:
+		return _facility_placement_session.pending_result
+	set(value):
+		_facility_placement_session.pending_result = value
+var _pending_facility_rotation: int:
+	get:
+		return _facility_placement_session.pending_rotation
+	set(value):
+		_facility_placement_session.pending_rotation = int(value)
 var _facility_placement_preview: FacilityPlacementPreview
 var _preview_asset_catalog := AssetCatalog.new()
 var _preview_asset_catalog_ready := false
 var _preview_content_image_map_ready := false
-var _feedback_player: AudioStreamPlayer
-var _feedback_playback: AudioStreamGeneratorPlayback
 var feedback_beep_count := 0
 var _sfx_router: SfxEventRouter
 var _enemy_turn_queued := false
-var _active_narrative_event_id := ""
-var _active_narrative_node_id := ""
+var _active_narrative_event_id: String:
+	get:
+		return narrative_session.active_event_id
+	set(value):
+		narrative_session.active_event_id = value
+var _active_narrative_node_id: String:
+	get:
+		return narrative_session.active_node_id
+	set(value):
+		narrative_session.active_node_id = value
 var _start_mode := START_MODE_RESUME
 var _force_first_run_prologue := false
 var _death_transition_active := false
 var _loading_label: Label
-var _active_tea_drink_action: Dictionary = {}
+var _player_item_actions := PlayerItemActions.new(
+	_sync_run_runtime_state, save_current_run, _configure_game_hud,
+	_advance_time_for_turn, _queue_enemy_turn_after_player_action
+)
 
 func _ready() -> void:
 	_create_loading_overlay()
@@ -272,28 +258,7 @@ func _ready() -> void:
 		_clear_loading_overlay()
 
 func _create_loading_overlay() -> void:
-	if get_node_or_null("LoadingOverlay") != null:
-		return
-	var layer := CanvasLayer.new()
-	layer.name = "LoadingOverlay"
-	layer.layer = 200
-	add_child(layer)
-	var panel := PanelContainer.new()
-	panel.name = "LoadingStatusPanel"
-	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.position = Vector2(-190.0, 92.0)
-	panel.size = Vector2(380.0, 48.0)
-	panel.theme = PixelUiTheme.create()
-	panel.add_theme_stylebox_override("panel", PixelUiTheme.panel_style())
-	layer.add_child(panel)
-	_loading_label = Label.new()
-	_loading_label.name = "LoadingStatus"
-	_loading_label.text = "준비 중…"
-	_loading_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_loading_label.add_theme_font_size_override("font_size", 14)
-	_loading_label.custom_minimum_size = Vector2(360.0, 28.0)
-	_loading_label.modulate = Color(1.0, 0.91, 0.68, 1.0)
-	panel.add_child(_loading_label)
+	_loading_label = MainSceneOverlays.create_loading(self)
 
 func _set_loading_status(message: String) -> void:
 	if _loading_label != null:
@@ -676,30 +641,9 @@ func _is_dungeon_enemy_cell(cell: Vector2i) -> bool:
 	return false
 
 func _acquisition_target_near_cell(origin_cell: Vector2i) -> Dictionary:
-	for cell in _interaction_candidate_cells(origin_cell):
-		var target_id := _interaction_target_id_for_cell(cell)
-		if not target_id.is_empty() and _is_available_acquisition_target(target_id):
-			return {"target_id": target_id, "cell": cell}
-	return {}
-
+	return _spatial_resolver.acquisition_target_near_cell(world_data, _in_dungeon_map, origin_cell, _resolved_grid_direction(Vector2i.ZERO), Callable(self, "_is_available_acquisition_target"))
 func _dungeon_ore_target_near_cell(origin_cell: Vector2i, radius: int) -> Dictionary:
-	if not _in_dungeon_map:
-		return {}
-	var best := {}
-	var best_distance := 1 << 30
-	for node in _dungeon_resources:
-		var target_id := String(node.get("id", ""))
-		var cell := _vector_from_dictionary(node.get("position", {}))
-		var distance := absi(cell.x - origin_cell.x) + absi(cell.y - origin_cell.y)
-		if distance > radius or distance >= best_distance:
-			continue
-		var gatherable: Dictionary = acquisition_service.gatherable_for(target_id) if acquisition_service != null else {}
-		if not gatherable.is_empty() and bool(gatherable.get("depleted", false)):
-			continue
-		best = {"target_id": target_id, "cell": cell}
-		best_distance = distance
-	return best
-
+	return _spatial_resolver.dungeon_ore_target_near_cell(_in_dungeon_map, _dungeon_resources, acquisition_service, origin_cell, radius)
 func _gather_dungeon_ore(target_id: String, cell: Vector2i) -> bool:
 	if acquisition_service == null:
 		_dungeon_debug("광석 채집 실패: acquisition_service 없음")
@@ -764,53 +708,20 @@ func _queue_pointer_landmark(target_id: String, target_cell: Vector2i) -> bool:
 	return true
 
 func _begin_pointer_move_route(from_cell: Vector2i, destination_cell: Vector2i, target_id: String, target_cell: Vector2i) -> void:
-	var route := _find_walkable_route(from_cell, destination_cell, target_id)
-	if route.is_empty():
+	var result: Dictionary = _pointer_route_controller.begin_route(
+		world_data,
+		from_cell,
+		destination_cell,
+		target_id,
+		target_cell,
+		_target_footprint_cells(target_id, destination_cell),
+		Callable(self, "world_position_for_cell_center")
+	)
+	if not result.ok:
 		_dungeon_debug("이동 경로 생성 실패: from=%s destination=%s target=%s" % [from_cell, destination_cell, target_id])
-		_clear_pointer_movement()
 		return
-	_dungeon_debug("이동 경로 생성: %s -> %s, steps=%d, target=%s" % [from_cell, destination_cell, route.size(), target_id])
-	_pointer_move_route = route
-	_pointer_move_target_world = world_position_for_cell_center(Vector2i(route[0]))
-	_has_pointer_move_target = true
-	_pending_pointer_interaction_target_id = target_id
-	_pending_pointer_interaction_cell = target_cell
+	_dungeon_debug("이동 경로 생성: %s -> %s, steps=%d, target=%s" % [from_cell, destination_cell, result.route.size(), target_id])
 	_movement_selector.submit_mobile_command(GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO))
-
-func _find_walkable_route(from_cell: Vector2i, destination_cell: Vector2i, target_id: String) -> Array:
-	if from_cell == destination_cell:
-		return [destination_cell]
-	if world_data == null:
-		return []
-	var blocked := {}
-	for cell in _target_footprint_cells(target_id, destination_cell):
-		blocked[_cell_key(cell)] = true
-	blocked.erase(_cell_key(destination_cell))
-	var queue: Array = [from_cell]
-	var previous := {_cell_key(from_cell): ""}
-	var head := 0
-	while head < queue.size():
-		var current: Vector2i = queue[head]
-		head += 1
-		for offset in [Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP]:
-			var next: Vector2i = current + offset
-			var key := _cell_key(next)
-			if previous.has(key) or blocked.has(key):
-				continue
-			if not world_data.contains(next) or not world_data.is_walkable(next):
-				continue
-			previous[key] = _cell_key(current)
-			queue.append(next)
-			if next == destination_cell:
-				var route: Array = []
-				var cursor := key
-				while cursor != _cell_key(from_cell):
-					var parts := cursor.split(",")
-					route.push_front(Vector2i(int(parts[0]), int(parts[1])))
-					cursor = String(previous[cursor])
-				return route
-	return []
-
 func _submit_pointer_enemy_attack(world_position: Vector2) -> bool:
 	if player == null \
 			or not _pointer_enemy_clicked(world_position):
@@ -829,11 +740,9 @@ func submit_pointer_movement(world_position: Vector2) -> bool:
 	var target_cell := world_cell_from_world_position(world_position)
 	if world_data == null or not world_data.is_walkable(target_cell):
 		return false
-	_pointer_move_target_world = world_position_for_cell_center(target_cell)
-	_has_pointer_move_target = true
+	_pointer_route_controller.submit_direct_movement(world_position_for_cell_center(target_cell))
 	_movement_selector.submit_mobile_command(GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO))
 	return true
-
 func submit_player_interaction(direction := Vector2i.ZERO) -> bool:
 	var origin_cell := Vector2i.ZERO
 	if player != null:
@@ -862,32 +771,9 @@ func submit_player_interaction(direction := Vector2i.ZERO) -> bool:
 	return false
 
 func _landmark_target_near_world_position(world_position: Vector2, max_distance := -1.0) -> Dictionary:
-	if world_data == null:
-		return {}
-	var tile_size := _runtime_tile_size()
-	var distance_limit := tile_size * 1.6 if max_distance < 0.0 else max_distance
-	for landmark in world_data.get_required_landmarks():
-		var kind := String(landmark.get("kind", landmark.get("type", "")))
-		if kind not in [WorldData.LANDMARK_CORE_DUNGEON, WorldData.LANDMARK_BOSS_ANCHOR, WorldData.LANDMARK_TELEPORT_ZONE]:
-			continue
-		var cell := _vector_from_dictionary(landmark.get("position", {}))
-		var center := world_position_for_cell_center(cell) + Vector2(tile_size * 0.5, tile_size * 0.5)
-		if world_position.distance_to(center) <= distance_limit:
-			return {"target_id": String(landmark.get("id", "")), "cell": cell}
-	return {}
-
+	return _spatial_resolver.landmark_target_near_world_position(world_data, world_position, _runtime_tile_size(), _runtime_world_origin(), max_distance)
 func _large_house_target_near_world_position(world_position: Vector2, max_distance := -1.0) -> Dictionary:
-	var house: Dictionary = generated_world.get("large_house", {})
-	if house.is_empty():
-		return {}
-	var origin := _vector_from_dictionary(house.get("position", {}))
-	var tile_size := _runtime_tile_size()
-	var center := _runtime_world_origin() + Vector2((origin.x + 1.0) * tile_size, (origin.y + 1.0) * tile_size)
-	var distance_limit := tile_size * 2.0 if max_distance < 0.0 else max_distance
-	if world_position.distance_to(center) <= distance_limit:
-		return {"target_id": WorldGenerator.LARGE_HOUSE_ID, "cell": origin}
-	return {}
-
+	return _spatial_resolver.large_house_target_near_world_position(generated_world, world_position, _runtime_tile_size(), _runtime_world_origin(), max_distance)
 func submit_interaction_at_world_cell(cell: Vector2i) -> bool:
 	var target_id := _interaction_target_id_for_cell(cell)
 	if target_id.is_empty():
@@ -1003,7 +889,7 @@ func _apply_action_command_result(result: Dictionary) -> void:
 	if not bool(result.get("accepted", false)):
 		return
 	if bool(result.get("sync_tea_runtime", false)):
-		_sync_tea_runtime_state()
+		_sync_run_runtime_state()
 	if bool(result.get("consumes_turn", false)):
 		_advance_time_for_turn()
 	if bool(result.get("feedback_beep", false)):
@@ -1102,125 +988,11 @@ func _create_new_run_state_from_start_request() -> Dictionary:
 func _apply_cheat_start_inventory() -> Dictionary:
 	if _start_mode != START_MODE_CHEAT:
 		return {"ok": true, "applied": false}
-	if inventory == null or catalog == null or not catalog.has_method("get_definitions"):
-		return {"ok": false, "reason": "cheat_inventory_unavailable", "error": "Cheat mode requires inventory and item definitions."}
-	_normalize_cheat_progression_state()
-
-	var inventory_before: Dictionary = inventory.to_snapshot()
-	var capacity_result: Dictionary = inventory.expand_capacity(CHEAT_INVENTORY_SLOT_COUNT)
-	if not capacity_result.ok:
-		return capacity_result
-	var resource_item_ids: Array = []
-	for definition in catalog.get_definitions("items"):
-		if String(definition.get("type", "")) != CHEAT_RESOURCE_ITEM_TYPE:
-			continue
-		var item_id := String(definition.get("id", ""))
-		if item_id.is_empty():
-			continue
-		var quantity_to_add: int = CHEAT_RESOURCE_QUANTITY - int(inventory.get_total_quantity(item_id))
-		if quantity_to_add > 0:
-			var add_result: Dictionary = inventory.add_item(item_id, quantity_to_add)
-			if not add_result.ok:
-				inventory.load_snapshot(inventory_before)
-				return add_result
-		resource_item_ids.append(item_id)
-	var bandage_quantity: int = CHEAT_BANDAGE_QUANTITY - int(inventory.get_total_quantity("bandage"))
-
-	for definition in catalog.get_definitions("biomes"):
-		var biome_id := String(definition.get("id", ""))
-		if biome_id.is_empty() or not definition.has("progression_order"):
-			continue
-		if not run_state.completed_dungeon_ids.has(biome_id):
-			run_state.completed_dungeon_ids.append(biome_id)
-		run_state.teleport_states[biome_id] = BiomeProgressionState.TELEPORT_REPAIRED
-		if not run_state.repaired_teleports.has(biome_id):
-			run_state.repaired_teleports.append(biome_id)
-		if not run_state.crafting_unlocks.has(biome_id):
-			run_state.crafting_unlocks.append(biome_id)
-	# Cheat mode is a fully-completed run snapshot, not merely an inventory boost.
-	run_state.completed_runtime_dungeon_ids.clear()
-	run_state.dungeon_runtime_state.clear()
-	if bandage_quantity > 0:
-		var bandage_result: Dictionary = inventory.add_item("bandage", bandage_quantity)
-		if not bandage_result.ok:
-			inventory.load_snapshot(inventory_before)
-			return bandage_result
-	var weapon_id := _strongest_weapon_id_for_cheat_start()
-	if not weapon_id.is_empty() and equipment != null:
-		if _inventory_slot_for_item(weapon_id) < 0:
-			var weapon_result: Dictionary = inventory.add_item(weapon_id, 1)
-			if not weapon_result.ok:
-				inventory.load_snapshot(inventory_before)
-				return weapon_result
-		var weapon_slot := _inventory_slot_for_item(weapon_id)
-		if weapon_slot >= 0:
-			var equip_result: Dictionary = equipment.equip_from_inventory(inventory, weapon_slot)
-			if not equip_result.ok:
-				inventory.load_snapshot(inventory_before)
-				return equip_result
-	resource_item_ids.sort()
-	_sync_inventory_runtime_state()
-	# Cheat-start setup mutates the freshly-created run after its initial save.
-	# Advance the lifecycle epoch so subsequent turn saves are newer than the
-	# invalidation marker created while starting the run.
-	run_state.lifecycle_epoch += 1
-	return {
-		"ok": true,
-		"applied": true,
-		"slot_count": inventory.slot_count,
-		"resource_quantity": CHEAT_RESOURCE_QUANTITY,
-		"bandage_quantity": CHEAT_BANDAGE_QUANTITY,
-		"all_biomes_cleared": true,
-		"weapon_id": weapon_id,
-		"resource_item_ids": resource_item_ids
-}
+	return CheatStartConfigurator.new(catalog, inventory, equipment, run_state).apply(_sync_run_runtime_state)
 
 func _normalize_cheat_progression_state() -> void:
-	if _start_mode != START_MODE_CHEAT or run_state == null or catalog == null:
-		return
-	for definition in catalog.get_definitions("biomes"):
-		var biome_id := String(definition.get("id", ""))
-		if biome_id.is_empty() or not definition.has("progression_order"):
-			continue
-		if not run_state.completed_dungeon_ids.has(biome_id):
-			run_state.completed_dungeon_ids.append(biome_id)
-		run_state.teleport_states[biome_id] = BiomeProgressionState.TELEPORT_REPAIRED
-		if not run_state.repaired_teleports.has(biome_id):
-			run_state.repaired_teleports.append(biome_id)
-		if not run_state.crafting_unlocks.has(biome_id):
-			run_state.crafting_unlocks.append(biome_id)
-	run_state.completed_runtime_dungeon_ids.clear()
-	run_state.dungeon_runtime_state.clear()
-
-func _strongest_weapon_id_for_cheat_start() -> String:
-	var best_id := ""
-	var best_damage := -1
-	for definition in catalog.get_definitions("items"):
-		if String(definition.get("type", "")) != "무기":
-			continue
-		var damage := int(definition.get("base_damage", definition.get("effect_value", 0)))
-		if damage > best_damage:
-			best_damage = damage
-			best_id = String(definition.get("id", ""))
-	return best_id
-
-func _inventory_slot_for_item(item_id: String) -> int:
-	for index in range(inventory.slot_count):
-		if String(inventory.get_slot(index).get("item_id", "")) == item_id:
-			return index
-	return -1
-
-func _first_biome_id_for_cheat_start() -> String:
-	var definitions: Array = catalog.get_definitions("biomes")
-	var first := {}
-	for definition in definitions:
-		var raw_order = definition.get("progression_order", 999999)
-		if raw_order == null:
-			continue
-		var order: int = int(raw_order)
-		if first.is_empty() or order < int(first.get("order", 999999)):
-			first = {"id": String(definition.get("id", "")), "order": order}
-	return String(first.get("id", ""))
+	if _start_mode == START_MODE_CHEAT:
+		CheatStartConfigurator.new(catalog, inventory, equipment, run_state).normalize_cheat_progression_state()
 
 func save_current_run() -> Dictionary:
 	if save_store == null:
@@ -1234,67 +1006,25 @@ func save_current_run() -> Dictionary:
 	return result
 
 func _catalog_declares_time_balance(loaded_catalog) -> bool:
-	if loaded_catalog == null or not loaded_catalog.has_method("find_by_id"):
-		return false
-	for id in [
-		TimeConfig.DAY_DURATION_ID,
-		TimeConfig.DUSK_DURATION_ID,
-		TimeConfig.NIGHT_DURATION_ID,
-		TimeConfig.LATE_NIGHT_DURATION_ID,
-		TimeConfig.DUSK_KOKORO_DECAY_ID,
-		TimeConfig.NIGHT_KOKORO_DECAY_ID,
-		TimeConfig.LATE_NIGHT_KOKORO_DECAY_ID,
-		TimeConfig.LOW_KOKORO_ABILITY_COST_INCREASE_ID,
-		TimeConfig.SLEEP_HEAL_RATIO_ID
-	]:
-		if not loaded_catalog.find_by_id("balance", id).is_empty():
-			return true
-	return false
+	return RunServiceFactory.catalog_declares_time_balance(loaded_catalog)
 
 func _configure_run_services(loaded_catalog) -> Dictionary:
-	var inventory_result: Dictionary = InventoryModel.from_catalog(loaded_catalog)
-	if not inventory_result.ok:
-		return inventory_result
-	var equipment_result: Dictionary = EquipmentModel.from_catalog(loaded_catalog)
-	if not equipment_result.ok:
-		return equipment_result
-	var tea_result: Dictionary = TeaService.from_catalog(loaded_catalog)
-	if not tea_result.ok:
-		return tea_result
-	var time_config_result: Dictionary = TimeConfig.from_catalog(loaded_catalog)
-	if not time_config_result.ok and _catalog_declares_time_balance(loaded_catalog):
-		return time_config_result
-	var crafting_result: Dictionary = CraftingService.from_catalog(loaded_catalog)
-	if not crafting_result.ok:
-		return crafting_result
-	var facility_placement_result: Dictionary = FacilityPlacementService.from_catalog(loaded_catalog)
-	if not facility_placement_result.ok:
-		return facility_placement_result
-	var repair_interaction_result: Dictionary = RepairInteractionService.from_catalog(loaded_catalog)
-	if not repair_interaction_result.ok:
-		return repair_interaction_result
-	var consumable_result: Dictionary = ConsumableService.from_catalog(loaded_catalog)
-	if not consumable_result.ok and String(consumable_result.get("reason", "")) not in ["missing_balance", "missing_consumable_definitions"]:
-		return consumable_result
-	var core_tea_ware_result: Dictionary = CoreTeaWareCollection.from_catalog(loaded_catalog)
-	if not core_tea_ware_result.ok:
-		return core_tea_ware_result
-	var final_room_result: Dictionary = FinalRoomStateBuilder.from_catalog(loaded_catalog)
-	if not final_room_result.ok:
-		return final_room_result
+	var services := RunServiceFactory.create(loaded_catalog)
+	if not services.ok:
+		return services
 	if run_runtime_state_binder == null:
 		run_runtime_state_binder = RunRuntimeStateBinder.new()
-	inventory = inventory_result.inventory
-	equipment = equipment_result.equipment
-	tea_service = tea_result.tea_service
-	_active_tea_drink_action = {}
-	time_state = TimeState.new(time_config_result.config) if time_config_result.ok else null
-	crafting_service = crafting_result.crafting_service
-	facility_placement_service = facility_placement_result.facility_placement_service
-	repair_interaction_service = repair_interaction_result.repair_interaction_service
-	consumable_service = consumable_result.consumable_service if consumable_result.ok else null
-	core_tea_ware_collection = core_tea_ware_result.collection
-	final_room_state_builder = final_room_result.builder
+	inventory = services.inventory
+	equipment = services.equipment
+	tea_service = services.tea_service
+	time_state = services.time_state
+	crafting_service = services.crafting_service
+	facility_placement_service = services.facility_placement_service
+	repair_interaction_service = services.repair_interaction_service
+	consumable_service = services.consumable_service
+	core_tea_ware_collection = services.core_tea_ware_collection
+	final_room_state_builder = services.final_room_state_builder
+	_player_item_actions.active_tea_drink_action = {}
 	sen_rikyu_phase_one_runtime = null
 	if loaded_catalog.has_method("find_by_id") and not loaded_catalog.find_by_id("events", SenRikyuPhaseOneRuntime.EVENT_ID).is_empty():
 		var phase_one_result: Dictionary = SenRikyuPhaseOneRuntime.from_catalog(loaded_catalog, tea_service)
@@ -1451,7 +1181,7 @@ func _handle_sen_rikyu_phase_two_action(command: GameCommand) -> bool:
 			}
 			var cast_result: Dictionary = sen_rikyu_phase_two_runtime.cast_player_ability(player.ability_runtime, command.slot, context)
 			if cast_result.ok:
-				_sync_tea_runtime_state()
+				_sync_run_runtime_state()
 			return bool(cast_result.ok)
 	return false
 
@@ -1573,57 +1303,15 @@ func _ensure_current_dungeon_entered() -> Dictionary:
 		return {"ok": true, "state": "already_active"}
 	if lifecycle not in [DungeonInstanceState.STATE_OUTSIDE, DungeonInstanceState.STATE_RETURNED]:
 		return {"ok": false, "reason": "dungeon_lifecycle_busy", "error": "Dungeon lifecycle is not ready for a new entry."}
-	var definition := _current_biome_dungeon_definition()
+	var definition := dungeon_definition_resolver.dungeon_entry_definition(catalog, narrative_runtime, run_state)
 	if definition.is_empty():
 		_dungeon_debug("현재 바이옴 던전 정의 없음: biome=%s" % (run_state.current_biome_id if run_state != null else "nil"))
 		return {"ok": false, "reason": "missing_current_dungeon", "error": "No dungeon definition exists for the current biome."}
 	var biome_id := String(run_state.current_biome_id)
-	definition["biome_id"] = biome_id
-	var boss_definition := _current_biome_boss_definition(biome_id, String(definition.get("id", "")))
-	if not boss_definition.is_empty():
-		definition["boss_id"] = String(boss_definition.id)
-	var pre_boss_dialogue_event_id := _pre_boss_dialogue_event_id_for(definition, boss_definition)
-	if not pre_boss_dialogue_event_id.is_empty():
-		definition["pre_boss_dialogue_event_id"] = pre_boss_dialogue_event_id
-	var layout := WorldData.new(12, 9, "terrain_plains_grass_ground_01", true)
-	layout.add_required_landmark(WorldData.LANDMARK_ENTRY, "dungeon_entry", Vector2i(1, 1), {"dungeon_id": String(definition.id)})
-	_dungeon_resources.clear()
-	for y in range(layout.height):
-		for x in range(layout.width):
-			var dungeon_cell := Vector2i(x, y)
-			var blocked := _dungeon_cell_is_blocked(dungeon_cell)
-			layout.set_terrain(
-				dungeon_cell,
-				"dungeon_wall" if blocked else "dungeon_floor",
-				not blocked,
-				_dungeon_atlas_coords_for_cell(dungeon_cell, Vector2i(layout.width, layout.height))
-			)
-	var reserved_enemy_cells := {Vector2i(7, 2): true, Vector2i(9, 5): true, Vector2i(5, 7): true, Vector2i(10, 7): true}
-	var resource_candidates: Array[Vector2i] = []
-	for y in range(1, layout.height - 1):
-		for x in range(1, layout.width - 1):
-			var candidate := Vector2i(x, y)
-			if candidate == Vector2i(1, 1) or reserved_enemy_cells.has(candidate) or not layout.is_walkable(candidate):
-				continue
-			resource_candidates.append(candidate)
-	resource_candidates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
-			return absi(a.x * 37 + a.y * 19) < absi(b.x * 37 + b.y * 19)
-	)
-	var resource_index := 0
-	for resource_cell in resource_candidates:
-		if resource_index >= 18:
-			break
-		var is_stone := resource_index % 3 == 1
-		var resource_id := "dungeon_stone_%d" % resource_index if is_stone else "dungeon_iron_ore_%d" % resource_index
-		var item_id := "stone" if is_stone else "iron_ore"
-		var source_id := DUNGEON_STONE_SOURCE_ID if is_stone else DUNGEON_IRON_SOURCE_ID
-		var reservation := layout.reserve_entity(resource_id, resource_cell, Vector2i.ONE, true, {"source_id": source_id, "interaction_kind": AcquisitionService.GATHERABLE_KIND, "definition_id": resource_id})
-		if reservation.ok:
-			var node_kind := _node_kind_for_resource_action(item_id, "mine")
-			_dungeon_resources.append({"id": resource_id, "resource_id": item_id, "position": {"x": resource_cell.x, "y": resource_cell.y}, "source_id": source_id, "material_tag": "stone", "node_kind": node_kind})
-			resource_index += 1
-	for enemy in [{"id": "dungeon_enemy_0", "cell": Vector2i(7, 2)}, {"id": "dungeon_enemy_1", "cell": Vector2i(9, 5)}, {"id": "dungeon_enemy_2", "cell": Vector2i(5, 7)}, {"id": DUNGEON_BOSS_OWNER_ID, "cell": Vector2i(10, 7)}]:
-		layout.reserve_entity(String(enemy.id), enemy.cell, Vector2i.ONE, false, {"role": "boss" if enemy.id == DUNGEON_BOSS_OWNER_ID else "dungeon_enemy"})
+	var layout_result: Dictionary = dungeon_layout_builder.build(definition, func(item_id: String, action: String) -> String:
+		return _acquisition_definitions().node_kind_for_resource_action(item_id, action))
+	var layout: WorldData = layout_result.layout
+	_dungeon_resources = layout_result.resources
 	var enter_result: Dictionary = dungeon_runtime.enter_dungeon(
 		"%s_%d" % [String(definition.id), run_state.seed],
 		definition,
@@ -1635,29 +1323,6 @@ func _ensure_current_dungeon_entered() -> Dictionary:
 	else:
 		_dungeon_debug("dungeon_runtime.enter_dungeon 실패: %s" % enter_result)
 	return enter_result
-
-func _dungeon_atlas_coords_for_cell(cell: Vector2i, bounds: Vector2i) -> Vector2i:
-	if cell.y == 0:
-		return Vector2i(cell.x % 8, 1)
-	if cell.y == bounds.y - 1:
-		return Vector2i(cell.x % 8, 4)
-	if cell.x == 0:
-		return Vector2i(0, 2 + cell.y % 2)
-	if cell.x == bounds.x - 1:
-		return Vector2i(7, 2 + cell.y % 2)
-	var variant_index := absi(cell.x * 31 + cell.y * 17 + cell.x * cell.y * 7) % DUNGEON_FLOOR_ATLAS_COORDS.size()
-	return DUNGEON_FLOOR_ATLAS_COORDS[variant_index]
-
-func _dungeon_cell_is_blocked(cell: Vector2i) -> bool:
-	if cell.x == 0 or cell.y == 0 or cell.x == 11 or cell.y == 8:
-		return cell != Vector2i(1, 1)
-	if cell in [Vector2i(7, 2), Vector2i(9, 5), Vector2i(5, 7), Vector2i(10, 7)]:
-		return false
-	if cell.x in [3, 6, 9] and cell.y in [2, 3, 5, 6]:
-		return true
-	if cell.y == 4 and cell.x in [4, 5, 7, 8]:
-		return true
-	return false
 
 func _is_dungeon_resource_target(target_id: String) -> bool:
 	return target_id.begins_with("dungeon_iron_ore_") or target_id.begins_with("dungeon_stone_")
@@ -1801,8 +1466,8 @@ func _enter_dungeon_map(layout: WorldData, definition: Dictionary, is_new_entry 
 			var item_id := String(node.get("resource_id", "iron_ore"))
 			var node_kind := String(node.get("node_kind", ""))
 			if node_kind.is_empty():
-				node_kind = _node_kind_for_resource_action(item_id, "mine")
-			dungeon_definitions.append({"id": String(node.id), "item_id": item_id, "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT, "material_tag": String(node.get("material_tag", "")), "required_tool_item_id": _required_tool_for_resource_interaction(item_id, node_kind)})
+				node_kind = _acquisition_definitions().node_kind_for_resource_action(item_id, "mine")
+			dungeon_definitions.append({"id": String(node.id), "item_id": item_id, "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT, "material_tag": String(node.get("material_tag", "")), "required_tool_item_id": _acquisition_definitions().required_tool_for_resource_interaction(item_id, node_kind)})
 		var dungeon_acquisition_result: Dictionary = acquisition_service.configure(inventory, world_data, dungeon_definitions, _generated_drop_definitions())
 		if not dungeon_acquisition_result.ok:
 			_dungeon_debug("광석 상호작용 설정 실패: %s" % dungeon_acquisition_result)
@@ -2065,45 +1730,13 @@ func _ensure_saved_world_has_teleport_landmark() -> bool:
 	return false
 
 func _current_biome_dungeon_definition() -> Dictionary:
-	if catalog == null or run_state == null:
-		return {}
-	var current_biome_id := String(run_state.current_biome_id)
-	for definition in catalog.get_definitions("dungeons"):
-		var biome_ids: Array = definition.get("biome_ids", [])
-		if biome_ids.has(current_biome_id):
-			return definition.duplicate(true)
-	return {
-		"id": "%s_core_dungeon" % current_biome_id,
-		"name": "%s 핵심 던전" % current_biome_id,
-		"biome_ids": [current_biome_id],
-		"phase_count": 1,
-		"pattern_count": 1,
-		"peaceful_resolution": false,
-			"reward_item_ids": []
-		}
+	return dungeon_definition_resolver.current_biome_dungeon_definition(catalog, run_state)
 
 func _current_biome_boss_definition(biome_id: String, dungeon_id: String) -> Dictionary:
-	if catalog == null:
-		return {}
-	for definition in catalog.get_definitions("bosses"):
-		if String(definition.get("biome_id", "")) == biome_id and String(definition.get("dungeon_id", "")) == dungeon_id:
-			return definition.duplicate(true)
-	return {}
+	return dungeon_definition_resolver.current_biome_boss_definition(catalog, biome_id, dungeon_id)
 
 func _pre_boss_dialogue_event_id_for(dungeon_definition: Dictionary, boss_definition := {}) -> String:
-	var explicit_event_id := String(dungeon_definition.get("pre_boss_dialogue_event_id", ""))
-	if explicit_event_id.is_empty() and typeof(boss_definition) == TYPE_DICTIONARY:
-		explicit_event_id = String(boss_definition.get("pre_boss_dialogue_event_id", ""))
-	if not explicit_event_id.is_empty():
-		return explicit_event_id if _narrative_event_exists(explicit_event_id) else ""
-	return ""
-
-func _narrative_event_exists(event_id: String) -> bool:
-	if event_id.is_empty() or catalog == null:
-		return false
-	if narrative_runtime != null and narrative_runtime.event_definitions.has(event_id):
-		return true
-	return not catalog.find_by_id("events", event_id).is_empty()
+	return dungeon_definition_resolver.pre_boss_dialogue_event_id_for(catalog, narrative_runtime, dungeon_definition, boss_definition)
 
 func _normalize_reward_hook_result(result) -> Dictionary:
 	if typeof(result) == TYPE_DICTIONARY:
@@ -2128,9 +1761,9 @@ func _configure_acquisition_for_generated_world() -> Dictionary:
 	if not repair_restore_result.ok:
 		return repair_restore_result
 	acquisition_service = AcquisitionService.new()
-	var definitions := _confirmed_generated_resource_definitions(generated_world.get("resource_nodes", []))
-	definitions.append_array(_terrain_tree_gatherable_definitions())
-	definitions.append_array(_mountain_mineral_gatherable_definitions())
+	var definitions := _acquisition_definitions().confirmed_generated_resource_definitions(generated_world.get("resource_nodes", []))
+	definitions.append_array(_acquisition_definitions().terrain_tree_gatherable_definitions())
+	definitions.append_array(_acquisition_definitions().mountain_mineral_gatherable_definitions())
 	var configured: Dictionary = acquisition_service.configure(inventory, world_data, definitions, _generated_drop_definitions())
 	if not configured.ok:
 		return configured
@@ -2148,17 +1781,17 @@ func _configure_acquisition_for_generated_world() -> Dictionary:
 		)
 		if not registered.ok:
 			return registered
-	var terrain_tree_result := _register_terrain_tree_gatherables(definition_ids)
+	var terrain_tree_result := _acquisition_definitions().register_terrain_tree_gatherables(definition_ids, acquisition_service)
 	if not terrain_tree_result.ok:
 		return terrain_tree_result
-	var mountain_mineral_result := _register_mountain_mineral_gatherables(definition_ids)
+	var mountain_mineral_result := _acquisition_definitions().register_mountain_mineral_gatherables(definition_ids, acquisition_service)
 	if not mountain_mineral_result.ok:
 		return mountain_mineral_result
 	if not saved_acquisitions.is_empty():
 		var loaded: Dictionary = acquisition_service.load_snapshot(saved_acquisitions)
 		if not loaded.ok:
 			return loaded
-		terrain_tree_result = _register_terrain_tree_gatherables(definition_ids)
+		terrain_tree_result = _acquisition_definitions().register_terrain_tree_gatherables(definition_ids, acquisition_service)
 		if not terrain_tree_result.ok:
 			return terrain_tree_result
 	# Acquisition restore and player facilities mutate the runtime WorldData.
@@ -2194,188 +1827,11 @@ func _handle_repair_interaction_command(command: GameCommand) -> Dictionary:
 	_configure_game_hud()
 	return result
 
-func _confirmed_generated_resource_definitions(resource_nodes: Array) -> Array:
-	var definitions := []
-	var seen := {}
-	for node in resource_nodes:
-		var resource_id := String(node.get("resource_id", ""))
-		if resource_id.is_empty() or seen.has(resource_id) or inventory == null or not inventory.has_definition(resource_id):
-			continue
-		var item: Dictionary = catalog.find_by_id("items", resource_id)
-		if String(item.get("status", "")) != "확정" or not _is_generated_resource_item_type(String(item.get("type", ""))):
-			continue
-		definitions.append({"id": resource_id, "item_id": resource_id, "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT, "material_tag": String(node.get("material_tag", "")), "required_tool_item_id": _required_tool_for_resource_node(resource_id, node)})
-		seen[resource_id] = true
-	return definitions
-
-func _is_generated_resource_item_type(item_type: String) -> bool:
-	return item_type == "재료" or item_type == "향"
-
-func _terrain_tree_gatherable_definitions() -> Array:
-	var definitions: Array = []
-	if world_data == null:
-		return definitions
-	var snapshot: Dictionary = world_data.to_dictionary()
-	for cell in snapshot.get("cells", []):
-		var tree_profile := _tree_harvest_profile_for_cell(cell)
-		if tree_profile.is_empty():
-			continue
-		var position := _vector_from_dictionary(cell.get("position", {}))
-		definitions.append({
-			"id": _terrain_tree_gatherable_id(position),
-			"item_id": "wood",
-			"quantity": 1,
-			"policy": AcquisitionService.POLICY_DIRECT,
-			"material_tag": "wood",
-			"required_tool_item_id": TREE_HARVEST_TOOL_ITEM_ID,
-			"depleted_terrain": tree_profile
-		})
-	return definitions
-
-func _register_terrain_tree_gatherables(definition_ids: Dictionary) -> Dictionary:
-	if world_data == null or acquisition_service == null:
-		return {"ok": true}
-	var snapshot: Dictionary = world_data.to_dictionary()
-	for cell in snapshot.get("cells", []):
-		if _tree_harvest_profile_for_cell(cell).is_empty():
-			continue
-		var position := _vector_from_dictionary(cell.get("position", {}))
-		var node_id := _terrain_tree_gatherable_id(position)
-		if world_data.get_reservation(node_id).is_empty():
-			continue
-		if not definition_ids.has(node_id):
-			continue
-		if not acquisition_service.gatherable_for(node_id).is_empty():
-			continue
-		var registered: Dictionary = acquisition_service.register_gatherable(node_id, node_id, position)
-		if not registered.ok:
-			return registered
-	return {"ok": true}
-
-func _terrain_tree_gatherable_id(position: Vector2i) -> String:
-	return "%s_%d_%d" % [TREE_HARVEST_DEFINITION_PREFIX, position.x, position.y]
-
-func _mountain_mineral_gatherable_definitions() -> Array:
-	var definitions: Array = []
-	if world_data == null:
-		return definitions
-	for cell in world_data.to_dictionary().get("cells", []):
-		var terrain: Dictionary = cell.get("layers", {}).get(WorldData.LAYER_TERRAIN, {})
-		if String(terrain.get("id", "")) != WorldGenerator.TERRAIN_MOUNTAIN_ROCK:
-			continue
-		var position := _vector_from_dictionary(cell.get("position", {}))
-		var node_id := "terrain_mountain_mineral_%d_%d" % [position.x, position.y]
-		var item_id := "iron_ore" if absi(position.x * 31 + position.y * 17) % 3 == 0 else "stone"
-		definitions.append({
-			"id": node_id,
-			"item_id": item_id,
-			"quantity": 1,
-			"policy": AcquisitionService.POLICY_DIRECT,
-			"material_tag": "stone",
-			"required_tool_item_id": _required_tool_for_resource_interaction(item_id, _node_kind_for_resource_action(item_id, "mine")),
-			"depleted_terrain": {"id": WorldGenerator.TERRAIN_MOUNTAIN_SLOPE, "walkable": true}
-		})
-	return definitions
-
-func _required_tool_for_resource_node(resource_id: String, node: Dictionary) -> String:
-	var node_kind := String(node.get("node_kind", ""))
-	if node_kind.is_empty():
-		node_kind = _node_kind_for_resource_context(resource_id, String(generated_world.get("biome_id", "")))
-	return _required_tool_for_resource_interaction(resource_id, node_kind)
-
 func _node_kind_for_resource_context(item_id: String, biome_id: String) -> String:
-	if item_id.is_empty() or catalog == null:
-		return ""
-	var item: Dictionary = catalog.find_by_id("items", item_id)
-	var interaction_definition: Dictionary = item.get("interaction_definition", {})
-	var bootstrap: Dictionary = interaction_definition.get("bootstrap", {})
-	if String(bootstrap.get("biome_id", "")) == biome_id:
-		var pickup_kind := _node_kind_for_resource_action(item_id, "pickup")
-		if not pickup_kind.is_empty():
-			return pickup_kind
-	return _node_kind_for_resource_action(item_id, "mine")
-
-func _node_kind_for_resource_action(item_id: String, action: String) -> String:
-	if item_id.is_empty() or catalog == null:
-		return ""
-	var item: Dictionary = catalog.find_by_id("items", item_id)
-	var interaction_definition: Dictionary = item.get("interaction_definition", {})
-	for rule in interaction_definition.get("rules", []):
-		if rule is Dictionary and String(rule.get("action", "")) == action:
-			return String(rule.get("node_kind", ""))
-	for rule in interaction_definition.get("rules", []):
-		if rule is Dictionary:
-			return String(rule.get("node_kind", ""))
-	return ""
-
-func _required_tool_for_resource_interaction(item_id: String, node_kind: String) -> String:
-	if item_id.is_empty() or node_kind.is_empty() or catalog == null:
-		return ""
-	var item: Dictionary = catalog.find_by_id("items", item_id)
-	var interaction_definition: Dictionary = item.get("interaction_definition", {})
-	for rule in interaction_definition.get("rules", []):
-		if not rule is Dictionary or String(rule.get("node_kind", "")) != node_kind:
-			continue
-		var required_tool = rule.get("required_tool_item_id", "")
-		return String(required_tool) if required_tool != null else ""
-	return ""
-
-func _register_mountain_mineral_gatherables(definition_ids: Dictionary) -> Dictionary:
-	if world_data == null or acquisition_service == null:
-		return {"ok": true}
-	for definition_id in definition_ids:
-		var id := String(definition_id)
-		if not id.begins_with("terrain_mountain_mineral_") or not acquisition_service.gatherable_for(id).is_empty():
-			continue
-		var parts := id.trim_prefix("terrain_mountain_mineral_").split("_")
-		if parts.size() != 2:
-			continue
-		var position := Vector2i(int(parts[0]), int(parts[1]))
-		var registered: Dictionary = acquisition_service.register_gatherable(id, id, position)
-		if not registered.ok:
-			return registered
-	return {"ok": true}
-
-func _tree_harvest_profile_for_cell(cell: Dictionary) -> Dictionary:
-	var layers: Dictionary = cell.get("layers", {})
-	var terrain: Dictionary = layers.get(WorldData.LAYER_TERRAIN, {})
-	var terrain_id := String(terrain.get("id", ""))
-	match terrain_id:
-		WorldGenerator.TERRAIN_FOREST:
-			return {"id": WorldGenerator.TERRAIN_GRASS, "walkable": true}
-		WorldGenerator.TERRAIN_MOUNTAIN_CONIFER:
-			return {"id": WorldGenerator.TERRAIN_GRASS, "walkable": true}
-		WorldGenerator.TERRAIN_WASTELAND_DEAD_TREE:
-			return {"id": WorldGenerator.TERRAIN_GRASS, "walkable": true}
-		WorldGenerator.TERRAIN_SNOWFIELD_PINE:
-			return {"id": WorldGenerator.TERRAIN_GRASS, "walkable": true}
-		WorldGenerator.TERRAIN_RAINFOREST_JUNGLE, WorldGenerator.TERRAIN_RAINFOREST_AGARWOOD:
-			return {"id": WorldGenerator.TERRAIN_GRASS, "walkable": true}
-		_:
-			return {}
+	return _acquisition_definitions().node_kind_for_resource_context(item_id, biome_id)
 
 func _generated_drop_definitions() -> Array:
-	var grants_by_monster := {}
-	for drop in catalog.get_definitions("drops"):
-		var monster_id := String(drop.get("monster_id", ""))
-		var target_id := String(drop.get("item_id", drop.get("tea_id", "")))
-		if not grants_by_monster.has(monster_id):
-			grants_by_monster[monster_id] = []
-		grants_by_monster[monster_id].append({
-			"drop_id": String(drop.get("id", "")),
-			"item_id": target_id,
-			"min_quantity": int(drop.get("min_quantity", 0)),
-			"max_quantity": int(drop.get("max_quantity", 0)),
-			"chance": float(drop.get("chance", 0.0)),
-			"condition": String(drop.get("condition", "")),
-			"policy": AcquisitionService.POLICY_DIRECT
-		})
-	var definitions := []
-	var monster_ids: Array = grants_by_monster.keys()
-	monster_ids.sort()
-	for monster_id in monster_ids:
-		definitions.append({"monster_id": monster_id, "grants": grants_by_monster[monster_id]})
-	return definitions
+	return _acquisition_definitions().generated_drop_definitions()
 
 func _connect_acquisition_combat_source(source) -> Dictionary:
 	if source == null or not source.has_signal("drop_requested"):
@@ -2600,23 +2056,7 @@ func _show_the_end_and_return_to_start() -> void:
 	if _death_transition_active:
 		return
 	_death_transition_active = true
-	var layer := CanvasLayer.new()
-	layer.name = "DeathTransition"
-	layer.layer = 1000
-	var background := ColorRect.new()
-	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	background.color = Color(0.02, 0.015, 0.012, 1.0)
-	background.mouse_filter = Control.MOUSE_FILTER_STOP
-	var label := Label.new()
-	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	label.text = "THE END"
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 42)
-	label.add_theme_color_override("font_color", Color(0.88, 0.78, 0.55, 1.0))
-	layer.add_child(background)
-	layer.add_child(label)
-	add_child(layer)
+	MainSceneOverlays.show_ending(self)
 	await get_tree().create_timer(THE_END_DURATION_SECONDS).timeout
 	get_tree().change_scene_to_file(START_SCREEN_SCENE_PATH)
 
@@ -2701,36 +2141,17 @@ func world_position_for_cell_center(cell: Vector2i) -> Vector2:
 	)
 
 func _pointer_movement_command() -> GameCommand:
-	if not _has_pointer_move_target or player == null:
+	if player == null:
 		return GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO)
-	var delta: Vector2 = _pointer_move_target_world - player.global_position
-	if delta.length() <= POINTER_MOVE_STOP_DISTANCE_PIXELS:
-		if not _pointer_move_route.is_empty():
-			_pointer_move_route.pop_front()
-			if not _pointer_move_route.is_empty():
-				_pointer_move_target_world = world_position_for_cell_center(Vector2i(_pointer_move_route[0]))
-				return GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO)
-		_complete_pending_pointer_interaction()
-		return GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO)
-	var direction := Vector2i(
-		0 if absf(delta.x) <= POINTER_MOVE_STOP_DISTANCE_PIXELS else int(signf(delta.x)),
-		0 if absf(delta.y) <= POINTER_MOVE_STOP_DISTANCE_PIXELS else int(signf(delta.y))
+	return _pointer_route_controller.movement_command(
+		player.global_position,
+		POINTER_MOVE_STOP_DISTANCE_PIXELS,
+		Callable(self, "world_position_for_cell_center"),
+		Callable(self, "_complete_pending_pointer_interaction_from_pointer_route")
 	)
-	if direction == Vector2i.ZERO:
-		_clear_pointer_movement()
-	return GameCommand.new(GameCommand.Type.MOVE, direction)
-
 func _clear_pointer_movement() -> void:
-	_has_pointer_move_target = false
-	_pointer_move_target_world = Vector2.ZERO
-	_pointer_move_route.clear()
-	_pending_pointer_interaction_target_id = ""
-	_pending_pointer_interaction_cell = Vector2i.ZERO
-
-func _complete_pending_pointer_interaction() -> void:
-	var target_id := _pending_pointer_interaction_target_id
-	var target_cell := _pending_pointer_interaction_cell
-	_clear_pointer_movement()
+	_pointer_route_controller.clear()
+func _complete_pending_pointer_interaction_from_pointer_route(target_id: String, target_cell: Vector2i) -> void:
 	if target_id.is_empty() or (not _is_available_acquisition_target(target_id) and not _is_landmark_target(target_id)):
 		_dungeon_debug("이동 완료 후 대상 무효: target=%s" % target_id)
 		return
@@ -2744,46 +2165,12 @@ func _complete_pending_pointer_interaction() -> void:
 		submit_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": target_id}))
 	else:
 		submit_interaction_at_world_cell(target_cell)
-
 func _cells_are_adjacent(first: Vector2i, second: Vector2i) -> bool:
-	var offset := second - first
-	return absi(offset.x) + absi(offset.y) <= 1
-
+	return _spatial_resolver.cells_are_adjacent(first, second)
 func _nearest_walkable_adjacent_cell(target_cell: Vector2i, player_cell: Vector2i) -> Vector2i:
-	var best_cell := target_cell
-	var best_distance := 1 << 30
-	for offset in [Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP]:
-		var candidate: Vector2i = target_cell + offset
-		if world_data == null or not world_data.contains(candidate) or not world_data.is_walkable(candidate):
-			continue
-		if _is_landmark_footprint_cell(candidate):
-			continue
-		var distance := absi(candidate.x - player_cell.x) + absi(candidate.y - player_cell.y)
-		if distance < best_distance:
-			best_cell = candidate
-			best_distance = distance
-	return best_cell
-
+	return _spatial_resolver.nearest_walkable_adjacent_cell(world_data, target_cell, player_cell)
 func _nearest_walkable_adjacent_cell_for_target(target_id: String, target_cell: Vector2i, player_cell: Vector2i) -> Vector2i:
-	var target_cells := _target_footprint_cells(target_id, target_cell)
-	var target_cell_lookup := {}
-	for footprint_cell in target_cells:
-		target_cell_lookup[_cell_key(footprint_cell)] = true
-	var best_cell := target_cell
-	var best_distance := 1 << 30
-	for footprint_cell in target_cells:
-		for offset in [Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP]:
-			var candidate: Vector2i = footprint_cell + offset
-			if target_cell_lookup.has(_cell_key(candidate)):
-				continue
-			if world_data == null or not world_data.contains(candidate) or not world_data.is_walkable(candidate):
-				continue
-			var distance := absi(candidate.x - player_cell.x) + absi(candidate.y - player_cell.y)
-			if distance < best_distance:
-				best_cell = candidate
-				best_distance = distance
-	return best_cell
-
+	return _spatial_resolver.nearest_walkable_adjacent_cell_for_target(world_data, target_id, target_cell, player_cell)
 func _runtime_tile_size() -> float:
 	if world_data != null:
 		return float(world_data.tile_size)
@@ -2799,25 +2186,9 @@ func _runtime_world_origin() -> Vector2:
 	return Vector2.ZERO
 
 func _interaction_candidate_cells(origin_cell: Vector2i, direction := Vector2i.ZERO) -> Array:
-	var forward: Vector2i = _resolved_grid_direction(direction)
-	var candidates := [origin_cell]
-	if forward != Vector2i.ZERO:
-		candidates.append(origin_cell + forward)
-	for adjacent in [Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP]:
-		var cell: Vector2i = origin_cell + adjacent
-		if not candidates.has(cell):
-			candidates.append(cell)
-	return candidates
-
+	return _spatial_resolver.interaction_candidate_cells(origin_cell, _resolved_grid_direction(direction))
 func _pointer_candidate_cells(clicked_cell: Vector2i) -> Array:
-	var cells := [clicked_cell]
-	for y in range(-2, 3):
-		for x in range(-2, 3):
-			if x == 0 and y == 0 or abs(x) + abs(y) > 2:
-				continue
-			cells.append(clicked_cell + Vector2i(x, y))
-	return cells
-
+	return _spatial_resolver.pointer_candidate_cells(clicked_cell)
 func _resolved_grid_direction(direction: Vector2i) -> Vector2i:
 	if direction != Vector2i.ZERO:
 		return Vector2i(clampi(direction.x, -1, 1), clampi(direction.y, -1, 1))
@@ -2834,126 +2205,17 @@ func _resolved_grid_direction(direction: Vector2i) -> Vector2i:
 	return Vector2i.DOWN
 
 func _interaction_target_id_for_cell(cell: Vector2i) -> String:
-	if world_data == null or not world_data.contains(cell):
-		return ""
-	var dungeon_reservation_id := _dungeon_reservation_target_id_for_cell(cell)
-	if not dungeon_reservation_id.is_empty():
-		return dungeon_reservation_id
-	for target_id_value in world_data.get_interactables(cell):
-		var target_id := String(target_id_value)
-		if _is_landmark_target(target_id):
-			return target_id
-		if _is_available_acquisition_target(target_id):
-			return target_id
-	var landmark_id := _landmark_target_id_for_cell(cell)
-	if not landmark_id.is_empty():
-		return landmark_id
-	return ""
-
+	return _spatial_resolver.interaction_target_id_for_cell(world_data, _in_dungeon_map, cell, Callable(self, "_is_available_acquisition_target"))
 func _player_can_interact_with_target(player_cell: Vector2i, target_id: String, target_cell: Vector2i) -> bool:
-	for footprint_cell in _target_footprint_cells(target_id, target_cell):
-		if _cells_are_adjacent(player_cell, footprint_cell):
-			return true
-	return false
-
+	return _spatial_resolver.player_can_interact_with_target(world_data, _in_dungeon_map, player_cell, target_id, target_cell)
 func _target_footprint_cells(target_id: String, fallback_cell: Vector2i) -> Array:
-	if _is_large_house_dungeon_target(target_id):
-		var compound_cells := []
-		for owner_id in LARGE_HOUSE_DUNGEON_OWNER_IDS:
-			compound_cells.append_array(_reservation_cells_for_owner(owner_id))
-		if not compound_cells.is_empty():
-			return _unique_cells(compound_cells)
-	return [fallback_cell]
-
-func _reservation_cells_for_owner(owner_id: String) -> Array:
-	if world_data == null:
-		return []
-	var reservation: Dictionary = world_data.get_reservation(owner_id)
-	var cells := []
-	for cell_value in reservation.get("cells", []):
-		cells.append(_vector_from_dictionary(cell_value))
-	return cells
-
-func _unique_cells(cells: Array) -> Array:
-	var seen := {}
-	var unique := []
-	for cell in cells:
-		var key := _cell_key(cell)
-		if seen.has(key):
-			continue
-		seen[key] = true
-		unique.append(cell)
-	return unique
-
+	return _spatial_resolver.target_footprint_cells(world_data, target_id, fallback_cell)
 func _dungeon_interaction_target_near_cell(origin_cell: Vector2i) -> Dictionary:
-	for cell in _interaction_candidate_cells(origin_cell):
-		var target_id := _dungeon_interaction_target_id_for_cell(cell)
-		if not target_id.is_empty():
-			return {"target_id": target_id, "cell": cell}
-	for y in range(origin_cell.y - 2, origin_cell.y + 3):
-		for x in range(origin_cell.x - 2, origin_cell.x + 3):
-			if abs(x - origin_cell.x) + abs(y - origin_cell.y) > 2:
-				continue
-			var cell := Vector2i(x, y)
-			var target_id := _dungeon_interaction_target_id_for_cell(cell)
-			if not target_id.is_empty():
-				return {"target_id": target_id, "cell": cell}
-	return {}
-
-func _dungeon_interaction_target_id_for_cell(cell: Vector2i) -> String:
-	if world_data == null or not world_data.contains(cell):
-		return ""
-	var dungeon_reservation_id := _dungeon_reservation_target_id_for_cell(cell)
-	if not dungeon_reservation_id.is_empty():
-		return dungeon_reservation_id
-	for target_id_value in world_data.get_interactables(cell):
-		var target_id := String(target_id_value)
-		if _is_core_dungeon_target(target_id):
-			return target_id
-	var landmark_id := _landmark_target_id_for_cell(cell)
-	if _in_dungeon_map and landmark_id == WorldData.LANDMARK_ENTRY:
-		return "dungeon_entry"
-	if _is_core_dungeon_target(landmark_id):
-		return landmark_id
-	return ""
-
-func _dungeon_reservation_target_id_for_cell(cell: Vector2i) -> String:
-	if world_data == null or not world_data.contains(cell):
-		return ""
-	for owner_id_value in world_data.get_occupants(cell):
-		var owner_id := String(owner_id_value)
-		if _is_core_dungeon_target(owner_id):
-			return owner_id
-	return ""
-
-func _landmark_target_id_for_cell(cell: Vector2i) -> String:
-	if world_data == null:
-		return ""
-	for landmark in world_data.get_required_landmarks():
-		var origin := _vector_from_dictionary(landmark.get("position", {}))
-		var size := Vector2i(2, 2) if String(landmark.get("kind", landmark.get("type", ""))) == WorldData.LANDMARK_CORE_DUNGEON else Vector2i.ONE
-		if cell.x >= origin.x and cell.y >= origin.y and cell.x < origin.x + size.x and cell.y < origin.y + size.y:
-			return String(landmark.get("id", ""))
-	return ""
-
-func _is_landmark_footprint_cell(cell: Vector2i) -> bool:
-	return not _landmark_target_id_for_cell(cell).is_empty()
-
+	return _spatial_resolver.dungeon_interaction_target_near_cell(world_data, _in_dungeon_map, origin_cell, _resolved_grid_direction(Vector2i.ZERO))
 func _is_landmark_target(target_id: String) -> bool:
-	return (_in_dungeon_map and target_id == "dungeon_entry") \
-			or _is_core_dungeon_target(target_id) \
-			or target_id.begins_with("%s_" % WorldData.LANDMARK_BOSS_ANCHOR) \
-			or target_id.begins_with("%s_" % WorldData.LANDMARK_RUIN) \
-			or target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE)
-
+	return _spatial_resolver.is_landmark_target(_in_dungeon_map, target_id)
 func _is_core_dungeon_target(target_id: String) -> bool:
-	return target_id.begins_with("%s_" % WorldData.LANDMARK_CORE_DUNGEON) \
-		or _is_large_house_dungeon_target(target_id)
-
-func _is_large_house_dungeon_target(target_id: String) -> bool:
-	return target_id == WorldGenerator.LARGE_HOUSE_ID \
-		or target_id.begins_with("large_house_fence_")
-
+	return _spatial_resolver.is_core_dungeon_target(target_id)
 func _handle_landmark_interaction(target_id: String) -> bool:
 	if _in_dungeon_map and target_id == "dungeon_entry":
 		if dungeon_runtime == null:
@@ -3093,86 +2355,22 @@ func _is_available_acquisition_target(target_id: String) -> bool:
 	return not acquisition_service.pickup_for(target_id).is_empty()
 
 func _handle_tea_command(command: GameCommand) -> bool:
-	if tea_service == null or not _active_tea_drink_action.is_empty():
-		return false
-	var conditions := {}
-	var player_resources = player.get("resources") if player != null else null
-	if player_resources != null:
-		conditions["low_kokoro"] = player_resources.is_kokoro_low()
-	var start_result: Dictionary = tea_service.start_drinking(maxi(command.slot, 0), {"conditions": conditions})
-	if not start_result.ok:
-		return false
-	_active_tea_drink_action = start_result.action
-	return true
+	return _player_item_actions.start_tea(command, tea_service, player.get("resources") if player != null else null)
 
 func is_tea_drink_active() -> bool:
-	return not _active_tea_drink_action.is_empty()
+	return _player_item_actions.is_tea_drink_active()
 
 func tick_tea_runtime(delta_seconds: float) -> Dictionary:
-	if tea_service == null:
-		return {"ok": true, "changed": false}
-	var resources = player.get("resources") if player != null else null
-	var effect_tick: Dictionary = tea_service.tick_effects(delta_seconds, resources)
-	if not effect_tick.ok:
-		return effect_tick
-	var changed := bool(effect_tick.get("changed", false))
-	var drink_completed := false
-	if not _active_tea_drink_action.is_empty():
-		var drink_tick: Dictionary = tea_service.tick_drinking(_active_tea_drink_action, delta_seconds, resources)
-		if not drink_tick.ok:
-			return drink_tick
-		if bool(drink_tick.get("consumed", false)):
-			_active_tea_drink_action = {}
-			changed = true
-			drink_completed = true
-		else:
-			_active_tea_drink_action = drink_tick.action
-	if changed:
-		_sync_tea_runtime_state()
-	if drink_completed:
-		save_current_run()
-		_configure_game_hud()
-	return {"ok": true, "changed": changed, "active": is_tea_drink_active()}
+	return _player_item_actions.tick_tea(delta_seconds, tea_service, player.get("resources") if player != null else null)
 
 func is_consumable_use_active() -> bool:
-	return consumable_service != null \
-		and consumable_service.has_method("has_active_use") \
-		and consumable_service.has_active_use()
+	return _player_item_actions.is_consumable_use_active(consumable_service)
 
 func tick_consumable_runtime(delta_seconds: float) -> Dictionary:
-	if consumable_service == null or not is_consumable_use_active():
-		return {"ok": true, "changed": false, "active": false}
-	if inventory == null or player == null or player.resources == null:
-		return {"ok": false, "reason": "consumable_runtime_unavailable", "error": "Consumable use requires inventory and player resources."}
-	var result: Dictionary = consumable_service.tick_use(delta_seconds, inventory, player.resources)
-	if not result.ok:
-		if String(result.get("reason", "")) != "invalid_delta":
-			var interrupt_result: Dictionary = _interrupt_consumable_use("failed_%s" % String(result.get("reason", "unknown")))
-			result["interrupted"] = bool(interrupt_result.get("interrupted", false))
-		return result
-	if bool(result.get("consumed", false)):
-		_advance_time_for_turn()
-		_queue_enemy_turn_after_player_action()
-		_configure_game_hud()
-		save_current_run()
-	return {
-		"ok": true,
-		"changed": true,
-		"active": is_consumable_use_active(),
-		"completed": bool(result.get("consumed", false)),
-		"result": result
-	}
+	return _player_item_actions.tick_consumable(delta_seconds, consumable_service, inventory, player.get("resources") if player != null else null)
 
 func _interrupt_consumable_use(reason := "hit") -> Dictionary:
-	if consumable_service == null or not is_consumable_use_active():
-		return {"ok": true, "interrupted": false}
-	var result: Dictionary = consumable_service.interrupt_use(reason)
-	if not result.ok:
-		return result
-	_sync_consumable_runtime_state()
-	save_current_run()
-	_configure_game_hud()
-	return {"ok": true, "interrupted": true, "result": result}
+	return _player_item_actions.interrupt_consumable(consumable_service, reason)
 
 func _handle_consumable_command(command: GameCommand) -> bool:
 	if consumable_service == null or inventory == null or player == null or player.resources == null:
@@ -3190,31 +2388,10 @@ func _handle_consumable_command(command: GameCommand) -> bool:
 	return bool(start.ok)
 
 func _start_consumable_use(item_id: String, context := {}) -> Dictionary:
-	if consumable_service == null or inventory == null:
-		return {"ok": false, "reason": "missing_consumable_runtime", "error": "Consumable runtime is not configured."}
-	var start: Dictionary = consumable_service.start_use(item_id, inventory, context)
-	if not start.ok:
-		return start
-	_sync_inventory_runtime_state()
-	_sync_consumable_runtime_state()
-	save_current_run()
-	_configure_game_hud()
-	return start
+	return _player_item_actions.start_consumable(item_id, context, consumable_service, inventory)
 
 func _consumable_item_id_for_command(command: GameCommand) -> String:
-	var requested := String(command.payload.get("item_id", ""))
-	if not requested.is_empty():
-		return requested if consumable_service.has_definition(requested) and inventory.get_total_quantity(requested) > 0 else ""
-	var slots = inventory.get("slots")
-	if typeof(slots) != TYPE_ARRAY:
-		return ""
-	for slot in slots:
-		if typeof(slot) != TYPE_DICTIONARY:
-			continue
-		var item_id := String(slot.get("item_id", ""))
-		if not item_id.is_empty() and int(slot.get("quantity", 0)) > 0 and consumable_service.has_definition(item_id):
-			return item_id
-	return ""
+	return _player_item_actions.consumable_item_id_for_command(command, consumable_service, inventory)
 
 func _handle_sleep_command() -> bool:
 	if time_state == null or player == null or player.resources == null:
@@ -3264,8 +2441,7 @@ func _handle_tea_brewing_command(command: GameCommand) -> bool:
 		)
 	if not result.ok:
 		return false
-	_sync_inventory_runtime_state()
-	_sync_tea_runtime_state()
+	_sync_run_runtime_state()
 	if game_hud != null:
 		game_hud.show_tea_brewing_menu()
 	return true
@@ -3299,7 +2475,7 @@ func _handle_craft_recipe_command(command: GameCommand) -> bool:
 				else "제작 불가: %s" % String(result.get("reason", "unknown"))
 			)
 	if result.ok and not bool(result.get("placement_pending", false)):
-		_sync_inventory_runtime_state()
+		_sync_run_runtime_state()
 		save_current_run()
 		_configure_game_hud()
 		if game_hud != null:
@@ -3321,73 +2497,29 @@ func _craft_recipe_or_begin_facility_placement(recipe_id: String) -> Dictionary:
 		return {"ok": false, "reason": "facility_installation_requires_overworld"}
 	if facility_placement_service == null or world_data == null or player == null:
 		return {"ok": false, "reason": "facility_placement_unavailable"}
-
-	var crafting_context := _crafting_context()
-	var availability: Dictionary = crafting_service.can_craft(recipe_id, inventory, crafting_context)
-	if not availability.ok:
-		return availability
-	_pending_facility_placement = {
-		"recipe_id": recipe_id,
-		"facility_item_id": result_item_id,
-		"metadata": _player_facility_metadata(result_item_id)
-	}
-	_pending_facility_origin = Vector2i(-1, -1)
-	_pending_facility_result.clear()
-	_pending_facility_rotation = 0
+	var result := _facility_placement_session.begin_or_craft_recipe(
+		recipe_id, crafting_service, inventory, _crafting_context(),
+		facility_placement_service, world_data, _player_world_cell(),
+		_in_dungeon_map, _player_facility_metadata(result_item_id)
+	)
+	if not result.ok:
+		return result
 	_clear_pointer_movement()
 	_clear_facility_placement_preview()
 	if game_hud != null:
 		game_hud.hide_menu()
 		game_hud.show_facility_placement_controls()
-	var initial_placement: Dictionary = facility_placement_service.find_placement_near(
-		result_item_id,
-		world_data,
-		_player_world_cell(),
-		_facility_placement_context()
-	)
-	if bool(initial_placement.get("ok", false)):
-		var initial_origin := Vector2i(
-			int(initial_placement.origin.x),
-			int(initial_placement.origin.y)
-		)
+	var initial_origin: Vector2i = result.get("initial_origin", Vector2i(-1, -1))
+	if initial_origin.x >= 0:
 		_select_pending_facility_at(initial_origin)
-	return {
-		"ok": true,
-		"placement_pending": true,
-		"recipe_id": recipe_id,
-		"result_item_id": result_item_id
-	}
+	result.erase("initial_origin")
+	return result
 
 func has_pending_facility_placement() -> bool:
-	return not _pending_facility_placement.is_empty()
-
-func _facility_placement_context() -> Dictionary:
-	return {
-		"rotation_quarter_turns": _pending_facility_rotation,
-		"metadata": _pending_facility_placement.get("metadata", {}).duplicate(true)
-	}
-
-func _pending_facility_validation(origin: Vector2i) -> Dictionary:
-	if not has_pending_facility_placement() or facility_placement_service == null:
-		return {"ok": false, "reason": "no_pending_facility"}
-	var player_cell := _player_world_cell()
-	var distance := absi(origin.x - player_cell.x) + absi(origin.y - player_cell.y)
-	if distance == 0 or distance > FacilityPlacementService.DEFAULT_PLACEMENT_SEARCH_RADIUS:
-		return {"ok": false, "reason": "placement_out_of_range"}
-	return facility_placement_service.can_place_facility(
-		String(_pending_facility_placement.get("facility_item_id", "")),
-		world_data,
-		origin,
-		_facility_placement_context()
-	)
+	return _facility_placement_session.has_pending()
 
 func _select_pending_facility_at(origin: Vector2i) -> void:
-	_pending_facility_origin = origin
-	var validation := _pending_facility_validation(origin)
-	if bool(validation.get("ok", false)):
-		_pending_facility_result = validation.duplicate(true)
-	else:
-		_pending_facility_result.clear()
+	var validation := _facility_placement_session.select_origin(origin, facility_placement_service, world_data, _player_world_cell())
 	_update_facility_placement_preview(validation)
 	if game_hud != null:
 		game_hud.update_facility_placement_controls(
@@ -3396,11 +2528,16 @@ func _select_pending_facility_at(origin: Vector2i) -> void:
 		)
 
 func _rotate_pending_facility() -> bool:
-	if not has_pending_facility_placement():
+	var result := _facility_placement_session.rotate(facility_placement_service, world_data, _player_world_cell())
+	if not bool(result.get("ok", false)):
 		return false
-	_pending_facility_rotation = (_pending_facility_rotation + 1) % 4
 	if _pending_facility_origin.x >= 0:
-		_select_pending_facility_at(_pending_facility_origin)
+		_update_facility_placement_preview(result)
+		if game_hud != null:
+			game_hud.update_facility_placement_controls(
+				bool(result.get("ok", false)),
+				"설치 가능" if bool(result.get("ok", false)) else _facility_placement_reason(String(result.get("reason", "invalid_placement")))
+			)
 	elif game_hud != null:
 		game_hud.update_facility_placement_controls(true, "방향 %d°" % (_pending_facility_rotation * 90))
 	return true
@@ -3415,83 +2552,41 @@ func _confirm_pending_facility() -> bool:
 	return bool(placed.get("ok", false))
 
 func _place_pending_facility(placement_result: Dictionary) -> Dictionary:
-	if not has_pending_facility_placement():
-		return {"ok": false, "reason": "no_pending_facility_placement"}
-	var recipe_id := String(_pending_facility_placement.get("recipe_id", ""))
-	var facility_item_id := String(_pending_facility_placement.get("facility_item_id", ""))
-	var crafting_context := _crafting_context()
-	var availability: Dictionary = crafting_service.can_craft(recipe_id, inventory, crafting_context)
-	if not availability.ok:
-		return _facility_placement_failed(String(availability.get("reason", "craft_unavailable")))
-	var placement_context := {
-		"rotation_quarter_turns": _pending_facility_rotation,
-		"metadata": _pending_facility_placement.get("metadata", {}).duplicate(true)
-	}
-	if String(placement_result.get("facility_item_id", "")) != facility_item_id:
-		return _facility_placement_failed("invalid_placement_result")
-	var placed: Dictionary = facility_placement_service.place_validated_facility(
-		placement_result,
-		world_data,
-		placement_context
-	)
-	if not placed.ok:
-		return _facility_placement_failed(String(placed.get("reason", "invalid_placement")))
-
-	var crafted: Dictionary = crafting_service.craft(recipe_id, inventory, crafting_context, {"store_result": false})
-	if not crafted.ok:
-		world_data.release_footprint(String(placed.owner_id))
-		return _facility_placement_failed(String(crafted.get("reason", "craft_failed")))
-	_record_placed_facility(placed)
+	var result := _facility_placement_session.place_selected(crafting_service, inventory, _crafting_context(), facility_placement_service, world_data, placement_result)
+	if not bool(result.get("ok", false)):
+		return _facility_placement_failed(String(result.get("reason", "invalid_placement")))
+	_record_placed_facility(result.placement)
 	_sync_runtime_world_render()
-	crafted["installed"] = true
-	crafted["placement"] = placed.duplicate(true)
-	_pending_facility_placement.clear()
-	_pending_facility_origin = Vector2i(-1, -1)
-	_pending_facility_result.clear()
-	_pending_facility_rotation = 0
+	_facility_placement_session.clear()
 	_clear_facility_placement_preview()
 	if game_hud != null:
 		game_hud.hide_facility_placement_controls()
-	_sync_inventory_runtime_state()
+	_sync_run_runtime_state()
 	save_current_run()
 	_configure_game_hud()
 	if game_hud != null:
-		game_hud.show_command_feedback("제작·설치 완료: %s" % facility_item_id)
+		game_hud.show_command_feedback("제작·설치 완료: %s" % String(result.get("facility_item_id", "")))
 	_advance_time_for_turn()
 	_play_feedback_beep()
 	_queue_enemy_turn_after_player_action()
-	return crafted
+	return result
 
 func _facility_placement_failed(reason: String) -> Dictionary:
-	_pending_facility_result.clear()
+	var result := _facility_placement_session.placement_failed(reason)
 	if game_hud != null:
 		game_hud.update_facility_placement_controls(false, _facility_placement_reason(reason))
-	return {"ok": false, "reason": reason, "placement_pending": true}
+	return result
 
 func _facility_placement_reason(reason: String) -> String:
-	match reason:
-		"blocked":
-			return "설치 불가: 막힌 타일"
-		"out_of_bounds":
-			return "설치 불가: 맵 밖"
-		"missing_workspace":
-			return "설치 불가: 작업 공간 부족"
-		"placement_out_of_range":
-			return "설치 불가: 너무 멂"
-		_:
-			return "설치 불가"
+	return FacilityPlacementSession.reason_message(reason)
 
 func _cancel_pending_facility_placement() -> bool:
-	if not has_pending_facility_placement():
+	var result := _facility_placement_session.cancel()
+	if not bool(result.get("ok", false)):
 		return false
-	_pending_facility_placement.clear()
-	_pending_facility_origin = Vector2i(-1, -1)
-	_pending_facility_result.clear()
-	_pending_facility_rotation = 0
 	_clear_facility_placement_preview()
 	if game_hud != null:
 		game_hud.hide_facility_placement_controls()
-	if game_hud != null:
 		game_hud.show_command_feedback("시설 설치를 취소했습니다.")
 	return true
 
@@ -3541,44 +2636,19 @@ func _clear_facility_placement_preview() -> void:
 		_facility_placement_preview.clear()
 
 func _facility_footprint_for_pending_facility() -> Vector2i:
-	if facility_placement_service == null:
-		return Vector2i.ONE
-	var definition: Dictionary = facility_placement_service.facility_for(String(_pending_facility_placement.get("facility_item_id", "")))
-	var size: Vector2i = definition.get("footprint_size", Vector2i.ONE)
-	return size if _pending_facility_rotation % 2 == 0 else Vector2i(size.y, size.x)
+	return _facility_placement_session.footprint_for_pending_facility(facility_placement_service)
 
 func _player_facility_metadata(facility_item_id: String) -> Dictionary:
-	var definition: Dictionary = facility_placement_service.facility_for(facility_item_id)
-	var source_id := _content_image_asset_id("items", facility_item_id)
-	for key in ["source_id", "sprite_asset_id", "asset_id", "icon_asset_id", "icon"]:
-		if not source_id.is_empty():
-			break
-		source_id = String(definition.get(key, ""))
-		if not source_id.is_empty():
-			break
-	if source_id.is_empty():
-		source_id = "asset_assets_sprites_objects_crafting_workbench_32x32_png"
-	return {
-		"facility_item_id": facility_item_id,
-		"installed_by_player": true,
-		"source_id": source_id
-	}
+	return _facility_placement_session.player_facility_metadata(
+		facility_item_id,
+		facility_placement_service,
+		_content_image_asset_id("items", facility_item_id)
+	)
 
 func _record_placed_facility(placed: Dictionary) -> void:
 	if run_state == null:
 		run_state = RunState.new()
-	var reservation: Dictionary = placed.get("reservation", {})
-	var record := {
-		"biome_id": String(generated_world.get("biome_id", run_state.current_biome_id)),
-		"facility_item_id": String(placed.get("facility_item_id", "")),
-		"owner_id": String(placed.get("owner_id", "")),
-		"origin": placed.get("origin", {}).duplicate(true),
-		"metadata": reservation.get("metadata", {}).duplicate(true)
-	}
-	for existing in run_state.placed_facilities:
-		if String(existing.get("owner_id", "")) == String(record.owner_id):
-			return
-	run_state.placed_facilities.append(record)
+	_facility_placement_session.record_placed_facility(run_state, generated_world, placed)
 
 func _handle_inventory_command(command: GameCommand) -> bool:
 	if inventory_command_runtime == null:
@@ -3605,7 +2675,7 @@ func _handle_inventory_command(command: GameCommand) -> bool:
 	if not result.ok:
 		return false
 	if not started_consumable:
-		_sync_inventory_runtime_state()
+		_sync_run_runtime_state()
 		if game_hud != null:
 			game_hud.show_inventory_menu()
 		save_current_run()
@@ -3741,14 +2811,7 @@ func _selected_inventory_slot_index() -> int:
 		return -1
 	return int(inventory_command_runtime.read_model().get("selected_slot_index", -1))
 
-func _sync_inventory_runtime_state() -> void:
-	if run_state == null:
-		run_state = RunState.new()
-	var result: Dictionary = run_runtime_state_binder.snapshot_to_run_state(run_state, _run_runtime_state_entries())
-	if not result.ok:
-		push_error(result.error)
-
-func _sync_tea_runtime_state() -> void:
+func _sync_run_runtime_state() -> void:
 	if run_state == null:
 		run_state = RunState.new()
 	var result: Dictionary = run_runtime_state_binder.snapshot_to_run_state(run_state, _run_runtime_state_entries())
@@ -3761,13 +2824,6 @@ func tea_brewing_read_model() -> Dictionary:
 	var model: Dictionary = tea_brewing_command_runtime.read_model()
 	model["ok"] = true
 	return model
-
-func _sync_consumable_runtime_state() -> void:
-	if run_state == null:
-		run_state = RunState.new()
-	var result: Dictionary = run_runtime_state_binder.snapshot_to_run_state(run_state, _run_runtime_state_entries())
-	if not result.ok:
-		push_error(result.error)
 
 func _run_runtime_state_entries() -> Array:
 	return [
@@ -3830,75 +2886,24 @@ func _crafting_context() -> Dictionary:
 	}
 
 func _available_facility_item_ids() -> Array:
-	var ids: Array = []
-	if crafting_service == null or player == null:
-		return ids
-	var player_cell := _player_world_cell()
-	if facility_placement_service != null:
-		for facility_item_id in facility_placement_service.facility_item_ids_near(world_data, player_cell):
-			if not ids.has(String(facility_item_id)):
-				ids.append(String(facility_item_id))
-	# Keep saved player facilities usable even when a legacy reservation lacks
-	# the facility metadata used by facility_item_ids_near().
-	if run_state != null:
-		var current_biome_id := String(generated_world.get("biome_id", run_state.current_biome_id))
-		for record_value in run_state.placed_facilities:
-			if typeof(record_value) != TYPE_DICTIONARY:
-				continue
-			var record: Dictionary = record_value
-			if String(record.get("biome_id", current_biome_id)) != current_biome_id:
-				continue
-			var origin := _vector_from_dictionary(record.get("origin", {}))
-			if maxi(absi(player_cell.x - origin.x), absi(player_cell.y - origin.y)) > FacilityPlacementService.DEFAULT_USE_DISTANCE:
-				continue
-			var facility_item_id := String(record.get("facility_item_id", ""))
-			if not facility_item_id.is_empty() and not ids.has(facility_item_id):
-				ids.append(facility_item_id)
-	var name_to_id = crafting_service.get("item_name_to_id")
-	if typeof(name_to_id) != TYPE_DICTIONARY:
-		return ids
-	for node in generated_world.get("facility_nodes", []):
-		var position := _vector_from_dictionary(node.get("position", {}))
-		if absi(player_cell.x - position.x) + absi(player_cell.y - position.y) > FacilityPlacementService.DEFAULT_USE_DISTANCE:
-			continue
-		var facility_key := String(node.get("facility_id", node.get("facility_term", "")))
-		if name_to_id.has(facility_key) and not ids.has(String(name_to_id[facility_key])):
-			ids.append(String(name_to_id[facility_key]))
-	ids.sort()
-	return ids
+	if player == null:
+		return []
+	return _facility_placement_session.available_facility_item_ids(
+		crafting_service,
+		facility_placement_service,
+		world_data,
+		run_state,
+		generated_world,
+		_player_world_cell()
+	)
 
 func _restore_placed_facilities_for_current_biome() -> Dictionary:
-	if facility_placement_service == null or world_data == null or run_state == null:
-		return {"ok": true, "restored": 0}
-	var current_biome_id := String(generated_world.get("biome_id", run_state.current_biome_id))
-	var restored := 0
-	for record_value in run_state.placed_facilities:
-		if typeof(record_value) != TYPE_DICTIONARY:
-			continue
-		var record: Dictionary = record_value
-		if String(record.get("biome_id", "")) != current_biome_id:
-			continue
-		var owner_id := String(record.get("owner_id", ""))
-		if not owner_id.is_empty() and not world_data.get_reservation(owner_id).is_empty():
-			continue
-		var facility_item_id := String(record.get("facility_item_id", ""))
-		var origin := _vector_from_dictionary(record.get("origin", {}))
-		var metadata: Dictionary = record.get("metadata", {}).duplicate(true)
-		var placement: Dictionary = facility_placement_service.place_facility(facility_item_id, world_data, origin, {
-			"owner_id": owner_id,
-			"rotation_quarter_turns": int(metadata.get("rotation_quarter_turns", 0)),
-			"metadata": metadata
-		})
-		if not placement.ok:
-			return {
-				"ok": false,
-				"reason": "placed_facility_restore_failed",
-				"facility_item_id": facility_item_id,
-				"owner_id": owner_id,
-				"cause": placement
-			}
-		restored += 1
-	return {"ok": true, "restored": restored}
+	return _facility_placement_session.restore_placed_facilities_for_current_biome(
+		facility_placement_service,
+		world_data,
+		run_state,
+		generated_world
+	)
 
 func _unlocked_biome_ids() -> Array:
 	var ids: Array = []
@@ -3928,30 +2933,18 @@ func _on_tea_drink_completed(result: Dictionary) -> void:
 	if not accounting_result.ok:
 		push_error(accounting_result.error)
 	if memory_tea_cutscene_runtime != null:
-		var memory_result: Dictionary = memory_tea_cutscene_runtime.start_from_drink_completion(result, run_state)
+		var memory_result: Dictionary = narrative_session.start_memory_tea_cutscene(memory_tea_cutscene_runtime, result, run_state)
 		if not memory_result.ok:
 			push_error(memory_result.error)
-		elif memory_result.started and run_state != null:
-			run_state.memory_tea_cutscene = memory_tea_cutscene_runtime.to_snapshot()
 
 func complete_memory_tea_cutscene() -> Dictionary:
-	if memory_tea_cutscene_runtime == null:
-		return {"ok": false, "reason": "missing_memory_cutscene_runtime", "error": "Memory tea cutscene runtime is not configured."}
-	var result: Dictionary = memory_tea_cutscene_runtime.complete_current(run_state)
-	if result.ok and run_state != null:
-		run_state.memory_tea_cutscene = memory_tea_cutscene_runtime.to_snapshot()
-	return result
+	return narrative_session.complete_memory_tea_cutscene(memory_tea_cutscene_runtime, run_state)
 
 func skip_memory_tea_cutscene() -> Dictionary:
-	if memory_tea_cutscene_runtime == null:
-		return {"ok": false, "reason": "missing_memory_cutscene_runtime", "error": "Memory tea cutscene runtime is not configured."}
-	var result: Dictionary = memory_tea_cutscene_runtime.skip_current(run_state)
-	if result.ok and run_state != null:
-		run_state.memory_tea_cutscene = memory_tea_cutscene_runtime.to_snapshot()
-	return result
+	return narrative_session.skip_memory_tea_cutscene(memory_tea_cutscene_runtime, run_state)
 
 func _render_generated_world(world: Dictionary) -> void:
-	_hide_prototype_visuals()
+	WorldPresentation.hide_prototype_visuals(self)
 	if not _in_dungeon_map and world_data != null:
 		var migrated := _ensure_saved_world_has_teleport_landmark()
 		world["world_data"] = world_data.to_dictionary()
@@ -3959,7 +2952,7 @@ func _render_generated_world(world: Dictionary) -> void:
 		if migrated:
 			save_current_run()
 	var renderer_input: Dictionary = world.get("renderer_input", {})
-	_apply_teleport_states_to_renderer_input(renderer_input)
+	WorldPresentation.apply_teleport_states(renderer_input, run_state)
 	var origin := _centered_world_origin(renderer_input)
 	world_render_result = WorldSceneRenderer.new().render(
 		world_visuals,
@@ -3988,7 +2981,7 @@ func _sync_runtime_world_render() -> void:
 		return
 	var world_snapshot: Dictionary = world_data.to_dictionary()
 	var renderer_input: Dictionary = WorldRendererProjection.new().project(world_snapshot)
-	_apply_teleport_states_to_renderer_input(renderer_input)
+	WorldPresentation.apply_teleport_states(renderer_input, run_state)
 	generated_world["world_data"] = world_snapshot
 	generated_world["renderer_input"] = renderer_input
 	var origin := _centered_world_origin(renderer_input)
@@ -4042,51 +3035,16 @@ func _combat_target_cell(enemy) -> Vector2i:
 	return Vector2i.ZERO
 
 func _configure_runtime_camera() -> void:
-	if player == null or world_data == null:
-		return
-	var camera := player.get_node_or_null("Camera2D") as Camera2D
-	if camera == null:
-		return
-	camera.zoom = Vector2.ONE * RuntimeConstants.float_value("camera.zoom")
-	var origin := _runtime_world_origin()
-	var tile_size := _runtime_tile_size()
-	camera.limit_left = int(floor(origin.x))
-	camera.limit_top = int(floor(origin.y))
-	camera.limit_right = int(ceil(origin.x + float(world_data.width) * tile_size))
-	camera.limit_bottom = int(ceil(origin.y + float(world_data.height) * tile_size))
-	camera.enabled = true
-	_update_dungeon_sign_visibility()
+	WorldPresentation.configure_camera(player, world_data, _runtime_world_origin(), _runtime_tile_size())
+	if player != null and world_data != null and player.get_node_or_null("Camera2D") != null:
+		_update_dungeon_sign_visibility()
 
 func _update_dungeon_sign_visibility() -> void:
-	if world_visuals == null or player == null:
-		return
-	var player_cell := world_cell_from_world_position(player.global_position)
-	for sign in world_visuals.find_children("InteractionPrompt", "PanelContainer", true, false):
-		var sign_node := sign as Control
-		var local_cell := Vector2i(int(round(sign_node.position.x / _runtime_tile_size())), int(round((sign_node.position.y + 52.0) / _runtime_tile_size())))
-		sign_node.visible = player_cell.distance_to(local_cell) <= 4.0
-
-func _apply_teleport_states_to_renderer_input(renderer_input: Dictionary) -> void:
-	if run_state == null:
-		return
-	var current_biome_id := String(run_state.current_biome_id)
-	for landmark in renderer_input.get("required_landmarks", []):
-		if String(landmark.get("kind", landmark.get("type", ""))) != WorldData.LANDMARK_TELEPORT_ZONE:
-			continue
-		landmark["teleport_state"] = String(run_state.teleport_states.get(current_biome_id, "undiscovered"))
+	if player != null:
+		WorldPresentation.update_interaction_prompts(world_visuals, world_cell_from_world_position(player.global_position), _runtime_tile_size())
 
 func _entry_spawn_cell(world: Dictionary) -> Vector2i:
-	var landmarks: Array = world.get("required_landmarks", [])
-	if landmarks.is_empty():
-		landmarks = world.get("landmarks", [])
-	if landmarks.is_empty():
-		var renderer_input: Dictionary = world.get("renderer_input", {})
-		landmarks = renderer_input.get("required_landmarks", [])
-	for landmark in landmarks:
-		if String(landmark.get("kind", landmark.get("type", ""))) != WorldData.LANDMARK_ENTRY:
-			continue
-		return _vector_from_dictionary(landmark.get("position", {}))
-	return Vector2i.ZERO
+	return WorldPresentation.entry_spawn_cell(world)
 
 func _on_hud_mobile_command_issued(command) -> void:
 	submit_mobile_action_command(command)
@@ -4125,31 +3083,16 @@ func _configure_world_tone_overlay() -> void:
 		world_tone_overlay.configure(time_state)
 
 func first_run_prologue_read_model(meta_state = null) -> Dictionary:
-	if narrative_runtime == null:
-		return {"ok": false, "reason": "missing_narrative_runtime", "error": "Narrative runtime is not configured."}
 	if run_state == null:
 		run_state = RunState.new()
 	var meta = meta_state if meta_state != null else _current_meta_state_snapshot()
-	if not _force_first_run_prologue and int(meta.get("run_count", 0)) != 0:
-		return {"ok": false, "reason": "not_first_run", "error": "First-run prologue only opens before any completed run."}
-	return narrative_runtime.read_model_for_event(FIRST_RUN_PROLOGUE_EVENT_ID, run_state, meta)
+	return narrative_session.first_run_prologue_read_model(narrative_runtime, run_state, meta, _force_first_run_prologue)
 
 func start_run_event_read_model(meta_state = null) -> Dictionary:
-	if narrative_runtime == null or run_start_event_selector == null:
-		return {"ok": false, "reason": "missing_narrative_runtime", "error": "Run-start narrative runtime is not configured."}
 	if run_state == null:
 		run_state = RunState.new()
 	var meta = meta_state if meta_state != null else _current_meta_state_snapshot()
-	var selected: Dictionary = run_start_event_selector.select_event(run_state, meta, _force_first_run_prologue)
-	if not selected.ok:
-		return selected
-	var model_result: Dictionary = narrative_runtime.read_model_for_event(String(selected.event_id), run_state, meta)
-	if not model_result.ok:
-		return model_result
-	model_result.read_model["presentation_kind"] = String(selected.get("presentation_kind", "dialogue"))
-	model_result.read_model["father_physical_actor"] = bool(selected.get("father_physical_actor", false))
-	model_result.read_model["meta_run_count"] = int(selected.get("meta_run_count", 0))
-	return model_result
+	return narrative_session.start_run_event_read_model(narrative_runtime, run_start_event_selector, run_state, meta, _force_first_run_prologue)
 
 func _maybe_show_run_start_event() -> Dictionary:
 	if game_hud == null or narrative_runtime == null:
@@ -4159,26 +3102,15 @@ func _maybe_show_run_start_event() -> Dictionary:
 		if game_hud.has_method("hide_narrative_dialogue"):
 			game_hud.hide_narrative_dialogue()
 		return model_result
-	_active_narrative_event_id = String(model_result.read_model.event_id)
-	_active_narrative_node_id = String(model_result.read_model.node_id)
+	_set_active_narrative_from_read_model(model_result.read_model)
 	game_hud.show_narrative_dialogue(model_result.read_model)
 	return {"ok": true, "read_model": model_result.read_model}
 
-func _maybe_show_first_run_prologue() -> Dictionary:
-	return _maybe_show_run_start_event()
-
 func _handle_narrative_option_command(command: GameCommand) -> bool:
-	if narrative_runtime == null or run_state == null:
+	var event_id := String(command.payload.get("event_id", narrative_session.active_event_id))
+	var result: Dictionary = narrative_session.select_option(command, narrative_runtime, run_state, _current_meta_state_snapshot())
+	if not bool(result.get("handled", false)):
 		return false
-	var event_id := String(command.payload.get("event_id", _active_narrative_event_id))
-	var node_id := String(command.payload.get("node_id", _active_narrative_node_id))
-	var option_id := String(command.payload.get("option_id", ""))
-	if event_id.is_empty() or node_id.is_empty() or option_id.is_empty():
-		return false
-	var result: Dictionary = narrative_runtime.select_option(event_id, node_id, option_id, run_state, _current_meta_state_snapshot())
-	if not result.ok:
-		return false
-	_apply_narrative_result_commands(result.get("commands", []))
 	if bool(result.get("complete", false)):
 		var was_boss_precombat := _dungeon_precombat_dialogue_is_active(event_id)
 		if was_boss_precombat:
@@ -4189,30 +3121,20 @@ func _handle_narrative_option_command(command: GameCommand) -> bool:
 			var boss_cell := _dungeon_boss_cell()
 			if boss_cell != Vector2i(-1, -1):
 				_activate_dungeon_enemy(boss_cell)
-		_active_narrative_event_id = ""
-		_active_narrative_node_id = ""
+		narrative_session.reset()
 		if game_hud != null and game_hud.has_method("hide_narrative_dialogue"):
 			game_hud.hide_narrative_dialogue()
 	else:
 		var read_model: Dictionary = result.get("read_model", {})
-		_active_narrative_event_id = String(read_model.get("event_id", event_id))
-		_active_narrative_node_id = String(read_model.get("node_id", ""))
+		narrative_session.active_event_id = String(read_model.get("event_id", event_id))
+		narrative_session.active_node_id = String(read_model.get("node_id", ""))
 		if game_hud != null and game_hud.has_method("show_narrative_dialogue"):
 			game_hud.show_narrative_dialogue(read_model)
 	save_current_run()
 	return true
 
-func _apply_narrative_result_commands(commands: Array) -> void:
-	if run_state == null:
-		run_state = RunState.new()
-	for command in commands:
-		if not command is GameCommand or command.type != GameCommand.Type.NARRATIVE_RESULT:
-			continue
-		var result: Dictionary = command.payload.get("result", {})
-		if String(result.get("type", "")) == NarrativeRuntime.RESULT_SET_RUN_FLAG:
-			var flag_id := String(result.get("id", ""))
-			if not flag_id.is_empty() and not run_state.narrative_flags.has(flag_id):
-				run_state.narrative_flags.append(flag_id)
+func _set_active_narrative_from_read_model(read_model: Dictionary) -> void:
+	narrative_session.begin_read_model(read_model)
 
 func _configure_audio_feedback() -> void:
 	if _sfx_router != null:
@@ -4236,65 +3158,10 @@ func _play_sfx_event(event_id: String, payload := {}, dedupe_key := "") -> Dicti
 	return result
 
 func _centered_world_origin(renderer_input: Dictionary) -> Vector2:
-	var bounds: Dictionary = renderer_input.get("bounds", {})
-	var tile_size := int(renderer_input.get("tile_size", RuntimeConstants.float_value("world.tile_size_pixels")))
-	return Vector2(
-		-float(int(bounds.get("width", 0)) * tile_size) * 0.5,
-		-float(int(bounds.get("height", 0)) * tile_size) * 0.5
-	)
+	return WorldPresentation.centered_world_origin(renderer_input)
 
 func _owner_sprite_sources(world: Dictionary) -> Dictionary:
-	var sources := {
-		WorldData.LANDMARK_ENTRY: "small_signpost",
-		WorldData.LANDMARK_CORE_DUNGEON: "asset_assets_sprites_objects_structures_warehouse_2x2_64x64_png",
-		WorldData.LANDMARK_RUIN: "asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png",
-		WorldData.LANDMARK_TELEPORT_ZONE: "asset_assets_tiles_sheets_biome_atlases_biome_tile_map_light_object_biome_map_atlas_crop_1261_363_32x32_resize_32x32_png",
-		"wood": "log_resource",
-		"stone": "small_rock_resource",
-		"clay": "mud_patch_resource"
-	}
-	_merge_projected_owner_sources(sources, world.get("renderer_input", {}))
-	for node in world.get("resource_nodes", []):
-		var owner_id := String(node.get("id", ""))
-		var resource_id := String(node.get("resource_id", ""))
-		var source_id := String(node.get("source_id", ""))
-		if owner_id != "" and not source_id.is_empty():
-			sources[owner_id] = source_id
-		elif owner_id != "" and not sources.has(owner_id) and sources.has(resource_id):
-			sources[owner_id] = sources[resource_id]
-	for node in world.get("facility_nodes", []):
-		var owner_id := String(node.get("id", ""))
-		var source_id := String(node.get("source_id", ""))
-		if owner_id != "" and source_id != "" and not sources.has(owner_id):
-			sources[owner_id] = source_id
-	# Generated path fences (and other procedural entities) keep their sprite
-	# reference in WorldData reservations rather than the high-level node lists.
-	var snapshot: Dictionary = world.get("world_data", world)
-	for reservation in snapshot.get("reservations", []):
-		var reservation_id := String(reservation.get("owner_id", ""))
-		var metadata: Dictionary = reservation.get("metadata", {})
-		var reservation_source := String(metadata.get("source_id", ""))
-		if not reservation_id.is_empty() and not reservation_source.is_empty():
-			sources[reservation_id] = reservation_source
-	return sources
+	return WorldPresentation.owner_sprite_sources(world)
 
-func _merge_projected_owner_sources(sources: Dictionary, renderer_input: Dictionary) -> void:
-	for layer in renderer_input.get("layers", []):
-		var layer_id := String(layer.get("id", ""))
-		if layer_id not in [WorldData.LAYER_FACILITIES, WorldData.LAYER_ENTITIES, WorldData.LAYER_INTERACTABLES]:
-			continue
-		for cell in layer.get("cells", []):
-			var owner_id := String(cell.get("owner_id", ""))
-			var source_id := String(cell.get("source_id", ""))
-			if not owner_id.is_empty() and not source_id.is_empty():
-				sources[owner_id] = source_id
-
-func _hide_prototype_visuals() -> void:
-	for child in get_children():
-		if child is Polygon2D:
-			child.visible = false
-		if child is StaticBody2D:
-			child.collision_layer = 0
-			child.collision_mask = 0
-			for descendant in child.find_children("*", "CollisionShape2D", true, false):
-				(descendant as CollisionShape2D).disabled = true
+func _acquisition_definitions() -> AcquisitionDefinitionBuilder:
+	return AcquisitionDefinitionBuilder.new(catalog, inventory, world_data, String(generated_world.get("biome_id", "")))
