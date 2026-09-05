@@ -1,19 +1,82 @@
 {
   "audit": {
-    "art_review_required": 39,
+    "art_review_required": 42,
     "by_resolution": {
-      "dedicated_item_icon": 39,
+      "dedicated_facility_sprite": 2,
+      "dedicated_facility_state_sprite": 1,
+      "dedicated_interaction_indicator": 1,
+      "dedicated_item_icon": 38,
       "monster_id_convention": 21
     },
     "dedicated_asset_missing": 0,
+    "facility_interactions": 3,
     "items": 39,
     "missing_or_broken": 0,
     "monsters": 21,
     "path_integrity_missing_or_broken": 0,
-    "runtime_approved": 60,
-    "runtime_target_rows": 60
+    "runtime_approved": 63,
+    "runtime_target_rows": 63
   },
   "content": {
+    "facility_interactions": [
+      {
+        "art_review_required": true,
+        "asset_id": "campfire_sleep_facility_off",
+        "asset_status": "완료",
+        "content_id": "portable_brazier:sleep_facility_off",
+        "dataset": "facility_interactions",
+        "dedicated_asset_missing": false,
+        "exception_reason": "",
+        "height": 64,
+        "kind": "sleep_facility_state",
+        "name": "휴대 화로 꺼짐 상태",
+        "path": "res://assets/sprites/facilities/sleep/campfire_sleep_facility_off_64x64.png",
+        "resolution": "dedicated_facility_sprite",
+        "rgba_sha256": "sha256:be29addaf8fab9ada46be599efc68d73dea5bc68a656337b5d1650ea128e878f",
+        "runtime_approved": true,
+        "source_sha256": "sha256:07bd4406771317a3a786c1166922136bdbbc1264708c289aebb228b096facdae",
+        "status": "초안",
+        "width": 64
+      },
+      {
+        "art_review_required": true,
+        "asset_id": "campfire_sleep_facility_on",
+        "asset_status": "완료",
+        "content_id": "portable_brazier:sleep_lit",
+        "dataset": "facility_interactions",
+        "dedicated_asset_missing": false,
+        "exception_reason": "",
+        "height": 64,
+        "kind": "sleep_facility_state",
+        "name": "휴대 화로 점화 상태",
+        "path": "res://assets/sprites/facilities/sleep/campfire_sleep_facility_on_64x64.png",
+        "resolution": "dedicated_facility_state_sprite",
+        "rgba_sha256": "sha256:79159a4513b2422f50bfee7c84cad40ff535a365b7b79cb9319cfd297a453579",
+        "runtime_approved": true,
+        "source_sha256": "sha256:b323b9118bdc5d9f0767f8b4f0c6fd5533c748d2acbbb5f718c7c693eb9256e2",
+        "status": "초안",
+        "width": 64
+      },
+      {
+        "art_review_required": true,
+        "asset_id": "sleep_available_indicator",
+        "asset_status": "완료",
+        "content_id": "portable_brazier:sleep_available_indicator",
+        "dataset": "facility_interactions",
+        "dedicated_asset_missing": false,
+        "exception_reason": "",
+        "height": 32,
+        "kind": "sleep_interaction_indicator",
+        "name": "수면 가능 표시",
+        "path": "res://assets/ui/interaction/sleep_available_indicator_32x32.png",
+        "resolution": "dedicated_interaction_indicator",
+        "rgba_sha256": "sha256:82549c6277a0d0bcefabf9303f2a48aed9f37cc9da4b6e5e10b1fd47739a29aa",
+        "runtime_approved": true,
+        "source_sha256": "sha256:209e504dfbc155fcca01d97456b3aa13792cd38a99f69c6b18d1d5f0c1367d82",
+        "status": "초안",
+        "width": 32
+      }
+    ],
     "items": [
       {
         "art_review_required": true,
@@ -492,22 +555,22 @@
       },
       {
         "art_review_required": true,
-        "asset_id": "item_portable_brazier_icon",
+        "asset_id": "campfire_sleep_facility_off",
         "asset_status": "완료",
         "content_id": "portable_brazier",
         "dataset": "items",
         "dedicated_asset_missing": false,
         "exception_reason": "",
-        "height": 32,
+        "height": 64,
         "kind": "도구",
         "name": "휴대 화로",
-        "path": "res://assets/sprites/items/portable_brazier_32x32.png",
-        "resolution": "dedicated_item_icon",
-        "rgba_sha256": "sha256:706ea3af097676c78b6fce60914e930310aaf95bf6480c08713cecc3cd4cad7c",
+        "path": "res://assets/sprites/facilities/sleep/campfire_sleep_facility_off_64x64.png",
+        "resolution": "dedicated_facility_sprite",
+        "rgba_sha256": "sha256:be29addaf8fab9ada46be599efc68d73dea5bc68a656337b5d1650ea128e878f",
         "runtime_approved": true,
-        "source_sha256": "sha256:8e913614a4ff06b8b583d1a39fc351f67283b528fb71bc7c2caa7b627edfe23e",
+        "source_sha256": "sha256:07bd4406771317a3a786c1166922136bdbbc1264708c289aebb228b096facdae",
         "status": "초안",
-        "width": 32
+        "width": 64
       },
       {
         "art_review_required": true,
@@ -1160,8 +1223,8 @@
     ]
   },
   "content_hashes": {
-    "asset_manifest": "sha256:74f1d536fc386f6fbf2113ee93696fa6cc130c249bf4d4bd3fb3c4a6125c83dd",
-    "items": "947bca5285dc32a8f702af9fa76293b79ed49e028c8ac2f9e4beb069b01d9f37",
+    "asset_manifest": "sha256:c9adbdba4237581b0a048af3fa350353cf0d7b1ab54bbfdbb37b12b44661e310",
+    "items": "ebc093f85cec857c7d836589293ef11da4c79664810ca87fcbbed45192bdc404",
     "monsters": "b44646c65fca8a73ef29d0e908991986c7eb3387626b4bdb5f506919b1e28e9f"
   },
   "data_version": "notion-2026-09-04",

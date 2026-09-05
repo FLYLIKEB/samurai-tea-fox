@@ -69,7 +69,7 @@ DEDICATED_ITEM_ICONS = {
     "old_wood": "item_old_wood_icon",
     "old_incense_box": "item_old_incense_box_icon",
     "oribe_green_glazed_bowl": "item_oribe_green_glazed_bowl_icon",
-    "portable_brazier": "item_portable_brazier_icon",
+    "portable_brazier": "campfire_sleep_facility_off",
     "rare_wood": "item_rare_wood_icon",
     "repair_hammer": "item_repair_hammer_icon",
     "short_travel_sword": "item_short_travel_sword_icon",
@@ -97,6 +97,33 @@ KIND_FALLBACKS = {
 }
 
 MONSTER_OVERRIDES = {}
+
+FACILITY_INTERACTIONS = [
+    {
+        "id": "portable_brazier:sleep_facility_off",
+        "name": "휴대 화로 꺼짐 상태",
+        "status": "초안",
+        "kind": "sleep_facility_state",
+        "asset_id": "campfire_sleep_facility_off",
+        "resolution": "dedicated_facility_sprite",
+    },
+    {
+        "id": "portable_brazier:sleep_lit",
+        "name": "휴대 화로 점화 상태",
+        "status": "초안",
+        "kind": "sleep_facility_state",
+        "asset_id": "campfire_sleep_facility_on",
+        "resolution": "dedicated_facility_state_sprite",
+    },
+    {
+        "id": "portable_brazier:sleep_available_indicator",
+        "name": "수면 가능 표시",
+        "status": "초안",
+        "kind": "sleep_interaction_indicator",
+        "asset_id": "sleep_available_indicator",
+        "resolution": "dedicated_interaction_indicator",
+    },
+]
 
 
 def read_json(path: Path) -> dict[str, Any]:
@@ -138,8 +165,9 @@ def item_entry(item: dict[str, Any], assets: dict[str, dict[str, Any]]) -> dict[
     kind = str(item.get("type", ""))
     if item_id in DEDICATED_ITEM_ICONS:
         result = asset_record(DEDICATED_ITEM_ICONS[item_id], assets)
+        resolution = "dedicated_facility_sprite" if item_id == "portable_brazier" else "dedicated_item_icon"
         result.update({
-            "resolution": "dedicated_item_icon",
+            "resolution": resolution,
             "exception_reason": "",
             "dedicated_asset_missing": False,
             "runtime_approved": True,
@@ -186,8 +214,19 @@ def monster_entry(monster: dict[str, Any], assets: dict[str, dict[str, Any]]) ->
     return result
 
 
+def facility_interaction_entry(row: dict[str, Any], assets: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    result = asset_record(str(row["asset_id"]), assets)
+    result.update({
+        "resolution": row["resolution"],
+        "exception_reason": "",
+        "dedicated_asset_missing": False,
+        "runtime_approved": True,
+    })
+    return result
+
+
 def content_entry(dataset: str, row: dict[str, Any], image: dict[str, Any]) -> dict[str, Any]:
-    art_review_required = dataset == "items" or image.get("dedicated_asset_missing") is True
+    art_review_required = dataset in {"items", "facility_interactions"} or image.get("dedicated_asset_missing") is True
     return {
         "dataset": dataset,
         "content_id": row["id"],
@@ -213,8 +252,13 @@ def validate_image(dataset: str, row: dict[str, Any], image: dict[str, Any], roo
         issues.append({"content": label, "severity": "broken_path", "message": f"Missing PNG file: {path}"})
 
 
-def audit_summary(items: list[dict[str, Any]], monsters: list[dict[str, Any]], issues: list[dict[str, str]]) -> dict[str, Any]:
-    entries = items + monsters
+def audit_summary(
+    items: list[dict[str, Any]],
+    monsters: list[dict[str, Any]],
+    facility_interactions: list[dict[str, Any]],
+    issues: list[dict[str, str]],
+) -> dict[str, Any]:
+    entries = items + monsters + facility_interactions
     by_resolution: dict[str, int] = {}
     for entry in entries:
         by_resolution[entry["resolution"]] = by_resolution.get(entry["resolution"], 0) + 1
@@ -222,6 +266,7 @@ def audit_summary(items: list[dict[str, Any]], monsters: list[dict[str, Any]], i
         "runtime_target_rows": len(entries),
         "items": len(items),
         "monsters": len(monsters),
+        "facility_interactions": len(facility_interactions),
         "missing_or_broken": len([issue for issue in issues if issue["severity"] in {"missing", "broken_path"}]),
         "path_integrity_missing_or_broken": len([issue for issue in issues if issue["severity"] in {"missing", "broken_path"}]),
         "dedicated_asset_missing": len([entry for entry in entries if entry.get("dedicated_asset_missing") is True]),
@@ -239,6 +284,7 @@ def build(root: Path) -> tuple[dict[str, Any], dict[str, Any]]:
     issues: list[dict[str, str]] = []
     mapped_items = []
     mapped_monsters = []
+    mapped_facility_interactions = []
     for item in items["items"]:
         image = item_entry(item, assets)
         validate_image("items", item, image, root, issues)
@@ -247,6 +293,10 @@ def build(root: Path) -> tuple[dict[str, Any], dict[str, Any]]:
         image = monster_entry(monster, assets)
         validate_image("monsters", monster, image, root, issues)
         mapped_monsters.append(content_entry("monsters", monster, image))
+    for interaction in FACILITY_INTERACTIONS:
+        image = facility_interaction_entry(interaction, assets)
+        validate_image("facility_interactions", interaction, image, root, issues)
+        mapped_facility_interactions.append(content_entry("facility_interactions", interaction, image))
     payload = {
         "schema_version": 1,
         "data_version": items["data_version"],
@@ -261,8 +311,12 @@ def build(root: Path) -> tuple[dict[str, Any], dict[str, Any]]:
             "monsters": monsters["content_hash"],
             "asset_manifest": canonical_hash(manifest.get("assets", [])),
         },
-        "content": {"items": mapped_items, "monsters": mapped_monsters},
-        "audit": audit_summary(mapped_items, mapped_monsters, issues),
+        "content": {
+            "items": mapped_items,
+            "monsters": mapped_monsters,
+            "facility_interactions": mapped_facility_interactions,
+        },
+        "audit": audit_summary(mapped_items, mapped_monsters, mapped_facility_interactions, issues),
     }
     return payload, {"issues": issues}
 
@@ -289,6 +343,7 @@ def write_report(payload: dict[str, Any], report: Path, issues: list[dict[str, s
         f"- 런타임 대상 행: {audit['runtime_target_rows']}개",
         f"- 아이템·다구: {audit['items']}개",
         f"- 몬스터·요괴: {audit['monsters']}개",
+        f"- 시설 상호작용: {audit['facility_interactions']}개",
         f"- 파일 경로 무결성 누락/깨짐: {audit['path_integrity_missing_or_broken']}개",
         f"- 전용 에셋 미해결: {audit['dedicated_asset_missing']}개",
         f"- 사람 아트 검수 필요: {audit['art_review_required']}개",
@@ -314,6 +369,14 @@ def write_report(payload: dict[str, Any], report: Path, issues: list[dict[str, s
         "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ])
     lines.extend(report_row(entry) for entry in payload["content"]["monsters"])
+    lines.extend([
+        "",
+        "## 시설 상호작용",
+        "",
+        "| content_id | 이름 | 종류 | resolution | runtime_approved | dedicated_asset_missing | asset_id | path | 예외 |",
+        "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    ])
+    lines.extend(report_row(entry) for entry in payload["content"]["facility_interactions"])
     lines.extend(["", "## 검증 이슈", ""])
     if issues:
         lines.extend(f"- `{issue['content']}` {issue['severity']}: {issue['message']}" for issue in issues)

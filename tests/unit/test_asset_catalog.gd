@@ -88,6 +88,34 @@ func run(asserts) -> void:
 		"monster_road_bandit_front_idle",
 		"monster stable ID resolves by the manifest convention"
 	)
+	asserts.true_value(catalog.has("campfire_sleep_facility_off"), "sleep facility off sprite stable asset ID is registered")
+	asserts.true_value(catalog.has("campfire_sleep_facility_on"), "sleep facility on sprite stable asset ID is registered")
+	asserts.true_value(catalog.has("sleep_available_indicator"), "sleep interaction indicator stable asset ID is registered")
+	asserts.equal(
+		catalog.content_asset_id("items", "portable_brazier"),
+		"campfire_sleep_facility_off",
+		"portable brazier resolves to the dedicated sleep facility sprite"
+	)
+	asserts.equal(
+		catalog.content_asset_id("facility_interactions", "portable_brazier:sleep_lit"),
+		"campfire_sleep_facility_on",
+		"sleep facility lit state resolves to the dedicated sprite"
+	)
+	asserts.equal(
+		catalog.content_asset_id("facility_interactions", "portable_brazier:sleep_available_indicator"),
+		"sleep_available_indicator",
+		"sleep interaction resolves to the dedicated indicator"
+	)
+	asserts.equal(
+		catalog.path_for("campfire_sleep_facility_off"),
+		"res://assets/sprites/facilities/sleep/campfire_sleep_facility_off_64x64.png",
+		"sleep facility off sprite resolves to the promoted runtime path"
+	)
+	asserts.equal(
+		catalog.path_for("sleep_available_indicator"),
+		"res://assets/ui/interaction/sleep_available_indicator_32x32.png",
+		"sleep interaction indicator resolves to the promoted runtime path"
+	)
 	var audit: Dictionary = catalog.audit_references([
 		"small_signpost",
 		"res://assets/sprites/objects/structures/dungeon_entry_small_32x32.png",

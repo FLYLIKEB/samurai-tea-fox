@@ -4,13 +4,14 @@
 
 ## 요약
 
-- 런타임 대상 행: 60개
+- 런타임 대상 행: 63개
 - 아이템·다구: 39개
 - 몬스터·요괴: 21개
+- 시설 상호작용: 3개
 - 파일 경로 무결성 누락/깨짐: 0개
 - 전용 에셋 미해결: 0개
-- 사람 아트 검수 필요: 39개
-- 런타임 승인 매핑: 60개
+- 사람 아트 검수 필요: 42개
+- 런타임 승인 매핑: 63개
 
 `missing_or_broken`/`path_integrity_missing_or_broken`은 현재 연결된 manifest asset ID와 PNG 파일 경로의 무결성 지표다. 전용 에셋 완료 지표가 아니며, 미검수 아이템 매핑은 `runtime_approved=false`로 런타임 조회에서 제외한다.
 
@@ -47,7 +48,7 @@
 | `old_incense_box` | 오래된 향합 | 다구 | dedicated_item_icon | True | False | `item_old_incense_box_icon` | `res://assets/sprites/items/old_incense_box_32x32.png` |  |
 | `old_wood` | 오래된 목재 | 재료 | dedicated_item_icon | True | False | `item_old_wood_icon` | `res://assets/sprites/items/old_wood_32x32.png` |  |
 | `oribe_green_glazed_bowl` | 오리베 녹유 찻사발 | 다구 | dedicated_item_icon | True | False | `item_oribe_green_glazed_bowl_icon` | `res://assets/sprites/items/oribe_green_glazed_bowl_32x32.png` |  |
-| `portable_brazier` | 휴대 화로 | 도구 | dedicated_item_icon | True | False | `item_portable_brazier_icon` | `res://assets/sprites/items/portable_brazier_32x32.png` |  |
+| `portable_brazier` | 휴대 화로 | 도구 | dedicated_facility_sprite | True | False | `campfire_sleep_facility_off` | `res://assets/sprites/facilities/sleep/campfire_sleep_facility_off_64x64.png` |  |
 | `rare_wood` | 희귀 목재 | 재료 | dedicated_item_icon | True | False | `item_rare_wood_icon` | `res://assets/sprites/items/rare_wood_32x32.png` |  |
 | `repair_hammer` | 수선 망치 | 도구 | dedicated_item_icon | True | False | `item_repair_hammer_icon` | `res://assets/sprites/items/repair_hammer_32x32.png` |  |
 | `short_travel_sword` | 짧은 여행검 | 무기 | dedicated_item_icon | True | False | `item_short_travel_sword_icon` | `res://assets/sprites/items/short_travel_sword_32x32.png` |  |
@@ -87,6 +88,14 @@
 | `swamp_snake` | 습지 뱀 | 야생동물 | monster_id_convention | True | False | `monster_swamp_snake_front_idle` | `res://assets/sprites/characters/monsters/swamp_snake/swamp_snake_front_idle_32x32.png` |  |
 | `wandering_ronin` | 떠돌이 낭인 | 도적·무사 | monster_id_convention | True | False | `monster_wandering_ronin_front_idle` | `res://assets/sprites/characters/monsters/wandering_ronin/wandering_ronin_front_idle_32x32.png` |  |
 | `wild_dog` | 들개 | 야생동물 | monster_id_convention | True | False | `monster_wild_dog_front_idle` | `res://assets/sprites/characters/monsters/wild_dog/wild_dog_front_idle_32x32.png` |  |
+
+## 시설 상호작용
+
+| content_id | 이름 | 종류 | resolution | runtime_approved | dedicated_asset_missing | asset_id | path | 예외 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `portable_brazier:sleep_facility_off` | 휴대 화로 꺼짐 상태 | sleep_facility_state | dedicated_facility_sprite | True | False | `campfire_sleep_facility_off` | `res://assets/sprites/facilities/sleep/campfire_sleep_facility_off_64x64.png` |  |
+| `portable_brazier:sleep_lit` | 휴대 화로 점화 상태 | sleep_facility_state | dedicated_facility_state_sprite | True | False | `campfire_sleep_facility_on` | `res://assets/sprites/facilities/sleep/campfire_sleep_facility_on_64x64.png` |  |
+| `portable_brazier:sleep_available_indicator` | 수면 가능 표시 | sleep_interaction_indicator | dedicated_interaction_indicator | True | False | `sleep_available_indicator` | `res://assets/ui/interaction/sleep_available_indicator_32x32.png` |  |
 
 ## 검증 이슈
 

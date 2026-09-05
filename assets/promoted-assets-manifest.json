@@ -6,7 +6,7 @@
     "remaining_source_files": 0,
     "remaining_source_image_files": 0
   },
-  "total_runtime_pngs": 533,
+  "total_runtime_pngs": 538,
   "runtime_roots": [
     "assets/backgrounds",
     "assets/sprites",
@@ -4828,6 +4828,33 @@
       "alpha_empty": false,
       "source_sha256": "sha256:63ed9c9a4add8e8e473966fe740f34375673169fb136ef2d4f9264245029042e",
       "rgba_sha256": "sha256:9cff6f73304a2dbee0dc7b035e2ed379ddf9c55a193e7f59ba8655d6d740c3a1"
+    },
+    {
+      "path": "assets/sprites/facilities/sleep/campfire_sleep_facility_off_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:07bd4406771317a3a786c1166922136bdbbc1264708c289aebb228b096facdae",
+      "rgba_sha256": "sha256:be29addaf8fab9ada46be599efc68d73dea5bc68a656337b5d1650ea128e878f"
+    },
+    {
+      "path": "assets/sprites/facilities/sleep/campfire_sleep_facility_on_64x64.png",
+      "width": 64,
+      "height": 64,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:b323b9118bdc5d9f0767f8b4f0c6fd5533c748d2acbbb5f718c7c693eb9256e2",
+      "rgba_sha256": "sha256:79159a4513b2422f50bfee7c84cad40ff535a365b7b79cb9319cfd297a453579"
+    },
+    {
+      "path": "assets/ui/interaction/sleep_available_indicator_32x32.png",
+      "width": 32,
+      "height": 32,
+      "mode": "RGBA",
+      "alpha_empty": false,
+      "source_sha256": "sha256:209e504dfbc155fcca01d97456b3aa13792cd38a99f69c6b18d1d5f0c1367d82",
+      "rgba_sha256": "sha256:82549c6277a0d0bcefabf9303f2a48aed9f37cc9da4b6e5e10b1fd47739a29aa"
     }
   ]
 }

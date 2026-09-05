@@ -12259,6 +12259,88 @@
       "source_sha256": "sha256:0447fcee7d6185a08536d92dfad3df1ad5fd2f903641892df5daca9f2a4ef06a",
       "rgba_sha256": "sha256:40aa4d9ef0707d375566d9e8087c19e878aa82ae5e3596b143ffad4c84ade3c1",
       "runtime_scale": 1
+    },
+    {
+      "id": "campfire_sleep_facility_off",
+      "name": "수면 모닥불 시설 꺼짐",
+      "status": "완료",
+      "kind": "object_sprite",
+      "path": "res://assets/sprites/facilities/sleep/campfire_sleep_facility_off_64x64.png",
+      "width": 64,
+      "height": 64,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 64,
+        "frame_height": 64
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "runtime_scale": 1,
+      "content_dataset": "items",
+      "content_id": "portable_brazier",
+      "facility_item_id": "portable_brazier",
+      "facility_state": "off",
+      "source_sha256": "sha256:07bd4406771317a3a786c1166922136bdbbc1264708c289aebb228b096facdae",
+      "rgba_sha256": "sha256:be29addaf8fab9ada46be599efc68d73dea5bc68a656337b5d1650ea128e878f"
+    },
+    {
+      "id": "campfire_sleep_facility_on",
+      "name": "수면 모닥불 시설 점화",
+      "status": "완료",
+      "kind": "object_sprite",
+      "path": "res://assets/sprites/facilities/sleep/campfire_sleep_facility_on_64x64.png",
+      "width": 64,
+      "height": 64,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 64,
+        "frame_height": 64
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "runtime_scale": 1,
+      "content_dataset": "facility_interactions",
+      "content_id": "portable_brazier:sleep_lit",
+      "facility_item_id": "portable_brazier",
+      "facility_interaction_id": "sleep",
+      "facility_state": "lit",
+      "source_sha256": "sha256:b323b9118bdc5d9f0767f8b4f0c6fd5533c748d2acbbb5f718c7c693eb9256e2",
+      "rgba_sha256": "sha256:79159a4513b2422f50bfee7c84cad40ff535a365b7b79cb9319cfd297a453579"
+    },
+    {
+      "id": "sleep_available_indicator",
+      "name": "수면 가능 상호작용 표시",
+      "status": "완료",
+      "kind": "ui_icon",
+      "path": "res://assets/ui/interaction/sleep_available_indicator_32x32.png",
+      "width": 32,
+      "height": 32,
+      "direction_count": 1,
+      "frame_count": 1,
+      "frame_grid": {
+        "columns": 1,
+        "rows": 1,
+        "frame_width": 32,
+        "frame_height": 32
+      },
+      "alpha_required": true,
+      "texture_filter": "nearest",
+      "placeholder": false,
+      "runtime_scale": 1,
+      "content_dataset": "facility_interactions",
+      "content_id": "portable_brazier:sleep_available_indicator",
+      "facility_item_id": "portable_brazier",
+      "facility_interaction_id": "sleep",
+      "source_sha256": "sha256:209e504dfbc155fcca01d97456b3aa13792cd38a99f69c6b18d1d5f0c1367d82",
+      "rgba_sha256": "sha256:82549c6277a0d0bcefabf9303f2a48aed9f37cc9da4b6e5e10b1fd47739a29aa"
     }
   ]
 }
