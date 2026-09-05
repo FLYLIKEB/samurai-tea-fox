@@ -1,0 +1,727 @@
+{
+  "generator": "PixelLab",
+  "endpoint": "/animate-with-text-v3",
+  "directions": [
+    "south",
+    "west",
+    "east",
+    "north"
+  ],
+  "frames_per_direction": 8,
+  "monsters": [
+    {
+      "asset_id": "monster_foxfire_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/foxfire/foxfire_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "19a03cdb-7fbf-47b6-93cb-48d7888dadd4",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. foxfire. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "b43c742042e75eda15696ca27f8da3f9b035319085e7f7b767749c866d73c9b1"
+        },
+        {
+          "background_job_id": "3669fe36-a7ee-4d48-b1d2-c77fa23bff9b",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. foxfire. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "4184ed32e09833a37b7a9ef9cc75dc67c1c8556a8ebab12698cf82420ee93e7f"
+        },
+        {
+          "background_job_id": "8172e183-fbb0-4095-b63a-08dfc90288ff",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. foxfire. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "6d8cae694120d2e68509e3d755b3c23e40618f3f15700a58f67b86e91acabcd2"
+        },
+        {
+          "background_job_id": "c0109638-fecd-4230-9dbc-677bfca88366",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. foxfire. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "d9815da45c6dfd5cf7cba49dc3c36a62fc987bad530089e6c0d14fb6ea242868"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_abandoned_mine_samurai_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/abandoned_mine_samurai/abandoned_mine_samurai_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "3710be10-b189-4ab2-b990-f9b58a0d6eb6",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. abandoned mine samurai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "5657fee480aeaafc6e7949a2343c5c0184dda18b4c8e1aadf5ad9f8decf2811a"
+        },
+        {
+          "background_job_id": "e00900b8-5a92-4301-b942-685704dbde6a",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. abandoned mine samurai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "1b4ea82ceec585a6334cb0979dff969f2d7d181c18d4763f15baec7ce8fd83fe"
+        },
+        {
+          "background_job_id": "469a5fee-48c4-430e-aefc-8e7c1da331db",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. abandoned mine samurai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "60148fe1871a86d2282a1bbf9236b6fd13f29ec9c90fbf48a158062b42b9aa4d"
+        },
+        {
+          "background_job_id": "f7ad81ff-79b4-4914-9e6e-ea685250a81b",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. abandoned mine samurai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "ea234068b2b053c4cb138ad46de5d58d0701803eccb25d61906128d12842be0c"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_agarwood_thief_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/agarwood_thief/agarwood_thief_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "2dfb1c87-4af2-4903-9272-fcc364f1d706",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. agarwood thief. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "072ce8bfb383fed86ea2d18f208172d0e046a6092e9127aeb5299c1f4d5a14a8"
+        },
+        {
+          "background_job_id": "745c63b0-ae59-403e-84f6-3008951a71d8",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. agarwood thief. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "89c52600261d12773a77c5f9ee54065402e852ae9f597dd335f96dc43b01793b"
+        },
+        {
+          "background_job_id": "b9d092b1-27c9-408d-8d4d-55344eaf817f",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. agarwood thief. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "ab8e0e3ca355d1ab660874f2aea272bc14c2dd0406419b3d6dcd5738852358b7"
+        },
+        {
+          "background_job_id": "27946888-7df9-4491-9e1b-3a47eef12639",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. agarwood thief. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "10332ec2e3dbc4eaaaaf54a4449f6aefe8945417f415b26d02e2c4abc8e73150"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_ash_crow_flock_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/ash_crow_flock/ash_crow_flock_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "145b95d1-f389-4f0b-a354-fe657ffc5a17",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. ash crow flock. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "35992cf68db41a9dc31cfa2c289dd19d6fdef1be7df17009c993e944cfaf3767"
+        },
+        {
+          "background_job_id": "04b3b076-2633-40ed-bb95-fa01c176ba4a",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. ash crow flock. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "067c2ca4d936f3bb1716ed86d254cd0b20bcfa70a912f8f25a8506baee4f1e60"
+        },
+        {
+          "background_job_id": "ab2bbda4-7815-48f2-8e86-f1b5de2296da",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. ash crow flock. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "47b27cb06f08f609afa8c4e355835c64a50ba580267989f430f999b86c3ba8bd"
+        },
+        {
+          "background_job_id": "d820a0ad-2e1d-40a1-81c3-b40c38f4566c",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. ash crow flock. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "5baf9ac2fa2d3d003de818f3714f81df382c5c3e69ee46d193fcbd6d1e619160"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_empty_armor_yokai_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/empty_armor_yokai/empty_armor_yokai_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "88d80383-8194-4b67-9a37-0321b9401d99",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. empty armor yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "9825e345e08852578bca811ddd39262683bf513db92d0b3c7a49d51902af64fa"
+        },
+        {
+          "background_job_id": "dc488de8-06ac-495c-b351-db5281dc565a",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. empty armor yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "54ac345e2ca9eb5246ee046cdc081c266a7fbfca1d60c7ba957c6ab6fb1b15ed"
+        },
+        {
+          "background_job_id": "3b8b3683-0c1b-4435-bd60-0d8d956e99d7",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. empty armor yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "f3987531c2a46dd158ef3be903c1dc4bd4edbbefbcde8a4fe19286a987e1fc6d"
+        },
+        {
+          "background_job_id": "9d757c40-0ee0-473b-9952-fd5e56d8bb2b",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. empty armor yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "3496e56e0103ed20d519c2a51e691b33f09bdc1336a70442a0fad4bf142e0a17"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_frost_lantern_yokai_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/frost_lantern_yokai/frost_lantern_yokai_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "5b1d2948-d02d-45fb-86be-e08ec74ae5f1",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. frost lantern yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "a652c0ddaa6dd5dea1b67d459bb63f0fe5453e0bc76136d77bdee42f7f760e01"
+        },
+        {
+          "background_job_id": "d5ea0b2c-22e0-45f8-a20d-3f662e4d35fc",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. frost lantern yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "e786556a4f9835dc6926041bf048fd692600985fe6b6d421ece9772ef947b6d2"
+        },
+        {
+          "background_job_id": "9f7a7fec-0839-450c-951f-1d324daff2ff",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. frost lantern yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "356e50b61ed8ecf79e663f37997fa266268cf2cf2a927f2ab731fad6103c5ca3"
+        },
+        {
+          "background_job_id": "0cb4e417-0631-4f0f-9793-4567602c7de1",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. frost lantern yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "e7f181f22c6ee2eb4dbb72e79df2d172cf750c72682085610328f3f986490e15"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_monster_16_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/monster_16/paddy_boar_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "59124834-ec10-46b7-94da-03a56368e86a",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. paddy boar. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "13abe62c3c314ef99a2dcdf6b9d7652a84fbe5360bc3a16040832ee788325a7e"
+        },
+        {
+          "background_job_id": "09c08706-f87a-46ad-b4ca-bc7e502897df",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. paddy boar. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "57c6bd6de19a857413381eb1dbb189ef833dd7d9f39bea2f491f6b12d6d8437a"
+        },
+        {
+          "background_job_id": "5fd28189-200b-47de-bd81-55ad56310c4f",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. paddy boar. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "2c728764f09535e7cee116f89a020f14d1245e12c73a4bce895cfd48d860bec8"
+        },
+        {
+          "background_job_id": "94f16c4d-0003-4e80-979c-4a664055abdd",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. paddy boar. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "05756b01d66b39e0dd2b8ad59c73b051f4299281f928176e69954fa3ff60f1a1"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_monster_17_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/monster_17/cliff_eagle_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "21fbcb64-a942-405e-8853-fb8cdb7b4201",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. cliff eagle. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "9f77d8dde5f299345ffd5e1b98a005ec306fc4a1f89b80046da0ca20368546af"
+        },
+        {
+          "background_job_id": "46fa44e1-63a5-4b38-a51a-b07d4b4f6ce5",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. cliff eagle. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "389e0f003939504d848333d6b4ea03a8fd672fc13eb499d6ff5bfaec1e20d166"
+        },
+        {
+          "background_job_id": "c64e1cdd-9020-4291-8d89-75c37820285f",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. cliff eagle. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "0cb6b0b1e4846e2ec11ad8b27442767dcac61086eb5555265bdfa5ca2ef237bd"
+        },
+        {
+          "background_job_id": "69d25274-8606-4a46-bf1e-511e6a740b30",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. cliff eagle. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "5e9050091df6dde194f4e38874731022c1d158ae34622aef1ce45764aa32bbec"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_monster_18_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/monster_18/sand_armor_samurai_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "6288fd0e-6f6e-4079-9706-8a26b2de3c42",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. sand armor samurai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "51173e090aaa49ffac9ae21ca175c746f507b513c8961af6eaf20c36d684bd52"
+        },
+        {
+          "background_job_id": "ae9699d1-55a6-42b8-bba1-2c44934638af",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. sand armor samurai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "9c76bfb31f2bdac731927056d2f9a68dd8f886b90f9500f776f53ab2cc4074e0"
+        },
+        {
+          "background_job_id": "450dd4ea-b845-4016-adc3-719930e78bfa",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. sand armor samurai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "c50becb387df050af0a64a9fbfadf51ceba8df30de31b4c81cd7af0cbc7255c0"
+        },
+        {
+          "background_job_id": "42baaef2-e0ae-4eb5-920e-c70298932395",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. sand armor samurai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "ea22027494c94c91e6a247056d1984e9c675efd0b4b8e4cccfa7008e624b6c63"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_monster_19_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/monster_19/wind_starved_bandit_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "22ff6f44-4657-4f07-b584-66489b0cb4d1",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. wind starved bandit. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "85ca88fbdf22bd712abb3d7718b62b70e507146963212c2207940048d9fc616f"
+        },
+        {
+          "background_job_id": "444e7730-d389-43b3-a713-7f7b0a9ffb3e",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. wind starved bandit. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "9bb4d419a51d94895de898be887940f593c18e12b19767d52ed36261df7bd5b5"
+        },
+        {
+          "background_job_id": "fbee6a5e-e569-4bc6-931e-52306fe1fadd",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. wind starved bandit. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "a563785e75bb4961b31a0ad50dde2be89bb204ad543d29250d30b201aa5b30ac"
+        },
+        {
+          "background_job_id": "40a7718c-8d75-4770-8857-76f1dcda9942",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. wind starved bandit. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "9a0bb18e66a8f0bb5698f1576995c1ef9fee586da71b17b781a4d174a7a7c8c1"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_monster_20_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/monster_20/snow_burrow_rabbit_yokai_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "7e1a4e4b-b9c8-4824-a5d0-f5b72f97ba61",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. snow burrow rabbit yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "09510ea3939a68ad2bfc7575c08518c6301e416ec534458ab73e005fbaec384f"
+        },
+        {
+          "background_job_id": "dc981370-89b5-4054-8b84-3333df0a2872",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. snow burrow rabbit yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "112d187dd19acdb259ad585d673aa95488c9ce6bd8c83449c492694b2b904906"
+        },
+        {
+          "background_job_id": "080f50ac-e379-426e-b344-cf0ca030bdff",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. snow burrow rabbit yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "c0e41fcd2540f2dbc5322b2fafccb78bcf9d03e3a9c215a9082f187523d54732"
+        },
+        {
+          "background_job_id": "b2e3f9fa-57eb-47de-a364-0733b1530e82",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. snow burrow rabbit yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "551be6630a0f8d62641c3e0cefde8f3714d4a5be22d1168bd18bae200d1150f6"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_monster_21_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/monster_21/incense_moth_yokai_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "4b15271f-83c1-42a3-9bf4-8188265735e9",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. incense moth yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "f3e85850df5c71d8559790925947f2457c71e5b448331baba2231e683326103e"
+        },
+        {
+          "background_job_id": "5eed077a-5d64-46c2-93d1-e125f200694f",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. incense moth yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "ae384c6da9fa05bfa188b374452a894b2602ab2a4df70f83310c60a6a670b930"
+        },
+        {
+          "background_job_id": "5c1ca2be-d220-49eb-a01e-c43d28549e35",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. incense moth yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "b14460709b0a6f09dc75818147af23eae8b2605b356d731039c72d306a3b3e59"
+        },
+        {
+          "background_job_id": "e9672663-bd5a-4cc7-93c3-ec72de1fe161",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. incense moth yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "1c4aa7accd90e8e2b61cbfb9fe2a028ea2e8e1c0a466fa73ef82c5a8c6e66802"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_moss_tree_yokai_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/moss_tree_yokai/moss_tree_yokai_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "8d1262e6-f034-4146-972c-3b61c27809cb",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. moss tree yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "e9f6db5ebb95131031e51c4992a39844ac52bea7728c8585a52a318e36099377"
+        },
+        {
+          "background_job_id": "ceb212d7-1607-4bc1-b931-21aea293d273",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. moss tree yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "3981f48036299b093b546cce3ebde481de5a5ad67f950f920bb1dd62110f0a2d"
+        },
+        {
+          "background_job_id": "5db931f5-5648-4817-a576-d10b0ba68bc8",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. moss tree yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "ad5383d15e717a4f0a30f11b5a1e1065a2ce6eed34919be24d429c53dd6bfe8d"
+        },
+        {
+          "background_job_id": "56dbe849-a035-44e9-8308-c9ca3ac9d11d",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. moss tree yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "155c23f4711be9aa923eeffa9c29220ffd94d6d6d583ec0870e707b1f74e23cc"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_mountain_boar_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/mountain_boar/mountain_boar_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "0450f47c-a75f-4792-b3c6-d10d69e1e3cf",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. mountain boar. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "92b6189c81db0d420e0e9a14d7f0c220b560cd2db731f755a9563d9ed06b6416"
+        },
+        {
+          "background_job_id": "b2e94e25-228e-4288-bbcb-679a0591debf",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. mountain boar. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "06bf61a5c4d697e34de9d9bc25027743fcec2deb4f6b939579be3025864eaa6a"
+        },
+        {
+          "background_job_id": "446221b1-4607-4f57-a1fb-211d43925233",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. mountain boar. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "5c2ef7957e2030eff82208b50b58d3cd1f50bec77ae4da8ead523cb7843c0c6d"
+        },
+        {
+          "background_job_id": "23244e73-b32c-44cd-b73c-fab0cce0bb8b",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. mountain boar. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "2f40743c55b92b7a0e6235a832b341f269d4e0963096ce15fadc52e54fbebc24"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_road_bandit_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/road_bandit/road_bandit_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "147e16c4-087b-43a2-bef4-5e94a709cbf6",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. road bandit. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "d441a5b9b970080b148995f81c36a04a843c15c5ba87b809a2eaed66c212f2e5"
+        },
+        {
+          "background_job_id": "f678d23b-9965-44f9-889e-9054fc7d6bb1",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. road bandit. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "eb4e7d88dbdb1edafd627494e8e66a26bb87fce2cac22beaeec8f1e348a3237c"
+        },
+        {
+          "background_job_id": "85bbbc58-8065-4537-bac4-86783d13960e",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. road bandit. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "b6ffd449349839a17d74ab18059104b3f2096c97d788542e0503d65456d2ab2e"
+        },
+        {
+          "background_job_id": "d0d00158-9caf-49b7-8eb0-55395b665e96",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. road bandit. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "a440f2b5b9295adb82751c4061c5027d546d0de762b7204742138c5be96bf299"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_snow_path_assassin_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/snow_path_assassin/snow_path_assassin_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "4c193f5d-6fab-4049-9b8f-da9902c19c83",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. snow path assassin. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "367cfce244d561bb5d687241ebcc4da15c7a4f2664925924b0170dc109281505"
+        },
+        {
+          "background_job_id": "2ebded0b-b80f-4342-a6c1-de16faa8059a",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. snow path assassin. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "dcd9a7f01d2338064f109c7c5b9f5a50f39a56e6c5a1910df52cdb6a68bbcfca"
+        },
+        {
+          "background_job_id": "09b9136c-f436-4973-a98f-10feb842668d",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. snow path assassin. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "b77b5c2de490b814f792bf6ec381a5358de48feaaa0240b4db80e6f868dd3405"
+        },
+        {
+          "background_job_id": "c813fee7-85f2-4f20-a099-0dfa4bba6590",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. snow path assassin. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "43520cc2637087d090b5a7ca2144bda2ac0eda0d2a3206a93ec91538454c86c8"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_snow_wolf_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/snow_wolf/snow_wolf_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "8f0f7bee-47c8-4793-a3cf-ba6149b32b26",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. snow wolf. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "6b0c22a3fd7230a8eb9397a3d7084665b12f871826527dc4a327703d4d1e94bc"
+        },
+        {
+          "background_job_id": "3d436d67-5a09-4d3a-9ef0-5997d255dbad",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. snow wolf. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "e67c98f6e8e51462cec9fa8c51615ac8fbfb1a637fc2b9f7707d80c661ccd4ba"
+        },
+        {
+          "background_job_id": "b8d03afb-95de-4cc1-9772-70f46e0edadf",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. snow wolf. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "01841bb25b6dbb7bbe92b424511c04c4cd823e2c3cd53db8fb456475e0227372"
+        },
+        {
+          "background_job_id": "3327d58d-6fea-4d22-a1e0-ca1b3a33e09a",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. snow wolf. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "9bff8c4d3196fbf5611e2bf3b3c06f827f5a7464bc3e78e2ca066a18518b3c5a"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_stonebound_yokai_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/stonebound_yokai/stonebound_yokai_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "bacc94c5-7184-4454-b1d2-3bdbf46d533a",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. stonebound yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "ece297957ad12ae11cfa8532d87324d8334f4c869e09126c63d43a2fe8049927"
+        },
+        {
+          "background_job_id": "10bdaeba-94ac-430e-885b-bf911e8a6aca",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. stonebound yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "213d8c292632b84d19bbf150dd41e60ef822b02648e7214b66381af245f4f410"
+        },
+        {
+          "background_job_id": "ab8b23af-18a4-4dc3-b6f9-c54d77db15f6",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. stonebound yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "a43164ddbfa1d806e5b6dc5532f7ebb2d7286a2ca70370b61f51c029a6cbbd0d"
+        },
+        {
+          "background_job_id": "c556e27b-10a4-4719-9b2e-a6a1a80f5b10",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. stonebound yokai. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "e3c923ea9bcde443515c0604cf300e880ec190c1d18e04fd9c05721e4c67c548"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_swamp_snake_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/swamp_snake/swamp_snake_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "54b5c711-0314-4028-9497-7483223f4b4f",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. swamp snake. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "78ba6c1594c768f21c39a6b7c56cf781afe934f6d3323ca5488ff83df7c655a5"
+        },
+        {
+          "background_job_id": "fae72dc1-579d-4808-a951-dbdb1b3d0950",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. swamp snake. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "c0c14eed4f50437f6be30c1b019102d64345eeb1ae27618bc417e7440b8fcf2f"
+        },
+        {
+          "background_job_id": "9354ab5c-a64a-4f5a-88d4-42d8f673702e",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. swamp snake. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "0cd56e2e59079fcda50bf3e1424cc007d676e9f135ccbb6e2bfeba49a9c8c3c0"
+        },
+        {
+          "background_job_id": "0ab777dc-571e-46cf-9c79-ac8e9ef30d81",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. swamp snake. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "d2c7457303bdc09e668d8f0458c4491bcf03d99e777452999e6aa4b9b01c487b"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_wandering_ronin_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/wandering_ronin/wandering_ronin_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "ffd0d09d-b0d3-4194-859d-72908b73a1f0",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. wandering ronin. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "9121b0095a9cb1dd5d1118b39d89ae6e699d893ca627c777b692ff9fc1c29205"
+        },
+        {
+          "background_job_id": "edfddd75-10c4-4be1-b09c-2b06324ca646",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. wandering ronin. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "253dd54a304e4c5019139b7be89c6db264b2c1859ab60ad134bdf8a187ba42e8"
+        },
+        {
+          "background_job_id": "7c641d74-c238-428e-bfc8-6e9bdba42924",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. wandering ronin. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "724ebe6869388bb1e67a7852d4f708bf22448a085610a4428e43d084a1945cb8"
+        },
+        {
+          "background_job_id": "39df7e0e-96de-4b3b-bea9-1fceed1a8864",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. wandering ronin. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "0885bee7d7bea9c5d7277ebbe44294ffc0e046158645b6cad4956dcb6cebb1d5"
+        }
+      ]
+    },
+    {
+      "asset_id": "monster_wild_dog_walk_4dir_8f",
+      "path": "assets/sprites/characters/monsters/wild_dog/wild_dog_walk_4dir_8f_32x32.png",
+      "jobs": [
+        {
+          "background_job_id": "2436020f-cbf3-432e-b4ff-0b6d8249042e",
+          "initial_status": "processing",
+          "direction": "south",
+          "prompt": "walking south, facing directly forward toward camera. 8-frame seamless walk cycle for one 32x32 pixel character. wild dog. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "c51735ed050fa695c8f6d352bafe107d2ffaf449f6fe34b9d01b4e060f07ccd1"
+        },
+        {
+          "background_job_id": "3e2b510d-08ef-4e5b-8d6d-fd2bd0b87e7f",
+          "initial_status": "processing",
+          "direction": "west",
+          "prompt": "walking west, strict left cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. wild dog. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "e8b5648033e0e3d47cf4da83b6fa578298afb3d56e7cc0d75c8d144c5b44612a"
+        },
+        {
+          "background_job_id": "8ca0d4a6-b9f0-4d1e-9710-3f1a9ec5ef76",
+          "initial_status": "processing",
+          "direction": "east",
+          "prompt": "walking east, strict right cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. wild dog. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "5b9c79358fbe430a87267fed5ceb8e73bad8c9af68f838e5cd08fcc2fe70f654"
+        },
+        {
+          "background_job_id": "3e447acf-52ba-447d-8beb-e67ff0ce0a26",
+          "initial_status": "processing",
+          "direction": "north",
+          "prompt": "walking north, back-facing cardinal sprite, no 3/4 turn. 8-frame seamless walk cycle for one 32x32 pixel character. wild dog. Gentle readable alternating footsteps, subtle 1px body bob, ears/tail/weapon/tea ware stay attached and keep the same silhouette; preserve the first frame identity and palette. 32x32 low resolution pixel art, clear outline, minimal shading, low saturation, cute fox samurai tea ceremony mood, front-facing assets for square-tile top-view roguelike, wabi-sabi worn but warm details. Transparent background, no shadow plate, no extra character, no text. Low saturation, clear ink outline, no anti-aliasing, square-tile low top-down cardinal view. Avoid: photorealistic, smooth gradient, anti-aliased, high detail, glossy, neon, crowded composition, side view, back view, three-quarter view, side-scrolling scene, isometric, three-quarter view.",
+          "source_sha256": "0549e7d76534e9ed1fe8b7cdb8c67293aa5892881b3a4572fc4b22da15c50b04"
+        }
+      ]
+    }
+  ]
+}

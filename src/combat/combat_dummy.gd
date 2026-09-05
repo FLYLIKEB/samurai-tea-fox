@@ -135,12 +135,16 @@ func _stop_runtime_motion() -> void:
 		_grid_step_tween.kill()
 	_grid_step_tween = null
 	_grid_step_active = false
+	if _walk_animator_ready:
+		walk_animator.update(0.0, walk_animator.current_direction(), false)
 
 func has_runtime_sprite() -> bool:
 	return sprite != null and sprite.texture != null
 
 func _physics_process(delta: float) -> void:
 	_update_hit_effect(delta)
+	if _walk_animator_ready and _grid_step_active:
+		walk_animator.update(delta, _direction_name(Vector2i(_grid_step_direction)), true)
 	if combatant == null or target == null:
 		return
 
@@ -288,13 +292,29 @@ func _apply_sprite() -> void:
 		push_warning("Combat dummy sprite missing: %s" % resolved_sprite_asset_id)
 		return
 	_resolved_sprite_asset_id = resolved_sprite_asset_id
+	sprite.hframes = 1
+	sprite.vframes = 1
+	sprite.frame = 0
 	sprite.texture = texture
 	sprite.z_index = 1
 	# Overworld enemies can override with explicit sprite ids; otherwise this uses
-	# the monster-specific "monster_<id>_front_idle" sprite if present.
-	# Do not configure the boss-character directional animator here: its fallback
-	# character mapping would replace the selected monster texture with a king NPC.
+	# the monster-specific directional sheet when it exists, with the front idle
+	# texture remaining the safe fallback for older content.
 	_walk_animator_ready = false
+	var walk_asset_id := resolved_sprite_asset_id.trim_suffix("_front_idle") + "_walk_4dir_8f"
+	if asset_catalog.has(walk_asset_id):
+		var animator_result := walk_animator.configure(
+			sprite,
+			asset_catalog,
+			walk_asset_id,
+			{},
+			8.0,
+			"",
+			16.0,
+		)
+		_walk_animator_ready = bool(animator_result.get("ok", false))
+		if not _walk_animator_ready:
+			push_warning("Monster directional animator failed for %s: %s" % [monster_id, animator_result.get("error", "unknown error")])
 	_hide_placeholder_shapes()
 
 func _resolve_sprite_asset_id(asset_catalog: AssetCatalog) -> String:
@@ -435,7 +455,7 @@ func _cardinal_direction(offset: Vector2i) -> Vector2i:
 func _update_walk_animation(direction: Vector2i, moving: bool) -> void:
 	if not _walk_animator_ready:
 		return
-	walk_animator.update(1.0 / 8.0, _direction_name(direction), moving)
+	walk_animator.update(0.0, _direction_name(direction), moving)
 
 func _direction_name(direction: Vector2i) -> String:
 	if direction == Vector2i.UP:
