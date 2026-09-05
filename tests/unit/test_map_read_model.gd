@@ -21,6 +21,7 @@ func run(asserts) -> void:
 func _assert_map_read_model_respects_discovery_and_markers(asserts) -> void:
 	var world := _world()
 	var state := RunState.new()
+	state.current_biome_id = "common_region"
 	state.map_discovery = MapReadModelBuilder.discover_cells({}, Vector2i(2, 2), 1)
 	var builder := MapReadModelBuilder.new()
 	builder.configure("map-fixture")
@@ -33,8 +34,19 @@ func _assert_map_read_model_respects_discovery_and_markers(asserts) -> void:
 	asserts.equal(model.fog_count, 39, "map reports fog for undiscovered cells")
 	asserts.equal(_marker_type(model.markers, "core_dungeon_0"), MapReadModelBuilder.MARKER_DUNGEON, "required dungeon is a known marker")
 	asserts.equal(_marker_type(model.markers, "teleport_0"), MapReadModelBuilder.MARKER_TELEPORT, "required teleport is a known marker")
+	asserts.false_value(_marker_discovered(model.markers, "teleport_0"), "required teleport marker can be known before its tile is discovered")
 	asserts.equal(_marker_type(model.markers, "player"), MapReadModelBuilder.MARKER_PLAYER, "player marker is present")
 	asserts.false_value(_cell_visible(model.cells, Vector2i(7, 5)), "undiscovered far cell is not exposed as terrain")
+	var optional_world: Dictionary = world.to_dictionary()
+	optional_world["required_landmarks"] = []
+	optional_world["landmarks"] = [{
+		"id": "optional_teleport",
+		"type": WorldData.LANDMARK_TELEPORT_ZONE,
+		"position": {"x": 7, "y": 5},
+		"required": false
+	}]
+	var hidden_model: Dictionary = builder.build(optional_world, state, Vector2i(2, 2), {"discovery_radius": 0})
+	asserts.equal(_marker_type(hidden_model.markers, "optional_teleport"), "", "optional undiscovered teleport marker stays hidden")
 
 func _assert_default_discovery_covers_camera_view(asserts) -> void:
 	var world := WorldData.new(24, 16, "grass", true)
@@ -77,7 +89,10 @@ func _assert_commands_and_hud_open_full_map(asserts) -> void:
 	builder.configure("map-fixture")
 	var player := FakePlayer.new()
 	player.global_position = Vector2(64, 64)
-	hud.configure(player, {"biome_id": "common_region"}, {"counts": {}}, {"map_read_model_builder": builder, "world_data": _world(), "run_state": RunState.new(), "catalog": FakeCatalog.new()})
+	var state := RunState.new()
+	state.current_biome_id = "common_region"
+	state.map_discovery = MapReadModelBuilder.discover_cells({}, Vector2i(2, 2), 1)
+	hud.configure(player, {"biome_id": "common_region"}, {"counts": {}}, {"map_read_model_builder": builder, "world_data": _world(), "run_state": state, "catalog": FakeCatalog.new()})
 	asserts.true_value(hud.press_mobile_button("open_map"), "HUD emits open map command")
 	asserts.true_value(hud.show_map_menu(), "HUD opens full map menu")
 	asserts.true_value(_tree_has_text(hud, "지도 8x6"), "full map menu displays map bounds")
@@ -85,8 +100,20 @@ func _assert_commands_and_hud_open_full_map(asserts) -> void:
 	asserts.true_value(map_grid != null, "full map menu renders map cells as a color grid")
 	if map_grid != null:
 		asserts.equal(map_grid.get_child_count(), 8 * 6, "full map color grid is clipped to the world bounds")
-		asserts.true_value(_color_rect_count(map_grid) == map_grid.get_child_count(), "full map grid uses color cells instead of text glyphs")
-	asserts.true_value(_tree_has_text(hud, "텔레포트 teleport_0"), "full map menu displays teleport marker")
+		asserts.true_value(_color_rect_count(map_grid) > 0, "full map grid renders terrain as color cells")
+		asserts.true_value(_button_count(map_grid) > 0, "full map grid renders known markers as buttons")
+		asserts.true_value(_marker_button_exists(map_grid, "teleport_0"), "full map grid includes the teleport marker button")
+	asserts.true_value(_tree_has_text(hud, "텔레포트 · teleport_0"), "full map menu displays teleport marker")
+	var teleport_button := _marker_button(map_grid, "teleport_0") if map_grid != null else null
+	asserts.true_value(teleport_button != null, "teleport marker is clickable")
+	asserts.false_value(_tree_has_text(hud, "종류: 텔레포트"), "teleport marker detail is absent before click")
+	if teleport_button != null:
+		teleport_button.pressed.emit()
+		asserts.true_value(_tree_has_text(hud, "지도 정보"), "teleport marker click opens marker detail title")
+		asserts.true_value(_tree_has_text(hud, "종류: 텔레포트"), "teleport marker detail shows marker type")
+		asserts.true_value(_tree_has_text(hud, "좌표: (1, 4)"), "teleport marker detail shows coordinates")
+		asserts.true_value(_tree_has_text(hud, "상태: 확인됨"), "teleport marker detail shows full-map discovery status")
+		asserts.true_value(_tree_has_text(hud, "지도 돌아가기"), "teleport marker detail has a map back action")
 	hud.free()
 
 	var main := Main.new()
@@ -119,6 +146,12 @@ func _marker_type(markers: Array, id: String) -> String:
 			return String(marker.get("marker_type", ""))
 	return ""
 
+func _marker_discovered(markers: Array, id: String) -> bool:
+	for marker in markers:
+		if String(marker.get("id", "")) == id:
+			return bool(marker.get("discovered", true))
+	return false
+
 func _cell_visible(cells: Array, position: Vector2i) -> bool:
 	for cell in cells:
 		var raw: Dictionary = cell.get("position", {})
@@ -141,6 +174,24 @@ func _color_rect_count(node: Node) -> int:
 	for child in node.get_children():
 		count += _color_rect_count(child)
 	return count
+
+func _button_count(node: Node) -> int:
+	var count := 1 if node is Button else 0
+	for child in node.get_children():
+		count += _button_count(child)
+	return count
+
+func _marker_button_exists(node: Node, id: String) -> bool:
+	return _marker_button(node, id) != null
+
+func _marker_button(node: Node, id: String) -> Button:
+	if node is Button and (node as Button).tooltip_text == id:
+		return node as Button
+	for child in node.get_children():
+		var found := _marker_button(child, id)
+		if found != null:
+			return found
+	return null
 
 class FakeResources:
 	var hp := 10
