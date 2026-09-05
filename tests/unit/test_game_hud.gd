@@ -3,6 +3,7 @@ extends RefCounted
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const GameHud = preload("res://src/ui/game_hud.gd")
 const GameHudReadModelProvider = preload("res://src/ui/game_hud_read_model_provider.gd")
+const NarrativeDialoguePresenter = preload("res://src/ui/narrative_dialogue_presenter.gd")
 
 class FakeResources:
 	signal hp_changed(previous: int, current: int, maximum: int)
@@ -252,6 +253,7 @@ func run(asserts) -> void:
 	_assert_safe_area_layout_uses_viewport_top(asserts)
 	_assert_status_toasts_use_event_models_icons_and_queue_limits(asserts)
 	_assert_narrative_dialogue_emits_option_commands(asserts)
+	_assert_narrative_dialogue_uses_common_presenter_for_boss_models(asserts)
 	_assert_major_character_portraits_follow_speaker_ids(asserts)
 
 func _assert_read_model_provider_owns_runtime_traversal(asserts) -> void:
@@ -660,6 +662,7 @@ func _assert_narrative_dialogue_emits_option_commands(asserts) -> void:
 			"event_id": "first_run_prologue",
 			"node_id": "muchau_question",
 			"speaker_id": "CHR-8",
+			"presentation_kind": "father_farewell_then_border_cup",
 			"text": "바다를 건너야 하나요?",
 			"options": [{"id": "cross_sea", "display_text": "찻잔을 챙긴다"}]
 		})
@@ -668,9 +671,11 @@ func _assert_narrative_dialogue_emits_option_commands(asserts) -> void:
 		"event_id": "first_run_prologue",
 		"node_id": "father_farewell",
 		"speaker_id": "CHR-1",
+		"presentation_kind": "father_farewell_then_border_cup",
 		"text": "물이 끓기 전에 서두르지 마라.",
 		"options": [{"id": "accept_farewell", "display_text": "고개를 끄덕인다"}]
 	}), "HUD shows narrative dialogue read models")
+	asserts.true_value(hud.get_node_or_null("Root/NarrativeOverlay") is NarrativeDialoguePresenter, "HUD mounts the common narrative presenter")
 	asserts.true_value(hud.narrative_dialogue_visible(), "HUD reports the narrative panel as visible")
 	asserts.true_value(_tree_has_text(hud, "아버지 — 차를 사랑하는 구미호"), "HUD resolves narrative speaker names from character data")
 	asserts.true_value(_tree_has_text(hud, "물이 끓기 전에 서두르지 마라."), "HUD renders narrative dialogue text")
@@ -696,6 +701,38 @@ func _assert_narrative_dialogue_emits_option_commands(asserts) -> void:
 	asserts.false_value(hud.narrative_dialogue_visible(), "HUD reports hidden narrative panel")
 	asserts.true_value((hud.get_node_or_null("Root/StatusPanel") as Control).visible, "normal status HUD is restored after prologue")
 	asserts.false_value((hud.get_node_or_null("Root/MenuPanel") as Control).visible, "prologue restore does not reopen a hidden fast menu")
+	hud.free()
+
+func _assert_narrative_dialogue_uses_common_presenter_for_boss_models(asserts) -> void:
+	var hud := _configured_hud()
+	var presenter := hud.get_node_or_null("Root/NarrativeOverlay") as NarrativeDialoguePresenter
+	var presenter_commands: Array = []
+	var hud_commands: Array = []
+	if presenter != null:
+		presenter.command_issued.connect(func(command): presenter_commands.append(command))
+	hud.mobile_command_issued.connect(func(command): hud_commands.append(command))
+	asserts.true_value(hud.show_narrative_dialogue({
+		"event_id": "sample_bamboo_guardian_pre_boss",
+		"node_id": "boss_warning",
+		"speaker_id": "CHR-2",
+		"text": "성문 앞의 차 향이 흔들린다.",
+		"options": [{"id": "continue_to_boss", "display_text": "전장으로 나아간다"}],
+		"presentation": {"speaker_portrait_asset_id": "portrait_chr_2_wasteland_daimyo"}
+	}), "boss dialogue read model opens through the common presenter")
+	asserts.true_value(presenter != null and presenter.dialogue_visible(), "common presenter reports boss dialogue visibility")
+	asserts.false_value(_texture_rect_has_texture(hud.get_node_or_null("Root/NarrativeOverlay/NarrativeBackground")), "boss dialogue does not reuse the prologue background without metadata")
+	asserts.true_value(_tree_uses_texture(hud.get_node_or_null("Root/NarrativeOverlay/LeftPortrait"), "chr_2_wasteland_daimyo_96x96.png"), "boss dialogue renders the speaker portrait from presentation metadata")
+	asserts.false_value((hud.get_node_or_null("Root/NarrativeOverlay/RightPortrait") as Control).visible, "boss dialogue keeps the partner portrait hidden")
+	var button := _first_enabled_button_with_text(hud.get_node_or_null("Root/NarrativeOverlay/NarrativePanel/NarrativeRows/NarrativeOptions"), "넘어가기")
+	if button != null:
+		button.pressed.emit()
+	asserts.equal(presenter_commands.size(), 1, "presenter emits exactly one narrative command")
+	asserts.equal(hud_commands.size(), 1, "HUD forwards exactly one presenter command")
+	if not hud_commands.is_empty():
+		asserts.equal(hud_commands[0].type, GameCommand.Type.NARRATIVE_SELECT_OPTION, "boss dialogue emits the shared narrative select command")
+		asserts.equal(hud_commands[0].payload.get("event_id", ""), "sample_bamboo_guardian_pre_boss", "boss command preserves event id")
+		asserts.equal(hud_commands[0].payload.get("node_id", ""), "boss_warning", "boss command preserves node id")
+		asserts.equal(hud_commands[0].payload.get("option_id", ""), "continue_to_boss", "boss command preserves option id")
 	hud.free()
 
 func _assert_major_character_portraits_follow_speaker_ids(asserts) -> void:
@@ -750,6 +787,8 @@ func _configured_hud() -> GameHud:
 	return hud
 
 func _tree_uses_texture(node: Node, needle: String) -> bool:
+	if node == null:
+		return false
 	var texture = null
 	if node is TextureRect:
 		texture = (node as TextureRect).texture

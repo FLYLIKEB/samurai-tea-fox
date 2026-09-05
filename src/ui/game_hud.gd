@@ -5,6 +5,7 @@ const GameCommand = preload("res://src/core/commands/game_command.gd")
 const MobileCommandAdapter = preload("res://src/core/commands/mobile_command_adapter.gd")
 const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
 const GameHudReadModelProvider = preload("res://src/ui/game_hud_read_model_provider.gd")
+const NarrativeDialoguePresenter = preload("res://src/ui/narrative_dialogue_presenter.gd")
 
 const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
 const ICON_HP := "ui_hp_heart_icon"
@@ -27,23 +28,7 @@ const ICON_WOOD := "asset_assets_sprites_objects_village_props_firewood_pile_1x2
 const ICON_STONE := "asset_assets_sprites_objects_crafting_mortar_pestle_stone_32x32_png"
 const ICON_WORKBENCH := "asset_assets_sprites_objects_crafting_workbench_32x32_png"
 const BUTTON_DPAD := "asset_assets_ui_controls_dpad_png"
-const FIRST_RUN_PROLOGUE_EVENT_ID := "first_run_prologue"
-const PROLOGUE_BACKGROUND := "prologue_first_run_father_muchau_teahouse"
-const PORTRAIT_FATHER := "res://assets/sprites/portraits/major/chr_1_kitsune_father_96x96.png"
-const PORTRAIT_MUCHAU := "res://assets/sprites/portraits/major/chr_8_muchau_96x96.png"
-const PORTRAIT_SEN_RIKYU := "res://assets/sprites/portraits/major/chr_5_sen_rikyu_96x96.png"
-const PORTRAIT_BY_CHARACTER := {
-	"CHR-1": PORTRAIT_FATHER,
-	"CHR-2": "res://assets/sprites/portraits/major/chr_2_wasteland_daimyo_96x96.png",
-	"CHR-3": "res://assets/sprites/portraits/major/chr_3_furuta_oribe_96x96.png",
-	"CHR-4": "res://assets/sprites/portraits/major/chr_4_snow_monk_96x96.png",
-	"CHR-5": PORTRAIT_SEN_RIKYU,
-	"CHR-6": "res://assets/sprites/portraits/major/chr_6_yokai_tea_master_96x96.png",
-	"CHR-7": "res://assets/sprites/portraits/major/chr_7_mountain_potter_96x96.png",
-	"CHR-8": PORTRAIT_MUCHAU,
-	"CHR-9": "res://assets/sprites/portraits/major/chr_9_wandering_tea_merchant_96x96.png",
-}
-const PORTRAIT_PLAYER := PORTRAIT_MUCHAU
+const PORTRAIT_PLAYER := "portrait_chr_8_muchau"
 
 const BALANCE_ABILITY_SLOTS_ID := "ability_equip_slots"
 const HUD_EDGE_GAP := 4.0
@@ -80,11 +65,6 @@ const MENU_PANEL_SIZE := Vector2(560, 280)
 const MENU_CONTENT_SIZE := Vector2(544, 228)
 const MENU_VIEWPORT_RATIO := Vector2(0.88, 0.78)
 const MENU_PANEL_PADDING := Vector2(16, 52)
-const NARRATIVE_PANEL_SIZE := Vector2(560, 118)
-const NARRATIVE_PORTRAIT_SIZE := Vector2(96, 96)
-const NARRATIVE_PORTRAIT_FRAME_SIZE := Vector2(104, 104)
-const NARRATIVE_PORTRAIT_INSET := 4.0
-const NARRATIVE_PANEL_BOTTOM_OFFSET := 12.0
 const TIME_DIAL_SIZE := Vector2(28, 28)
 const STATUS_TOAST_DURATION := 0.9
 const STATUS_TOAST_MAX_VISIBLE_QUEUE := 4
@@ -176,12 +156,7 @@ var _menu_content: VBoxContainer
 var _minimap_grid: GridContainer
 var _action_scroll: ScrollContainer
 var _action_menu_scroll: ScrollContainer
-var _narrative_options: HBoxContainer
-var _narrative_background: TextureRect
-var _narrative_left_portrait_frame: PanelContainer
-var _narrative_right_portrait_frame: PanelContainer
-var _narrative_left_portrait: TextureRect
-var _narrative_right_portrait: TextureRect
+var _narrative_presenter: NarrativeDialoguePresenter
 var _open_menu_id := ""
 var _time_dial: TimeDial
 var _resource_detail_label: Label
@@ -311,68 +286,24 @@ func hide_menu() -> bool:
 
 func show_narrative_dialogue(read_model: Dictionary) -> bool:
 	_build()
-	var overlay := _panels.get("narrative_overlay") as Control
-	var panel := _panels.get("narrative") as Control
-	if panel == null:
+	if _narrative_presenter == null:
 		return false
-	var event_id := String(read_model.get("event_id", ""))
-	var node_id := String(read_model.get("node_id", ""))
-	var speaker_id := String(read_model.get("speaker_id", ""))
+	var shown := _narrative_presenter.show_read_model(read_model)
+	if not shown:
+		return false
 	_set_gameplay_hud_visible(false)
-	if overlay != null:
-		overlay.visible = true
-		overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	if _narrative_background != null:
-		_narrative_background.visible = event_id == FIRST_RUN_PROLOGUE_EVENT_ID
-		_narrative_background.texture = _load_texture(PROLOGUE_BACKGROUND)
-	_configure_narrative_portraits(event_id, speaker_id)
-	_set_label("narrative_speaker", _speaker_label(String(read_model.get("speaker_id", ""))))
-	_set_label("narrative_text", String(read_model.get("text", "")))
-	_clear_narrative_options()
-	for option in _array_value(read_model.get("options", [])):
-		if typeof(option) != TYPE_DICTIONARY:
-			continue
-		var option_id := String(option.get("id", ""))
-		var button := Button.new()
-		button.text = "넘어가기"
-		button.tooltip_text = String(option.get("display_text", "넘어가기"))
-		button.custom_minimum_size = Vector2(112, 28)
-		button.add_theme_font_size_override("font_size", 12)
-		button.focus_mode = Control.FOCUS_ALL
-		button.mouse_filter = Control.MOUSE_FILTER_STOP
-		button.pressed.connect(func(): mobile_command_issued.emit(GameCommand.new(
-			GameCommand.Type.NARRATIVE_SELECT_OPTION,
-			Vector2i.ZERO,
-			-1,
-			{
-				"event_id": event_id,
-				"node_id": node_id,
-				"option_id": option_id
-			}
-		)))
-		_narrative_options.add_child(button)
-	panel.visible = true
 	_apply_safe_area_layout()
 	return true
 
 func hide_narrative_dialogue() -> bool:
-	var overlay := _panels.get("narrative_overlay") as Control
-	if overlay != null:
-		overlay.visible = false
-		overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var panel := _panels.get("narrative") as Control
-	if panel != null:
-		panel.visible = false
+	if _narrative_presenter != null:
+		_narrative_presenter.hide_dialogue()
 	_set_gameplay_hud_visible(true)
 	_update()
 	return true
 
 func narrative_dialogue_visible() -> bool:
-	var overlay := _panels.get("narrative_overlay") as Control
-	if overlay != null:
-		return overlay.visible
-	var panel := _panels.get("narrative") as Control
-	return panel != null and panel.visible
+	return _narrative_presenter != null and _narrative_presenter.dialogue_visible()
 
 func active_menu_id() -> String:
 	return _open_menu_id
@@ -694,37 +625,13 @@ func _build() -> void:
 	placement_row.add_child(_facility_placement_install_button)
 	placement_row.add_child(_placement_command_button("취소", GameCommand.Type.FACILITY_CANCEL))
 
-	var narrative_overlay := Control.new()
-	narrative_overlay.name = "NarrativeOverlay"
-	narrative_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-	narrative_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	narrative_overlay.visible = false
-	root.add_child(narrative_overlay)
-	_panels.narrative_overlay = narrative_overlay
-
-	_narrative_background = TextureRect.new()
-	_narrative_background.name = "NarrativeBackground"
-	_narrative_background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_narrative_background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_narrative_background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	_narrative_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	narrative_overlay.add_child(_narrative_background)
-
-	_narrative_left_portrait_frame = _narrative_portrait_frame("LeftPortraitFrame")
-	narrative_overlay.add_child(_narrative_left_portrait_frame)
-	_narrative_left_portrait = _portrait_rect("LeftPortrait")
-	narrative_overlay.add_child(_narrative_left_portrait)
-	_narrative_right_portrait_frame = _narrative_portrait_frame("RightPortraitFrame")
-	narrative_overlay.add_child(_narrative_right_portrait_frame)
-	_narrative_right_portrait = _portrait_rect("RightPortrait")
-	narrative_overlay.add_child(_narrative_right_portrait)
-
-	var narrative_panel := _dialogue_panel(NARRATIVE_PANEL_SIZE)
-	narrative_panel.name = "NarrativePanel"
-	narrative_panel.visible = false
-	narrative_overlay.add_child(narrative_panel)
-	_panels.narrative = narrative_panel
-	_build_narrative_panel(narrative_panel)
+	_narrative_presenter = NarrativeDialoguePresenter.new()
+	_narrative_presenter.configure(Callable(self, "_load_texture"), Callable(self, "_speaker_label"))
+	_narrative_presenter.command_issued.connect(func(command): mobile_command_issued.emit(command))
+	_narrative_presenter.build()
+	root.add_child(_narrative_presenter)
+	_panels.narrative_overlay = _narrative_presenter
+	_panels.narrative = _narrative_presenter.narrative_panel
 
 	_apply_safe_area_layout()
 
@@ -1081,46 +988,6 @@ func _placement_command_button(text: String, command_type: int) -> Button:
 	button.pressed.connect(func(): mobile_command_issued.emit(GameCommand.new(command_type)))
 	return button
 
-func _build_narrative_panel(parent: PanelContainer) -> void:
-	var rows := VBoxContainer.new()
-	rows.name = "NarrativeRows"
-	_ignore_mouse(rows)
-	rows.add_theme_constant_override("separation", 4)
-	parent.add_child(rows)
-	var speaker_plate := PanelContainer.new()
-	speaker_plate.name = "SpeakerPlate"
-	speaker_plate.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	speaker_plate.add_theme_stylebox_override("panel", PixelUiTheme.button_style(Color(0.12, 0.08, 0.05, 0.94)))
-	_ignore_mouse(speaker_plate)
-	rows.add_child(speaker_plate)
-	_labels.narrative_speaker = _label("", 13)
-	_labels.narrative_speaker.add_theme_color_override("font_color", Color(1.0, 0.88, 0.58, 1.0))
-	speaker_plate.add_child(_labels.narrative_speaker)
-	_labels.narrative_text = _label("", 12)
-	_labels.narrative_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_labels.narrative_text.custom_minimum_size = Vector2(528, 38)
-	rows.add_child(_labels.narrative_text)
-	_narrative_options = HBoxContainer.new()
-	_narrative_options.name = "NarrativeOptions"
-	_ignore_mouse(_narrative_options)
-	_narrative_options.add_theme_constant_override("separation", 6)
-	rows.add_child(_narrative_options)
-
-func _portrait_rect(name: String) -> TextureRect:
-	var rect := TextureRect.new()
-	rect.name = name
-	rect.custom_minimum_size = NARRATIVE_PORTRAIT_SIZE
-	rect.size = NARRATIVE_PORTRAIT_SIZE
-	rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return rect
-
-func _narrative_portrait_frame(name: String) -> PanelContainer:
-	var frame := _menu_panel(NARRATIVE_PORTRAIT_FRAME_SIZE)
-	frame.name = name
-	return frame
-
 func _set_gameplay_hud_visible(visible: bool) -> void:
 	for panel_id in ["status", "map", "enemy", "quickslot", "dpad", "action", "action_menu", "menu"]:
 		var panel := _panels.get(panel_id) as Control
@@ -1132,42 +999,6 @@ func _set_gameplay_hud_visible(visible: bool) -> void:
 	if not visible:
 		_open_menu_id = ""
 		_action_menu_open = false
-
-func _clear_narrative_options() -> void:
-	for child in _narrative_options.get_children():
-		if child is Control:
-			var control := child as Control
-			control.visible = false
-			control.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		if child is BaseButton:
-			(child as BaseButton).disabled = true
-		child.queue_free()
-
-func _configure_narrative_portraits(event_id: String, speaker_id: String) -> void:
-	if _narrative_left_portrait == null or _narrative_right_portrait == null:
-		return
-	if event_id != FIRST_RUN_PROLOGUE_EVENT_ID:
-		_set_portrait(_narrative_left_portrait, _portrait_asset_id_for_speaker(speaker_id), true)
-		_set_portrait(_narrative_right_portrait, "", false)
-		return
-	var left_asset := PORTRAIT_FATHER
-	var right_asset := PORTRAIT_MUCHAU
-	if speaker_id == "CHR-5":
-		right_asset = PORTRAIT_SEN_RIKYU
-	_set_portrait(_narrative_left_portrait, left_asset, true)
-	_set_portrait(_narrative_right_portrait, right_asset, true)
-	_narrative_left_portrait.modulate = Color(1, 1, 1, 1) if speaker_id == "CHR-1" else Color(0.70, 0.70, 0.70, 0.72)
-	_narrative_right_portrait.modulate = Color(1, 1, 1, 1) if speaker_id != "CHR-1" else Color(0.70, 0.70, 0.70, 0.72)
-
-func _set_portrait(rect: TextureRect, asset_id: String, visible: bool) -> void:
-	rect.visible = visible and not asset_id.is_empty()
-	rect.texture = _load_texture(asset_id) if rect.visible else null
-	var frame := rect.get_parent().get_node_or_null("%sFrame" % rect.name) as Control
-	if frame != null:
-		frame.visible = rect.visible
-
-func _portrait_asset_id_for_speaker(speaker_id: String) -> String:
-	return String(PORTRAIT_BY_CHARACTER.get(speaker_id, ""))
 
 func _show_menu(title: String, rows: Array) -> void:
 	_build()
@@ -2252,53 +2083,8 @@ func _apply_safe_area_layout() -> void:
 	var margin := _safe_margin()
 	var viewport_size := get_viewport().get_visible_rect().size if get_viewport() != null else Vector2(640, 360)
 	var top_limit := viewport_size.x - margin.z
-	var narrative_overlay := _panels.get("narrative_overlay") as Control
-	if narrative_overlay != null:
-		narrative_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-		narrative_overlay.offset_left = 0
-		narrative_overlay.offset_top = 0
-		narrative_overlay.offset_right = 0
-		narrative_overlay.offset_bottom = 0
-	if _narrative_background != null:
-		_narrative_background.set_anchors_preset(Control.PRESET_FULL_RECT)
-		_narrative_background.offset_left = 0
-		_narrative_background.offset_top = 0
-		_narrative_background.offset_right = 0
-		_narrative_background.offset_bottom = 0
-	var narrative_panel_size := _control_layout_size(_panels.narrative as Control) if _panels.narrative is Control else NARRATIVE_PANEL_SIZE
-	var narrative_panel_top := viewport_size.y - margin.w - NARRATIVE_PANEL_BOTTOM_OFFSET - narrative_panel_size.y
-	var portrait_frame_edge := minf(
-		NARRATIVE_PORTRAIT_FRAME_SIZE.x,
-		maxf(56.0, narrative_panel_top - (margin.y + 44.0) - HUD_EDGE_GAP)
-	)
-	var portrait_frame_size := Vector2(portrait_frame_edge, portrait_frame_edge)
-	var portrait_inset := minf(NARRATIVE_PORTRAIT_INSET, portrait_frame_edge * 0.08)
-	var portrait_size := Vector2(
-		maxf(1.0, portrait_frame_edge - portrait_inset * 2.0),
-		maxf(1.0, portrait_frame_edge - portrait_inset * 2.0)
-	)
-	var portrait_y := maxf(
-		margin.y + 44.0,
-		narrative_panel_top - portrait_frame_size.y - HUD_EDGE_GAP
-	)
-	var left_frame_position := Vector2(margin.x + 24.0, portrait_y)
-	var right_frame_position := Vector2(viewport_size.x - margin.z - portrait_frame_size.x - 24.0, portrait_y)
-	if _narrative_left_portrait != null:
-		_narrative_left_portrait.custom_minimum_size = portrait_size
-		_narrative_left_portrait.size = portrait_size
-		_narrative_left_portrait.position = left_frame_position + Vector2.ONE * portrait_inset
-	if _narrative_left_portrait_frame != null:
-		_narrative_left_portrait_frame.custom_minimum_size = portrait_frame_size
-		_narrative_left_portrait_frame.size = portrait_frame_size
-		_narrative_left_portrait_frame.position = left_frame_position
-	if _narrative_right_portrait != null:
-		_narrative_right_portrait.custom_minimum_size = portrait_size
-		_narrative_right_portrait.size = portrait_size
-		_narrative_right_portrait.position = right_frame_position + Vector2.ONE * portrait_inset
-	if _narrative_right_portrait_frame != null:
-		_narrative_right_portrait_frame.custom_minimum_size = portrait_frame_size
-		_narrative_right_portrait_frame.size = portrait_frame_size
-		_narrative_right_portrait_frame.position = right_frame_position
+	if _narrative_presenter != null:
+		_narrative_presenter.apply_layout(viewport_size, margin)
 	_place_panel(_panels.status, Control.PRESET_TOP_LEFT, Vector2(margin.x, margin.y))
 	_place_panel(_panels.map, Control.PRESET_TOP_RIGHT, Vector2(-margin.z, margin.y))
 	var status_rect := _panel_rect(_panels.status)
@@ -2341,8 +2127,6 @@ func _apply_safe_area_layout() -> void:
 	_resolve_enemy_bottom_overlap(top_stack_bottom)
 	_resize_action_menu_panel(viewport_size, margin, top_stack_bottom)
 	_place_action_menu_panel(viewport_size, margin, top_stack_bottom)
-	_resize_narrative_panel(viewport_size, margin)
-	_place_panel(_panels.narrative, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w - NARRATIVE_PANEL_BOTTOM_OFFSET))
 	_place_panel(_facility_placement_panel, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w - 8.0))
 
 func _panel_rect(panel) -> Rect2:
@@ -2378,21 +2162,6 @@ func _resize_action_menu_panel(viewport_size: Vector2, margin: Vector4, top_stac
 	action_menu_panel.size = panel_size
 	if _action_menu_scroll != null:
 		_action_menu_scroll.custom_minimum_size = Vector2(panel_size.x - 12.0, maxf(44.0, panel_size.y - 12.0))
-
-func _resize_narrative_panel(viewport_size: Vector2, margin: Vector4) -> void:
-	var narrative_panel := _panels.get("narrative") as Control
-	if narrative_panel == null:
-		return
-	var available_width := maxf(1.0, viewport_size.x - margin.x - margin.z)
-	var panel_width := minf(NARRATIVE_PANEL_SIZE.x, available_width)
-	panel_width = maxf(240.0, panel_width)
-	if panel_width > available_width:
-		panel_width = available_width
-	var panel_size := Vector2(panel_width, NARRATIVE_PANEL_SIZE.y)
-	narrative_panel.custom_minimum_size = panel_size
-	narrative_panel.size = panel_size
-	if _labels.has("narrative_text") and _labels.narrative_text is Control:
-		(_labels.narrative_text as Control).custom_minimum_size = Vector2(maxf(120.0, panel_width - 32.0), 38.0)
 
 func _place_action_menu_panel(viewport_size: Vector2, margin: Vector4, top_stack_bottom: float) -> void:
 	var action_menu_panel := _panels.get("action_menu") as Control
