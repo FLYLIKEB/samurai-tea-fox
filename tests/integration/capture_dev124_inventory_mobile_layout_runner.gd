@@ -90,6 +90,7 @@ func _settle(hud: GameHud) -> void:
 func _assert_inventory_leaf_menu(case_name: String, hud: GameHud, viewport_size: Vector2i) -> void:
 	_assert_visible_rect_inside(case_name, hud, "Root/MenuPanel", viewport_size)
 	_assert_visible_rect_inside(case_name, hud, "Root/MenuPanel/MenuRows/MenuTitleBar", viewport_size)
+	_assert_visible_rect_inside(case_name, hud, "Root/MenuPanel/MenuRows/MenuTitleBar/MenuTitleLabel", viewport_size)
 	_assert_visible_rect_inside(case_name, hud, "Root/MenuPanel/MenuRows/MenuTitleBar/CloseMenuButton", viewport_size)
 	_assert_visible_rect_inside(case_name, hud, "Root/MenuPanel/MenuRows/MenuScroll", viewport_size)
 	_assert_visible_rect_inside(case_name, hud, "Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryToolbar", viewport_size)
@@ -100,6 +101,11 @@ func _assert_inventory_leaf_menu(case_name: String, hud: GameHud, viewport_size:
 			_failures.append("%s missing text %s" % [case_name, text])
 		else:
 			_assert_control_rect_inside(case_name, "%s text" % text, node, viewport_size)
+	var title := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuTitleBar/MenuTitleLabel") as Label
+	if title == null:
+		_failures.append("%s missing menu title label" % case_name)
+	elif title.text != "인벤토리" or title.get_global_rect().size.x < 48.0:
+		_failures.append("%s menu title label is collapsed: text=%s rect=%s" % [case_name, title.text, title.get_global_rect()])
 	if _find_text_control(hud, "사용") != null:
 		_failures.append("%s tea leaf exposes a direct use button" % case_name)
 	var commands: Array = []

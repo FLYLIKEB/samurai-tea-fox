@@ -935,8 +935,10 @@ func _build_menu_panel(parent: PanelContainer) -> void:
 	header.add_theme_constant_override("separation", 8)
 	rows.add_child(header)
 	_labels.menu_title = _label("메뉴", 12)
+	_labels.menu_title.name = "MenuTitleLabel"
 	_labels.menu_title.clip_text = true
 	_labels.menu_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_labels.menu_title.custom_minimum_size = Vector2(72, 0)
 	header.add_child(_labels.menu_title)
 	var spacer := Control.new()
 	_ignore_mouse(spacer)
