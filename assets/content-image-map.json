@@ -929,9 +929,9 @@
         "name": "서리등불 요괴",
         "path": "res://assets/sprites/characters/monsters/frost_lantern_yokai/frost_lantern_yokai_front_idle_32x32.png",
         "resolution": "monster_id_convention",
-        "rgba_sha256": "sha256:3fa4d8fb5d59321624bc6d58b8637f996d76ac5016e6493034645c294502d10c",
+        "rgba_sha256": "sha256:647a25750900460ffc788ef6c0a8d159e67900d5bf34b6474cdd5ff0c15de5e6",
         "runtime_approved": true,
-        "source_sha256": "sha256:4edb969cd6e0103c66bd78bc9c7574117220e9135527786c8428713c33ba2a19",
+        "source_sha256": "sha256:b8b81bed121338588d140080bc148f7319e3c21dee287f3fa33dd35525c0502b",
         "status": "테스트",
         "width": 32
       },
@@ -986,9 +986,9 @@
         "name": "모래갑옷 무사",
         "path": "res://assets/sprites/characters/monsters/monster_18/sand_armor_samurai_front_idle_32x64.png",
         "resolution": "monster_id_convention",
-        "rgba_sha256": "sha256:a6d8faa29361bf5fbe934021dcb6ffd620aab3812eeeefe15628f2a7ae3a9dae",
+        "rgba_sha256": "sha256:8680a67552afd41345a34cbfb6da2ed27e674d6e4b6f0db960beb47d897af130",
         "runtime_approved": true,
-        "source_sha256": "sha256:a13958750df58397a5f24b6b818bff00e59bb217f51435b620dc7b690349f38a",
+        "source_sha256": "sha256:3ede3ebb9015ea64a5fb70680fbf9e295bdfcdb62ed50850921cb1057d6eac8a",
         "status": "테스트",
         "width": 32
       },
@@ -1005,9 +1005,9 @@
         "name": "바람굶주린 도적",
         "path": "res://assets/sprites/characters/monsters/monster_19/wind_starved_bandit_front_idle_32x64.png",
         "resolution": "monster_id_convention",
-        "rgba_sha256": "sha256:70a7e05f3462f89f595ec1f971a95520bd92cba3f26b7d2c6af891f637085ec6",
+        "rgba_sha256": "sha256:7cc4b886702ec06f54d55a56e82d1f978d09da3bf11e05a8277a249254df9bc2",
         "runtime_approved": true,
-        "source_sha256": "sha256:48de0eb377a1f393d985e3cf6569e844332d5836500674c1aad03a679f3fee45",
+        "source_sha256": "sha256:0809fa5badf83332ba638fb95bedbd9ac366b4e713d604a124b80cfcf38673c7",
         "status": "테스트",
         "width": 32
       },
@@ -1223,7 +1223,7 @@
     ]
   },
   "content_hashes": {
-    "asset_manifest": "sha256:0f451d8d6c29f47422f991e939cdaba16e732209db7df37e568f1b7354a3ef93",
+    "asset_manifest": "sha256:a4e6225bda4aff80d34d29fee220f712c7cce8dc5f5329eba8dda96e457ba7aa",
     "items": "ebc093f85cec857c7d836589293ef11da4c79664810ca87fcbbed45192bdc404",
     "monsters": "b44646c65fca8a73ef29d0e908991986c7eb3387626b4bdb5f506919b1e28e9f"
   },

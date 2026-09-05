@@ -506,8 +506,8 @@
       "height": 32,
       "mode": "RGBA",
       "alpha_empty": true,
-      "source_sha256": "sha256:4edb969cd6e0103c66bd78bc9c7574117220e9135527786c8428713c33ba2a19",
-      "rgba_sha256": "sha256:3fa4d8fb5d59321624bc6d58b8637f996d76ac5016e6493034645c294502d10c"
+      "source_sha256": "sha256:b8b81bed121338588d140080bc148f7319e3c21dee287f3fa33dd35525c0502b",
+      "rgba_sha256": "sha256:647a25750900460ffc788ef6c0a8d159e67900d5bf34b6474cdd5ff0c15de5e6"
     },
     {
       "path": "assets/sprites/characters/monsters/monster_16/paddy_boar_front_idle_32x32.png",
@@ -533,8 +533,8 @@
       "height": 64,
       "mode": "RGBA",
       "alpha_empty": true,
-      "source_sha256": "sha256:a13958750df58397a5f24b6b818bff00e59bb217f51435b620dc7b690349f38a",
-      "rgba_sha256": "sha256:a6d8faa29361bf5fbe934021dcb6ffd620aab3812eeeefe15628f2a7ae3a9dae"
+      "source_sha256": "sha256:3ede3ebb9015ea64a5fb70680fbf9e295bdfcdb62ed50850921cb1057d6eac8a",
+      "rgba_sha256": "sha256:8680a67552afd41345a34cbfb6da2ed27e674d6e4b6f0db960beb47d897af130"
     },
     {
       "path": "assets/sprites/characters/monsters/monster_19/wind_starved_bandit_front_idle_32x64.png",
@@ -542,8 +542,8 @@
       "height": 64,
       "mode": "RGBA",
       "alpha_empty": true,
-      "source_sha256": "sha256:48de0eb377a1f393d985e3cf6569e844332d5836500674c1aad03a679f3fee45",
-      "rgba_sha256": "sha256:70a7e05f3462f89f595ec1f971a95520bd92cba3f26b7d2c6af891f637085ec6"
+      "source_sha256": "sha256:0809fa5badf83332ba638fb95bedbd9ac366b4e713d604a124b80cfcf38673c7",
+      "rgba_sha256": "sha256:7cc4b886702ec06f54d55a56e82d1f978d09da3bf11e05a8277a249254df9bc2"
     },
     {
       "path": "assets/sprites/characters/monsters/monster_20/snow_burrow_rabbit_yokai_front_idle_32x32.png",
