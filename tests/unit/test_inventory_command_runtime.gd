@@ -15,6 +15,7 @@ const GameHud = preload("res://src/ui/game_hud.gd")
 func run(asserts) -> void:
 	_assert_read_model_filter_sort_and_capacity(asserts)
 	_assert_common_commands_select_use_and_equip(asserts)
+	_assert_can_use_matches_actual_item_capability(asserts)
 	_assert_main_routes_inventory_commands_and_saves_equipment(asserts)
 	_assert_hud_inventory_menu_uses_command_read_model(asserts)
 	_assert_project_input_map_exposes_inventory_keyboard_actions(asserts)
@@ -63,6 +64,38 @@ func _assert_common_commands_select_use_and_equip(asserts) -> void:
 	asserts.equal(equip_result.slot, EquipmentModel.SLOT_WEAPON, "weapon lands in the weapon equipment slot")
 	asserts.equal(fixture[2].get_equipped_slot(EquipmentModel.SLOT_WEAPON).item_id, "short_travel_sword", "equipment model owns equipped weapon after command")
 
+func _assert_can_use_matches_actual_item_capability(asserts) -> void:
+	var fixture := _fixture_runtime()
+	var runtime: InventoryCommandRuntime = fixture[0]
+	var inventory: InventoryModel = fixture[1]
+	var equipment: EquipmentModel = fixture[2]
+	var consumable: ConsumableService = fixture[3]
+	var leaf_row := _row_for_item(runtime, "father_spring_pan_fired_tea")
+	var consumable_row := _row_for_item(runtime, "bandage")
+	var equipment_row := _row_for_item(runtime, "short_travel_sword")
+
+	asserts.false_value(leaf_row.is_empty(), "fixture contains a tea leaf row")
+	asserts.false_value(bool(leaf_row.get("can_use", false)), "tea leaves are not direct-use inventory actions")
+	asserts.false_value(_commands(leaf_row).has("use"), "tea leaf row omits direct use command")
+	asserts.true_value(bool(consumable_row.get("can_use", false)), "valid consumable keeps direct-use capability")
+	asserts.true_value(_commands(consumable_row).has("use"), "valid consumable exposes use command")
+	asserts.true_value(bool(equipment_row.get("can_use", false)), "equipment keeps inventory use-as-equip capability")
+	asserts.true_value(_commands(equipment_row).has("use"), "equipment exposes use command for equip flow")
+
+	var before_inventory: Dictionary = inventory.to_snapshot()
+	var before_equipment: Dictionary = equipment.to_snapshot()
+	var before_consumable: Dictionary = consumable.to_snapshot()
+	var leaf_result: Dictionary = runtime.handle_command(GameCommand.new(GameCommand.Type.USE_INVENTORY_SLOT, Vector2i.ZERO, int(leaf_row.slot_index), {"slot_index": int(leaf_row.slot_index)}))
+	asserts.false_value(leaf_result.ok, "direct tea leaf use command is rejected")
+	asserts.equal(leaf_result.reason, "not_usable", "direct tea leaf use fails before unsupported consumable flow")
+	asserts.equal(inventory.to_snapshot(), before_inventory, "direct tea leaf use does not mutate inventory")
+	asserts.equal(equipment.to_snapshot(), before_equipment, "direct tea leaf use does not mutate equipment")
+	asserts.equal(consumable.to_snapshot(), before_consumable, "direct tea leaf use does not start a consumable action")
+
+	var bandage_result: Dictionary = runtime.handle_command(GameCommand.new(GameCommand.Type.USE_INVENTORY_SLOT, Vector2i.ZERO, int(consumable_row.slot_index), {"slot_index": int(consumable_row.slot_index)}))
+	asserts.true_value(bandage_result.ok, "valid consumable direct use still starts")
+	asserts.equal(bandage_result.action.item_id, "bandage", "valid consumable use targets bandage")
+
 func _assert_main_routes_inventory_commands_and_saves_equipment(asserts) -> void:
 	var catalog := _catalog()
 	var main := Main.new()
@@ -92,6 +125,11 @@ func _assert_hud_inventory_menu_uses_command_read_model(asserts) -> void:
 	asserts.true_value(_tree_has_text(hud, "정렬"), "HUD exposes sort command without dragging")
 	asserts.true_value(_tree_has_text(hud, "사용"), "HUD exposes use command without dragging")
 	asserts.true_value(_tree_has_text(hud, "장착"), "HUD exposes equip command without dragging")
+	var leaf_row := _row_for_item(runtime, "father_spring_pan_fired_tea")
+	runtime.handle_command(GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, int(leaf_row.slot_index), {"slot_index": int(leaf_row.slot_index)}))
+	hud.show_inventory_menu()
+	asserts.true_value(_tree_has_text(hud, "서호용정"), "HUD shows selected tea leaf in inventory")
+	asserts.false_value(_tree_has_text(hud, "사용"), "HUD does not expose direct use for selected tea leaf")
 	hud.free()
 
 func _assert_project_input_map_exposes_inventory_keyboard_actions(asserts) -> void:
@@ -126,6 +164,15 @@ func _tree_has_text(node: Node, text: String) -> bool:
 		if _tree_has_text(child, text):
 			return true
 	return false
+
+func _row_for_item(runtime: InventoryCommandRuntime, item_id: String) -> Dictionary:
+	for row in runtime.read_model().slots:
+		if String(row.get("item_id", "")) == item_id:
+			return row
+	return {}
+
+func _commands(row: Dictionary) -> Dictionary:
+	return row.get("commands", {}) if typeof(row.get("commands", {})) == TYPE_DICTIONARY else {}
 
 class FakeResources:
 	var hp := 10
