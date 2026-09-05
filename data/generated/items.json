@@ -1,5 +1,5 @@
 {
-  "content_hash": "ebc093f85cec857c7d836589293ef11da4c79664810ca87fcbbed45192bdc404",
+  "content_hash": "74fc574985b6c2ea6b058f38c30710c4cc7b192354bfa8f5fef4e6f855551cc3",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -498,8 +498,93 @@
       "max_stack": 1,
       "name": "수선 망치",
       "notion_id": "3cd37369-9e66-81d3-8ab2-eba41cf2013e",
-      "status": "초안",
-      "type": "도구"
+      "status": "확정",
+      "type": "도구",
+      "interaction_definition": {
+        "schema_version": 1,
+        "required_tool_item_id": "repair_hammer",
+        "required_tool_quantity": 1,
+        "tool_consumed": false,
+        "requires_equipment": false,
+        "unlock": {
+          "biome_id": "wasteland",
+          "condition": "core_dungeon_resolved_and_teleport_repaired",
+          "routes": [
+            "combat",
+            "peaceful"
+          ],
+          "scope": "run"
+        },
+        "target": {
+          "definition_id": "wasteland_abandoned_workbench",
+          "source_facility_item_id": "wooden_workbench",
+          "initial_state": "broken",
+          "biome_id": "wasteland",
+          "count_per_biome": 1,
+          "placement": "reachable_safe_clearing_near_core_dungeon_exit",
+          "blocks_progression": false,
+          "movable": false,
+          "repairable_after_repair": false,
+          "repaired_facility_pickup_allowed": false
+        },
+        "actions": [
+          {
+            "id": "repair_abandoned_workbench",
+            "from": "broken",
+            "to": "repaired",
+            "materials": [
+              {
+                "item_id": "old_wood",
+                "quantity": 2
+              },
+              {
+                "item_id": "item_28",
+                "quantity": 1
+              }
+            ],
+            "result": {
+              "facility_item_id": "wooden_workbench",
+              "placed_at": "target",
+              "inventory_items": []
+            },
+            "turns": 1
+          },
+          {
+            "id": "recycle_abandoned_workbench",
+            "from": "broken",
+            "to": "recycled",
+            "materials": [],
+            "result": {
+              "inventory_items": [
+                {
+                  "item_id": "old_wood",
+                  "quantity": 2
+                },
+                {
+                  "item_id": "item_28",
+                  "quantity": 1
+                }
+              ],
+              "facility_enabled": false
+            },
+            "turns": 1
+          }
+        ],
+        "mutually_exclusive": true,
+        "atomic": true,
+        "precheck_output_capacity": true,
+        "failure_mutates": false,
+        "failure_turns": 0,
+        "save_scope": "run",
+        "save_key": [
+          "world_seed",
+          "biome_id",
+          "target_instance_id"
+        ],
+        "reset_on_run_end": true,
+        "teleport_repair_requires_hammer": false,
+        "bootstrap_materials_require_hammer": false
+      }
     },
     {
       "acquisition": "런 시작 기본 장비",

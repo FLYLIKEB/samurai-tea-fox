@@ -32,6 +32,7 @@ const SenRikyuPhaseOneRuntime = preload("res://src/dungeon/sen_rikyu_phase_one_r
 const SenRikyuPhaseTwoRuntime = preload("res://src/dungeon/sen_rikyu_phase_two_runtime.gd")
 const SenRikyuPhaseThreeRuntime = preload("res://src/dungeon/sen_rikyu_phase_three_runtime.gd")
 const AcquisitionService = preload("res://src/world/interactions/acquisition_service.gd")
+const RepairInteractionService = preload("res://src/world/interactions/repair_interaction_service.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 const WorldRendererProjection = preload("res://src/world/rendering/world_renderer_projection.gd")
@@ -156,6 +157,7 @@ var narrative_runtime
 var run_start_event_selector
 var ending_route_runtime
 var acquisition_service
+var repair_interaction_service
 var dungeon_runtime
 var run_lifecycle_service
 var run_runtime_state_binder := RunRuntimeStateBinder.new()
@@ -433,6 +435,7 @@ func _world_generation_options(projection: Dictionary) -> Dictionary:
 		"monster_definitions": catalog.get_definitions("monsters"),
 		"dungeon_definitions": catalog.get_definitions("dungeons"),
 		"boss_character_definitions": catalog.get_definitions("characters"),
+		"repair_interaction_targets": repair_interaction_service.world_generation_targets_for_biome(String(projection.get("current_biome_id", ""))) if repair_interaction_service != null else [],
 		"time_phase": String(time_state.phase) if time_state != null else "day"
 	}
 
@@ -913,6 +916,9 @@ func _execute_action_command(command: GameCommand) -> Dictionary:
 				if landmark_accepted:
 					_play_sfx_event(SfxEventRouter.EVENT_INTERACT_SUCCESS, {"target_id": target_id}, "landmark:%s" % target_id)
 				return _command_dispatcher.result_for(command, landmark_accepted, {"consumes_turn": false, "queues_enemy_turn": false, "interact_failure_sfx": false})
+			if _is_repair_interaction_target(target_id):
+				var repair_result := _handle_repair_interaction_command(command)
+				return _command_dispatcher.result_for(command, repair_result.ok, {"consumes_turn": bool(repair_result.get("ok", false)), "queues_enemy_turn": bool(repair_result.get("ok", false))})
 			var accepted: bool = acquisition_service != null and bool(acquisition_service.handle_command(command).ok)
 			return _command_dispatcher.result_for(command, accepted)
 		GameCommand.Type.DRINK_TEA:
@@ -1264,6 +1270,9 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	var facility_placement_result: Dictionary = FacilityPlacementService.from_catalog(loaded_catalog)
 	if not facility_placement_result.ok:
 		return facility_placement_result
+	var repair_interaction_result: Dictionary = RepairInteractionService.from_catalog(loaded_catalog)
+	if not repair_interaction_result.ok:
+		return repair_interaction_result
 	var consumable_result: Dictionary = ConsumableService.from_catalog(loaded_catalog)
 	if not consumable_result.ok and String(consumable_result.get("reason", "")) not in ["missing_balance", "missing_consumable_definitions"]:
 		return consumable_result
@@ -1282,6 +1291,7 @@ func _configure_run_services(loaded_catalog) -> Dictionary:
 	time_state = TimeState.new(time_config_result.config) if time_config_result.ok else null
 	crafting_service = crafting_result.crafting_service
 	facility_placement_service = facility_placement_result.facility_placement_service
+	repair_interaction_service = repair_interaction_result.repair_interaction_service
 	consumable_service = consumable_result.consumable_service if consumable_result.ok else null
 	core_tea_ware_collection = core_tea_ware_result.collection
 	final_room_state_builder = final_room_result.builder
@@ -2107,6 +2117,11 @@ func _configure_acquisition_for_generated_world() -> Dictionary:
 	var facility_restore_result := _restore_placed_facilities_for_current_biome()
 	if not facility_restore_result.ok:
 		return facility_restore_result
+	var repair_restore_result: Dictionary = {"ok": true}
+	if repair_interaction_service != null:
+		repair_restore_result = repair_interaction_service.apply_saved_target_states(world_data, run_state)
+	if not repair_restore_result.ok:
+		return repair_restore_result
 	acquisition_service = AcquisitionService.new()
 	var definitions := _confirmed_generated_resource_definitions(generated_world.get("resource_nodes", []))
 	definitions.append_array(_terrain_tree_gatherable_definitions())
@@ -2151,6 +2166,28 @@ func _configure_acquisition_for_generated_world() -> Dictionary:
 	acquisition_service.acquisition_completed.connect(_on_acquisition_completed)
 	_on_acquisition_changed(acquisition_service.to_snapshot())
 	return {"ok": true}
+
+func _is_repair_interaction_target(target_id: String) -> bool:
+	return repair_interaction_service != null and repair_interaction_service.has_target(target_id)
+
+func _handle_repair_interaction_command(command: GameCommand) -> Dictionary:
+	if repair_interaction_service == null:
+		return {"ok": false, "reason": "missing_repair_interaction_service"}
+	var result: Dictionary = repair_interaction_service.handle_command(
+		String(command.payload.get("action_id", "")),
+		String(command.payload.get("target_id", "")),
+		inventory,
+		run_state,
+		world_data,
+		String(generated_world.get("biome_id", run_state.current_biome_id if run_state != null else ""))
+	)
+	if not result.ok:
+		return result
+	_store_current_biome_runtime_aliases()
+	save_current_run()
+	_sync_runtime_world_render()
+	_configure_game_hud()
+	return result
 
 func _confirmed_generated_resource_definitions(resource_nodes: Array) -> Array:
 	var definitions := []

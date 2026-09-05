@@ -41,6 +41,7 @@ var core_tea_ware_collection := {}
 var acquisitions := {}
 var biome_acquisitions := {}
 var placed_facilities := []
+var world_interactions := {}
 
 static func from_dictionary(data: Dictionary):
 	var state: RunState = load("res://src/save/run_state.gd").new()
@@ -86,6 +87,7 @@ static func from_dictionary(data: Dictionary):
 	state.acquisitions = _dictionary_value(data.get("acquisitions", {}))
 	state.biome_acquisitions = _dictionary_value(data.get("biome_acquisitions", {}))
 	state.placed_facilities = _array_value(data.get("placed_facilities", []))
+	state.world_interactions = _dictionary_value(data.get("world_interactions", {}))
 	return state
 
 func reset_biome_progression() -> void:
@@ -101,6 +103,7 @@ func reset_biome_progression() -> void:
 	acquisitions.clear()
 	biome_acquisitions.clear()
 	placed_facilities.clear()
+	world_interactions.clear()
 
 func reset_run_growth() -> void:
 	tails = 1
@@ -148,7 +151,8 @@ func to_dictionary() -> Dictionary:
 		"core_tea_ware_collection": core_tea_ware_collection.duplicate(true),
 		"acquisitions": acquisitions.duplicate(true),
 		"biome_acquisitions": biome_acquisitions.duplicate(true),
-		"placed_facilities": placed_facilities.duplicate(true)
+		"placed_facilities": placed_facilities.duplicate(true),
+		"world_interactions": world_interactions.duplicate(true)
 	}
 
 static func _dictionary_value(value) -> Dictionary:

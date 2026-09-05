@@ -55,7 +55,9 @@ static func command_for_action(action: String, direction := Vector2i.ZERO, slot 
 		"cast_ability":
 			return GameCommand.new(GameCommand.Type.CAST_ABILITY, direction, slot)
 		"interact":
-			return GameCommand.new(GameCommand.Type.INTERACT)
+			return GameCommand.new(GameCommand.Type.INTERACT, direction, -1, payload)
+		"repair_abandoned_workbench", "recycle_abandoned_workbench":
+			return GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": String(payload.get("target_id", "wasteland_abandoned_workbench")), "action_id": action})
 		"open_inventory":
 			return GameCommand.new(GameCommand.Type.OPEN_INVENTORY)
 		"inventory_filter":

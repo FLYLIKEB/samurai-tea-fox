@@ -1264,7 +1264,33 @@ def normalize_structured_fields(dataset_name: str, row: dict[str, Any]) -> dict[
         normalized["attachment_description_keys"] = _normalize_attachment_description_keys(
             normalized["attachment_description_keys"]
         )
+    if "interaction_definition" in normalized and normalized["interaction_definition"] not in ("", None):
+        normalized["interaction_definition"] = _normalize_json_object_field(
+            normalized["interaction_definition"],
+            str(normalized.get("id", "")),
+            "interaction_definition",
+        )
     return normalized
+
+
+def _normalize_json_object_field(value: Any, item_id: str, field: str) -> Any:
+    if isinstance(value, dict):
+        return value
+    if not isinstance(value, str):
+        return value
+    text = value.strip()
+    if not text:
+        return {}
+    # Notion rich text may store escaped braces when copied through Markdown-ish
+    # surfaces; parse the plain payload after removing that display escaping.
+    text = text.replace("\\{", "{").replace("\\}", "}").replace("\\[", "[").replace("\\]", "]")
+    try:
+        parsed = json.loads(text)
+    except json.JSONDecodeError as error:
+        raise ExportValidationError(f"items item {item_id}: {field} must be valid JSON") from error
+    if not isinstance(parsed, dict):
+        raise ExportValidationError(f"items item {item_id}: {field} must be a JSON object")
+    return parsed
 
 
 def _normalize_attachment_stage_thresholds(value: Any, item_id: str) -> Any:

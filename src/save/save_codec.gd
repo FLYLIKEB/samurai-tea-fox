@@ -47,7 +47,8 @@ const RUN_FIELD_TYPES := {
 	"core_tea_ware_collection": TYPE_DICTIONARY,
 	"acquisitions": TYPE_DICTIONARY,
 	"biome_acquisitions": TYPE_DICTIONARY,
-	"placed_facilities": TYPE_ARRAY
+	"placed_facilities": TYPE_ARRAY,
+	"world_interactions": TYPE_DICTIONARY
 }
 
 const META_FIELD_TYPES := {

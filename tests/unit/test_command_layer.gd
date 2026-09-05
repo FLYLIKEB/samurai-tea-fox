@@ -54,6 +54,11 @@ func run(asserts) -> void:
 	asserts.equal(desktop.command_for_action("inventory_filter_all").payload, {"kind": "all"}, "desktop inventory all filter payload is preserved")
 	asserts.equal(desktop.command_for_action("inventory_filter_consumable").payload, {"kind": "소모품"}, "desktop inventory consumable filter payload is preserved")
 	asserts.equal(desktop.command_for_action("inventory_filter_equipment").payload, {"kind": "무기"}, "desktop inventory equipment filter payload is preserved")
+	var repair_command = desktop.command_for_action("repair_abandoned_workbench")
+	asserts.equal(repair_command.type, GameCommand.Type.INTERACT, "desktop repair target command reuses shared interact command")
+	asserts.equal(repair_command.payload, {"target_id": "wasteland_abandoned_workbench", "action_id": "repair_abandoned_workbench"}, "desktop repair target command carries target action payload")
+	var recycle_command = desktop.command_for_action("recycle_abandoned_workbench")
+	asserts.equal(recycle_command.payload, {"target_id": "wasteland_abandoned_workbench", "action_id": "recycle_abandoned_workbench"}, "desktop recycle target command carries target action payload")
 	asserts.equal(mobile.command_for_button("inventory_use_selected"), null, "desktop-only inventory use alias is not a mobile button")
 	asserts.equal(mobile.command_for_button("inventory_filter_all"), null, "desktop-only inventory filter alias is not a mobile button")
 
