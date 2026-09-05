@@ -1268,6 +1268,9 @@ func _core_dungeon_contract(biome_definition: Dictionary, options: Dictionary) -
 		return {"ok": false, "reason": "missing_core_dungeon_boss_id", "biome_id": biome_id, "dungeon_id": dungeon_id}
 	if not boss_character_ids.has(boss_id):
 		return {"ok": false, "reason": "unknown_core_dungeon_boss_id", "biome_id": biome_id, "dungeon_id": dungeon_id, "boss_id": boss_id}
+	var pre_boss_dialogue_event_id := String(dungeon.get("pre_boss_dialogue_event_id", ""))
+	if pre_boss_dialogue_event_id.is_empty():
+		return {"ok": false, "reason": "missing_pre_boss_dialogue_event_id", "biome_id": biome_id, "dungeon_id": dungeon_id, "boss_id": boss_id}
 	return {
 		"ok": true,
 		"contract": {
@@ -1275,7 +1278,8 @@ func _core_dungeon_contract(biome_definition: Dictionary, options: Dictionary) -
 			"dungeon_id": dungeon_id,
 			"dungeon_name": String(dungeon.get("name", "")),
 			"boss_id": boss_id,
-			"boss_name": String(dungeon.get("boss", ""))
+			"boss_name": String(dungeon.get("boss", "")),
+			"pre_boss_dialogue_event_id": pre_boss_dialogue_event_id
 		}
 	}
 
@@ -1285,7 +1289,8 @@ func _core_dungeon_landmark_metadata(contract: Dictionary) -> Dictionary:
 		"dungeon_id": String(contract.get("dungeon_id", "")),
 		"dungeon_name": String(contract.get("dungeon_name", "")),
 		"boss_id": String(contract.get("boss_id", "")),
-		"boss_name": String(contract.get("boss_name", ""))
+		"boss_name": String(contract.get("boss_name", "")),
+		"pre_boss_dialogue_event_id": String(contract.get("pre_boss_dialogue_event_id", ""))
 	}
 
 func _boss_anchor_landmark_metadata(contract: Dictionary, dungeon_landmark_id: String) -> Dictionary:

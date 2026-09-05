@@ -299,6 +299,10 @@ func _validate_dungeon_contract(item: Dictionary) -> Dictionary:
 		return {"ok": false, "error": "dungeons item '%s' boss_id must be non-empty when present." % item.id}
 	if not _stable_id(String(item.get("boss_id", ""))):
 		return {"ok": false, "error": "dungeons item '%s' boss_id must be a stable id." % item.id}
+	if String(item.get("pre_boss_dialogue_event_id", "")).is_empty():
+		return {"ok": false, "error": "dungeons item '%s' pre_boss_dialogue_event_id is required when boss_id is present." % item.id}
+	if not _stable_id(String(item.get("pre_boss_dialogue_event_id", ""))):
+		return {"ok": false, "error": "dungeons item '%s' pre_boss_dialogue_event_id must be a stable id." % item.id}
 	return {"ok": true}
 
 func _validate_biome_contract(item: Dictionary) -> Dictionary:

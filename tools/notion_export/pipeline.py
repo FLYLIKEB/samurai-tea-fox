@@ -20,6 +20,7 @@ class ExportPipeline:
     DROP_CONDITIONS = {"항상", "낮", "밤"}
     EVENT_REPLAY_POLICIES = {"once", "repeat"}
     EVENT_RESULT_TYPES = {"set_run_flag", "grant_item", "apply_choice"}
+    PRE_BOSS_TRIGGER_TIMINGS = {"보스 전", "보스전 전", "전투 전", "pre_boss", "pre_boss_dialogue"}
     EVENT_CONDITION_TYPES = {
         "always",
         "run_flag",
@@ -51,7 +52,8 @@ class ExportPipeline:
         if not isinstance(datasets, dict) or not datasets:
             raise ExportValidationError("capture.datasets must be a non-empty object")
 
-        snapshots: dict[str, dict[str, Any]] = {}
+        included_by_dataset: dict[str, list[dict[str, Any]]] = {}
+        source_by_dataset: dict[str, str] = {}
         for dataset_name in sorted(datasets):
             dataset = datasets[dataset_name]
             config = self._dataset_config(dataset_name)
@@ -62,13 +64,19 @@ class ExportPipeline:
             if not isinstance(rows, list):
                 raise ExportValidationError(f"{dataset_name}: items must be an array")
 
-            included = self._filter_and_validate_rows(dataset_name, rows, config, profile)
+            included_by_dataset[dataset_name] = self._filter_and_validate_rows(dataset_name, rows, config, profile)
+            source_by_dataset[dataset_name] = source
+
+        self._apply_pre_boss_dialogue_links(included_by_dataset)
+
+        snapshots: dict[str, dict[str, Any]] = {}
+        for dataset_name in sorted(included_by_dataset):
             payload = {
                 "schema_version": self.schema["schema_version"],
                 "data_version": capture["data_version"],
                 "profile": profile,
-                "source": source,
-                "items": included,
+                "source": source_by_dataset[dataset_name],
+                "items": included_by_dataset[dataset_name],
             }
             snapshots[dataset_name] = {
                 **payload,
@@ -214,6 +222,9 @@ class ExportPipeline:
             return
         if dataset_name == "bosses":
             self._validate_boss_contract(row)
+            return
+        if dataset_name == "dungeons":
+            self._validate_dungeon_contract(row)
             return
         if dataset_name == "teas":
             self._validate_tea_contract(row)
@@ -674,6 +685,76 @@ class ExportPipeline:
                     )
         self._validate_boss_tea_hooks(boss_id, config.get("hooks", {}))
 
+    def _validate_dungeon_contract(self, row: dict[str, Any]) -> None:
+        boss_id = row.get("boss_id", "")
+        if not boss_id:
+            return
+        stable_id = re.compile(self.schema["stable_id_pattern"])
+        if not isinstance(boss_id, str) or not stable_id.fullmatch(boss_id):
+            raise ExportValidationError(f"dungeons item {row.get('id', '')}: boss_id must be a stable id")
+
+    def _apply_pre_boss_dialogue_links(self, items_by_dataset: dict[str, list[dict[str, Any]]]) -> None:
+        dungeons = items_by_dataset.get("dungeons")
+        events = items_by_dataset.get("events")
+        if not dungeons or not events:
+            return
+        event_by_boss = self._pre_boss_event_by_boss(events)
+        for dungeon in dungeons:
+            boss_id = dungeon.get("boss_id", "")
+            if not boss_id:
+                continue
+            event_id = dungeon.get("pre_boss_dialogue_event_id", "")
+            mapped_event_id = event_by_boss.get(boss_id, "")
+            if event_id and mapped_event_id and event_id != mapped_event_id:
+                raise ExportValidationError(
+                    f"dungeons item {dungeon['id']}: pre_boss_dialogue_event_id conflicts with event source lines"
+                )
+            if not event_id and mapped_event_id:
+                dungeon["pre_boss_dialogue_event_id"] = mapped_event_id
+            if not dungeon.get("pre_boss_dialogue_event_id", ""):
+                raise ExportValidationError(
+                    f"dungeons item {dungeon['id']}: pre_boss_dialogue_event_id is required for boss dungeons"
+                )
+
+    def _pre_boss_event_by_boss(self, events: list[dict[str, Any]]) -> dict[str, str]:
+        event_by_boss: dict[str, str] = {}
+        for event in events:
+            for line in event.get("source_lines", []):
+                if not isinstance(line, dict):
+                    continue
+                boss_id = line.get("boss_id", "")
+                trigger_timing = line.get("trigger_timing", "")
+                if not boss_id or trigger_timing not in self.PRE_BOSS_TRIGGER_TIMINGS:
+                    continue
+                previous_event_id = event_by_boss.get(boss_id)
+                if previous_event_id and previous_event_id != event["id"]:
+                    raise ExportValidationError(
+                        f"events item {event['id']}: duplicate pre-boss dialogue mapping for boss {boss_id}"
+                    )
+                event_by_boss[boss_id] = event["id"]
+        return event_by_boss
+
+    def _validate_pre_boss_dialogue_links(
+        self,
+        dungeons: list[dict[str, Any]],
+        events: list[dict[str, Any]],
+    ) -> None:
+        event_by_boss = self._pre_boss_event_by_boss(events)
+        for dungeon in dungeons:
+            boss_id = dungeon.get("boss_id", "")
+            if not boss_id:
+                continue
+            event_id = dungeon.get("pre_boss_dialogue_event_id", "")
+            mapped_event_id = event_by_boss.get(boss_id, "")
+            if event_id and mapped_event_id and event_id != mapped_event_id:
+                raise ExportValidationError(
+                    f"dungeons item {dungeon['id']}: pre_boss_dialogue_event_id conflicts with event source lines"
+                )
+            if not event_id:
+                raise ExportValidationError(
+                    f"dungeons item {dungeon['id']}: pre_boss_dialogue_event_id is required for boss dungeons"
+                )
+
     def _validate_boss_tea_hooks(self, boss_id: str, hooks: Any) -> None:
         if not isinstance(hooks, dict):
             raise ExportValidationError(f"bosses item {boss_id}: tea_resolution.hooks must be an object")
@@ -759,6 +840,11 @@ class ExportPipeline:
                 "items" in ids_by_dataset,
                 ids_by_dataset.get("choices", set()),
                 "choices" in ids_by_dataset,
+            )
+        if "dungeons" in snapshots and "events" in snapshots:
+            self._validate_pre_boss_dialogue_links(
+                snapshots["dungeons"]["items"],
+                snapshots["events"]["items"],
             )
         if "bosses" in snapshots:
             self._validate_boss_nested_summons(

@@ -111,7 +111,6 @@ const DUNGEON_TILESET_SOURCE_ID := "terrain_dungeon_mossy_dojo_tileset"
 const DUNGEON_IRON_SOURCE_ID := "asset_assets_sprites_objects_mining_iron_ore_32x32_png"
 const DUNGEON_STONE_SOURCE_ID := "small_rock_resource"
 const DUNGEON_BOSS_OWNER_ID := "dungeon_boss"
-const DUNGEON_PRE_BOSS_EVENT_TEMPLATE := "story_b%02d_03"
 const DUNGEON_FLOOR_ATLAS_COORDS := [
 	Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)
 ]
@@ -904,7 +903,7 @@ func _landmark_target_near_world_position(world_position: Vector2, max_distance 
 	var distance_limit := tile_size * 1.6 if max_distance < 0.0 else max_distance
 	for landmark in world_data.get_required_landmarks():
 		var kind := String(landmark.get("kind", landmark.get("type", "")))
-		if kind != WorldData.LANDMARK_CORE_DUNGEON and kind != WorldData.LANDMARK_TELEPORT_ZONE:
+		if kind not in [WorldData.LANDMARK_CORE_DUNGEON, WorldData.LANDMARK_BOSS_ANCHOR, WorldData.LANDMARK_TELEPORT_ZONE]:
 			continue
 		var cell := _vector_from_dictionary(landmark.get("position", {}))
 		var center := world_position_for_cell_center(cell) + Vector2(tile_size * 0.5, tile_size * 0.5)
@@ -2113,15 +2112,7 @@ func _pre_boss_dialogue_event_id_for(dungeon_definition: Dictionary, boss_defini
 		explicit_event_id = String(boss_definition.get("pre_boss_dialogue_event_id", ""))
 	if not explicit_event_id.is_empty():
 		return explicit_event_id if _narrative_event_exists(explicit_event_id) else ""
-	var biome_ids: Array = dungeon_definition.get("biome_ids", [])
-	if biome_ids.is_empty():
-		return ""
-	var biome_definition: Dictionary = catalog.find_by_id("biomes", String(biome_ids[0])) if catalog != null else {}
-	var order := int(biome_definition.get("progression_order", 0))
-	if order <= 0:
-		return ""
-	var legacy_event_id := DUNGEON_PRE_BOSS_EVENT_TEMPLATE % order
-	return legacy_event_id if _narrative_event_exists(legacy_event_id) else ""
+	return ""
 
 func _narrative_event_exists(event_id: String) -> bool:
 	if event_id.is_empty() or catalog == null:
@@ -2847,9 +2838,10 @@ func _is_landmark_footprint_cell(cell: Vector2i) -> bool:
 
 func _is_landmark_target(target_id: String) -> bool:
 	return (_in_dungeon_map and target_id == "dungeon_entry") \
-		or _is_core_dungeon_target(target_id) \
-		or target_id.begins_with("%s_" % WorldData.LANDMARK_RUIN) \
-		or target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE)
+			or _is_core_dungeon_target(target_id) \
+			or target_id.begins_with("%s_" % WorldData.LANDMARK_BOSS_ANCHOR) \
+			or target_id.begins_with("%s_" % WorldData.LANDMARK_RUIN) \
+			or target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE)
 
 func _is_core_dungeon_target(target_id: String) -> bool:
 	return target_id.begins_with("%s_" % WorldData.LANDMARK_CORE_DUNGEON) \
@@ -2892,6 +2884,13 @@ func _handle_landmark_interaction(target_id: String) -> bool:
 				game_hud.show_command_feedback("유적 수리 완료 · 이동은 텔레포트를 이용하세요")
 			return true
 		return _handle_complete_dungeon_command(GameCommand.new(GameCommand.Type.COMPLETE_DUNGEON, Vector2i.ZERO, -1, {"entry_only": true}))
+	if target_id.begins_with("%s_" % WorldData.LANDMARK_BOSS_ANCHOR):
+		_dungeon_debug("보스 앵커 상호작용: %s" % target_id)
+		if run_state != null and run_state.completed_dungeon_ids.has(String(run_state.current_biome_id)):
+			if game_hud != null:
+				game_hud.show_command_feedback("이미 정리한 보스 흔적입니다")
+			return true
+		return _handle_complete_dungeon_command(GameCommand.new(GameCommand.Type.COMPLETE_DUNGEON, Vector2i.ZERO, -1, {"entry_only": true, "target_id": target_id}))
 	if target_id.begins_with("%s_" % WorldData.LANDMARK_RUIN):
 		var current_biome_id := String(run_state.current_biome_id) if run_state != null else ""
 		var dungeon_cleared := run_state != null and run_state.completed_dungeon_ids.has(current_biome_id)

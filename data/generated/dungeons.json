@@ -1,5 +1,5 @@
 {
-  "content_hash": "b447949ed87fec9fc11cea275b29d1196e807bc4f0aa35df40fda90c4270fc87",
+  "content_hash": "e2339e7dcb764a01be8cf08a07c41f6831066cb2770f2b8d3506432e5e3845b1",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -9,8 +9,8 @@
         "wasteland"
       ],
       "boss": "다이묘",
-      "boss_id": "chr_2",
       "boss_hp": 850,
+      "boss_id": "chr_2",
       "choice_ids": [
         "daimyo_defeat",
         "daimyo_relinquish_tea"
@@ -23,6 +23,7 @@
       "pattern_count": 6,
       "peaceful_resolution": true,
       "phase_count": 3,
+      "pre_boss_dialogue_event_id": "story_b03_03",
       "resolution_types": [
         "전투",
         "다도"
@@ -40,8 +41,8 @@
         "rainforest"
       ],
       "boss": "요괴 다인",
-      "boss_id": "chr_6",
       "boss_hp": 1300,
+      "boss_id": "chr_6",
       "choice_ids": [
         "yokai_defeat",
         "yokai_share_memory"
@@ -54,6 +55,7 @@
       "pattern_count": 7,
       "peaceful_resolution": true,
       "phase_count": 3,
+      "pre_boss_dialogue_event_id": "story_b05_03",
       "resolution_types": [
         "전투",
         "다도"
@@ -71,8 +73,8 @@
         "common_region"
       ],
       "boss": "후루타 오리베",
-      "boss_id": "chr_3",
       "boss_hp": 450,
+      "boss_id": "chr_3",
       "choice_ids": [
         "oribe_defeat",
         "oribe_share_tea"
@@ -85,6 +87,7 @@
       "pattern_count": 4,
       "peaceful_resolution": true,
       "phase_count": 2,
+      "pre_boss_dialogue_event_id": "story_b01_03",
       "resolution_types": [
         "전투",
         "다도"
@@ -102,8 +105,8 @@
         "snowfield"
       ],
       "boss": "승려",
-      "boss_id": "chr_4",
       "boss_hp": 1050,
+      "boss_id": "chr_4",
       "choice_ids": [
         "monk_defeat",
         "monk_reaccept_feeling"
@@ -116,6 +119,7 @@
       "pattern_count": 6,
       "peaceful_resolution": true,
       "phase_count": 3,
+      "pre_boss_dialogue_event_id": "story_b04_03",
       "resolution_types": [
         "전투",
         "다도"
@@ -133,8 +137,8 @@
         "mountain_region"
       ],
       "boss": "도공",
-      "boss_id": "chr_7",
       "boss_hp": 650,
+      "boss_id": "chr_7",
       "choice_ids": [
         "potter_defeat",
         "potter_save_work"
@@ -147,6 +151,7 @@
       "pattern_count": 5,
       "peaceful_resolution": true,
       "phase_count": 2,
+      "pre_boss_dialogue_event_id": "story_b02_03",
       "resolution_types": [
         "전투",
         "다도"
@@ -161,8 +166,8 @@
       "base_attack": 32,
       "biome": "최종",
       "boss": "센리큐",
-      "boss_id": "chr_5",
       "boss_hp": 1800,
+      "boss_id": "chr_5",
       "choice_ids": [
         "rikyu_accept_control",
         "rikyu_refuse_control",
@@ -176,6 +181,7 @@
       "pattern_count": 9,
       "peaceful_resolution": true,
       "phase_count": 3,
+      "pre_boss_dialogue_event_id": "sen_rikyu_phase_1_last_tea",
       "resolution_types": [
         "전투",
         "다도",
