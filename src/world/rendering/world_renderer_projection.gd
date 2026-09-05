@@ -59,23 +59,23 @@ const OWNER_SOURCE_IDS := {
 	"large_house_fence_e": "asset_assets_sprites_objects_structures_wood_fence_horizontal_1x2_64x32_png"
 }
 
-const FACILITY_SOURCE_BY_BIOME_TERM := {
-	"mountain_region|광산": "asset_assets_sprites_objects_mining_rock_cave_entrance_1x2_64x32_png",
-	"mountain_region|산사": "asset_assets_sprites_objects_structures_shrine_torii_gate_2x2_64x64_png",
-	"mountain_region|폐광": "asset_assets_sprites_objects_mining_timber_support_1x2_32x64_png",
-	"mountain_region|산중 찻집": "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png",
-	"wasteland|폐촌": "asset_assets_sprites_objects_structures_small_storage_shed_64x64_png",
-	"wasteland|버려진 초소": "asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png",
-	"wasteland|무너진 다실": "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png",
-	"wasteland|전쟁터 흔적": "asset_assets_tiles_terrain_desert_bone_scatter_32x32_png",
-	"snowfield|산장": "asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png",
-	"snowfield|온천": "asset_assets_sprites_objects_shrine_props_stone_water_basin_32x32_png",
-	"snowfield|설원 사당": "asset_assets_sprites_objects_structures_shrine_torii_gate_2x2_64x64_png",
-	"snowfield|얼어붙은 광산": "asset_assets_sprites_objects_mining_rock_cave_entrance_1x2_64x32_png",
-	"rainforest|차 재배지": "asset_assets_sprites_objects_crafting_tea_leaf_worktable_32x32_png",
-	"rainforest|강변 취락": "asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png",
-	"rainforest|숲속 다실": "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png",
-	"rainforest|향 문화 공간": "asset_assets_sprites_objects_shrine_props_incense_burner_32x32_png"
+const FACILITY_SOURCE_BY_BIOME_FACILITY := {
+	"mountain_region|mountain_mine": "asset_assets_sprites_objects_mining_rock_cave_entrance_1x2_64x32_png",
+	"mountain_region|mountain_temple": "asset_assets_sprites_objects_structures_shrine_torii_gate_2x2_64x64_png",
+	"mountain_region|mountain_abandoned_mine": "asset_assets_sprites_objects_mining_timber_support_1x2_32x64_png",
+	"mountain_region|mountain_tea_house": "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png",
+	"wasteland|wasteland_abandoned_village": "asset_assets_sprites_objects_structures_small_storage_shed_64x64_png",
+	"wasteland|wasteland_abandoned_outpost": "asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png",
+	"wasteland|wasteland_ruined_tea_room": "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png",
+	"wasteland|wasteland_battlefield_trace": "asset_assets_tiles_terrain_desert_bone_scatter_32x32_png",
+	"snowfield|snowfield_lodge": "asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png",
+	"snowfield|snowfield_hot_spring": "asset_assets_sprites_objects_shrine_props_stone_water_basin_32x32_png",
+	"snowfield|snowfield_shrine": "asset_assets_sprites_objects_structures_shrine_torii_gate_2x2_64x64_png",
+	"snowfield|snowfield_frozen_mine": "asset_assets_sprites_objects_mining_rock_cave_entrance_1x2_64x32_png",
+	"rainforest|rainforest_tea_cultivation": "asset_assets_sprites_objects_crafting_tea_leaf_worktable_32x32_png",
+	"rainforest|rainforest_riverside_village": "asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png",
+	"rainforest|rainforest_forest_tea_room": "asset_assets_sprites_objects_crafting_tea_table_2x2_64x64_png",
+	"rainforest|rainforest_incense_space": "asset_assets_sprites_objects_shrine_props_incense_burner_32x32_png"
 }
 
 const RESOURCE_SOURCE_BY_BIOME_RESOURCE := {
@@ -234,9 +234,9 @@ func _owner_source_id(owner_id: String, metadata: Dictionary) -> String:
 		return String(TREE_SOURCE_BY_TERRAIN.get(String(metadata.get("terrain_id", "")), ""))
 	if String(metadata.get("terrain_overlay", "")) == "path_fence":
 		return PATH_FENCE_SOURCE_ID
-	var facility_key := "%s|%s" % [String(metadata.get("biome_rule_id", "")), String(metadata.get("facility_term", ""))]
-	if FACILITY_SOURCE_BY_BIOME_TERM.has(facility_key):
-		return String(FACILITY_SOURCE_BY_BIOME_TERM[facility_key])
+	var facility_key := "%s|%s" % [String(metadata.get("biome_rule_id", "")), String(metadata.get("facility_id", ""))]
+	if FACILITY_SOURCE_BY_BIOME_FACILITY.has(facility_key):
+		return String(FACILITY_SOURCE_BY_BIOME_FACILITY[facility_key])
 	var resource_key := "%s|%s" % [String(metadata.get("biome_rule_id", "")), String(metadata.get("resource_id", ""))]
 	if RESOURCE_SOURCE_BY_BIOME_RESOURCE.has(resource_key):
 		return String(RESOURCE_SOURCE_BY_BIOME_RESOURCE[resource_key])

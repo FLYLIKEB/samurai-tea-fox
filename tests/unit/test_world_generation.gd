@@ -9,6 +9,10 @@ const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 const WorldRendererProjection = preload("res://src/world/rendering/world_renderer_projection.gd")
 
+var _asset_catalog := AssetCatalog.new()
+var _asset_catalog_loaded := false
+var _asset_catalog_load_result := {}
+
 func run(asserts) -> void:
 	var catalog := DataCatalog.new()
 	var loaded := catalog.load_from_directory("res://data/generated")
@@ -52,6 +56,7 @@ func run(asserts) -> void:
 	_assert_wasteland_generation(asserts, catalog, generator)
 	_assert_snowfield_generation(asserts, catalog, generator)
 	_assert_rainforest_generation(asserts, catalog, generator)
+	_assert_profile_only_fixture_generation(asserts, catalog, generator)
 
 	var progression_result: Dictionary = BiomeProgressionState.from_catalog(catalog, RunState.new())
 	asserts.true_value(progression_result.ok, "progression state configures for renderer projection")
@@ -92,10 +97,10 @@ func run(asserts) -> void:
 	asserts.equal(failed.failure_reason, "connectivity_or_resource_validation_failed", "failure reason is explicit")
 
 	var missing_resource_biome := biome.duplicate(true)
-	missing_resource_biome.erase("resources")
+	missing_resource_biome.erase("generation_resource_item_ids")
 	var missing_resource := generator.generate(11037, catalog.data_version, missing_resource_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"), options)
-	asserts.false_value(missing_resource.ok, "biome without resource text fails")
-	asserts.equal(missing_resource.failure_reason, "missing_biome_resources", "missing biome resources are explicit")
+	asserts.false_value(missing_resource.ok, "biome without generated resource item IDs fails")
+	asserts.equal(missing_resource.failure_reason, "missing_biome_resource_item_ids", "missing biome resource IDs are explicit")
 
 	var non_material_items := []
 	for item in catalog.get_definitions("items"):
@@ -117,8 +122,14 @@ func run(asserts) -> void:
 	var unknown_biome := biome.duplicate(true)
 	unknown_biome.id = "unimplemented_region"
 	var unsupported := generator.generate(11037, catalog.data_version, unknown_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	asserts.false_value(unsupported.ok, "unknown biome rules are not silently treated as common terrain")
-	asserts.equal(unsupported.failure_reason, "unsupported_biome_generation_rules", "unsupported biome rules fail explicitly")
+	asserts.false_value(unsupported.ok, "invalid profile identity is not silently treated as common terrain")
+	asserts.equal(unsupported.failure_reason, "invalid_biome_generation_profile_id", "invalid profile identity fails explicitly")
+
+	var unknown_chunk_rule_biome := biome.duplicate(true)
+	unknown_chunk_rule_biome.generation_chunk_rule_ids = ["unknown_chunk_rule"]
+	var unknown_rule := generator.generate(11037, catalog.data_version, unknown_chunk_rule_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	asserts.false_value(unknown_rule.ok, "unknown chunk rule IDs fail before generation")
+	asserts.equal(unknown_rule.failure_reason, "unsupported_biome_generation_chunk_rule", "unknown chunk rule failure is explicit")
 
 func _assert_mountain_generation(asserts, catalog, generator: WorldGenerator) -> void:
 	var mountain: Dictionary = catalog.find_by_id("biomes", "mountain_region")
@@ -145,7 +156,7 @@ func _assert_mountain_generation(asserts, catalog, generator: WorldGenerator) ->
 	_assert_mountain_terrain_profile(asserts, generated.world_data)
 	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_MOUNTAIN_CONIFER, _terrain_source_id(WorldGenerator.TERRAIN_MOUNTAIN_SLOPE), _tree_source_id(WorldGenerator.TERRAIN_MOUNTAIN_CONIFER), "mountain conifer")
 	_assert_mountain_renderer_sources(asserts, generated.renderer_input)
-	_assert_landmark_terrain_terms(asserts, generated.landmarks)
+	_assert_landmark_terrain_ids(asserts, generated.landmarks, mountain.generation_terrain_ids)
 	_assert_resource_ids_resolve_to_mountain_materials(asserts, generated.resource_nodes, mountain, catalog.get_definitions("items"))
 	_assert_common_templates(asserts, generated)
 	_assert_continuous_water_stroke(asserts, generated)
@@ -160,17 +171,11 @@ func _assert_mountain_generation(asserts, catalog, generator: WorldGenerator) ->
 		asserts.true_value(sampled.facility_accessibility.valid, "mountain seed %d keeps facilities accessible" % seed)
 		asserts.true_value(sampled.resource_accessibility.valid, "mountain seed %d keeps resources accessible" % seed)
 
-	var missing_term_biome: Dictionary = mountain.duplicate(true)
-	missing_term_biome.terrain = "산길, 절벽, 바위지대, 계곡, 폭포, 침엽수림"
-	var missing_term := generator.generate(22033, catalog.data_version, missing_term_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	asserts.false_value(missing_term.ok, "mountain rules require every canonical terrain term")
-	asserts.equal(missing_term.failure_reason, "missing_biome_generation_terms", "missing mountain terrain term fails explicitly")
-
 	var missing_facility_biome: Dictionary = mountain.duplicate(true)
-	missing_facility_biome.facilities = "광산, 산사, 폐광"
+	missing_facility_biome.generation_minimum_facility_nodes = 99
 	var missing_facility := generator.generate(22033, catalog.data_version, missing_facility_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	asserts.false_value(missing_facility.ok, "mountain rules require every canonical facility term")
-	asserts.equal(missing_facility.failure_reason, "missing_biome_facility_terms", "missing mountain facility term fails explicitly")
+	asserts.false_value(missing_facility.ok, "mountain profile rejects impossible facility minimum")
+	asserts.equal(missing_facility.failure_reason, "invalid_biome_minimum_facility_nodes", "invalid mountain facility minimum fails explicitly")
 
 func _assert_wasteland_generation(asserts, catalog, generator: WorldGenerator) -> void:
 	var wasteland: Dictionary = catalog.find_by_id("biomes", "wasteland")
@@ -191,13 +196,13 @@ func _assert_wasteland_generation(asserts, catalog, generator: WorldGenerator) -
 	asserts.true_value(generated.resource_nodes.size() >= generated.min_resource_nodes, "wasteland places minimum resources")
 	_assert_teleport_landmark_metadata(asserts, generated.world_data, "wasteland")
 	_assert_resource_accessibility(asserts, generated)
-	_assert_facility_accessibility_for_terms(asserts, generated, ["폐촌", "버려진 초소", "무너진 다실", "전쟁터 흔적"])
+	_assert_facility_accessibility_for_ids(asserts, generated, wasteland.generation_facility_ids)
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 	_assert_large_fenced_house(asserts, generated)
 	_assert_wasteland_terrain_profile(asserts, generated.world_data)
 	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_WASTELAND_DEAD_TREE, _terrain_source_id(WorldGenerator.TERRAIN_WASTELAND_DRY_SOIL), _tree_source_id(WorldGenerator.TERRAIN_WASTELAND_DEAD_TREE), "wasteland dead tree")
 	_assert_wasteland_renderer_sources(asserts, generated.renderer_input)
-	_assert_landmark_terms(asserts, generated.landmarks, ["마른 흙", "갈라진 땅", "죽은 나무", "폐허", "말라붙은 하천", "군영 흔적"])
+	_assert_landmark_terrain_ids(asserts, generated.landmarks, wasteland.generation_terrain_ids)
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, wasteland, catalog.get_definitions("items"))
 	_assert_wasteland_chunk_features(asserts, generated.chunks)
 	_assert_common_templates(asserts, generated)
@@ -214,17 +219,12 @@ func _assert_wasteland_generation(asserts, catalog, generator: WorldGenerator) -
 		asserts.true_value(sampled.resource_accessibility.valid, "wasteland seed %d keeps resources accessible" % seed)
 		_assert_wasteland_chunk_features(asserts, sampled.chunks)
 
-	var missing_term_biome: Dictionary = wasteland.duplicate(true)
-	missing_term_biome.terrain = "마른 흙, 갈라진 땅, 죽은 나무, 폐허, 말라붙은 하천"
-	var missing_term := generator.generate(34033, catalog.data_version, missing_term_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	asserts.false_value(missing_term.ok, "wasteland rules require every canonical terrain term")
-	asserts.equal(missing_term.failure_reason, "missing_biome_generation_terms", "missing wasteland terrain term fails explicitly")
-
 	var missing_facility_biome: Dictionary = wasteland.duplicate(true)
-	missing_facility_biome.facilities = "폐촌, 버려진 초소, 무너진 다실"
+	missing_facility_biome.generation_facility_ids = []
+	missing_facility_biome.generation_minimum_facility_nodes = 1
 	var missing_facility := generator.generate(34033, catalog.data_version, missing_facility_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	asserts.false_value(missing_facility.ok, "wasteland rules require every canonical facility term")
-	asserts.equal(missing_facility.failure_reason, "missing_biome_facility_terms", "missing wasteland facility term fails explicitly")
+	asserts.false_value(missing_facility.ok, "wasteland profile rejects a minimum above available facility IDs")
+	asserts.equal(missing_facility.failure_reason, "invalid_biome_minimum_facility_nodes", "invalid wasteland facility minimum fails explicitly")
 
 func _assert_snowfield_generation(asserts, catalog, generator: WorldGenerator) -> void:
 	var snowfield: Dictionary = catalog.find_by_id("biomes", "snowfield")
@@ -247,13 +247,13 @@ func _assert_snowfield_generation(asserts, catalog, generator: WorldGenerator) -
 	asserts.true_value(generated.resource_nodes.size() >= generated.min_resource_nodes, "snowfield places minimum resources")
 	_assert_teleport_landmark_metadata(asserts, generated.world_data, "snowfield")
 	_assert_resource_accessibility(asserts, generated)
-	_assert_facility_accessibility_for_terms(asserts, generated, ["산장", "온천", "설원 사당", "얼어붙은 광산"])
+	_assert_facility_accessibility_for_ids(asserts, generated, snowfield.generation_facility_ids)
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 	_assert_large_fenced_house(asserts, generated)
 	_assert_snowfield_terrain_profile(asserts, generated.world_data)
 	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_SNOWFIELD_PINE, _terrain_source_id(WorldGenerator.TERRAIN_SNOWFIELD_SNOW), _tree_source_id(WorldGenerator.TERRAIN_SNOWFIELD_PINE), "snowfield pine")
 	_assert_snowfield_renderer_sources(asserts, generated.renderer_input)
-	_assert_landmark_terms(asserts, generated.landmarks, ["눈밭", "얼어붙은 강", "침엽수", "빙벽", "눈 덮인 산길"])
+	_assert_landmark_terrain_ids(asserts, generated.landmarks, snowfield.generation_terrain_ids)
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, snowfield, catalog.get_definitions("items"))
 	_assert_snowfield_chunk_features(asserts, generated.chunks)
 	_assert_no_temperature_state(asserts, generated)
@@ -271,17 +271,12 @@ func _assert_snowfield_generation(asserts, catalog, generator: WorldGenerator) -
 		asserts.true_value(sampled.resource_accessibility.valid, "snowfield seed %d keeps resources accessible" % seed)
 		_assert_snowfield_chunk_features(asserts, sampled.chunks)
 
-	var missing_term_biome: Dictionary = snowfield.duplicate(true)
-	missing_term_biome.terrain = "눈밭, 얼어붙은 강, 침엽수, 빙벽"
-	var missing_term := generator.generate(35033, catalog.data_version, missing_term_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	asserts.false_value(missing_term.ok, "snowfield rules require every canonical terrain term")
-	asserts.equal(missing_term.failure_reason, "missing_biome_generation_terms", "missing snowfield terrain term fails explicitly")
-
 	var missing_facility_biome: Dictionary = snowfield.duplicate(true)
-	missing_facility_biome.facilities = "산장, 온천, 설원 사당"
+	missing_facility_biome.generation_facility_ids = []
+	missing_facility_biome.generation_minimum_facility_nodes = 1
 	var missing_facility := generator.generate(35033, catalog.data_version, missing_facility_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	asserts.false_value(missing_facility.ok, "snowfield rules require every canonical facility term")
-	asserts.equal(missing_facility.failure_reason, "missing_biome_facility_terms", "missing snowfield facility term fails explicitly")
+	asserts.false_value(missing_facility.ok, "snowfield profile rejects a minimum above available facility IDs")
+	asserts.equal(missing_facility.failure_reason, "invalid_biome_minimum_facility_nodes", "invalid snowfield facility minimum fails explicitly")
 
 func _assert_rainforest_generation(asserts, catalog, generator: WorldGenerator) -> void:
 	var rainforest: Dictionary = catalog.find_by_id("biomes", "rainforest")
@@ -304,13 +299,13 @@ func _assert_rainforest_generation(asserts, catalog, generator: WorldGenerator) 
 	asserts.true_value(generated.resource_nodes.size() >= generated.min_resource_nodes, "rainforest places minimum resources")
 	_assert_teleport_landmark_metadata(asserts, generated.world_data, "rainforest")
 	_assert_resource_accessibility(asserts, generated)
-	_assert_facility_accessibility_for_terms(asserts, generated, ["차 재배지", "강변 취락", "숲속 다실", "향 문화 공간"])
+	_assert_facility_accessibility_for_ids(asserts, generated, rainforest.generation_facility_ids)
 	_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 	_assert_large_fenced_house(asserts, generated)
 	_assert_rainforest_terrain_profile(asserts, generated.world_data)
 	_assert_tree_obstacles_render_over_base(asserts, generated, WorldGenerator.TERRAIN_RAINFOREST_AGARWOOD, _terrain_source_id(WorldGenerator.TERRAIN_RAINFOREST_RIVER_BANK), _tree_source_id(WorldGenerator.TERRAIN_RAINFOREST_AGARWOOD), "rainforest agarwood")
 	_assert_rainforest_renderer_sources(asserts, generated.renderer_input)
-	_assert_landmark_terms(asserts, generated.landmarks, ["밀림", "습지", "넓은 강", "덩굴 통로", "차 재배지", "향목 숲"])
+	_assert_landmark_terrain_ids(asserts, generated.landmarks, rainforest.generation_terrain_ids)
 	_assert_resource_ids_resolve_to_biome_materials(asserts, generated.resource_nodes, rainforest, catalog.get_definitions("items"))
 	_assert_rainforest_rare_resource_ids(asserts, generated.resource_nodes)
 	_assert_rainforest_chunk_features(asserts, generated.chunks)
@@ -329,17 +324,57 @@ func _assert_rainforest_generation(asserts, catalog, generator: WorldGenerator) 
 		asserts.true_value(sampled.resource_accessibility.valid, "rainforest seed %d keeps resources accessible" % seed)
 		_assert_rainforest_chunk_features(asserts, sampled.chunks)
 
-	var missing_term_biome: Dictionary = rainforest.duplicate(true)
-	missing_term_biome.terrain = "밀림, 습지, 넓은 강, 덩굴 통로, 차 재배지"
-	var missing_term := generator.generate(36033, catalog.data_version, missing_term_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	asserts.false_value(missing_term.ok, "rainforest rules require every canonical terrain term")
-	asserts.equal(missing_term.failure_reason, "missing_biome_generation_terms", "missing rainforest terrain term fails explicitly")
-
 	var missing_facility_biome: Dictionary = rainforest.duplicate(true)
-	missing_facility_biome.facilities = "차 재배지, 강변 취락, 숲속 다실"
+	missing_facility_biome.generation_facility_ids = []
+	missing_facility_biome.generation_minimum_facility_nodes = 1
 	var missing_facility := generator.generate(36033, catalog.data_version, missing_facility_biome, catalog.get_definitions("balance"), catalog.get_definitions("items"))
-	asserts.false_value(missing_facility.ok, "rainforest rules require every canonical facility term")
-	asserts.equal(missing_facility.failure_reason, "missing_biome_facility_terms", "missing rainforest facility term fails explicitly")
+	asserts.false_value(missing_facility.ok, "rainforest profile rejects a minimum above available facility IDs")
+	asserts.equal(missing_facility.failure_reason, "invalid_biome_minimum_facility_nodes", "invalid rainforest facility minimum fails explicitly")
+
+func _assert_profile_only_fixture_generation(asserts, catalog, generator: WorldGenerator) -> void:
+	var base: Dictionary = catalog.find_by_id("biomes", "common_region")
+	var fixture := base.duplicate(true)
+	fixture.id = "fixture_bamboo_grove"
+	fixture.generation_profile_id = "fixture_bamboo_grove"
+	fixture.generation_chunk_rule_ids = [
+		WorldGenerator.CHUNK_RULE_COMMON_GRASS,
+		WorldGenerator.CHUNK_RULE_COMMON_FIELD,
+		WorldGenerator.CHUNK_RULE_COMMON_FOREST,
+		WorldGenerator.CHUNK_RULE_COMMON_PATH,
+		WorldGenerator.CHUNK_RULE_COMMON_WATER,
+		WorldGenerator.CHUNK_RULE_COMMON_GROUND
+	]
+	fixture.generation_terrain_ids = [
+		WorldGenerator.TERRAIN_GROUND,
+		WorldGenerator.TERRAIN_GRASS,
+		WorldGenerator.TERRAIN_PATH,
+		WorldGenerator.TERRAIN_FIELD,
+		WorldGenerator.TERRAIN_FOREST,
+		WorldGenerator.TERRAIN_WATER,
+		WorldGenerator.TERRAIN_BRIDGE
+	]
+	fixture.generation_resource_item_ids = ["clay", "stone", "wood"]
+	fixture.generation_walkability_rule_ids = [
+		"default_walkable",
+		"water_blocked",
+		"path_walkable",
+		"bridge_walkable",
+		"shore_walkable"
+	]
+	fixture.generation_facility_ids = []
+	fixture.generation_facility_source_ids = []
+	fixture.generation_minimum_facility_nodes = 0
+	var generated := generator.generate(41037, catalog.data_version, fixture, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var repeated := generator.generate(41037, catalog.data_version, fixture, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	var alternate := generator.generate(41038, catalog.data_version, fixture, catalog.get_definitions("balance"), catalog.get_definitions("items"))
+	asserts.true_value(generated.ok, "profile-only fixture biome generates without a generator biome branch")
+	asserts.equal(generated.biome_generation_rule_id, "fixture_bamboo_grove", "profile-only fixture records injected profile id")
+	asserts.equal(_canonical_world(generated), _canonical_world(repeated), "profile-only fixture is deterministic")
+	asserts.true_value(_canonical_world(generated) != _canonical_world(alternate), "profile-only fixture varies by seed")
+	asserts.true_value(generated.connectivity.valid, "profile-only fixture landmarks are connected")
+	asserts.true_value(generated.resource_accessibility.valid, "profile-only fixture resources are reachable")
+	for chunk in generated.chunks:
+		asserts.true_value(fixture.generation_chunk_rule_ids.has(String(chunk.rule_id)), "profile-only fixture chunk uses injected rule ID")
 
 func _assert_resource_accessibility(asserts, world: Dictionary) -> void:
 	var validator := ConnectivityValidator.new()
@@ -371,21 +406,21 @@ func _assert_large_fenced_house(asserts, world: Dictionary) -> void:
 	_assert_asset_reference_exists(asserts, WorldRendererProjection.PATH_FENCE_SOURCE_ID, "fence segment asset exists")
 
 func _assert_facility_accessibility(asserts, world: Dictionary) -> void:
-	_assert_facility_accessibility_for_terms(asserts, world, ["광산", "산사", "폐광", "산중 찻집"])
+	_assert_facility_accessibility_for_ids(asserts, world, ["mountain_mine", "mountain_temple", "mountain_abandoned_mine", "mountain_tea_house"])
 
-func _assert_facility_accessibility_for_terms(asserts, world: Dictionary, expected_terms_list: Array) -> void:
+func _assert_facility_accessibility_for_ids(asserts, world: Dictionary, expected_ids_list: Array) -> void:
 	var validator := ConnectivityValidator.new()
 	var access_points := []
 	var interactable_owner_ids := _interactable_owner_ids(world.renderer_input)
 	var facility_owner_ids := _layer_owner_ids(world.renderer_input, WorldData.LAYER_FACILITIES)
 	var facility_source_ids := _layer_source_ids_by_owner(world.renderer_input, WorldData.LAYER_FACILITIES)
-	var expected_terms := {}
-	for term in expected_terms_list:
-		expected_terms[String(term)] = true
-	var seen_terms := {}
+	var expected_ids := {}
+	for facility_id in expected_ids_list:
+		expected_ids[String(facility_id)] = true
+	var seen_ids := {}
 	for node in world.facility_nodes:
 		access_points.append(node.access_position)
-		seen_terms[String(node.facility_term)] = true
+		seen_ids[String(node.facility_id)] = true
 		asserts.true_value(bool(node.placement_was_entry_reachable), "%s facility has a reachable access cell" % node.id)
 		asserts.true_value(bool(node.interactable), "%s facility is marked interactable" % node.id)
 		asserts.true_value(interactable_owner_ids.has(node.id), "%s appears in renderer interactables" % node.id)
@@ -393,8 +428,8 @@ func _assert_facility_accessibility_for_terms(asserts, world: Dictionary, expect
 		asserts.equal(_manhattan_distance(node.position, node.access_position), 1, "%s has adjacent facility access cell" % node.id)
 		asserts.false_value(node.has("source_id"), "%s facility node stays semantic-only" % node.id)
 		_assert_asset_reference_exists(asserts, String(facility_source_ids.get(node.id, "")), "%s projected source exists" % node.id)
-	for term in expected_terms.keys():
-		asserts.true_value(seen_terms.has(term), "%s facility term is placed" % term)
+	for facility_id in expected_ids.keys():
+		asserts.true_value(seen_ids.has(facility_id), "%s facility ID is placed" % facility_id)
 	var access_validation := validator.validate_access_points(world.world_data, access_points)
 	asserts.true_value(access_validation.valid, "all facility access points are entry-reachable")
 
@@ -634,11 +669,12 @@ func _world_cell_index(world_data: Dictionary) -> Dictionary:
 	return index
 
 func _assert_asset_reference_exists(asserts, source_id: String, message: String) -> void:
-	var asset_catalog := AssetCatalog.new()
-	var load_result: Dictionary = asset_catalog.load_manifest()
-	asserts.true_value(load_result.ok, "asset manifest loads for source reference")
-	if load_result.ok:
-		asserts.true_value(not asset_catalog.id_for_reference(source_id).is_empty(), message)
+	if not _asset_catalog_loaded:
+		_asset_catalog_load_result = _asset_catalog.load_manifest()
+		_asset_catalog_loaded = true
+	asserts.true_value(_asset_catalog_load_result.ok, "asset manifest loads for source reference")
+	if _asset_catalog_load_result.ok:
+		asserts.true_value(not _asset_catalog.id_for_reference(source_id).is_empty(), message)
 
 func _assert_mountain_terrain_profile(asserts, world_data: Dictionary) -> void:
 	var required_walkable := {
@@ -820,25 +856,21 @@ func _assert_rainforest_renderer_sources(asserts, renderer_input: Dictionary) ->
 	for source_id in expected_sources.keys():
 		asserts.true_value(seen.has(source_id), "rainforest renderer uses promoted source: %s" % source_id)
 
-func _assert_landmark_terrain_terms(asserts, landmarks: Array) -> void:
-	_assert_landmark_terms(asserts, landmarks, ["산길", "절벽", "바위지대", "계곡", "폭포", "침엽수림", "동굴"])
-
-func _assert_landmark_terms(asserts, landmarks: Array, required_terms: Array) -> void:
+func _assert_landmark_terrain_ids(asserts, landmarks: Array, required_ids: Array) -> void:
 	for landmark in landmarks:
 		var metadata: Dictionary = landmark.get("metadata", {})
-		var terms: Array = metadata.get("terrain_terms", [])
-		for term in required_terms:
-			asserts.true_value(terms.has(term), "%s landmark carries terrain term: %s" % [landmark.get("id", ""), term])
+		var terrain_ids: Array = metadata.get("terrain_ids", [])
+		for terrain_id in required_ids:
+			asserts.true_value(terrain_ids.has(String(terrain_id)), "%s landmark carries terrain ID: %s" % [landmark.get("id", ""), terrain_id])
 
 func _assert_resource_ids_resolve_to_mountain_materials(asserts, resource_nodes: Array, biome: Dictionary, item_definitions: Array) -> void:
 	_assert_resource_ids_resolve_to_biome_materials(asserts, resource_nodes, biome, item_definitions)
 
 func _assert_resource_ids_resolve_to_biome_materials(asserts, resource_nodes: Array, biome: Dictionary, item_definitions: Array) -> void:
-	var biome_resource_text := String(biome.get("resources", ""))
 	var material_ids := {}
 	for item in item_definitions:
 		var item_type := String(item.get("type", ""))
-		if (item_type == "재료" or item_type == "향") and biome_resource_text.contains(String(item.get("name", ""))):
+		if (item_type == "재료" or item_type == "향") and biome.get("generation_resource_item_ids", []).has(String(item.get("id", ""))):
 			material_ids[String(item.get("id", ""))] = true
 	for node in resource_nodes:
 		asserts.true_value(material_ids.has(String(node.resource_id)), "%s uses an existing biome material item id" % node.id)
@@ -911,10 +943,10 @@ func _terrain_source_id(terrain_id: String) -> String:
 func _tree_source_id(terrain_id: String) -> String:
 	return String(WorldRendererProjection.TREE_SOURCE_BY_TERRAIN.get(terrain_id, ""))
 
-func _canonical_world(world: Dictionary) -> Dictionary:
+func _canonical_world(world: Dictionary) -> String:
 	var canonical := world.duplicate(true)
 	canonical.erase("retry_attempt")
 	canonical.erase("retry_limit")
 	canonical.erase("seed")
 	canonical.erase("data_version")
-	return canonical
+	return JSON.stringify(canonical)
