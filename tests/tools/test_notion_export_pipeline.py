@@ -1351,6 +1351,54 @@ class NotionExportPipelineTests(unittest.TestCase):
             {"field": "boss_id", "target": "characters", "many": False},
         )
 
+    def test_dev_109_dungeon_export_links_boss_to_precombat_event(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        dungeons = schema["datasets"]["dungeons"]
+        self.assertEqual(dungeons["relations"]["pre_boss_dialogue_event_id"], "events")
+
+        capture = self._minimal_event_capture()
+        capture["datasets"]["characters"] = {
+            "source": "collection://characters",
+            "items": [{"id": "chr_3", "name": "오리베", "status": "확정"}],
+        }
+        capture["datasets"]["dungeons"] = {
+            "source": "collection://dungeons",
+            "items": [{
+                "id": "dungeon_4",
+                "name": "오리베의 다실",
+                "status": "확정",
+                "boss_id": "chr_3",
+            }],
+        }
+        event = capture["datasets"]["events"]["items"][0]
+        event["id"] = "story_b01_03"
+        event["notion_ids"] = ["line-b01-03"]
+        event["source_lines"] = [{
+            "notion_id": "line-b01-03",
+            "dialogue_key": "start",
+            "next_dialogue_key": "END",
+            "node_id": "start",
+            "option_id": "take",
+            "speaker_id": "",
+            "speaker_display_name": "",
+            "text": "start",
+            "line_order": 1,
+            "presentation_commands": {},
+            "boss_id": "chr_3",
+            "trigger_timing": "보스 전",
+        }]
+
+        snapshots = self.pipeline.build_snapshots(capture, "confirmed-test")
+        self.assertEqual(
+            snapshots["dungeons"]["items"][0]["pre_boss_dialogue_event_id"],
+            "story_b01_03",
+        )
+
+        missing = copy.deepcopy(capture)
+        del missing["datasets"]["events"]["items"][0]["source_lines"][0]["trigger_timing"]
+        with self.assertRaisesRegex(ExportValidationError, "pre_boss_dialogue_event_id is required"):
+            self.pipeline.build_snapshots(missing, "confirmed-test")
+
     def test_dev_104_biome_generation_profile_rejects_missing_or_invalid_ids(self):
         invalid = copy.deepcopy(self.capture)
         biome = invalid["datasets"]["biomes"]["items"][0]

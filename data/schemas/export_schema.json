@@ -64,7 +64,7 @@
     },
     "dungeons": {
       "file": "dungeons.json", "required_fields": ["id", "name", "status"],
-      "relations": {"biome_ids": "biomes", "boss_id": "characters", "choice_ids": "choices", "reward_item_ids": "items"},
+      "relations": {"biome_ids": "biomes", "boss_id": "characters", "choice_ids": "choices", "pre_boss_dialogue_event_id": "events", "reward_item_ids": "items"},
       "notion": {
         "source": "collection://cd97553c-f51f-44fe-9604-c257cc9d9342", "title_field": "이름", "status_field": "설정 상태", "unique_id_field": "던전 ID", "id_prefix": "dungeon",
         "field_map": {"바이옴": "biome", "보스": "boss", "보스 HP": "boss_hp", "기본 공격력": "base_attack", "던전 형태": "layout", "보상": "reward", "핵심 기믹": "core_gimmick", "페이즈 수": "phase_count", "패턴 수": "pattern_count", "평화 해결 가능": "peaceful_resolution", "해결 방식": "resolution_types"},

@@ -1,5 +1,5 @@
 {
-  "content_hash": "1ee2ad94c7f7164113ae706352d499dabf553aa5131c810c9b9b8efc946ca301",
+  "content_hash": "435419519515133cf2f3ac09d6be203e2573d1c2add7f1ebe15d70bfbcca824b",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -590,6 +590,136 @@
         "3d137369-9e66-81ce-99c1-e7c10f87b8aa"
       ],
       "replay_policy": "once",
+      "source_lines": [
+        {
+          "notion_id": "3d137369-9e66-810d-bc09-c007d5719793",
+          "story_order": null,
+          "scene_order": null,
+          "line_order": 1,
+          "dialogue_key": "start",
+          "next_dialogue_key": "shared_dialogue",
+          "node_id": "start",
+          "option_id": "share_last_tea",
+          "speaker_id": "CHR-5",
+          "speaker_display_name": "",
+          "text": "???가 마지막 다실의 찻잔을 사이에 두고 이름을 감춘 채 앉아 있다.",
+          "presentation_commands": {},
+          "boss_id": "chr_5",
+          "trigger_timing": "보스 전"
+        },
+        {
+          "notion_id": "3d137369-9e66-816e-8600-fe237dd97cb7",
+          "story_order": null,
+          "scene_order": null,
+          "line_order": 2,
+          "dialogue_key": "start__refuse_last_tea",
+          "next_dialogue_key": "refused_dialogue",
+          "node_id": "start",
+          "option_id": "refuse_last_tea",
+          "speaker_id": "CHR-5",
+          "speaker_display_name": "",
+          "text": "???가 마지막 다실의 찻잔을 사이에 두고 이름을 감춘 채 앉아 있다.",
+          "presentation_commands": {},
+          "boss_id": "chr_5",
+          "trigger_timing": "보스 전"
+        },
+        {
+          "notion_id": "3d137369-9e66-8170-a08a-d77041cf688a",
+          "story_order": null,
+          "scene_order": null,
+          "line_order": 3,
+          "dialogue_key": "shared_dialogue",
+          "next_dialogue_key": "END",
+          "node_id": "shared_dialogue",
+          "option_id": "shared_past_mercy",
+          "speaker_id": "CHR-5",
+          "speaker_display_name": "",
+          "text": "노다인은 이름을 밝힌다. 센리큐는 네가 건넨 차의 온도에서 지나온 선택을 읽는다.",
+          "presentation_commands": {},
+          "boss_id": "chr_5",
+          "trigger_timing": "보스 전"
+        },
+        {
+          "notion_id": "3d137369-9e66-81b5-b927-f4eda0beb3ac",
+          "story_order": null,
+          "scene_order": null,
+          "line_order": 4,
+          "dialogue_key": "shared_dialogue__shared_repetition",
+          "next_dialogue_key": "END",
+          "node_id": "shared_dialogue",
+          "option_id": "shared_repetition",
+          "speaker_id": "CHR-5",
+          "speaker_display_name": "",
+          "text": "노다인은 이름을 밝힌다. 센리큐는 네가 건넨 차의 온도에서 지나온 선택을 읽는다.",
+          "presentation_commands": {},
+          "boss_id": "chr_5",
+          "trigger_timing": "보스 전"
+        },
+        {
+          "notion_id": "3d137369-9e66-81b9-b25f-dedb3d3e149d",
+          "story_order": null,
+          "scene_order": null,
+          "line_order": 5,
+          "dialogue_key": "shared_dialogue__shared_plain",
+          "next_dialogue_key": "END",
+          "node_id": "shared_dialogue",
+          "option_id": "shared_plain",
+          "speaker_id": "CHR-5",
+          "speaker_display_name": "",
+          "text": "노다인은 이름을 밝힌다. 센리큐는 네가 건넨 차의 온도에서 지나온 선택을 읽는다.",
+          "presentation_commands": {},
+          "boss_id": "chr_5",
+          "trigger_timing": "보스 전"
+        },
+        {
+          "notion_id": "3d137369-9e66-81bb-a7a4-cfca02dbcf79",
+          "story_order": null,
+          "scene_order": null,
+          "line_order": 6,
+          "dialogue_key": "refused_dialogue",
+          "next_dialogue_key": "END",
+          "node_id": "refused_dialogue",
+          "option_id": "refused_past_defeat",
+          "speaker_id": "CHR-5",
+          "speaker_display_name": "",
+          "text": "노다인은 이름을 밝힌다. 센리큐는 비운 찻잔 대신 네가 남긴 침묵을 바라본다.",
+          "presentation_commands": {},
+          "boss_id": "chr_5",
+          "trigger_timing": "보스 전"
+        },
+        {
+          "notion_id": "3d137369-9e66-81c8-a680-e0c2230f3d15",
+          "story_order": null,
+          "scene_order": null,
+          "line_order": 7,
+          "dialogue_key": "refused_dialogue__refused_repetition",
+          "next_dialogue_key": "END",
+          "node_id": "refused_dialogue",
+          "option_id": "refused_repetition",
+          "speaker_id": "CHR-5",
+          "speaker_display_name": "",
+          "text": "노다인은 이름을 밝힌다. 센리큐는 비운 찻잔 대신 네가 남긴 침묵을 바라본다.",
+          "presentation_commands": {},
+          "boss_id": "chr_5",
+          "trigger_timing": "보스 전"
+        },
+        {
+          "notion_id": "3d137369-9e66-81ce-99c1-e7c10f87b8aa",
+          "story_order": null,
+          "scene_order": null,
+          "line_order": 8,
+          "dialogue_key": "refused_dialogue__refused_plain",
+          "next_dialogue_key": "END",
+          "node_id": "refused_dialogue",
+          "option_id": "refused_plain",
+          "speaker_id": "CHR-5",
+          "speaker_display_name": "",
+          "text": "노다인은 이름을 밝힌다. 센리큐는 비운 찻잔 대신 네가 남긴 침묵을 바라본다.",
+          "presentation_commands": {},
+          "boss_id": "chr_5",
+          "trigger_timing": "보스 전"
+        }
+      ],
       "start_node_id": "start",
       "status": "확정"
     },
@@ -712,6 +842,24 @@
         "3d137369-9e66-81af-ae87-d893bb458058"
       ],
       "replay_policy": "once",
+      "source_lines": [
+        {
+          "notion_id": "3d137369-9e66-81af-ae87-d893bb458058",
+          "story_order": null,
+          "scene_order": null,
+          "line_order": 1,
+          "dialogue_key": "dlg_b01_003",
+          "next_dialogue_key": "END",
+          "node_id": "dlg_b01_003",
+          "option_id": "complete_dlg_b01_003",
+          "speaker_id": "CHR-8",
+          "speaker_display_name": "",
+          "text": "오래됐다는 사실과 옳다는 판단은 같은 말이 아니에요.",
+          "presentation_commands": {},
+          "boss_id": "chr_3",
+          "trigger_timing": "보스 전"
+        }
+      ],
       "start_node_id": "dlg_b01_003",
       "status": "확정"
     },
@@ -895,6 +1043,24 @@
         "3d137369-9e66-81a0-88b9-f32cf9ab67be"
       ],
       "replay_policy": "once",
+      "source_lines": [
+        {
+          "notion_id": "3d137369-9e66-81a0-88b9-f32cf9ab67be",
+          "story_order": null,
+          "scene_order": null,
+          "line_order": 1,
+          "dialogue_key": "dlg_b02_003",
+          "next_dialogue_key": "END",
+          "node_id": "dlg_b02_003",
+          "option_id": "complete_dlg_b02_003",
+          "speaker_id": "CHR-7",
+          "speaker_display_name": "",
+          "text": "네 아버지는 흠을 남기라 했다. 선생은 덜어내라 했다. 어느 쪽이 길이지?",
+          "presentation_commands": {},
+          "boss_id": "chr_7",
+          "trigger_timing": "보스 전"
+        }
+      ],
       "start_node_id": "dlg_b02_003",
       "status": "확정"
     },
@@ -989,6 +1155,24 @@
         "3d137369-9e66-8146-9c83-f47e3a8d28e5"
       ],
       "replay_policy": "once",
+      "source_lines": [
+        {
+          "notion_id": "3d137369-9e66-8146-9c83-f47e3a8d28e5",
+          "story_order": null,
+          "scene_order": null,
+          "line_order": 1,
+          "dialogue_key": "dlg_b03_002",
+          "next_dialogue_key": "END",
+          "node_id": "dlg_b03_002",
+          "option_id": "complete_dlg_b03_002",
+          "speaker_id": "CHR-2",
+          "speaker_display_name": "",
+          "text": "그 여우는 차가 사람보다 오래 남아서는 안 된다고 했지. 그래서 그의 지도를 빼앗았다.",
+          "presentation_commands": {},
+          "boss_id": "chr_2",
+          "trigger_timing": "보스 전"
+        }
+      ],
       "start_node_id": "dlg_b03_002",
       "status": "확정"
     },
@@ -1083,6 +1267,24 @@
         "3d137369-9e66-813e-af9b-fda8e5057b1b"
       ],
       "replay_policy": "once",
+      "source_lines": [
+        {
+          "notion_id": "3d137369-9e66-813e-af9b-fda8e5057b1b",
+          "story_order": null,
+          "scene_order": null,
+          "line_order": 1,
+          "dialogue_key": "dlg_b04_002",
+          "next_dialogue_key": "END",
+          "node_id": "dlg_b04_002",
+          "option_id": "complete_dlg_b04_002",
+          "speaker_id": "CHR-1",
+          "speaker_display_name": "",
+          "text": "비움은 돌아올 자리를 남기는 일.",
+          "presentation_commands": {},
+          "boss_id": "chr_4",
+          "trigger_timing": "보스 전"
+        }
+      ],
       "start_node_id": "dlg_b04_002",
       "status": "확정"
     },
@@ -1205,6 +1407,24 @@
         "3d137369-9e66-81ec-a437-f59751494db5"
       ],
       "replay_policy": "once",
+      "source_lines": [
+        {
+          "notion_id": "3d137369-9e66-81ec-a437-f59751494db5",
+          "story_order": null,
+          "scene_order": null,
+          "line_order": 1,
+          "dialogue_key": "dlg_b05_002",
+          "next_dialogue_key": "END",
+          "node_id": "dlg_b05_002",
+          "option_id": "complete_dlg_b05_002",
+          "speaker_id": "CHR-6",
+          "speaker_display_name": "",
+          "text": "네 아버지는 숲을 구하러 온 게 아니다. 숲과 사람을 따로 셀 수 없다고 말하러 왔다.",
+          "presentation_commands": {},
+          "boss_id": "chr_6",
+          "trigger_timing": "보스 전"
+        }
+      ],
       "start_node_id": "dlg_b05_002",
       "status": "확정"
     },
