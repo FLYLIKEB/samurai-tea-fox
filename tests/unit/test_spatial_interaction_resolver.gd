@@ -4,11 +4,18 @@ const SpatialInteractionResolver = preload("res://src/main/spatial_interaction_r
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 
+class AcquisitionProbe:
+	extends RefCounted
+
+	func gatherable_for(_target_id: String) -> Dictionary:
+		return {"depleted": false}
+
 func run(asserts) -> void:
 	_assert_large_house_footprint_uses_reserved_cells(asserts)
 	_assert_world_position_hits_match_main_centers(asserts)
 	_assert_acquisition_lookup_prefers_forward_cell(asserts)
 	_assert_dungeon_lookup_prefers_forward_cell(asserts)
+	_assert_dungeon_ore_lookup_prefers_forward_cell(asserts)
 
 func _assert_large_house_footprint_uses_reserved_cells(asserts) -> void:
 	var resolver := SpatialInteractionResolver.new()
@@ -51,3 +58,12 @@ func _assert_dungeon_lookup_prefers_forward_cell(asserts) -> void:
 	world.reserve_entity("core_dungeon_up", Vector2i(2, 1), Vector2i.ONE, true)
 	var hit: Dictionary = resolver.dungeon_interaction_target_near_cell(world, false, Vector2i(2, 2), Vector2i.UP)
 	asserts.equal(hit, {"target_id": "core_dungeon_up", "cell": Vector2i(2, 1)}, "dungeon lookup checks facing cell before default adjacent order")
+
+func _assert_dungeon_ore_lookup_prefers_forward_cell(asserts) -> void:
+	var resolver := SpatialInteractionResolver.new()
+	var resources := [
+		{"id": "side_ore", "position": {"x": 1, "y": 2}},
+		{"id": "blocking_stone", "position": {"x": 3, "y": 2}},
+	]
+	var hit: Dictionary = resolver.dungeon_ore_target_near_cell(true, resources, AcquisitionProbe.new(), Vector2i(2, 2), 1, Vector2i.RIGHT)
+	asserts.equal(hit, {"target_id": "blocking_stone", "cell": Vector2i(3, 2)}, "dungeon ore lookup prefers the resource directly ahead over an equally near side resource")
