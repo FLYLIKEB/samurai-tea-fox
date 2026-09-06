@@ -121,19 +121,24 @@ func acquisition_target_near_cell(world_data, in_dungeon_map: bool, origin_cell:
 			return {"target_id": target_id, "cell": cell}
 	return {}
 
-func dungeon_ore_target_near_cell(in_dungeon_map: bool, dungeon_resources: Array, acquisition_service, origin_cell: Vector2i, radius: int) -> Dictionary:
+func dungeon_ore_target_near_cell(in_dungeon_map: bool, dungeon_resources: Array, acquisition_service, origin_cell: Vector2i, radius: int, forward: Vector2i = Vector2i.ZERO) -> Dictionary:
 	if not in_dungeon_map:
 		return {}
+	var preferred_cell := origin_cell + forward
 	var best := {}
 	var best_distance := 1 << 30
 	for node in dungeon_resources:
 		var target_id := String(node.get("id", ""))
 		var cell := _vector_from_dictionary(node.get("position", {}))
 		var distance := _manhattan_distance(cell, origin_cell)
-		if distance > radius or distance >= best_distance:
+		if distance > radius:
 			continue
 		var gatherable: Dictionary = acquisition_service.gatherable_for(target_id) if acquisition_service != null else {}
 		if not gatherable.is_empty() and bool(gatherable.get("depleted", false)):
+			continue
+		if forward != Vector2i.ZERO and cell == preferred_cell:
+			return {"target_id": target_id, "cell": cell}
+		if distance >= best_distance:
 			continue
 		best = {"target_id": target_id, "cell": cell}
 		best_distance = distance

@@ -57,7 +57,7 @@ func try_dungeon_interaction_from_input(main) -> bool:
 		activate_dungeon_enemy(main, enemy_cell)
 		var direction := Vector2i(int(signf(float(enemy_cell.x - origin_cell.x))), int(signf(float(enemy_cell.y - origin_cell.y))))
 		return main.submit_action_command(GameCommand.new(GameCommand.Type.ATTACK, direction))
-	var ore_target: Dictionary = dungeon_ore_target_near_cell(main, origin_cell, 1)
+	var ore_target: Dictionary = dungeon_ore_target_near_cell(main, origin_cell, 1, main._resolved_grid_direction(Vector2i.ZERO))
 	if ore_target.is_empty():
 		ore_target = acquisition_target_near_cell(main, origin_cell)
 	if not ore_target.is_empty():
@@ -103,8 +103,8 @@ func is_dungeon_enemy_cell(main, cell: Vector2i) -> bool:
 func acquisition_target_near_cell(main, origin_cell: Vector2i) -> Dictionary:
 	return main._spatial_resolver.acquisition_target_near_cell(main.world_data, main._in_dungeon_map, origin_cell, main._resolved_grid_direction(Vector2i.ZERO), Callable(main, "_is_available_acquisition_target"))
 
-func dungeon_ore_target_near_cell(main, origin_cell: Vector2i, radius: int) -> Dictionary:
-	return main._spatial_resolver.dungeon_ore_target_near_cell(main._in_dungeon_map, main._dungeon_resources, main.acquisition_service, origin_cell, radius)
+func dungeon_ore_target_near_cell(main, origin_cell: Vector2i, radius: int, forward: Vector2i = Vector2i.ZERO) -> Dictionary:
+	return main._spatial_resolver.dungeon_ore_target_near_cell(main._in_dungeon_map, main._dungeon_resources, main.acquisition_service, origin_cell, radius, forward)
 
 func gather_dungeon_ore(main, target_id: String, cell: Vector2i) -> bool:
 	if main.acquisition_service == null:

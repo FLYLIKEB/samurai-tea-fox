@@ -5,6 +5,7 @@ const CombatDummy = preload("res://src/combat/combat_dummy.gd")
 const DungeonInstanceState = preload("res://src/dungeon/dungeon_instance_state.gd")
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const Main = preload("res://src/main/main.gd")
+const PlayerMovementState = preload("res://src/player/player_movement_state.gd")
 const RunState = preload("res://src/save/run_state.gd")
 const SaveStore = preload("res://src/save/save_store.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
@@ -27,6 +28,7 @@ class DropSource:
 class MovementPlayer:
 	extends Node2D
 	var combat_config := {"hit_invulnerability_seconds": 0.1}
+	var movement_state := PlayerMovementState.new()
 	var submitted_commands := []
 
 	func submit_command(command) -> bool:
@@ -200,6 +202,16 @@ func _assert_dungeon_combatants_do_not_cross_world_boundary(asserts, catalog: Da
 		main._dungeon_resources.append({"id": "dungeon_iron_ore_pointer_fixture", "position": {"x": 7, "y": 3}})
 		asserts.true_value(main.submit_pointer_interaction(first_regular_enemy.global_position), "pointer attacks a dungeon enemy even when ore is nearby")
 		asserts.equal(player.submitted_commands.back().type, GameCommand.Type.ATTACK, "pointer enemy selection wins over nearby ore acquisition")
+		first_regular_enemy.global_position = main.world_position_for_cell_center(Vector2i(5, 2))
+		main._sync_dungeon_enemy_reservation("dungeon_enemy_0", Vector2i(5, 2), true)
+		main.player.global_position = main.world_position_for_cell_center(Vector2i(3, 2))
+		player.movement_state.face(Vector2i.RIGHT)
+		asserts.true_value(main.inventory.add_item("stone_pickaxe", 1).ok, "blocked mining fixture stocks a stone pickaxe")
+		var stone_before: int = main.inventory.get_total_quantity("stone")
+		var side_ore_before: Dictionary = main.acquisition_service.gatherable_for("dungeon_iron_ore_3").duplicate(true)
+		asserts.true_value(main._try_dungeon_interaction_from_input(), "E mines the blocking stone before a farther enemy")
+		asserts.equal(main.inventory.get_total_quantity("stone"), stone_before + 1, "blocking dungeon stone is added to inventory")
+		asserts.equal(main.acquisition_service.gatherable_for("dungeon_iron_ore_3").get("depleted", false), side_ore_before.get("depleted", false), "side ore is not selected ahead of the blocking stone")
 	main._enemy_turn_queued = true
 	main._return_from_dungeon_map()
 	asserts.false_value(main._in_dungeon_map, "direct dungeon exit returns to overworld mode")
