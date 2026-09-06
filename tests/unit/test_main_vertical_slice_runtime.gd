@@ -55,10 +55,35 @@ func run(asserts) -> void:
 		"node_id": "dlg_pro_001",
 		"option_id": "complete_dlg_pro_001"
 	})), "first-run prologue completes the canonical first scene")
-	asserts.false_value(main.game_hud.narrative_dialogue_visible(), "first-run prologue closes after completion")
+	asserts.true_value(main.game_hud.narrative_dialogue_visible(), "first-run prologue remains open for the remaining canonical scenes")
+	asserts.equal(main._active_narrative_event_id, "story_pro_02", "first-run prologue advances from PRO-01 to PRO-02")
 	asserts.equal(int(main.run_state.narrative_event_counts.get("story_pro_01", 0)), 1, "canonical first-run scene completion is recorded in run state")
 	asserts.true_value(main.run_state.narrative_flags.has("prologue_house_started"), "canonical first-run scene applies its exported completion flag")
 	asserts.false_value(main.first_run_prologue_read_model({"run_count": 0, "dialogue_memory_flags": [], "unlocked_meta_flags": []}).ok, "completed first-run prologue cannot reopen in the same run")
+	var remaining_prologue_steps := [
+		["story_pro_02", "dlg_pro_002", "complete_dlg_pro_002", "story_pro_03"],
+		["story_pro_03", "dlg_1", "complete_dlg_1", "story_pro_04"],
+		["story_pro_04", "dlg_pro_004", "complete_dlg_pro_004", "story_pro_05"],
+		["story_pro_05", "dlg_pro_005a", "continue_dlg_pro_005a", "story_pro_05"],
+		["story_pro_05", "dlg_pro_005b", "complete_dlg_pro_005b", "story_pro_06"],
+		["story_pro_06", "dlg_pro_006", "complete_dlg_pro_006", "story_pro_07"],
+		["story_pro_07", "dlg_4", "continue_dlg_4", "story_pro_07"],
+		["story_pro_07", "dlg_pro_007b", "complete_dlg_pro_007b", "story_pro_08"],
+		["story_pro_08", "dlg_pro_008", "complete_dlg_pro_008", ""],
+	]
+	for step in remaining_prologue_steps:
+		asserts.true_value(main.submit_action_command(GameCommand.new(GameCommand.Type.NARRATIVE_SELECT_OPTION, Vector2i.ZERO, -1, {
+			"event_id": step[0],
+			"node_id": step[1],
+			"option_id": step[2]
+		})), "canonical prologue accepts %s" % step[2])
+		asserts.equal(main._active_narrative_event_id, step[3], "canonical prologue advances after %s" % step[2])
+	asserts.false_value(main.game_hud.narrative_dialogue_visible(), "first-run prologue closes only after PRO-08")
+	for scene_index in range(1, 9):
+		var event_id := "story_pro_%02d" % scene_index
+		asserts.equal(int(main.run_state.narrative_event_counts.get(event_id, 0)), 1, "%s completion is recorded" % event_id)
+	for required_flag in ["prologue_house_started", "father_clue_soils", "father_route_map", "father_immortality_hint", "tea_road_notebook_unlocked", "hongguk_border_tea_after_first_cup"]:
+		asserts.true_value(main.run_state.narrative_flags.has(required_flag), "full prologue applies %s" % required_flag)
 	var repeat_runtime := _configured_runtime(catalog, RunState.new(), {"run_count": 1})
 	asserts.true_value(repeat_runtime.result.ok, "repeat-run fixture configures")
 	if repeat_runtime.result.ok:

@@ -28,6 +28,7 @@ class FakeCatalog:
 
 func run(asserts) -> void:
 	_assert_generated_events_execute_from_data(asserts)
+	_assert_generated_prologue_sequence_preserves_all_dialogue(asserts)
 	_assert_true_false_conditions_alter_options(asserts)
 	_assert_branching_and_result_commands(asserts)
 	_assert_once_and_repeat_policies(asserts)
@@ -42,6 +43,49 @@ func run(asserts) -> void:
 	_assert_meta_query_speaker_rejections(asserts)
 	_assert_read_model_does_not_mutate_state(asserts)
 	_assert_generated_representative_dialogue_conditions(asserts)
+
+func _assert_generated_prologue_sequence_preserves_all_dialogue(asserts) -> void:
+	var catalog := DataCatalog.new()
+	var catalog_result: Dictionary = catalog.load_from_directory("res://data/generated")
+	asserts.true_value(catalog_result.ok, "generated catalog loads for canonical prologue sequence")
+	if not catalog_result.ok:
+		return
+	var runtime_result: Dictionary = NarrativeRuntime.new().from_catalog(catalog)
+	asserts.true_value(runtime_result.ok, "narrative runtime accepts the canonical prologue sequence")
+	if not runtime_result.ok:
+		return
+	var runtime: NarrativeRuntime = runtime_result.runtime
+	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": "common_region"}
+	var meta_state := {"dialogue_memory_flags": [], "unlocked_meta_flags": [], "run_count": 0}
+	var expected := [
+		["story_pro_01", "dlg_pro_000", "CHR-8", "아버지?", 1],
+		["story_pro_01", "dlg_pro_001", "CHR-8", "물은 아직 뜨거운데.", 1],
+		["story_pro_02", "dlg_pro_002", "CHR-8", "한 사람이 하루에 묻힐 흙이 아니야. 계절도 서로 달라.", 2],
+		["story_pro_03", "dlg_1", "NOTEBOOK", "쪽지에는 서두르지 말라는 짧은 글이 남아 있다. 물도 길도, 네가 닿을 때 비로소 한 번의 자리가 된다고.", 3],
+		["story_pro_04", "dlg_pro_004", "CHR-8", "지도는 오래됐는데 잉크는 오늘 묻었어. 아버지는 과거를 따라간 건가?", 4],
+		["story_pro_05", "dlg_pro_005a", "NPC-BAEK-ELDER-01", "네 아버지는 내가 어릴 때도 지금 얼굴이었지.", 5],
+		["story_pro_05", "dlg_pro_005b", "CHR-8", "그럼 사라진 건 처음이 아니군요. 돌아오지 않은 게 처음일 뿐.", 5],
+		["story_pro_06", "dlg_pro_006", "NOTEBOOK", "사람은 왜 떠난 시간을 이야기로 남길까?", 6],
+		["story_pro_07", "dlg_4", "CHR-5", "먼 길을 왔구나. 이름은 나중에 물어도 된다.", 7],
+		["story_pro_07", "dlg_pro_007b", "CHR-8", "제 이름 말고, 아버지 이름을 물으러 왔어요.", 7],
+		["story_pro_08", "dlg_pro_008", "CHR-5", "그 여우를 찾으려면 그가 만난 시대의 사람들을 만나 보아라.", 8],
+	]
+	for index in range(expected.size()):
+		var model_result: Dictionary = runtime.read_model_for_node(String(expected[index][0]), String(expected[index][1]), run_state, meta_state)
+		asserts.true_value(model_result.ok, "canonical prologue line %d opens" % (index + 1))
+		if not model_result.ok:
+			continue
+		asserts.equal(model_result.read_model.speaker_id, expected[index][2], "canonical prologue line %d preserves its speaker" % (index + 1))
+		asserts.equal(model_result.read_model.text, expected[index][3], "canonical prologue line %d preserves its text" % (index + 1))
+		asserts.equal(model_result.read_model.sequence_id, "PRO", "canonical prologue line %d belongs to the exported sequence" % (index + 1))
+		asserts.equal(model_result.read_model.sequence_order, expected[index][4], "canonical prologue line %d preserves exported scene order" % (index + 1))
+	var next_result: Dictionary = runtime.read_model_for_next_sequence_event("story_pro_01", run_state, meta_state)
+	asserts.true_value(next_result.ok, "canonical prologue can resolve the next exported scene")
+	if next_result.ok:
+		asserts.equal(next_result.read_model.event_id, "story_pro_02", "PRO-01 advances to PRO-02")
+	var completed_sequence: Dictionary = runtime.read_model_for_next_sequence_event("story_pro_08", run_state, meta_state)
+	asserts.false_value(completed_sequence.ok, "canonical prologue stops after PRO-08")
+	asserts.equal(completed_sequence.reason, "sequence_complete", "canonical prologue has an explicit completion boundary")
 
 func _assert_generated_events_execute_from_data(asserts) -> void:
 	var catalog := DataCatalog.new()
