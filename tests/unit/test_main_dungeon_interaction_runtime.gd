@@ -21,6 +21,42 @@ class MovementPlayer:
 	extends Node2D
 	var combat_config := {"hit_invulnerability_seconds": 0.1}
 
+class GridProbePlayer:
+	extends MovementPlayer
+	var configured_world_data = null
+	var configured_origin := Vector2.ZERO
+	var configured_tile_size := 0.0
+	var grid_step_active := false
+
+	func configure_grid_navigation(next_world_data = null, next_origin := Vector2.ZERO, next_tile_size := -1.0) -> void:
+		var binding_changed: bool = configured_world_data != next_world_data or configured_origin != next_origin or not is_equal_approx(configured_tile_size, next_tile_size)
+		configured_world_data = next_world_data
+		configured_origin = next_origin
+		configured_tile_size = next_tile_size
+		if binding_changed:
+			grid_step_active = false
+
+	func is_grid_step_active() -> bool:
+		return grid_step_active
+
+	func submit_command(command) -> bool:
+		if not command is GameCommand:
+			return false
+		if command.type != GameCommand.Type.MOVE:
+			return true
+		var from_cell: Vector2i = _cell_for(global_position)
+		var to_cell: Vector2i = from_cell + command.direction
+		if configured_world_data != null and configured_world_data.has_method("is_walkable") and not configured_world_data.is_walkable(to_cell):
+			grid_step_active = false
+			return false
+		grid_step_active = command.direction != Vector2i.ZERO
+		return true
+
+	func _cell_for(world_position: Vector2) -> Vector2i:
+		var tile_size := maxf(configured_tile_size, 1.0)
+		var local_position := world_position - configured_origin
+		return Vector2i(int(floor(local_position.x / tile_size)), int(floor(local_position.y / tile_size)))
+
 func run(asserts) -> void:
 	_cleanup()
 	var catalog := DataCatalog.new()
@@ -28,6 +64,7 @@ func run(asserts) -> void:
 	_assert_visible_house_accepts_e_before_attack(asserts, catalog)
 	_assert_visible_house_click_queues_entry(asserts, catalog)
 	_assert_dungeon_combatants_do_not_cross_world_boundary(asserts, catalog)
+	_assert_dungeon_entry_rebinds_map_and_movement_context(asserts, catalog)
 	_assert_boss_precombat_dialogue_blocks_combat_until_completion(asserts, catalog)
 	_cleanup()
 
@@ -155,6 +192,76 @@ func _assert_dungeon_combatants_do_not_cross_world_boundary(asserts, catalog: Da
 	asserts.equal(overworld_dummy.global_position, restored_position, "cancelled dungeon turn cannot move a monster after map exit")
 	_free_combat_runtime(main, player, overworld_dummy)
 
+func _assert_dungeon_entry_rebinds_map_and_movement_context(asserts, catalog: DataCatalog) -> void:
+	var main := Main.new()
+	var player := GridProbePlayer.new()
+	var overworld_dummy := CombatDummy.new()
+	main.catalog = catalog
+	main.run_state = RunState.new()
+	main.run_state.seed = Main.DEFAULT_RUN_SEED
+	main.world_visuals = Node2D.new()
+	main.player = player
+	main.combat_dummy = overworld_dummy
+	main.save_store = SaveStore.new(RUN_PATH, META_PATH)
+	asserts.true_value(main._configure_run_services(catalog).ok, "dungeon context fixture configures services")
+	asserts.true_value(overworld_dummy.configure_combat(catalog, player, {"hit_invulnerability_seconds": 0.1}).ok, "dungeon context fixture configures dummy combat")
+	asserts.true_value(main._configure_world_for_current_run().ok, "dungeon context fixture configures overworld")
+	player.global_position = main.world_position_for_cell_center(Vector2i(1, 1))
+	player.configure_grid_navigation(main.world_data, main._runtime_world_origin(), main._runtime_tile_size())
+	player.grid_step_active = true
+	asserts.true_value(player.is_grid_step_active(), "fixture has an active overworld grid step")
+	main._has_pointer_move_target = true
+	main._pointer_move_route = [Vector2i(2, 1), Vector2i(3, 1)]
+	main._pointer_move_target_world = main.world_position_for_cell_center(Vector2i(2, 1))
+	var entered := main._ensure_playable_dungeon_runtime()
+	if entered.ok:
+		entered = main._ensure_current_dungeon_entered()
+	asserts.true_value(entered.ok, "dungeon context fixture enters dungeon")
+	asserts.true_value(main._in_dungeon_map, "dungeon context fixture switches to dungeon")
+	var map_model: Dictionary = main.map_read_model({"reveal_all": true})
+	asserts.equal(map_model.bounds, {"width": 12, "height": 9}, "Main map read model uses dungeon bounds after entry")
+	asserts.equal(_marker_type(map_model.markers, "dungeon_entry"), "landmark", "Main map read model uses dungeon entry marker")
+	asserts.true_value(player.configured_world_data == main.world_data, "player grid navigation is bound to dungeon WorldData")
+	asserts.false_value(main._has_pointer_move_target, "dungeon entry clears stale overworld pointer movement")
+	asserts.false_value(player.is_grid_step_active(), "dungeon entry cancels stale overworld grid movement")
+	asserts.false_value(player.submit_command(GameCommand.new(GameCommand.Type.MOVE, Vector2i.UP)), "dungeon navigation blocks the dungeon wall above entry")
+	asserts.true_value(main.submit_pointer_movement(main.world_position_for_cell_center(Vector2i(1, 1))), "pointer movement accepts a dungeon walkable cell")
+	asserts.false_value(main.submit_pointer_movement(main.world_position_for_cell_center(Vector2i(0, 0))), "pointer movement rejects a dungeon wall cell")
+	var saved_dungeon_cell := _first_free_dungeon_cell(main)
+	asserts.true_value(saved_dungeon_cell != Vector2i(1, 1), "dungeon context fixture finds a non-entry walkable save cell")
+	main.player.global_position = main.world_position_for_cell_center(saved_dungeon_cell)
+	asserts.true_value(main.save_current_run().ok, "active dungeon context saves through explicit test store")
+	var loaded: Dictionary = main.save_store.load_run()
+	asserts.true_value(loaded.ok, "active dungeon context reloads from explicit test store")
+	if loaded.ok:
+		asserts.equal(main._vector_from_dictionary(loaded.run_state.dungeon_runtime_state.get("player_cell", {})), saved_dungeon_cell, "active dungeon save stores the dungeon player cell")
+		var resumed := Main.new()
+		var resumed_player := GridProbePlayer.new()
+		var resumed_dummy := CombatDummy.new()
+		resumed.catalog = catalog
+		resumed.run_state = loaded.run_state
+		resumed.world_visuals = Node2D.new()
+		resumed.player = resumed_player
+		resumed.combat_dummy = resumed_dummy
+		resumed.save_store = SaveStore.new(RUN_PATH, META_PATH)
+		asserts.true_value(resumed._configure_run_services(catalog).ok, "resumed dungeon context services configure")
+		asserts.true_value(resumed_dummy.configure_combat(catalog, resumed_player, {"hit_invulnerability_seconds": 0.1}).ok, "resumed dungeon context dummy configures")
+		asserts.true_value(resumed._configure_world_for_current_run().ok, "resumed active dungeon restores world")
+		asserts.true_value(resumed._in_dungeon_map, "resumed active dungeon stays in dungeon mode")
+		var resumed_model: Dictionary = resumed.map_read_model({"reveal_all": true})
+		asserts.equal(resumed_model.bounds, {"width": 12, "height": 9}, "resumed active dungeon map uses dungeon bounds")
+		asserts.equal(resumed._vector_from_dictionary(resumed_model.player.position), saved_dungeon_cell, "resumed active dungeon map uses saved dungeon player cell")
+		asserts.true_value(resumed_player.configured_world_data == resumed.world_data, "resumed player navigation is bound to dungeon WorldData")
+		_free_combat_runtime(resumed, resumed_player, resumed_dummy)
+	main._return_from_dungeon_map()
+	asserts.false_value(main._in_dungeon_map, "dungeon context fixture returns to overworld")
+	var returned_model: Dictionary = main.map_read_model({"reveal_all": true})
+	asserts.true_value(int(returned_model.bounds.width) != 12 or int(returned_model.bounds.height) != 9, "return restores non-dungeon map bounds")
+	asserts.true_value(player.configured_world_data == main.world_data, "player navigation rebinds to restored overworld WorldData")
+	asserts.false_value(main._has_pointer_move_target, "dungeon return leaves no stale pointer movement")
+	asserts.false_value(player.is_grid_step_active(), "dungeon return leaves no stale dungeon grid movement")
+	_free_combat_runtime(main, player, overworld_dummy)
+
 func _assert_boss_precombat_dialogue_blocks_combat_until_completion(asserts, catalog: DataCatalog) -> void:
 	var main := Main.new()
 	var player := MovementPlayer.new()
@@ -250,6 +357,20 @@ func _nearest_walkable_adjacent_cell_to_compound(main: Main, house_origin: Vecto
 			if main.world_data.contains(candidate) and main.world_data.is_walkable(candidate):
 				return candidate
 	return Vector2i(-1, -1)
+
+func _first_free_dungeon_cell(main: Main) -> Vector2i:
+	for y in range(1, main.world_data.height - 1):
+		for x in range(1, main.world_data.width - 1):
+			var cell := Vector2i(x, y)
+			if cell != Vector2i(1, 1) and main.world_data.is_walkable(cell):
+				return cell
+	return Vector2i(1, 1)
+
+func _marker_type(markers: Array, id: String) -> String:
+	for marker in markers:
+		if String(marker.get("id", "")) == id:
+			return String(marker.get("marker_type", ""))
+	return ""
 
 func _free_runtime(runtime: Dictionary) -> void:
 	var main: Main = runtime.main

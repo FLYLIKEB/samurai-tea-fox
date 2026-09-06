@@ -149,9 +149,14 @@ func apply_movement_command(command) -> bool:
 	return true
 
 func configure_grid_navigation(world_data = null, world_origin := Vector2.ZERO, tile_size := -1.0) -> void:
+	var next_tile_size := maxf(TILE_SIZE_PIXELS if tile_size < 0.0 else tile_size, 1.0)
+	var binding_changed: bool = _grid_world_data != world_data or _grid_world_origin != world_origin or not is_equal_approx(_grid_tile_size, next_tile_size)
 	_grid_world_data = world_data
 	_grid_world_origin = world_origin
-	_grid_tile_size = maxf(TILE_SIZE_PIXELS if tile_size < 0.0 else tile_size, 1.0)
+	_grid_tile_size = next_tile_size
+	if binding_changed:
+		_grid_moving = false
+		velocity = Vector2.ZERO
 	var current_cell := _grid_cell_for_position(global_position)
 	if _grid_cell_is_walkable(current_cell):
 		global_position = _grid_position_for_cell_center(current_cell)

@@ -145,6 +145,7 @@ func enter_dungeon_map(main, layout: WorldData, definition: Dictionary, is_new_e
 	if main._in_dungeon_map:
 		return
 	main._enemy_turn_queued = false
+	main._clear_pointer_movement()
 	main._overworld_generated_world = main.generated_world.duplicate(true)
 	main._overworld_world_data_snapshot = main.world_data.to_dictionary() if main.world_data != null else {}
 	main._overworld_player_cell = main._player_world_cell()
@@ -368,6 +369,7 @@ func return_from_dungeon_map(main) -> void:
 	if not main._in_dungeon_map:
 		return
 	main._enemy_turn_queued = false
+	main._clear_pointer_movement()
 	main.generated_world = main._overworld_generated_world
 	main.world_data = WorldData.from_dictionary(main._overworld_world_data_snapshot)
 	main._in_dungeon_map = false
