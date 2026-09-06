@@ -74,9 +74,26 @@ func run() -> void:
 		var image := root.get_texture().get_image()
 		if image == null or image.save_png(CAPTURE_PATH) != OK:
 			_failures.append("dungeon capture saves")
-	main._return_from_dungeon_map()
+	var clear_result: Dictionary = main.dungeon_runtime.complete_dungeon({
+		"objective_complete": true,
+		"resolution_type": "combat",
+		"choice_key": "dev132_exit_button",
+		"run_flag": "dev132_exit_button",
+		"reward_item_ids": [],
+		"progression_unlock_ids": [String(main.run_state.current_biome_id)]
+	})
+	if not clear_result.ok:
+		_failures.append("dungeon can be completed before mobile exit")
+	main.player.global_position = main.world_position_for_cell_center(Vector2i(1, 1))
+	var interaction_button := main.game_hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/InteractionButton") as Button if main.game_hud != null else null
+	if interaction_button == null:
+		_failures.append("dungeon HUD exposes the mobile interaction button")
+	else:
+		interaction_button.pressed.emit()
+		await process_frame
+		await process_frame
 	if main._in_dungeon_map:
-		_failures.append("dungeon return restores overworld mode")
+		_failures.append("mobile interaction button returns from the completed dungeon")
 	if main.map_read_model({"reveal_all": true}).get("bounds", {}) == {"width": 12, "height": 9}:
 		_failures.append("dungeon return restores overworld map bounds")
 	await _finish_with_main(main)

@@ -58,7 +58,7 @@ const DPAD_BOARD_SIZE := Vector2(72, 72)
 const ACTION_BUTTON_SIZE := Vector2(58, 26)
 const ACTION_MENU_BUTTON_SIZE := Vector2(24, 20)
 const SECONDARY_ACTION_ICON_BUTTON_SIZE := Vector2(20, 20)
-const ACTION_PANEL_SIZE := Vector2(132, 84)
+const ACTION_PANEL_SIZE := Vector2(132, 100)
 const ACTION_MENU_PANEL_SIZE := Vector2(132, 120)
 const ACTION_PANEL_COLUMNS := 2
 const MENU_PANEL_SIZE := Vector2(560, 280)
@@ -799,8 +799,8 @@ func _rebuild_action_buttons() -> void:
 	_clear_container_children(_action_grid)
 	_add_text_action(_action_grid, "AttackButton", ICON_ATTACK, "공격", "attack", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "DodgeButton", ICON_DODGE, "회피", "dodge", Vector2i.ZERO, 0)
+	_interaction_button = _add_interaction_action(_action_grid)
 	_add_text_action(_action_grid, "InventoryButton", ICON_BAG, "가방", "open_inventory", Vector2i.ZERO, 0)
-	_add_text_action(_action_grid, "CraftingButton", ICON_CONSUMABLE, "제작", "open_crafting", Vector2i.ZERO, 0)
 	if _action_menu_grid != null:
 		_clear_container_children(_action_menu_grid)
 		for slot in range(_tea_quickslot_count()):
@@ -811,6 +811,7 @@ func _rebuild_action_buttons() -> void:
 		_add_text_action(_action_menu_grid, "TeaBrewingButton", ICON_TEA, "우리기", "open_tea_brewing", Vector2i.ZERO, 0)
 		_add_text_action(_action_menu_grid, "MetaCodexButton", ICON_BAG, "도감", "open_meta_codex", Vector2i.ZERO, 0)
 		_add_text_action(_action_menu_grid, "MapButton", ICON_MAP, "지도", "open_map", Vector2i.ZERO, 0)
+		_add_text_action(_action_menu_grid, "CraftingButton", ICON_CONSUMABLE, "제작", "open_crafting", Vector2i.ZERO, 0)
 		_add_text_action(_action_menu_grid, "FacilitiesButton", ICON_MAP, "시설", "open_facilities", Vector2i.ZERO, 0)
 		_add_text_action(_action_menu_grid, "SleepButton", ICON_TEA, "수면", "sleep", Vector2i.ZERO, 0)
 	var action_panel := _panels.get("action") as Control
