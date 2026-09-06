@@ -182,8 +182,8 @@ func dungeon_interaction_target_id_for_cell(world_data, in_dungeon_map: bool, ce
 		if is_core_dungeon_target(target_id):
 			return target_id
 	var landmark_id := landmark_target_id_for_cell(world_data, cell)
-	if in_dungeon_map and landmark_id == WorldData.LANDMARK_ENTRY:
-		return "dungeon_entry"
+	if in_dungeon_map and landmark_id == "dungeon_entry":
+		return landmark_id
 	if is_core_dungeon_target(landmark_id):
 		return landmark_id
 	return ""

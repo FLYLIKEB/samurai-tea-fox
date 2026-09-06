@@ -16,10 +16,22 @@ const META_PATH := "user://dungeon_input_regression_meta.save.json"
 class DropSource:
 	extends Node2D
 	signal drop_requested(event: Dictionary)
+	var monster_id := "fixture_drop_source"
+	var automatic_attacks := false
+	var collision_layer := 0
+	var collision_mask := 0
+
+	func current_hp() -> int:
+		return 1
 
 class MovementPlayer:
 	extends Node2D
 	var combat_config := {"hit_invulnerability_seconds": 0.1}
+	var submitted_commands := []
+
+	func submit_command(command) -> bool:
+		submitted_commands.append(command)
+		return true
 
 class GridProbePlayer:
 	extends MovementPlayer
@@ -102,6 +114,11 @@ func _assert_visible_house_accepts_e_before_attack(asserts, catalog: DataCatalog
 	asserts.true_value(runtime.main._try_dungeon_interaction_from_input(), "dungeon ore E interaction succeeds")
 	asserts.equal(runtime.main.inventory.get_total_quantity("iron_ore"), ore_before + 1, "dungeon ore is added to inventory")
 	asserts.equal(runtime.main.inventory.get_total_quantity("stone_pickaxe"), 1, "dungeon ore mining does not consume pickaxe")
+	var clear_result: Dictionary = runtime.main.dungeon_runtime.complete_dungeon({"objective_complete": true, "resolution_type": "combat", "choice_key": "test_clear", "run_flag": "test_clear", "reward_item_ids": [], "progression_unlock_ids": [String(runtime.main.run_state.current_biome_id)]})
+	asserts.true_value(clear_result.ok, "fixture can mark the active dungeon complete before exit")
+	runtime.main.player.global_position = runtime.main.world_position_for_cell_center(Vector2i(1, 1))
+	asserts.true_value(runtime.main._try_dungeon_interaction_from_input(), "E on the completed dungeon entry returns to the overworld")
+	asserts.false_value(runtime.main._in_dungeon_map, "completed dungeon E exit leaves dungeon mode")
 	_free_runtime(runtime)
 
 func _assert_visible_house_click_queues_entry(asserts, catalog: DataCatalog) -> void:
@@ -172,6 +189,17 @@ func _assert_dungeon_combatants_do_not_cross_world_boundary(asserts, catalog: Da
 	if second_regular_enemy != null:
 		asserts.equal(second_regular_enemy.monster_id, "road_bandit", "dungeon second regular enemy comes from the generated spawn pool")
 		asserts.equal(second_regular_enemy.sprite_asset_id, "monster_road_bandit_front_idle", "dungeon second regular enemy sprite follows its monster content image")
+	if first_regular_enemy != null:
+		asserts.true_value("dungeon_enemy_0" in main.world_data.get_occupants(Vector2i(7, 2)), "dungeon enemy reservation remains on its world cell")
+		asserts.equal(main._world_interaction_coordinator.dungeon_enemy_cell_near(main, Vector2i(6, 2)), Vector2i(7, 2), "adjacent dungeon enemy cell can be resolved from world data")
+		main.player.global_position = main.world_position_for_cell_center(Vector2i(6, 2))
+		asserts.true_value(main._try_dungeon_interaction_from_input(), "E attacks an adjacent dungeon enemy")
+		asserts.equal(player.submitted_commands.back().type, GameCommand.Type.ATTACK, "adjacent dungeon enemy routes through the shared attack command")
+		asserts.equal(player.submitted_commands.back().direction, Vector2i.RIGHT, "adjacent dungeon enemy attack faces the target")
+		player.submitted_commands.clear()
+		main._dungeon_resources.append({"id": "dungeon_iron_ore_pointer_fixture", "position": {"x": 7, "y": 3}})
+		asserts.true_value(main.submit_pointer_interaction(first_regular_enemy.global_position), "pointer attacks a dungeon enemy even when ore is nearby")
+		asserts.equal(player.submitted_commands.back().type, GameCommand.Type.ATTACK, "pointer enemy selection wins over nearby ore acquisition")
 	main._enemy_turn_queued = true
 	main._return_from_dungeon_map()
 	asserts.false_value(main._in_dungeon_map, "direct dungeon exit returns to overworld mode")
@@ -301,6 +329,7 @@ func _assert_boss_precombat_dialogue_blocks_combat_until_completion(asserts, cat
 	asserts.equal(main.dungeon_runtime.to_projection().boss_flow_state, DungeonInstanceState.BOSS_FLOW_PRE_DIALOGUE_ACTIVE, "boss dialogue has its own persisted active state")
 	asserts.equal(main._active_narrative_event_id, "story_b01_03", "main stores active pre-boss dialogue event for input")
 	asserts.false_value(main.submit_action_command(GameCommand.new(GameCommand.Type.ATTACK, Vector2i.RIGHT)), "attack command is blocked during pre-boss dialogue")
+	asserts.false_value(main.submit_action_command(GameCommand.new(GameCommand.Type.DODGE, Vector2i.RIGHT)), "dodge command is blocked during pre-boss dialogue")
 	asserts.equal(boss.current_hp(), boss.combatant.hp_max, "blocked dialogue attack cannot damage the boss")
 	asserts.true_value(main.submit_action_command(GameCommand.new(
 		GameCommand.Type.NARRATIVE_SELECT_OPTION,

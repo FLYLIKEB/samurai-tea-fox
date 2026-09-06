@@ -52,6 +52,8 @@ func dungeon_boss_combat_available(main) -> bool:
 func dungeon_boss_action_locked(main, command) -> bool:
 	if not main._in_dungeon_map or main._dungeon_boss_combat_available():
 		return false
+	if not main._dungeon_regular_combat_targets().is_empty():
+		return false
 	if command.type == GameCommand.Type.NARRATIVE_SELECT_OPTION:
 		return false
 	if command.type == GameCommand.Type.INTERACT:
