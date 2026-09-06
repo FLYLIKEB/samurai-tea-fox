@@ -5,6 +5,7 @@ const GAMEPLAY_SCENE_PATH := "res://src/main/main.tscn"
 const BACKGROUND_ASSET_ID := "clean_warm_teahouse_interior"
 const LOGO_ASSET_ID := "muchau_title_plaque"
 const DIVIDER_ASSET_ID := "divider_under_brand"
+const GameCommand = preload("res://src/core/commands/game_command.gd")
 const MetaState = preload("res://src/save/meta_state.gd")
 const RunState = preload("res://src/save/run_state.gd")
 const SaveStore = preload("res://src/save/save_store.gd")
@@ -85,8 +86,37 @@ func run() -> void:
 		failures.append("new start presents the canonical Notion prologue text")
 	if int(gameplay_scene.run_state.narrative_event_counts.get("story_pro_01", 0)) != 0:
 		failures.append("new start replaces the old completed run state before the prologue")
+	_assert_full_prologue_sequence(gameplay_scene)
 
 	finish()
+
+func _assert_full_prologue_sequence(gameplay_scene) -> void:
+	var steps := [
+		["story_pro_01", "dlg_pro_000", "continue_dlg_pro_000", "story_pro_01"],
+		["story_pro_01", "dlg_pro_001", "complete_dlg_pro_001", "story_pro_02"],
+		["story_pro_02", "dlg_pro_002", "complete_dlg_pro_002", "story_pro_03"],
+		["story_pro_03", "dlg_1", "complete_dlg_1", "story_pro_04"],
+		["story_pro_04", "dlg_pro_004", "complete_dlg_pro_004", "story_pro_05"],
+		["story_pro_05", "dlg_pro_005a", "continue_dlg_pro_005a", "story_pro_05"],
+		["story_pro_05", "dlg_pro_005b", "complete_dlg_pro_005b", "story_pro_06"],
+		["story_pro_06", "dlg_pro_006", "complete_dlg_pro_006", "story_pro_07"],
+		["story_pro_07", "dlg_4", "continue_dlg_4", "story_pro_07"],
+		["story_pro_07", "dlg_pro_007b", "complete_dlg_pro_007b", "story_pro_08"],
+		["story_pro_08", "dlg_pro_008", "complete_dlg_pro_008", ""],
+	]
+	for step in steps:
+		if not gameplay_scene.submit_action_command(GameCommand.new(GameCommand.Type.NARRATIVE_SELECT_OPTION, Vector2i.ZERO, -1, {
+			"event_id": step[0],
+			"node_id": step[1],
+			"option_id": step[2]
+		})):
+			failures.append("new start accepts canonical prologue option %s" % step[2])
+			return
+		if gameplay_scene._active_narrative_event_id != step[3]:
+			failures.append("new start advances canonical prologue after %s" % step[2])
+			return
+	if gameplay_scene.game_hud.narrative_dialogue_visible():
+		failures.append("new start closes the dialogue only after PRO-08")
 
 func _write_existing_completed_run() -> void:
 	var store := SaveStore.new()

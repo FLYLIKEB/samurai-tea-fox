@@ -7,10 +7,12 @@ const RunState = preload("res://src/save/run_state.gd")
 
 var active_event_id := ""
 var active_node_id := ""
+var chain_scene_sequence := false
 
 func reset() -> void:
 	active_event_id = ""
 	active_node_id = ""
+	chain_scene_sequence = false
 
 func first_run_prologue_read_model(narrative_runtime, run_start_event_selector, run_state, meta_state = null, force_first_run := false) -> Dictionary:
 	if narrative_runtime == null or run_start_event_selector == null:
@@ -37,11 +39,13 @@ func start_run_event_read_model(narrative_runtime, run_start_event_selector, run
 	model_result.read_model["presentation_kind"] = String(selected.get("presentation_kind", "dialogue"))
 	model_result.read_model["father_physical_actor"] = bool(selected.get("father_physical_actor", false))
 	model_result.read_model["meta_run_count"] = int(selected.get("meta_run_count", 0))
+	model_result.read_model["chain_scene_sequence"] = bool(selected.get("chain_scene_sequence", false))
 	return model_result
 
 func begin_read_model(read_model: Dictionary) -> void:
 	active_event_id = String(read_model.get("event_id", ""))
 	active_node_id = String(read_model.get("node_id", ""))
+	chain_scene_sequence = bool(read_model.get("chain_scene_sequence", false))
 
 func select_option(command: GameCommand, narrative_runtime, run_state, meta_state = null) -> Dictionary:
 	if narrative_runtime == null or run_state == null:
@@ -55,6 +59,15 @@ func select_option(command: GameCommand, narrative_runtime, run_state, meta_stat
 	if not result.ok:
 		return {"ok": false, "handled": false, "reason": String(result.get("reason", "narrative_selection_failed")), "result": result}
 	apply_result_commands(result.get("commands", []), run_state)
+	if bool(result.get("complete", false)) and chain_scene_sequence:
+		var next_model: Dictionary = narrative_runtime.read_model_for_next_sequence_event(event_id, run_state, meta_state)
+		if next_model.ok:
+			next_model.read_model["chain_scene_sequence"] = true
+			result["complete"] = false
+			result["read_model"] = next_model.read_model
+			result["continued_sequence"] = true
+	elif result.has("read_model") and chain_scene_sequence:
+		result.read_model["chain_scene_sequence"] = true
 	result["ok"] = true
 	result["handled"] = true
 	result["event_id"] = event_id

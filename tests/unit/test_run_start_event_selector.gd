@@ -33,6 +33,8 @@ func _assert_generated_run_start_events_select_by_meta_count(asserts) -> void:
 	asserts.equal(first.read_model.text, "아버지?", "first-run start uses the canonical Notion dialogue text")
 	asserts.equal(second.read_model.event_id, "story_pro_r_father_early", "run_count 1 selects the canonical early return dialogue")
 	asserts.equal(veteran.read_model.event_id, "story_pro_r_father_late", "run_count >= 5 selects the canonical late return dialogue")
+	asserts.true_value(bool(fixture.selector.select_event(run_state, {"run_count": 0}).chain_scene_sequence), "first-run start continues through the exported prologue sequence")
+	asserts.false_value(bool(fixture.selector.select_event(run_state, {"run_count": 1}).get("chain_scene_sequence", false)), "repeat-run memory remains a single event")
 	asserts.false_value(first.read_model.text == second.read_model.text, "first and second run starts use different dialogue")
 	asserts.false_value(second.read_model.text == veteran.read_model.text, "early and veteran repeat starts use different dialogue")
 	asserts.equal(second.read_model.speaker_id, "NOTEBOOK", "repeat-run start uses the canonical notebook memory speaker")

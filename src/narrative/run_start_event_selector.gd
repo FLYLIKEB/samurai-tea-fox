@@ -50,7 +50,7 @@ func _candidate_from_source_lines(event: Dictionary) -> Dictionary:
 			continue
 		var hook_key := String(source_line.get("hook_key", ""))
 		if hook_key == FIRST_RUN_HOOK_KEY:
-			return {"ok": true, "found": true, "candidate": _source_candidate(event_id, 0, 0)}
+			return {"ok": true, "found": true, "candidate": _source_candidate(event_id, 0, 0, true)}
 		if (
 			String(source_line.get("trigger_timing", "")) == RETURN_TRIGGER_TIMING
 			and hook_key.begins_with(RETURN_FATHER_HOOK_PREFIX)
@@ -65,7 +65,7 @@ func _candidate_from_source_lines(event: Dictionary) -> Dictionary:
 			)}
 	return {"ok": true, "found": false}
 
-func _source_candidate(event_id: String, min_run_count: int, max_run_count: int) -> Dictionary:
+func _source_candidate(event_id: String, min_run_count: int, max_run_count: int, chain_scene_sequence := false) -> Dictionary:
 	return {
 		"event_id": event_id,
 		"min_run_count": min_run_count,
@@ -73,6 +73,7 @@ func _source_candidate(event_id: String, min_run_count: int, max_run_count: int)
 		"priority": 0,
 		"presentation_kind": "dialogue",
 		"father_physical_actor": false,
+		"chain_scene_sequence": chain_scene_sequence,
 	}
 
 func _run_count_range(condition: String) -> Dictionary:

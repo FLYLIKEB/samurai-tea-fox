@@ -77,6 +77,33 @@ func read_model_for_event(event_id: String, run_state, meta_state = null) -> Dic
 		return start_result
 	return read_model_for_node(event_id, String(event_definitions[event_id].start_node_id), run_state, meta_state)
 
+func read_model_for_next_sequence_event(event_id: String, run_state, meta_state = null) -> Dictionary:
+	if not event_definitions.has(event_id):
+		return _fail("missing_event", "Narrative event '%s' is not defined." % event_id)
+	var current: Dictionary = event_definitions[event_id]
+	var sequence_id := String(current.get("sequence_id", ""))
+	var sequence_order := int(current.get("sequence_order", -1))
+	if sequence_id.is_empty() or sequence_order < 0:
+		return _fail("event_has_no_sequence", "Narrative event '%s' has no ordered sequence metadata." % event_id)
+	var next_definition: Dictionary = {}
+	for candidate in event_definitions.values():
+		if String(candidate.get("sequence_id", "")) != sequence_id:
+			continue
+		var candidate_order := int(candidate.get("sequence_order", -1))
+		if candidate_order <= sequence_order:
+			continue
+		if not next_definition.is_empty() and candidate_order >= int(next_definition.sequence_order):
+			continue
+		var availability := can_start_event(String(candidate.id), run_state)
+		if not availability.ok and availability.reason == "event_already_completed":
+			continue
+		if not availability.ok:
+			return availability
+		next_definition = candidate
+	if next_definition.is_empty():
+		return _fail("sequence_complete", "Narrative sequence '%s' has no remaining event after '%s'." % [sequence_id, event_id])
+	return read_model_for_event(String(next_definition.id), run_state, meta_state)
+
 func read_model_for_node(event_id: String, node_id: String, run_state, meta_state = null) -> Dictionary:
 	var node_result := _node_for_event(event_id, node_id)
 	if not node_result.ok:
@@ -106,7 +133,9 @@ func read_model_for_node(event_id: String, node_id: String, run_state, meta_stat
 			"speaker_id": node.speaker_id,
 			"text": node.text,
 			"options": visible_options,
-			"replay_policy": event.replay_policy
+			"replay_policy": event.replay_policy,
+			"sequence_id": String(event.get("sequence_id", "")),
+			"sequence_order": int(event.get("sequence_order", -1))
 		}
 	}
 
@@ -172,14 +201,30 @@ func _event_definition_from_row(row: Dictionary, item_ids: Dictionary, items_ava
 	var completion_result := _validate_reachable_completion(String(row.id), start_node_id, nodes_result.nodes)
 	if not completion_result.ok:
 		return completion_result
+	var sequence := _sequence_metadata(row)
 	return {"ok": true, "definition": {
 		"id": String(row.id),
 		"name": String(row.name),
 		"status": String(row.status),
 		"replay_policy": replay_policy,
 		"start_node_id": start_node_id,
-		"nodes": nodes_result.nodes
+		"nodes": nodes_result.nodes,
+		"sequence_id": String(sequence.get("id", "")),
+		"sequence_order": int(sequence.get("order", -1))
 	}}
+
+func _sequence_metadata(row: Dictionary) -> Dictionary:
+	var scene_key := String(row.get("scene_key", ""))
+	var separator_index := scene_key.rfind("-")
+	if separator_index <= 0:
+		return {}
+	var order_suffix := scene_key.substr(separator_index + 1)
+	if not order_suffix.is_valid_int():
+		return {}
+	var exported_order = row.get("scene_order", int(order_suffix))
+	if typeof(exported_order) not in [TYPE_INT, TYPE_FLOAT] or int(exported_order) != float(exported_order):
+		return {}
+	return {"id": scene_key.left(separator_index), "order": int(exported_order)}
 
 func _nodes_from_row(row: Dictionary, item_ids: Dictionary, items_available: bool, choice_ids: Dictionary, choices_available: bool) -> Dictionary:
 	var raw_nodes = row.get("nodes", [])
