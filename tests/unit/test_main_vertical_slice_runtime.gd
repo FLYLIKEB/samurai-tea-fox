@@ -41,26 +41,23 @@ func run(asserts) -> void:
 	var prologue_model: Dictionary = main.first_run_prologue_read_model({"run_count": 0, "dialogue_memory_flags": [], "unlocked_meta_flags": []})
 	asserts.true_value(prologue_model.ok, "first-run prologue has a read model before completion")
 	if prologue_model.ok:
-		asserts.equal(prologue_model.read_model.speaker_id, "CHR-1", "first-run prologue starts as father dialogue")
+		asserts.equal(prologue_model.read_model.event_id, "story_pro_01", "first-run prologue uses the canonical exported event")
+		asserts.equal(prologue_model.read_model.speaker_id, "CHR-8", "first-run prologue starts as Muchau in the empty house")
+		asserts.equal(prologue_model.read_model.text, "아버지?", "first-run prologue displays the canonical Notion text")
 	asserts.true_value(main.submit_action_command(GameCommand.new(GameCommand.Type.NARRATIVE_SELECT_OPTION, Vector2i.ZERO, -1, {
-		"event_id": "first_run_prologue",
-		"node_id": "father_farewell",
-		"option_id": "accept_farewell"
-	})), "first-run prologue advances from father farewell")
+		"event_id": "story_pro_01",
+		"node_id": "dlg_pro_000",
+		"option_id": "continue_dlg_pro_000"
+	})), "first-run prologue advances from Muchau calling for his father")
 	asserts.true_value(main.game_hud.narrative_dialogue_visible(), "first-run prologue remains visible after the first advance")
 	asserts.true_value(main.submit_action_command(GameCommand.new(GameCommand.Type.NARRATIVE_SELECT_OPTION, Vector2i.ZERO, -1, {
-		"event_id": "first_run_prologue",
-		"node_id": "muchau_question",
-		"option_id": "cross_sea"
-	})), "first-run prologue advances through Muchau's question")
-	asserts.true_value(main.submit_action_command(GameCommand.new(GameCommand.Type.NARRATIVE_SELECT_OPTION, Vector2i.ZERO, -1, {
-		"event_id": "first_run_prologue",
-		"node_id": "border_cup",
-		"option_id": "begin_road"
-	})), "first-run prologue completes at the Hongguk border cup")
+		"event_id": "story_pro_01",
+		"node_id": "dlg_pro_001",
+		"option_id": "complete_dlg_pro_001"
+	})), "first-run prologue completes the canonical first scene")
 	asserts.false_value(main.game_hud.narrative_dialogue_visible(), "first-run prologue closes after completion")
-	asserts.equal(int(main.run_state.narrative_event_counts.get("first_run_prologue", 0)), 1, "first-run prologue completion is recorded in run state")
-	asserts.true_value(main.run_state.narrative_flags.has("first_run_prologue_completed"), "first-run prologue applies its completion run flag")
+	asserts.equal(int(main.run_state.narrative_event_counts.get("story_pro_01", 0)), 1, "canonical first-run scene completion is recorded in run state")
+	asserts.true_value(main.run_state.narrative_flags.has("prologue_house_started"), "canonical first-run scene applies its exported completion flag")
 	asserts.false_value(main.first_run_prologue_read_model({"run_count": 0, "dialogue_memory_flags": [], "unlocked_meta_flags": []}).ok, "completed first-run prologue cannot reopen in the same run")
 	var repeat_runtime := _configured_runtime(catalog, RunState.new(), {"run_count": 1})
 	asserts.true_value(repeat_runtime.result.ok, "repeat-run fixture configures")
@@ -69,7 +66,7 @@ func run(asserts) -> void:
 		var repeat_model: Dictionary = repeat_runtime.main.start_run_event_read_model({"run_count": 1})
 		asserts.true_value(repeat_model.ok, "repeat-run start event has a read model")
 		if repeat_model.ok:
-			asserts.equal(repeat_model.read_model.event_id, "repeat_run_father_dream", "repeat-run start selects the father dream event")
+			asserts.equal(repeat_model.read_model.event_id, "story_pro_r_father_early", "repeat-run start selects the canonical father-memory event")
 			asserts.false_value(bool(repeat_model.read_model.father_physical_actor), "repeat-run father presentation is not a physical Hongguk NPC")
 		asserts.equal(repeat_runtime.main.first_run_prologue_read_model({"run_count": 1}).reason, "not_first_run", "repeat-run meta state rejects first-run prologue")
 	asserts.equal(main.player.ability_runtime.equipped_ability_id(0), "ember", "first-tail playable ability is equipped by default")

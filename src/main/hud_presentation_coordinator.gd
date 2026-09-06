@@ -171,6 +171,7 @@ func first_run_prologue_read_model(meta_state = null) -> Dictionary:
 	var meta = meta_state if meta_state != null else _call_dictionary(_ports.current_meta_state_snapshot)
 	return _call_object(_ports.get_narrative_session).first_run_prologue_read_model(
 		_call_object(_ports.get_narrative_runtime),
+		_call_object(_ports.get_run_start_event_selector),
 		run_state,
 		meta,
 		_call_bool(_ports.get_force_first_run_prologue)

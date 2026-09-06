@@ -1,7 +1,9 @@
 extends RefCounted
 class_name RunStartEventSelector
 
-const DEFAULT_START_EVENT_ID := "first_run_prologue"
+const FIRST_RUN_HOOK_KEY := "dialogue.prologue.call_father"
+const RETURN_FATHER_HOOK_PREFIX := "dialogue.run_return.father_"
+const RETURN_TRIGGER_TIMING := "반복 런"
 
 var candidates: Array = []
 
@@ -9,20 +11,113 @@ func configure(catalog) -> Dictionary:
 	if catalog == null or not catalog.has_method("get_definitions"):
 		return _fail("invalid_catalog", "Run-start event selection requires a data catalog.")
 	candidates.clear()
+	var canonical_candidates: Array = []
+	var configured_candidates: Array = []
 	for event in catalog.get_definitions("events"):
 		if typeof(event) != TYPE_DICTIONARY:
 			continue
+		var canonical := _candidate_from_source_lines(event)
+		if not canonical.ok:
+			return canonical
+		if bool(canonical.get("found", false)):
+			canonical_candidates.append(canonical.candidate)
 		var config = event.get("run_start", {})
 		if typeof(config) != TYPE_DICTIONARY or config.is_empty():
 			continue
 		var parsed := _candidate_from_event(event, config)
 		if not parsed.ok:
 			return parsed
-		candidates.append(parsed.candidate)
+		configured_candidates.append(parsed.candidate)
+	for candidate in canonical_candidates:
+		candidates.append(candidate)
+	for candidate in configured_candidates:
+		if not _range_is_owned_by_canonical(candidate, canonical_candidates):
+			candidates.append(candidate)
 	if candidates.is_empty():
 		return _fail("missing_run_start_events", "No narrative events declare run_start metadata.")
 	candidates.sort_custom(_sort_candidates)
 	return {"ok": true, "selector": self}
+
+func _candidate_from_source_lines(event: Dictionary) -> Dictionary:
+	var event_id := String(event.get("id", ""))
+	if event_id.is_empty():
+		return _fail("missing_event_id", "Run-start source event is missing an id.")
+	var source_lines = event.get("source_lines", [])
+	if typeof(source_lines) != TYPE_ARRAY:
+		return {"ok": true, "found": false}
+	for source_line in source_lines:
+		if typeof(source_line) != TYPE_DICTIONARY:
+			continue
+		var hook_key := String(source_line.get("hook_key", ""))
+		if hook_key == FIRST_RUN_HOOK_KEY:
+			return {"ok": true, "found": true, "candidate": _source_candidate(event_id, 0, 0)}
+		if (
+			String(source_line.get("trigger_timing", "")) == RETURN_TRIGGER_TIMING
+			and hook_key.begins_with(RETURN_FATHER_HOOK_PREFIX)
+		):
+			var run_range := _run_count_range(String(source_line.get("trigger_condition", "")))
+			if not run_range.ok:
+				return run_range
+			return {"ok": true, "found": true, "candidate": _source_candidate(
+				event_id,
+				int(run_range.min_run_count),
+				int(run_range.max_run_count)
+			)}
+	return {"ok": true, "found": false}
+
+func _source_candidate(event_id: String, min_run_count: int, max_run_count: int) -> Dictionary:
+	return {
+		"event_id": event_id,
+		"min_run_count": min_run_count,
+		"max_run_count": max_run_count,
+		"priority": 0,
+		"presentation_kind": "dialogue",
+		"father_physical_actor": false,
+	}
+
+func _run_count_range(condition: String) -> Dictionary:
+	var min_run_count := 0
+	var max_run_count := -1
+	var found_bound := false
+	for raw_clause in condition.replace(" ", "").split("&&"):
+		var clause := String(raw_clause)
+		if not clause.begins_with("meta.run_count"):
+			return _fail("invalid_run_start_condition", "Unsupported canonical run-start condition '%s'." % condition)
+		var comparison := clause.trim_prefix("meta.run_count")
+		var operator := ""
+		for candidate_operator in [">=", "<=", "==", ">", "<"]:
+			if comparison.begins_with(candidate_operator):
+				operator = candidate_operator
+				break
+		if operator.is_empty():
+			return _fail("invalid_run_start_condition", "Canonical run-start condition '%s' has no supported comparison." % condition)
+		var raw_value := comparison.trim_prefix(operator)
+		if not raw_value.is_valid_int():
+			return _fail("invalid_run_start_condition", "Canonical run-start condition '%s' has a non-integer bound." % condition)
+		var value := int(raw_value)
+		if value < 0:
+			return _fail("invalid_run_start_condition", "Canonical run-start condition '%s' has a negative bound." % condition)
+		found_bound = true
+		match operator:
+			">=": min_run_count = maxi(min_run_count, value)
+			">": min_run_count = maxi(min_run_count, value + 1)
+			"<=": max_run_count = value if max_run_count < 0 else mini(max_run_count, value)
+			"<": max_run_count = value - 1 if max_run_count < 0 else mini(max_run_count, value - 1)
+			"==":
+				min_run_count = maxi(min_run_count, value)
+				max_run_count = value if max_run_count < 0 else mini(max_run_count, value)
+	if not found_bound or (max_run_count >= 0 and max_run_count < min_run_count):
+		return _fail("invalid_run_start_condition", "Canonical run-start condition '%s' resolves to an invalid range." % condition)
+	return {"ok": true, "min_run_count": min_run_count, "max_run_count": max_run_count}
+
+func _range_is_owned_by_canonical(candidate: Dictionary, canonical_candidates: Array) -> bool:
+	for canonical in canonical_candidates:
+		if (
+			int(candidate.min_run_count) == int(canonical.min_run_count)
+			and int(candidate.max_run_count) == int(canonical.max_run_count)
+		):
+			return true
+	return false
 
 func select_event(run_state, meta_state := {}, force_first_run := false) -> Dictionary:
 	var meta := _meta_query(meta_state)

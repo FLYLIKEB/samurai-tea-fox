@@ -29,20 +29,21 @@ func _assert_generated_run_start_events_select_by_meta_count(asserts) -> void:
 		run_state,
 		{"run_count": 5}
 	)
-	asserts.equal(first.read_model.event_id, "first_run_prologue", "run_count 0 selects the first-run prologue")
-	asserts.equal(second.read_model.event_id, "repeat_run_father_dream", "run_count 1 selects the repeat-run father dream")
-	asserts.equal(veteran.read_model.event_id, "veteran_run_father_memory", "run_count >= 5 selects the more specific scent-memory start")
+	asserts.equal(first.read_model.event_id, "story_pro_01", "run_count 0 selects the canonical first prologue scene")
+	asserts.equal(first.read_model.text, "아버지?", "first-run start uses the canonical Notion dialogue text")
+	asserts.equal(second.read_model.event_id, "story_pro_r_father_early", "run_count 1 selects the canonical early return dialogue")
+	asserts.equal(veteran.read_model.event_id, "story_pro_r_father_late", "run_count >= 5 selects the canonical late return dialogue")
 	asserts.false_value(first.read_model.text == second.read_model.text, "first and second run starts use different dialogue")
 	asserts.false_value(second.read_model.text == veteran.read_model.text, "early and veteran repeat starts use different dialogue")
 	asserts.equal(second.read_model.speaker_id, "NOTEBOOK", "repeat-run start uses the canonical notebook memory speaker")
-	asserts.equal(veteran.read_model.speaker_id, "CHR-1", "veteran repeat-run start stays in father's memory presentation")
+	asserts.equal(veteran.read_model.speaker_id, "NOTEBOOK", "veteran repeat-run start uses the canonical notebook memory speaker")
 	asserts.false_value(bool(fixture.selector.select_event(run_state, {"run_count": 5}).father_physical_actor), "father is not selected as a physical Hongguk NPC")
 
 func _assert_completed_start_event_does_not_reopen_in_same_run(asserts) -> void:
 	var fixture := _fixture(asserts)
 	if fixture.is_empty():
 		return
-	var run_state := {"narrative_flags": [], "narrative_event_counts": {"repeat_run_father_dream": 1}, "inventory": {}, "current_biome_id": "common_region"}
+	var run_state := {"narrative_flags": [], "narrative_event_counts": {"story_pro_r_father_early": 1}, "inventory": {}, "current_biome_id": "common_region"}
 	var selected: Dictionary = fixture.selector.select_event(run_state, {"run_count": 1})
 	asserts.false_value(selected.ok, "completed once-per-run repeat start does not reopen in the same run")
 	asserts.equal(selected.reason, "no_start_event_candidate", "completed repeat start has a stable no-candidate reason")
@@ -54,7 +55,7 @@ func _assert_force_first_run_uses_prologue_even_with_prior_meta(asserts) -> void
 	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": "common_region"}
 	var selected: Dictionary = fixture.selector.select_event(run_state, {"run_count": 4}, true)
 	asserts.true_value(selected.ok, "forced new start can ignore previous meta run count")
-	asserts.equal(selected.event_id, "first_run_prologue", "forced new start preserves the first-run prologue regression behavior")
+	asserts.equal(selected.event_id, "story_pro_01", "forced new start preserves the canonical first prologue behavior")
 
 func _fixture(asserts) -> Dictionary:
 	var catalog := DataCatalog.new()

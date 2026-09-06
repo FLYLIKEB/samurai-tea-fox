@@ -52,13 +52,14 @@ func _assert_generated_events_execute_from_data(asserts) -> void:
 	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": "common_region"}
 	var meta_state := {"dialogue_memory_flags": [], "unlocked_meta_flags": [], "run_count": 0}
 	var teahouse_model: Dictionary = runtime_result.runtime.read_model_for_event("roadside_teahouse_intro", run_state, meta_state)
-	var prologue_model: Dictionary = runtime_result.runtime.read_model_for_event("first_run_prologue", run_state, meta_state)
+	var prologue_model: Dictionary = runtime_result.runtime.read_model_for_event("story_pro_01", run_state, meta_state)
 	var shrine_model: Dictionary = runtime_result.runtime.read_model_for_event("mountain_shrine_echo", run_state, meta_state)
 	asserts.true_value(teahouse_model.ok, "first sample story event opens from generated data")
 	asserts.true_value(prologue_model.ok, "first-run prologue opens from generated data")
 	if prologue_model.ok:
-		asserts.equal(prologue_model.read_model.speaker_id, "CHR-1", "first-run prologue begins with the father")
-		asserts.equal(_option_ids(prologue_model.read_model), ["accept_farewell"], "first-run prologue starts with one dialogue advance option")
+		asserts.equal(prologue_model.read_model.speaker_id, "CHR-8", "canonical first-run prologue begins with Muchau")
+		asserts.equal(prologue_model.read_model.text, "아버지?", "canonical first-run prologue preserves the Notion text")
+		asserts.equal(_option_ids(prologue_model.read_model), ["continue_dlg_pro_000"], "canonical first-run prologue starts with its exported advance option")
 	asserts.false_value(shrine_model.ok, "ordinary generated speaker cannot query meta state")
 	asserts.equal(shrine_model.reason, "unknown_meta_memory_speaker", "generated speaker without a character policy returns stable rejection")
 
@@ -332,8 +333,8 @@ func _assert_generated_representative_dialogue_conditions(asserts) -> void:
 	var runtime: NarrativeRuntime = runtime_result.runtime
 	var run_state := {"narrative_flags": [], "narrative_event_counts": {}, "inventory": {}, "current_biome_id": "common_region"}
 	var meta_state := {"run_count": 3, "dialogue_memory_flags": [], "unlocked_meta_flags": []}
-	asserts.true_value(runtime.read_model_for_event("first_run_prologue", run_state, meta_state).ok, "run-start prologue dialogue opens from generated data")
-	asserts.true_value(runtime.read_model_for_event("repeat_run_father_dream", run_state, meta_state).ok, "repeat-run start dialogue opens from generated data")
+	asserts.true_value(runtime.read_model_for_event("story_pro_01", run_state, meta_state).ok, "canonical run-start prologue dialogue opens from generated data")
+	asserts.true_value(runtime.read_model_for_event("story_pro_r_father_early", run_state, meta_state).ok, "canonical repeat-run dialogue opens from generated data")
 	asserts.true_value(runtime.read_model_for_event("sen_rikyu_phase_3_final_victory", run_state, meta_state).ok, "post-combat representative dialogue opens from generated data")
 	asserts.true_value(runtime.read_model_for_event("ending_teahouse_memory", run_state, meta_state).ok, "ending representative dialogue opens from generated data")
 

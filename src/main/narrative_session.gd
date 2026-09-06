@@ -5,8 +5,6 @@ const GameCommand = preload("res://src/core/commands/game_command.gd")
 const NarrativeRuntime = preload("res://src/narrative/narrative_runtime.gd")
 const RunState = preload("res://src/save/run_state.gd")
 
-const FIRST_RUN_PROLOGUE_EVENT_ID := "first_run_prologue"
-
 var active_event_id := ""
 var active_node_id := ""
 
@@ -14,15 +12,15 @@ func reset() -> void:
 	active_event_id = ""
 	active_node_id = ""
 
-func first_run_prologue_read_model(narrative_runtime, run_state, meta_state = null, force_first_run := false) -> Dictionary:
-	if narrative_runtime == null:
+func first_run_prologue_read_model(narrative_runtime, run_start_event_selector, run_state, meta_state = null, force_first_run := false) -> Dictionary:
+	if narrative_runtime == null or run_start_event_selector == null:
 		return {"ok": false, "reason": "missing_narrative_runtime", "error": "Narrative runtime is not configured."}
 	if run_state == null:
 		run_state = RunState.new()
 	var meta = meta_state if meta_state != null else {}
 	if not force_first_run and int(meta.get("run_count", 0)) != 0:
 		return {"ok": false, "reason": "not_first_run", "error": "First-run prologue only opens before any completed run."}
-	return narrative_runtime.read_model_for_event(FIRST_RUN_PROLOGUE_EVENT_ID, run_state, meta)
+	return start_run_event_read_model(narrative_runtime, run_start_event_selector, run_state, meta, true)
 
 func start_run_event_read_model(narrative_runtime, run_start_event_selector, run_state, meta_state = null, force_first_run := false) -> Dictionary:
 	if narrative_runtime == null or run_start_event_selector == null:

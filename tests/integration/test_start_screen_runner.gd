@@ -75,7 +75,12 @@ func run() -> void:
 		failures.append("gameplay scene completes its existing world initialization")
 	if not gameplay_scene.game_hud.narrative_dialogue_visible():
 		failures.append("new start opens the prologue dialogue even when an older completed run existed")
-	if int(gameplay_scene.run_state.narrative_event_counts.get("first_run_prologue", 0)) != 0:
+	if gameplay_scene._active_narrative_event_id != "story_pro_01":
+		failures.append("new start presents the canonical first prologue event")
+	var prologue_model: Dictionary = gameplay_scene.start_run_event_read_model({"run_count": 0})
+	if not prologue_model.ok or String(prologue_model.read_model.get("text", "")) != "아버지?":
+		failures.append("new start presents the canonical Notion prologue text")
+	if int(gameplay_scene.run_state.narrative_event_counts.get("story_pro_01", 0)) != 0:
 		failures.append("new start replaces the old completed run state before the prologue")
 
 	finish()
@@ -85,8 +90,8 @@ func _write_existing_completed_run() -> void:
 	var run_state := RunState.new()
 	run_state.lifecycle_epoch = 3
 	run_state.seed = 9281
-	run_state.narrative_event_counts = {"first_run_prologue": 1}
-	run_state.narrative_flags = ["first_run_prologue_completed"]
+	run_state.narrative_event_counts = {"story_pro_01": 1}
+	run_state.narrative_flags = ["prologue_house_started"]
 	store.save_run(run_state)
 	var meta_state := MetaState.new()
 	meta_state.run_count = 4
