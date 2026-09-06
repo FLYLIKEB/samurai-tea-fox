@@ -64,8 +64,15 @@ class ExportedNotionDataTests(unittest.TestCase):
             for event in event_rows
             for notion_id in event.get("notion_ids", [])
         ]
+        source_line_page_ids = [
+            source_line["notion_id"]
+            for event in event_rows
+            for source_line in event.get("source_lines", [])
+        ]
         self.assertEqual(len(event_page_ids), 75)
         self.assertEqual(len(set(event_page_ids)), 75)
+        self.assertEqual(len(source_line_page_ids), 75)
+        self.assertEqual(set(source_line_page_ids), set(event_page_ids))
 
     def test_generated_dialogue_covers_all_story_chapters(self):
         events = self._items_by_id("events.json")
@@ -85,7 +92,10 @@ class ExportedNotionDataTests(unittest.TestCase):
                 self.assertTrue(events[event_id].get("notion_ids"))
 
         self.assertEqual(events["story_pro_01"]["nodes"][0]["text"], "아버지?")
-        self.assertEqual(events["story_fin_06"]["nodes"][0]["text"], "내 답을 찾지 말고, 네가 누구와 마실지 정해라.")
+        self.assertEqual(
+            events["story_fin_06"]["nodes"][0]["text"],
+            "검은 차시의 손잡이에는 오래전부터 남은 흠집이 있다. 누군가의 답을 따라가기보다, 누구와 마실지 정하라는 표식처럼 보인다.",
+        )
 
     def test_newly_exported_canonical_rows_are_present(self):
         balance = self._items_by_id("balance.json")

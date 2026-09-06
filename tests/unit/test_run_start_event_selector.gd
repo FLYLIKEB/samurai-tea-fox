@@ -34,7 +34,7 @@ func _assert_generated_run_start_events_select_by_meta_count(asserts) -> void:
 	asserts.equal(veteran.read_model.event_id, "veteran_run_father_memory", "run_count >= 5 selects the more specific scent-memory start")
 	asserts.false_value(first.read_model.text == second.read_model.text, "first and second run starts use different dialogue")
 	asserts.false_value(second.read_model.text == veteran.read_model.text, "early and veteran repeat starts use different dialogue")
-	asserts.equal(second.read_model.speaker_id, "CHR-1", "repeat-run start stays in father's memory presentation")
+	asserts.equal(second.read_model.speaker_id, "NOTEBOOK", "repeat-run start uses the canonical notebook memory speaker")
 	asserts.equal(veteran.read_model.speaker_id, "CHR-1", "veteran repeat-run start stays in father's memory presentation")
 	asserts.false_value(bool(fixture.selector.select_event(run_state, {"run_count": 5}).father_physical_actor), "father is not selected as a physical Hongguk NPC")
 
