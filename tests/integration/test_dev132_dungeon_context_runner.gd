@@ -49,6 +49,7 @@ func run() -> void:
 		main.game_hud.hide_narrative_dialogue()
 	await process_frame
 	await process_frame
+	await _assert_adjacent_enemy_attack(main)
 	var movement_step := _walkable_step(main)
 	var start_cell: Vector2i = movement_step.get("cell", Vector2i(-1, -1))
 	var move_direction: Vector2i = movement_step.get("direction", Vector2i.ZERO)
@@ -79,6 +80,32 @@ func run() -> void:
 	if main.map_read_model({"reveal_all": true}).get("bounds", {}) == {"width": 12, "height": 9}:
 		_failures.append("dungeon return restores overworld map bounds")
 	await _finish_with_main(main)
+
+func _assert_adjacent_enemy_attack(main: Main) -> void:
+	var targets := main._combat_targets()
+	if targets.is_empty():
+		_failures.append("dungeon exposes a regular enemy for E attack")
+		return
+	var target = targets.front()
+	var target_cell: Vector2i = main._combat_target_cell(target)
+	var attack_cell := _walkable_adjacent_cell(main, target_cell)
+	if attack_cell == Vector2i(-1, -1):
+		_failures.append("dungeon enemy has a walkable adjacent attack cell")
+		return
+	main.player.global_position = main.world_position_for_cell_center(attack_cell)
+	if not main._try_dungeon_interaction_from_input():
+		_failures.append("E attacks an adjacent dungeon enemy")
+		return
+	await process_frame
+	if main.combat_dummy != target:
+		_failures.append("E selects the adjacent dungeon enemy as combat target")
+
+func _walkable_adjacent_cell(main: Main, target_cell: Vector2i) -> Vector2i:
+	for direction in [Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT, Vector2i.UP]:
+		var candidate: Vector2i = target_cell + direction
+		if main.world_data.is_walkable(candidate):
+			return candidate
+	return Vector2i(-1, -1)
 
 func _walkable_step(main: Main) -> Dictionary:
 	for y in range(main.world_data.height):

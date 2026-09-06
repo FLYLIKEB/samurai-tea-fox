@@ -14,6 +14,9 @@ func submit_pointer_interaction(main, world_position: Vector2) -> bool:
 		main._select_pending_facility_at(main.world_cell_from_world_position(world_position))
 		return true
 	main._dungeon_debug("클릭 상호작용: world=%s cell=%s" % [world_position, main.world_cell_from_world_position(world_position)])
+	if pointer_enemy_clicked(main, world_position):
+		submit_pointer_enemy_attack(main, world_position)
+		return true
 	var ore_hit: Dictionary = dungeon_ore_target_near_cell(main, main.world_cell_from_world_position(world_position), 2)
 	if not ore_hit.is_empty():
 		main._dungeon_debug("클릭 광석 대상 발견: %s" % ore_hit)
@@ -26,9 +29,6 @@ func submit_pointer_interaction(main, world_position: Vector2) -> bool:
 	if not house_hit.is_empty():
 		main._dungeon_debug("클릭 대상: large house dungeon %s" % house_hit)
 		return queue_pointer_landmark(main, house_hit.target_id, house_hit.cell)
-	if pointer_enemy_clicked(main, world_position):
-		submit_pointer_enemy_attack(main, world_position)
-		return true
 	var clicked_cell: Vector2i = main.world_cell_from_world_position(world_position)
 	for cell in pointer_candidate_cells(main, clicked_cell):
 		var target_id := interaction_target_id_for_cell(main, cell)
@@ -50,12 +50,6 @@ func try_dungeon_interaction_from_input(main) -> bool:
 	if not dungeon_target.is_empty():
 		main._dungeon_debug("E 대상 발견: %s" % dungeon_target)
 		return main.submit_interaction_at_world_cell(dungeon_target.cell)
-	var ore_target: Dictionary = dungeon_ore_target_near_cell(main, origin_cell, 1)
-	if ore_target.is_empty():
-		ore_target = acquisition_target_near_cell(main, origin_cell)
-	if not ore_target.is_empty():
-		main._dungeon_debug("E 광석 대상 발견: %s" % ore_target)
-		return gather_dungeon_ore(main, String(ore_target.target_id), ore_target.cell)
 	var enemy_cell: Vector2i = dungeon_enemy_cell_near(main, origin_cell)
 	if enemy_cell != Vector2i(-1, -1):
 		if is_dungeon_boss_cell(main, enemy_cell) and not main._dungeon_boss_combat_available():
@@ -63,6 +57,12 @@ func try_dungeon_interaction_from_input(main) -> bool:
 		activate_dungeon_enemy(main, enemy_cell)
 		var direction := Vector2i(int(signf(float(enemy_cell.x - origin_cell.x))), int(signf(float(enemy_cell.y - origin_cell.y))))
 		return main.submit_action_command(GameCommand.new(GameCommand.Type.ATTACK, direction))
+	var ore_target: Dictionary = dungeon_ore_target_near_cell(main, origin_cell, 1)
+	if ore_target.is_empty():
+		ore_target = acquisition_target_near_cell(main, origin_cell)
+	if not ore_target.is_empty():
+		main._dungeon_debug("E 광석 대상 발견: %s" % ore_target)
+		return gather_dungeon_ore(main, String(ore_target.target_id), ore_target.cell)
 	var landmark: Dictionary = landmark_target_near_world_position(main, main.player.global_position, main._runtime_tile_size() * 2.5)
 	if landmark.is_empty():
 		landmark = large_house_target_near_world_position(main, main.player.global_position, main._runtime_tile_size() * 3.5)
