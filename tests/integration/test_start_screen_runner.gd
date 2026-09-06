@@ -69,6 +69,9 @@ func run() -> void:
 		failures.append("ui_accept enters the existing gameplay scene")
 		finish()
 		return
+	if not await _wait_for_gameplay_ready(gameplay_scene, 10000):
+		finish()
+		return
 	if gameplay_scene.get_node_or_null("Player") == null:
 		failures.append("gameplay scene initializes its player after the transition")
 	if gameplay_scene.generated_world.is_empty():
@@ -108,6 +111,27 @@ func _assert_texture(scene: Node, node_path: String, expected_asset_id: String, 
 		return
 	if texture_rect.texture.get_width() != expected_texture.get_width() or texture_rect.texture.get_height() != expected_texture.get_height():
 		failures.append("start screen reuses the %s at manifest dimensions" % label)
+
+func _wait_for_gameplay_ready(gameplay_scene, timeout_msec: int) -> bool:
+	var deadline_msec := Time.get_ticks_msec() + timeout_msec
+	while Time.get_ticks_msec() < deadline_msec:
+		if _gameplay_is_ready(gameplay_scene):
+			return true
+		await process_frame
+	if _gameplay_is_ready(gameplay_scene):
+		return true
+	failures.append("gameplay runtime becomes ready before start-screen assertions")
+	return false
+
+func _gameplay_is_ready(gameplay_scene) -> bool:
+	return (
+		gameplay_scene != null
+		and is_instance_valid(gameplay_scene)
+		and gameplay_scene.is_inside_tree()
+		and gameplay_scene.get_node_or_null("LoadingOverlay") == null
+		and gameplay_scene.run_state != null
+		and not gameplay_scene.generated_world.is_empty()
+	)
 
 func finish() -> void:
 	_cleanup()
