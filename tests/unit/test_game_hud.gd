@@ -368,8 +368,17 @@ func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:
 	asserts.equal(read_model.ability_slot_count, 2, "HUD ability slots come from balance definitions")
 	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/AttackButton") != null, "HUD shows attack as a primary mobile action")
 	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/DodgeButton") != null, "HUD shows dodge as a primary mobile action")
+	var interaction_button := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/InteractionButton") as Button
+	asserts.true_value(interaction_button != null, "HUD shows interaction as a primary mobile action")
 	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/InventoryButton") != null, "HUD shows inventory as a primary mobile action")
-	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/CraftingButton") != null, "HUD shows crafting as a primary mobile action")
+	asserts.true_value(hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ActionMenuGrid/CraftingButton") != null, "HUD keeps crafting in the secondary action drawer")
+	var interaction_commands: Array = []
+	hud.mobile_command_issued.connect(func(command): interaction_commands.append(command))
+	if interaction_button != null:
+		interaction_button.pressed.emit()
+	asserts.equal(interaction_commands.size(), 1, "interaction button emits exactly one shared command")
+	if not interaction_commands.is_empty():
+		asserts.equal(interaction_commands[0].type, GameCommand.Type.INTERACT, "interaction button emits the shared INTERACT command")
 	var quick_tea := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickTeaButton") as Button
 	var quick_consumable := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickConsumableButton") as Button
 	var quick_ability := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickAbilityButton") as Button
@@ -504,7 +513,7 @@ func _assert_mobile_controls_emit_shared_commands(asserts) -> void:
 	asserts.true_value(action_panel != null, "HUD keeps the action command surface")
 	if action_panel != null:
 		asserts.false_value(_panel_uses_dark_background(action_panel), "action controls omit the outer dark panel background")
-		asserts.equal(action_panel.custom_minimum_size, Vector2(132, 84), "action controls provide compact mobile touch targets")
+		asserts.equal(action_panel.custom_minimum_size, Vector2(132, 100), "action controls provide compact mobile touch targets with interaction available")
 	var received: Array = []
 	hud.mobile_command_issued.connect(func(command): received.append(command))
 	asserts.true_value(hud.press_mobile_button("move", Vector2i.LEFT), "HUD accepts mobile movement control")
