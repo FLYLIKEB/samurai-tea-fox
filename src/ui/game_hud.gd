@@ -855,6 +855,7 @@ func _add_shortcut_button(parent: Container, name: String, icon_path: String, to
 	button.text = ""
 	button.icon = _load_texture(icon_path)
 	button.expand_icon = true
+	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	button.add_theme_constant_override("icon_max_width", 28)
 	button.tooltip_text = tooltip
 	button.focus_mode = Control.FOCUS_NONE
