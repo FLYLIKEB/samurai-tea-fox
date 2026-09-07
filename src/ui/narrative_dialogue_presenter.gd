@@ -3,6 +3,7 @@ class_name NarrativeDialoguePresenter
 
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
+const NarrativePlaceholderBackdrop = preload("res://src/ui/narrative_placeholder_backdrop.gd")
 
 const BACKGROUND_FIRST_RUN_PROLOGUE := "prologue_first_run_father_muchau_teahouse"
 const PORTRAIT_FATHER := "portrait_chr_1_kitsune_father"
@@ -42,6 +43,7 @@ signal skip_requested(payload)
 var texture_loader: Callable
 var speaker_label_resolver: Callable
 var narrative_panel: PanelContainer
+var placeholder_backdrop: NarrativePlaceholderBackdrop
 var background: TextureRect
 var left_portrait_frame: PanelContainer
 var right_portrait_frame: PanelContainer
@@ -62,6 +64,10 @@ func build() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	visible = false
+	placeholder_backdrop = NarrativePlaceholderBackdrop.new()
+	placeholder_backdrop.name = "NarrativePlaceholderBackdrop"
+	add_child(placeholder_backdrop)
+	placeholder_backdrop.hide_backdrop()
 
 	background = TextureRect.new()
 	background.name = "NarrativeBackground"
@@ -95,7 +101,12 @@ func show_read_model(read_model: Dictionary) -> bool:
 	_current_model = read_model.duplicate(true)
 	visible = true
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	background.visible = _uses_background(read_model)
+	var uses_placeholder := _uses_prologue_placeholder(read_model)
+	if uses_placeholder:
+		placeholder_backdrop.show_for(read_model)
+	else:
+		placeholder_backdrop.hide_backdrop()
+	background.visible = not uses_placeholder and _uses_background(read_model)
 	background.texture = _load_texture(String(_presentation_metadata(read_model).get("background_asset_id", BACKGROUND_FIRST_RUN_PROLOGUE))) if background.visible else null
 	_configure_portraits(read_model)
 	_set_label("speaker", _speaker_label(String(read_model.get("speaker_id", ""))))
@@ -119,6 +130,8 @@ func hide_dialogue() -> bool:
 	if background != null:
 		background.visible = false
 		background.texture = null
+	if placeholder_backdrop != null:
+		placeholder_backdrop.hide_backdrop()
 	_clear_options()
 	_current_model.clear()
 	return true
@@ -226,6 +239,9 @@ func _configure_portraits(read_model: Dictionary) -> void:
 
 func _uses_background(read_model: Dictionary) -> bool:
 	return not String(_presentation_metadata(read_model).get("background_asset_id", "")).is_empty() or _uses_paired_portraits(read_model)
+
+func _uses_prologue_placeholder(read_model: Dictionary) -> bool:
+	return String(read_model.get("sequence_id", "")) == "PRO" and bool(read_model.get("chain_scene_sequence", false))
 
 func _uses_paired_portraits(read_model: Dictionary) -> bool:
 	var metadata := _presentation_metadata(read_model)
