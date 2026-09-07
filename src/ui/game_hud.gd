@@ -170,6 +170,7 @@ var _facility_placement_install_button: Button
 var _facility_placement_status: Label
 
 func _ready() -> void:
+	get_tree().root.tooltip_text = ""
 	_build()
 	_bind_runtime_signals()
 	_update()
