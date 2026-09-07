@@ -1,0 +1,10 @@
+{
+  "active": true,
+  "skill_name": "systematic-debugging",
+  "session_id": "d7123daf-f507-4d12-8a3e-6e899bfc1f10",
+  "started_at": "2026-09-07T14:52:03.667Z",
+  "last_checked_at": "2026-09-07T14:52:03.667Z",
+  "reinforcement_count": 0,
+  "max_reinforcements": 3,
+  "stale_ttl_ms": 300000
+}

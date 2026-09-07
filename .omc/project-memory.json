@@ -1,0 +1,193 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1788792612537,
+  "projectRoot": "/Users/jwp/Developer/samurai-tea-fox",
+  "techStack": {
+    "languages": [],
+    "frameworks": [],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "assets",
+      "docs",
+      "src",
+      "tests"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "artifacts": {
+      "path": "artifacts",
+      "purpose": null,
+      "fileCount": 9,
+      "lastAccessed": 1788792612505,
+      "keyFiles": [
+        "dev79_hud_desktop_1280x720.png",
+        "dev79_hud_desktop_1280x720.png.import",
+        "dev79_hud_mobile_360x640.png",
+        "dev79_hud_mobile_360x640.png.import",
+        "dev79_hud_narrow_480x270.png"
+      ]
+    },
+    "assets": {
+      "path": "assets",
+      "purpose": "Static assets",
+      "fileCount": 4,
+      "lastAccessed": 1788792612507,
+      "keyFiles": [
+        "asset-manifest.json",
+        "content-image-map.json",
+        "promoted-assets-manifest.json"
+      ]
+    },
+    "data": {
+      "path": "data",
+      "purpose": "Data files",
+      "fileCount": 2,
+      "lastAccessed": 1788792612514,
+      "keyFiles": [
+        "runtime_constants.json",
+        "world_templates.json"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 6,
+      "lastAccessed": 1788792612518,
+      "keyFiles": [
+        "architecture.md",
+        "codex-workflow.md",
+        "export-targets.md",
+        "issue-pr-template.md",
+        "main-composition.md"
+      ]
+    },
+    "scenes": {
+      "path": "scenes",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1788792612525,
+      "keyFiles": []
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 1,
+      "lastAccessed": 1788792612527,
+      "keyFiles": []
+    },
+    "tests": {
+      "path": "tests",
+      "purpose": "Test files",
+      "fileCount": 2,
+      "lastAccessed": 1788792612527,
+      "keyFiles": [
+        "test_runner.gd",
+        "test_runner.gd.uid"
+      ]
+    },
+    "tools": {
+      "path": "tools",
+      "purpose": null,
+      "fileCount": 7,
+      "lastAccessed": 1788792612528,
+      "keyFiles": [
+        "BIOME_CAPTURE.md",
+        "__init__.py",
+        "capture_biome_maps.gd",
+        "capture_biome_maps.gd.uid",
+        "capture_biome_maps.sh"
+      ]
+    },
+    "data/schemas": {
+      "path": "data/schemas",
+      "purpose": "Schema definitions",
+      "fileCount": 2,
+      "lastAccessed": 1788792612536,
+      "keyFiles": [
+        "export_schema.json",
+        "runtime_id_map.json"
+      ]
+    },
+    "tests/fixtures": {
+      "path": "tests/fixtures",
+      "purpose": "Test fixtures",
+      "fileCount": 0,
+      "lastAccessed": 1788792612537,
+      "keyFiles": []
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "src/world/rendering/world_renderer_projection.gd",
+      "accessCount": 5,
+      "lastAccessed": 1788792764055,
+      "type": "file"
+    },
+    {
+      "path": "src/ui/game_hud.gd",
+      "accessCount": 2,
+      "lastAccessed": 1788792752056,
+      "type": "file"
+    },
+    {
+      "path": "src/world/rendering/world_scene_renderer.gd",
+      "accessCount": 1,
+      "lastAccessed": 1788792736647,
+      "type": "file"
+    },
+    {
+      "path": "src/world/rendering/world_presentation.gd",
+      "accessCount": 1,
+      "lastAccessed": 1788792745327,
+      "type": "file"
+    },
+    {
+      "path": "src/ui/game_hud_read_model_provider.gd",
+      "accessCount": 1,
+      "lastAccessed": 1788792754338,
+      "type": "file"
+    },
+    {
+      "path": "src/dungeon/dungeon_runtime.gd",
+      "accessCount": 1,
+      "lastAccessed": 1788792759908,
+      "type": "file"
+    },
+    {
+      "path": "src/main/main_input_coordinator.gd",
+      "accessCount": 1,
+      "lastAccessed": 1788792764775,
+      "type": "file"
+    },
+    {
+      "path": "src/main/dungeon_scene_coordinator.gd",
+      "accessCount": 1,
+      "lastAccessed": 1788792764974,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

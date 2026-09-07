@@ -243,9 +243,22 @@ func _owner_source_id(owner_id: String, metadata: Dictionary) -> String:
 	if RESOURCE_SOURCE_BY_BIOME_RESOURCE.has(resource_key):
 		return String(RESOURCE_SOURCE_BY_BIOME_RESOURCE[resource_key])
 	if owner_id.begins_with("resource_"):
-		match String(metadata.get("biome_rule_id", "")):
+		var biome_rule_id := String(metadata.get("biome_rule_id", ""))
+		var resource_id := String(metadata.get("resource_id", ""))
+		var resource_key := "%s|%s" % [biome_rule_id, resource_id]
+		if RESOURCE_SOURCE_BY_BIOME_RESOURCE.has(resource_key):
+			return String(RESOURCE_SOURCE_BY_BIOME_RESOURCE[resource_key])
+		match biome_rule_id:
 			"common_region":
-				return "small_rock_resource"
+				match resource_id:
+					"stone":
+						return "small_rock_resource"
+					"wood":
+						return "terrain_tree_broadleaf_32x32"
+					"clay":
+						return "asset_assets_sprites_objects_natural_props_reed_clump_32x32_png"
+					_:
+						return "small_rock_resource"
 			"mountain_region":
 				return "asset_assets_tiles_terrain_mountain_mountain_rock_01_32x32_png"
 			"wasteland":

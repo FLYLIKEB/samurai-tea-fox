@@ -1,0 +1,15 @@
+{
+  "agents": [
+    {
+      "agent_id": "aexplore-resources-15573616f57ca709",
+      "agent_type": "explore-resources",
+      "started_at": "2026-09-07T14:52:07.662Z",
+      "parent_mode": "none",
+      "status": "running"
+    }
+  ],
+  "total_spawned": 1,
+  "total_completed": 0,
+  "total_failed": 0,
+  "last_updated": "2026-09-07T14:52:07.764Z"
+}
