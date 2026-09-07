@@ -2,6 +2,7 @@ extends RefCounted
 ## Main 장면의 로딩/종료 화면 구성. 런 전환과 타이머의 수명은 Main이 소유한다.
 
 const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
+const LOADING_BACKDROP_PATH := "res://assets/backgrounds/prologue/first_run_father_muchau_teahouse.png"
 
 static func create_loading(scene_root: Node) -> Label:
 	if scene_root.get_node_or_null("LoadingOverlay") != null:
@@ -10,6 +11,21 @@ static func create_loading(scene_root: Node) -> Label:
 	layer.name = "LoadingOverlay"
 	layer.layer = 200
 	scene_root.add_child(layer)
+	var backdrop := TextureRect.new()
+	backdrop.name = "LoadingBackdrop"
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	backdrop.texture = _loading_backdrop_texture()
+	backdrop.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
+	backdrop.focus_mode = Control.FOCUS_NONE
+	layer.add_child(backdrop)
+	var scrim := ColorRect.new()
+	scrim.name = "LoadingScrim"
+	scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	scrim.color = Color(0.02, 0.015, 0.012, 0.55)
+	scrim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(scrim)
 	var panel := PanelContainer.new()
 	panel.name = "LoadingStatusPanel"
 	panel.set_anchors_preset(Control.PRESET_CENTER)
@@ -27,6 +43,12 @@ static func create_loading(scene_root: Node) -> Label:
 	label.modulate = Color(1.0, 0.91, 0.68, 1.0)
 	panel.add_child(label)
 	return label
+
+static func _loading_backdrop_texture() -> Texture2D:
+	var image := Image.load_from_file(LOADING_BACKDROP_PATH)
+	if image == null or image.is_empty():
+		return null
+	return ImageTexture.create_from_image(image)
 
 static func show_ending(scene_root: Node) -> void:
 	var layer := CanvasLayer.new()
