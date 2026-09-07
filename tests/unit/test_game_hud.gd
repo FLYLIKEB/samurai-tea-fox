@@ -371,7 +371,12 @@ func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:
 	var interaction_button := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/InteractionButton") as Button
 	asserts.true_value(interaction_button != null, "HUD shows interaction as a primary mobile action")
 	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/InventoryButton") != null, "HUD shows inventory as a primary mobile action")
-	asserts.true_value(hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ActionMenuGrid/CraftingButton") != null, "HUD keeps crafting in the secondary action drawer")
+	asserts.true_value(hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ActionMenuGrid/CraftingButton") == null, "HUD removes crafting from the secondary action drawer")
+	asserts.true_value(hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ActionMenuGrid/MapButton") == null, "HUD removes map from the secondary action drawer")
+	var crafting_shortcut := hud.get_node_or_null("Root/ShortcutPanel/ShortcutRow/CraftingShortcutButton") as Button
+	var map_shortcut := hud.get_node_or_null("Root/ShortcutPanel/ShortcutRow/MapShortcutButton") as Button
+	asserts.true_value(crafting_shortcut != null, "HUD keeps crafting visible as a dedicated shortcut")
+	asserts.true_value(map_shortcut != null, "HUD keeps map visible as a dedicated shortcut")
 	var interaction_commands: Array = []
 	hud.mobile_command_issued.connect(func(command): interaction_commands.append(command))
 	if interaction_button != null:
