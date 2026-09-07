@@ -443,7 +443,14 @@ func _handle_abandoned_house_interaction(target_id: String) -> bool:
 	var hud = _call_value(_ports.get_game_hud)
 	if result.ok:
 		if hud != null:
-			hud.show_command_feedback("폐가에서 %s을(를) 발견했습니다" % String(result.get("item_name", result.get("item_id", "보상"))))
+			var item_id := String(result.get("item_id", ""))
+			hud.show_status_event({
+				"type": "item_acquired",
+				"ok": true,
+				"item_id": item_id,
+				"quantity": int(result.get("quantity", 0)),
+				"event_id": target_id
+			})
 		_call_dictionary(_ports.save_current_run)
 		return true
 	if hud != null:

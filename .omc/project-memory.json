@@ -148,20 +148,32 @@
     },
     {
       "path": "src/main/facility_biome_coordinator.gd",
-      "accessCount": 3,
-      "lastAccessed": 1788792812535,
+      "accessCount": 5,
+      "lastAccessed": 1788792949167,
       "type": "file"
     },
     {
       "path": "src/ui/game_hud.gd",
-      "accessCount": 2,
-      "lastAccessed": 1788792752056,
+      "accessCount": 3,
+      "lastAccessed": 1788792944121,
       "type": "file"
     },
     {
       "path": "src/main/main.gd",
       "accessCount": 2,
       "lastAccessed": 1788792786845,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 2,
+      "lastAccessed": 1788792837448,
+      "type": "file"
+    },
+    {
+      "path": "AGENTS.md",
+      "accessCount": 2,
+      "lastAccessed": 1788792837845,
       "type": "file"
     },
     {
@@ -207,18 +219,6 @@
       "type": "file"
     },
     {
-      "path": "README.md",
-      "accessCount": 1,
-      "lastAccessed": 1788792781998,
-      "type": "file"
-    },
-    {
-      "path": "AGENTS.md",
-      "accessCount": 1,
-      "lastAccessed": 1788792782393,
-      "type": "file"
-    },
-    {
       "path": "tests/unit/test_world_scene_renderer.gd",
       "accessCount": 1,
       "lastAccessed": 1788792783420,
@@ -228,6 +228,12 @@
       "path": "src/main/main_command_coordinator.gd",
       "accessCount": 1,
       "lastAccessed": 1788792791612,
+      "type": "file"
+    },
+    {
+      "path": "DESIGN.md",
+      "accessCount": 1,
+      "lastAccessed": 1788792838029,
       "type": "file"
     }
   ],
