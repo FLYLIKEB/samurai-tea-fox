@@ -379,7 +379,22 @@ func _reserve_large_house_fence(world_data: WorldData, outer_origin: Vector2i) -
 	]
 	var owner_ids: Array = []
 	for segment in segments:
-		var result := world_data.reserve_entity(String(segment.id), segment.origin, segment.size, false, {
+		var origin: Vector2i = segment.origin
+		var size: Vector2i = segment.size
+		var can_place := true
+		for y in range(origin.y, origin.y + size.y):
+			for x in range(origin.x, origin.x + size.x):
+				var cell := Vector2i(x, y)
+				var occupants = world_data.get_occupants(cell)
+				for occupant in occupants:
+					if String(occupant).begins_with("starting_home_bridge"):
+						can_place = false
+						break
+			if not can_place:
+				break
+		if not can_place:
+			continue
+		var result := world_data.reserve_entity(String(segment.id), origin, size, false, {
 			"role": "large_house_fence",
 			"rotation_degrees": float(segment.rotation_degrees)
 		})

@@ -1,7 +1,0 @@
-{
-  "tool_name": "Read",
-  "tool_input_preview": "{\"file_path\":\"/Users/jwp/.claude/projects/-Users-jwp-Developer-samurai-tea-fox/memory\"}",
-  "error": "EISDIR: illegal operation on a directory, read '/Users/jwp/.claude/projects/-Users-jwp-Developer-samurai-tea-fox/memory'",
-  "timestamp": "2026-09-07T15:03:16.550Z",
-  "retry_count": 3
-}

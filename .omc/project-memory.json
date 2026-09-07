@@ -142,20 +142,20 @@
   "hotPaths": [
     {
       "path": "src/ui/game_hud.gd",
-      "accessCount": 13,
-      "lastAccessed": 1788793381794,
+      "accessCount": 15,
+      "lastAccessed": 1788793543227,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 14,
+      "lastAccessed": 1788793543911,
       "type": "file"
     },
     {
       "path": "AGENTS.md",
       "accessCount": 12,
       "lastAccessed": 1788793399241,
-      "type": "file"
-    },
-    {
-      "path": "README.md",
-      "accessCount": 12,
-      "lastAccessed": 1788793425615,
       "type": "file"
     },
     {
@@ -178,8 +178,14 @@
     },
     {
       "path": "src/world/rendering/world_presentation.gd",
-      "accessCount": 3,
-      "lastAccessed": 1788793295073,
+      "accessCount": 4,
+      "lastAccessed": 1788793518800,
+      "type": "file"
+    },
+    {
+      "path": "src/world/generation/world_generator.gd",
+      "accessCount": 4,
+      "lastAccessed": 1788793599245,
       "type": "file"
     },
     {
