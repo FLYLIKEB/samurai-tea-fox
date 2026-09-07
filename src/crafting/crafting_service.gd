@@ -251,12 +251,16 @@ func _recipe_read_model_row(recipe: Dictionary, availability: Dictionary, invent
 		"materials": _material_read_model_rows(_duplicate_array(recipe.get("materials", [])), inventory),
 		"facilities": _facility_read_model_rows(_duplicate_array(recipe.get("facility_item_ids", [])), availability),
 		"unlock_biome_id": String(recipe.get("unlock_biome_id", "")),
+		"unlock_biome_name": _biome_display_name(String(recipe.get("unlock_biome_id", ""))),
 		"unlock_condition": String(recipe.get("unlock_condition", "")),
 		"craftable": bool(availability.get("craftable", false)),
 		"reason": String(availability.get("reason", "")),
 		"reason_label": reason_label,
 		"errors": _duplicate_array(availability.get("errors", []))
 	}
+
+func _biome_display_name(biome_id: String) -> String:
+	return String(BIOME_DISPLAY_NAMES.get(biome_id, biome_id))
 
 func _material_read_model_rows(materials: Array, inventory) -> Array:
 	var rows := []

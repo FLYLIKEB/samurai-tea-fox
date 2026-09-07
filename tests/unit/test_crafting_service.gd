@@ -163,6 +163,7 @@ func _assert_crafting_read_model_reports_filters_detail_and_reasons(asserts) -> 
 	asserts.equal(locked.detail.recipe_id, "regional_bowl", "read model keeps the selected locked recipe visible")
 	asserts.equal(locked.detail.reason, "locked", "read model reports current-run locked recipes")
 	asserts.equal(locked.detail.reason_label, "미해금 · 일반 지역 필요", "read model labels the required biome for locked recipes")
+	asserts.equal(locked.detail.unlock_biome_name, "일반 지역", "read model resolves unlock biome display name")
 	var missing_facility: Dictionary = service.read_model(inventory, {"unlocked_biome_ids": ["common_region"]}, {"selected_recipe_id": "humble_clay_bowl"})
 	asserts.equal(missing_facility.detail.facilities[0].item_id, "wooden_workbench", "read model exposes required facility item id")
 	asserts.false_value(missing_facility.detail.facilities[0].available, "read model marks missing facility")

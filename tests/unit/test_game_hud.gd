@@ -155,7 +155,8 @@ class FakeCraftingService:
 			"result": {"item_id": "wooden_workbench", "name": "목재 작업대", "description": "기초 제작을 여는 배치형 시설.", "quantity": 1, "icon_asset_id": "asset_assets_sprites_objects_crafting_workbench_32x32_png"},
 			"materials": [{"item_id": "wood", "name": "목재", "available": inventory.get_total_quantity("wood"), "required": 2}],
 			"facilities": [],
-			"unlock_biome_id": "common_region"
+			"unlock_biome_id": "common_region",
+			"unlock_biome_name": "일반 지역"
 		}
 		var missing_row := {
 			"recipe_id": "stone_axe",
@@ -607,14 +608,14 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	asserts.true_value(_tree_has_icon_button_with_text(crafting_filter_bar, "전체"), "crafting filters use icon-backed touch commands")
 	var crafting_grid := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip") as GridContainer
 	asserts.true_value(crafting_grid != null and crafting_grid.columns == 3, "crafting menu renders a mobile-friendly three-column grid")
-	asserts.true_value(_tree_has_text(hud, "wooden_workbench → 목재 작업대 x1"), "crafting menu shows selected recipe result")
+	asserts.true_value(_tree_has_text(hud, "결과 목재 작업대 x1"), "crafting menu shows selected recipe result without an internal ID")
 	asserts.true_value(_tree_has_text(hud, "상태 제작 가능"), "crafting menu shows selected recipe status on its own row")
 	asserts.true_value(_tree_has_text(hud, "기초 제작을 여는 배치형 시설."), "crafting menu shows the crafted item's role description")
 	var description_label := _find_label(hud, "기초 제작을 여는 배치형 시설.")
 	asserts.equal(description_label.autowrap_mode, TextServer.AUTOWRAP_WORD_SMART, "crafting item descriptions wrap at the detail card width")
 	asserts.true_value(_tree_has_text(hud, "재료 목재 3/2"), "crafting menu shows selected recipe materials on their own row")
 	asserts.true_value(_tree_has_text(hud, "시설 손제작"), "crafting menu shows selected recipe facility on its own row")
-	asserts.true_value(_tree_has_text(hud, "해금 common_region"), "crafting menu shows selected recipe unlock on its own row")
+	asserts.true_value(_tree_has_text(hud, "해금 일반 지역"), "crafting menu shows the Korean unlock biome name")
 	asserts.true_value(_tree_has_textured_item_icon(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip")), "crafting recipe cards render result item images")
 	asserts.true_value(_tree_has_textured_item_icon(crafting_grid), "crafting recipe cards include state/result icons")
 	asserts.true_value(_panel_uses_dark_background(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/DetailCard") as Control), "crafting detail card uses the shared dark inner background")
