@@ -319,13 +319,27 @@ func combat_target_read_model() -> Dictionary:
 	var definition_id := String(_object_property(combatant, "definition_id", _object_property(combat_target, "monster_id", "")))
 	var definition := catalog_definition("monsters", definition_id) if not definition_id.is_empty() else {}
 	return {
-		"visible": hp > 0,
+		"visible": hp > 0 and _combat_target_is_engaged(),
 		"id": definition_id,
 		"name": String(definition.get("name", definition_id if not definition_id.is_empty() else "적")),
 		"hp": hp,
 		"hp_max": hp_max,
 		"attack": int(_object_property(combatant, "attack", 0))
 	}
+
+func _combat_target_is_engaged() -> bool:
+	if player == null or combat_target == null:
+		return false
+	if not bool(_object_property(combat_target, "visible", false)):
+		return false
+	if _object_property(combat_target, "target") != player:
+		return false
+	var player_position = _object_property(player, "global_position")
+	var target_position = _object_property(combat_target, "global_position")
+	var attack_range := float(_object_property(combat_target, "attack_range_pixels", 0.0))
+	if not player_position is Vector2 or not target_position is Vector2 or attack_range <= 0.0:
+		return false
+	return player_position.distance_to(target_position) <= attack_range
 
 func _map_read_model(options := {}, source_world_data = null, source_run_state = null) -> Dictionary:
 	if map_read_model_builder == null or not map_read_model_builder.has_method("build"):

@@ -156,8 +156,8 @@ func run() -> void:
 			failures.append("runtime HUD shows the compact mockup-style directional pad")
 		elif _texture_rect_count(status_panel) < 4 or _label_count(status_panel) < 3:
 			failures.append("runtime HUD status panel renders portrait plus icon-backed resource rows")
-		elif not enemy_panel.visible or _label_count(enemy_panel) < 3:
-			failures.append("runtime HUD enemy panel renders combat target name, HP, and weapon stats")
+		elif enemy_panel.visible or _label_count(enemy_panel) < 3:
+			failures.append("runtime HUD keeps enemy details hidden until the enemy is close enough to fight")
 		elif _texture_rect_count(quickslot_panel) < 4 or _label_count(quickslot_panel) < 4:
 			failures.append("runtime HUD quickslots render icon-backed rows")
 		else:

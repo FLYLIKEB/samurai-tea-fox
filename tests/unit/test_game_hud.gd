@@ -26,6 +26,8 @@ class FakeResources:
 		hp_changed.emit(previous, hp, hp_max)
 
 class FakePlayer:
+	extends Node2D
+
 	var resources := FakeResources.new()
 
 class FakeInventory:
@@ -116,11 +118,15 @@ class FakeCombatant:
 	var attack := 9
 
 class FakeCombatTarget:
+	extends Node2D
+
 	signal damaged(event: Dictionary, applied_damage: int)
 	signal defeated()
 
 	var monster_id := "road_bandit"
 	var combatant := FakeCombatant.new()
+	var target
+	var attack_range_pixels := 32.0
 
 class FakeCraftingService:
 	var recipe_definitions := {
@@ -237,6 +243,7 @@ class FakeCatalog:
 
 func run(asserts) -> void:
 	_assert_read_model_provider_owns_runtime_traversal(asserts)
+	_assert_combat_target_visibility_requires_active_close_combat(asserts)
 	_assert_hud_renders_provider_snapshot_without_runtime_access(asserts)
 	_assert_read_model_uses_runtime_and_balance_sources(asserts)
 	_assert_inventory_item_icons_use_content_image_map(asserts)
@@ -279,6 +286,24 @@ func _assert_read_model_provider_owns_runtime_traversal(asserts) -> void:
 	runtime.set_equipment_slot("weapon", {})
 	asserts.equal(changed_models.size(), 1, "provider emits a read-model refresh when runtime read model changes")
 	asserts.equal(changed_models[0].equipment.weapon.size(), 0, "provider refresh payload reflects the runtime update")
+
+func _assert_combat_target_visibility_requires_active_close_combat(asserts) -> void:
+	var player := FakePlayer.new()
+	player.global_position = Vector2(0, 0)
+	var enemy := FakeCombatTarget.new()
+	enemy.global_position = Vector2(64, 0)
+	enemy.target = player
+	enemy.visible = true
+	var provider := GameHudReadModelProvider.new()
+	provider.configure(player, {"biome_id": "common_region"}, {"counts": {}}, {
+		"catalog": FakeCatalog.new(),
+		"combat_target": enemy
+	})
+	asserts.false_value(bool(provider.combat_target_read_model().visible), "enemy HUD stays hidden while the engaged enemy is outside attack range")
+	enemy.global_position = Vector2(32, 0)
+	asserts.true_value(bool(provider.combat_target_read_model().visible), "enemy HUD appears when the engaged enemy is within attack range")
+	enemy.target = null
+	asserts.false_value(bool(provider.combat_target_read_model().visible), "enemy HUD hides when the nearby enemy is not engaged with the player")
 
 func _assert_hud_renders_provider_snapshot_without_runtime_access(asserts) -> void:
 	var provider := GameHudReadModelProvider.new()
