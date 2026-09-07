@@ -2499,8 +2499,8 @@ func _add_icon_row(parent: Container, icon_path: String, text: String) -> Label:
 	var value := _label(text)
 	if text.is_empty():
 		row.alignment = BoxContainer.ALIGNMENT_CENTER
-		value.visible = false
-	row.add_child(value)
+	else:
+		row.add_child(value)
 	return value
 
 func _label(text: String, font_size := 12) -> Label:
