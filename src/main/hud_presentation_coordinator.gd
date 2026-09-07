@@ -2,7 +2,7 @@ extends RefCounted
 class_name HudPresentationCoordinator
 
 const SfxEventRouter = preload("res://src/audio/sfx_event_router.gd")
-const WorldPresentation = preload("res://src/main/world_presentation.gd")
+const WorldPresentation = preload("res://src/world/rendering/world_presentation.gd")
 const WorldRendererProjection = preload("res://src/world/rendering/world_renderer_projection.gd")
 const WorldSceneRenderer = preload("res://src/world/rendering/world_scene_renderer.gd")
 
