@@ -2488,6 +2488,8 @@ func _add_icon_row(parent: Container, icon_path: String, text: String) -> Label:
 	var row := HBoxContainer.new()
 	_ignore_mouse(row)
 	row.add_theme_constant_override("separation", 6)
+	if text.is_empty():
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
 	parent.add_child(row)
 	var icon := TextureRect.new()
 	_ignore_mouse(icon)
