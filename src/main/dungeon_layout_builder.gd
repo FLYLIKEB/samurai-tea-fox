@@ -11,9 +11,9 @@ const FLOOR_TERRAIN_ID := "dungeon_floor"
 const WALL_TERRAIN_ID := "dungeon_wall"
 const GATHERABLE_KIND := "gatherable"
 const IRON_SOURCE_ID := "asset_assets_sprites_objects_mining_iron_ore_32x32_png"
-const STONE_SOURCE_ID := "small_rock_resource"
+const STONE_SOURCE_ID := "asset_assets_tiles_terrain_mountain_mountain_rock_01_32x32_png"
 const BOSS_OWNER_ID := "dungeon_boss"
-const MAX_RESOURCE_COUNT := 18
+const MAX_RESOURCE_COUNT := 7
 const FLOOR_ATLAS_COORDS := [
 	Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)
 ]

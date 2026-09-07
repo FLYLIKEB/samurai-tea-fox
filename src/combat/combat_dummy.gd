@@ -378,6 +378,11 @@ func _move_one_grid_cell_toward(target_position: Vector2) -> bool:
 	_grid_target_position = _grid_position_for_cell_center(to_cell)
 	_grid_step_direction = Vector2(direction)
 	grid_step_started.emit(from_cell, to_cell)
+	if _grid_world_data != null and not _grid_world_data.is_walkable(to_cell):
+		global_position = _grid_source_position
+		_update_walk_animation(direction, false)
+		grid_step_blocked.emit(from_cell, to_cell)
+		return false
 	# Probe the full step without moving the body; visual movement is performed by
 	# the tween below so the enemy never snaps to the destination first.
 	var collision := move_and_collide(_grid_target_position - _grid_source_position, true)
