@@ -4,6 +4,7 @@ class_name NarrativeDialoguePresenter
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
 const NarrativePlaceholderBackdrop = preload("res://src/ui/narrative_placeholder_backdrop.gd")
+const DialogueTextEffect = preload("res://src/ui/dialogue_text_effect.gd")
 
 const BACKGROUND_FIRST_RUN_PROLOGUE := "prologue_first_run_father_muchau_teahouse"
 const PORTRAIT_FATHER := "portrait_chr_1_kitsune_father"
@@ -110,7 +111,7 @@ func show_read_model(read_model: Dictionary) -> bool:
 	background.texture = _load_texture(String(_presentation_metadata(read_model).get("background_asset_id", BACKGROUND_FIRST_RUN_PROLOGUE))) if background.visible else null
 	_configure_portraits(read_model)
 	_set_label("speaker", _speaker_label(String(read_model.get("speaker_id", ""))))
-	_set_label("text", String(read_model.get("text", "")))
+	_start_text_reveal(String(read_model.get("text", "")))
 	_clear_options()
 	for option in _array_value(read_model.get("options", [])):
 		if typeof(option) == TYPE_DICTIONARY:
@@ -132,6 +133,7 @@ func hide_dialogue() -> bool:
 		background.texture = null
 	if placeholder_backdrop != null:
 		placeholder_backdrop.hide_backdrop()
+	_stop_text_reveal()
 	_clear_options()
 	_current_model.clear()
 	return true
@@ -140,6 +142,9 @@ func dialogue_visible() -> bool:
 	return visible and narrative_panel != null and narrative_panel.visible
 
 func request_skip() -> void:
+	if _can_skip_text_reveal():
+		_skip_text_reveal()
+		return
 	skip_requested.emit(_command_payload(
 		String(_current_model.get("event_id", "")),
 		String(_current_model.get("node_id", "")),
@@ -198,9 +203,7 @@ func _build_panel_rows(parent: PanelContainer) -> void:
 	_labels.speaker = _label("", 13)
 	_labels.speaker.add_theme_color_override("font_color", Color(1.0, 0.88, 0.58, 1.0))
 	speaker_plate.add_child(_labels.speaker)
-	_labels.text = _label("", 12)
-	_labels.text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_labels.text.custom_minimum_size = Vector2(528, 38)
+	_labels.text = _create_dialogue_text_label()
 	rows.add_child(_labels.text)
 	options_container = HBoxContainer.new()
 	options_container.name = "NarrativeOptions"
@@ -373,3 +376,28 @@ func _array_value(value) -> Array:
 
 func _ignore_mouse(control: Control) -> void:
 	control.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+func _create_dialogue_text_label() -> DialogueTextEffect:
+	var label := DialogueTextEffect.new()
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.custom_minimum_size = Vector2(528, 38)
+	return label
+
+func _start_text_reveal(dialogue_text: String) -> void:
+	var text_label := _labels.get("text") as DialogueTextEffect
+	if text_label != null:
+		text_label.start_reveal(dialogue_text)
+
+func _stop_text_reveal() -> void:
+	var text_label := _labels.get("text") as DialogueTextEffect
+	if text_label != null:
+		text_label.skip_to_end()
+
+func _skip_text_reveal() -> void:
+	var text_label := _labels.get("text") as DialogueTextEffect
+	if text_label != null:
+		text_label.skip_to_end()
+
+func _can_skip_text_reveal() -> bool:
+	var text_label := _labels.get("text") as DialogueTextEffect
+	return text_label != null and text_label.is_revealing()

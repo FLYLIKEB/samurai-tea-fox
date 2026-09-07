@@ -141,21 +141,27 @@
   },
   "hotPaths": [
     {
-      "path": "src/ui/game_hud.gd",
-      "accessCount": 15,
-      "lastAccessed": 1788793543227,
+      "path": "README.md",
+      "accessCount": 18,
+      "lastAccessed": 1788793855602,
       "type": "file"
     },
     {
-      "path": "README.md",
-      "accessCount": 14,
-      "lastAccessed": 1788793543911,
+      "path": "src/ui/game_hud.gd",
+      "accessCount": 17,
+      "lastAccessed": 1788793712225,
       "type": "file"
     },
     {
       "path": "AGENTS.md",
+      "accessCount": 16,
+      "lastAccessed": 1788793855270,
+      "type": "file"
+    },
+    {
+      "path": "src/ui/narrative_dialogue_presenter.gd",
       "accessCount": 12,
-      "lastAccessed": 1788793399241,
+      "lastAccessed": 1788793810039,
       "type": "file"
     },
     {
@@ -172,20 +178,26 @@
     },
     {
       "path": "DESIGN.md",
-      "accessCount": 8,
-      "lastAccessed": 1788793399806,
+      "accessCount": 10,
+      "lastAccessed": 1788793855943,
+      "type": "file"
+    },
+    {
+      "path": "src/ui/dialogue_text_effect.gd",
+      "accessCount": 6,
+      "lastAccessed": 1788793827642,
+      "type": "file"
+    },
+    {
+      "path": "src/world/generation/world_generator.gd",
+      "accessCount": 6,
+      "lastAccessed": 1788793864269,
       "type": "file"
     },
     {
       "path": "src/world/rendering/world_presentation.gd",
       "accessCount": 4,
       "lastAccessed": 1788793518800,
-      "type": "file"
-    },
-    {
-      "path": "src/world/generation/world_generator.gd",
-      "accessCount": 4,
-      "lastAccessed": 1788793599245,
       "type": "file"
     },
     {
@@ -210,6 +222,18 @@
       "path": "src/world/interactions/spatial_interaction_resolver.gd",
       "accessCount": 2,
       "lastAccessed": 1788793210642,
+      "type": "file"
+    },
+    {
+      "path": "tools/generate_dialogue_sound.py",
+      "accessCount": 2,
+      "lastAccessed": 1788793823504,
+      "type": "file"
+    },
+    {
+      "path": "src/main/run_bootstrap_coordinator.gd",
+      "accessCount": 2,
+      "lastAccessed": 1788793856159,
       "type": "file"
     },
     {
@@ -252,6 +276,24 @@
       "path": "src/main/main_command_coordinator.gd",
       "accessCount": 1,
       "lastAccessed": 1788792791612,
+      "type": "file"
+    },
+    {
+      "path": "src/save/save_store.gd",
+      "accessCount": 1,
+      "lastAccessed": 1788793845889,
+      "type": "file"
+    },
+    {
+      "path": "docs/architecture.md",
+      "accessCount": 1,
+      "lastAccessed": 1788793864160,
+      "type": "file"
+    },
+    {
+      "path": "docs/main-composition.md",
+      "accessCount": 1,
+      "lastAccessed": 1788793864591,
       "type": "file"
     }
   ],

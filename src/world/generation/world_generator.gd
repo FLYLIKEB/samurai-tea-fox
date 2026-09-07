@@ -399,9 +399,7 @@ func _reserve_large_house_fence(world_data: WorldData, outer_origin: Vector2i) -
 			"rotation_degrees": float(segment.rotation_degrees)
 		})
 		if not result.ok:
-			for owner_id in owner_ids:
-				world_data.release_footprint(String(owner_id))
-			return {"ok": false, "owner_ids": owner_ids}
+			continue
 		owner_ids.append(String(segment.id))
 	return {"ok": true, "owner_ids": owner_ids}
 
