@@ -1190,7 +1190,7 @@ func _inventory_detail_card(row: Dictionary) -> Control:
 		], 10))
 		var description := String(row.get("description", "")).strip_edges()
 		if not description.is_empty():
-			rows.add_child(_label(description, 10))
+			rows.add_child(_wrapped_label(description, 10))
 	else:
 		rows.add_child(_icon_text_row("", "표시할 항목 없음", 11))
 	var actions := HBoxContainer.new()
@@ -1646,7 +1646,7 @@ func _crafting_detail_row(detail: Dictionary) -> Control:
 	rows.add_child(_label("상태 %s" % String(detail.get("reason_label", "")), 10))
 	var description := String(result.get("description", "")).strip_edges()
 	if not description.is_empty():
-		rows.add_child(_label(description, 10))
+		rows.add_child(_wrapped_label(description, 10))
 	if not materials.is_empty():
 		rows.add_child(_label("재료 %s" % ", ".join(materials), 10))
 	rows.add_child(_label("시설 %s" % ("손제작" if facilities.is_empty() else ", ".join(facilities)), 10))
@@ -2532,8 +2532,12 @@ func _build_time_dial_row(parent: Container) -> void:
 	labels.add_child(_labels.time_progress)
 
 func _section_label(text: String) -> Label:
-	var label := _label(text, 11)
+	var label := _wrapped_label(text, 11)
 	label.add_theme_color_override("font_color", Color(0.93, 0.83, 0.63, 1.0))
+	return label
+
+func _wrapped_label(text: String, font_size := 12) -> Label:
+	var label := _label(text, font_size)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return label

@@ -610,6 +610,8 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	asserts.true_value(_tree_has_text(hud, "wooden_workbench → 목재 작업대 x1"), "crafting menu shows selected recipe result")
 	asserts.true_value(_tree_has_text(hud, "상태 제작 가능"), "crafting menu shows selected recipe status on its own row")
 	asserts.true_value(_tree_has_text(hud, "기초 제작을 여는 배치형 시설."), "crafting menu shows the crafted item's role description")
+	var description_label := _find_label(hud, "기초 제작을 여는 배치형 시설.")
+	asserts.equal(description_label.autowrap_mode, TextServer.AUTOWRAP_WORD_SMART, "crafting item descriptions wrap at the detail card width")
 	asserts.true_value(_tree_has_text(hud, "재료 목재 3/2"), "crafting menu shows selected recipe materials on their own row")
 	asserts.true_value(_tree_has_text(hud, "시설 손제작"), "crafting menu shows selected recipe facility on its own row")
 	asserts.true_value(_tree_has_text(hud, "해금 common_region"), "crafting menu shows selected recipe unlock on its own row")
@@ -877,6 +879,15 @@ func _tree_has_text(node: Node, text: String) -> bool:
 		if _tree_has_text(child, text):
 			return true
 	return false
+
+func _find_label(node: Node, text: String) -> Label:
+	if node is Label and (node as Label).text == text:
+		return node as Label
+	for child in node.get_children():
+		var found := _find_label(child, text)
+		if found != null:
+			return found
+	return null
 
 func _first_enabled_button(node: Node) -> Button:
 	if node == null:
