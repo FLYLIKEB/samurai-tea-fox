@@ -11,7 +11,7 @@ const LANDMARK_ENTRY := "entry"
 const LANDMARK_BOSS_ANCHOR := "boss_anchor"
 const LANDMARK_CORE_DUNGEON := "core_dungeon"
 const LANDMARK_RUIN := "ruin"
-const LANDMARK_RUIN_BUILDING := "ruin_building"
+const LANDMARK_ABANDONED_HOUSE := "abandoned_house"
 const LANDMARK_TELEPORT_ZONE := "teleport_zone"
 
 const REQUIRED_LANDMARK_TYPES := [
@@ -19,7 +19,7 @@ const REQUIRED_LANDMARK_TYPES := [
 	LANDMARK_BOSS_ANCHOR,
 	LANDMARK_CORE_DUNGEON,
 	LANDMARK_RUIN,
-	LANDMARK_RUIN_BUILDING,
+	LANDMARK_ABANDONED_HOUSE,
 	LANDMARK_TELEPORT_ZONE
 ]
 
@@ -75,7 +75,7 @@ func is_walkable(position: Vector2i) -> bool:
 	if not contains(position):
 		return false
 	var cell := _cell(position)
-	return bool(cell.layers[LAYER_TERRAIN].walkable) and cell.layers[LAYER_ENTITIES].is_empty() and cell.layers[LAYER_FACILITIES].is_empty()
+	return bool(cell.layers[LAYER_TERRAIN].walkable) and not _has_blocking_occupant(cell.layers[LAYER_ENTITIES]) and not _has_blocking_occupant(cell.layers[LAYER_FACILITIES])
 
 func is_occupied(position: Vector2i) -> bool:
 	if not contains(position):
@@ -221,6 +221,13 @@ func _first_blocking_cell(origin: Vector2i, size: Vector2i) -> Vector2i:
 		if is_occupied(position):
 			return position
 	return Vector2i(-1, -1)
+
+func _has_blocking_occupant(owner_ids: Array) -> bool:
+	for owner_id in owner_ids:
+		var reservation: Dictionary = _reservations.get(String(owner_id), {})
+		if not bool(reservation.get("metadata", {}).get("passable", false)):
+			return true
+	return false
 
 func _is_valid_footprint_size(size: Vector2i) -> bool:
 	return size.x > 0 and size.y > 0

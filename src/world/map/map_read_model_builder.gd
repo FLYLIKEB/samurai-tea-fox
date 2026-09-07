@@ -206,7 +206,7 @@ func _marker_type_for_landmark(landmark_type: String) -> String:
 	match landmark_type:
 		WorldData.LANDMARK_CORE_DUNGEON:
 			return MARKER_DUNGEON
-		WorldData.LANDMARK_RUIN, WorldData.LANDMARK_RUIN_BUILDING:
+		WorldData.LANDMARK_RUIN, WorldData.LANDMARK_ABANDONED_HOUSE:
 			return "ruin"
 		WorldData.LANDMARK_TELEPORT_ZONE:
 			return MARKER_TELEPORT

@@ -400,8 +400,8 @@ func _render_landmarks(parent: Node2D, landmarks: Array, tile_size: int, owner_s
 				_add_interaction_prompt(parent, position, tile_size, "던전 입구", "[E] 입장")
 			elif landmark_kind == WorldData.LANDMARK_RUIN:
 				_add_interaction_prompt(parent, position, tile_size, "유적", "[E] 이동")
-			elif landmark_kind == WorldData.LANDMARK_RUIN_BUILDING:
-				_add_interaction_prompt(parent, position, tile_size, "폐허", "[E] 수색")
+			elif landmark_kind == WorldData.LANDMARK_ABANDONED_HOUSE:
+				_add_interaction_prompt(parent, position, tile_size, "폐가", "[E] 수색")
 			elif landmark_kind == WorldData.LANDMARK_TELEPORT_ZONE and not repaired and String(landmark.get("teleport_state", "")) == "repairable":
 				_add_interaction_prompt(parent, position, tile_size, "텔레포트", "[E] 수리")
 			elif landmark_kind == WorldData.LANDMARK_TELEPORT_ZONE and repaired:
@@ -422,7 +422,7 @@ func _landmark_outline_color(landmark_kind: String) -> Color:
 			return DUNGEON_OUTLINE_COLOR
 		WorldData.LANDMARK_RUIN:
 			return Color(0.72, 0.48, 0.28, 1.0)
-		WorldData.LANDMARK_RUIN_BUILDING:
+		WorldData.LANDMARK_ABANDONED_HOUSE:
 			return Color(0.72, 0.48, 0.28, 1.0)
 		WorldData.LANDMARK_ENTRY:
 			return ENTRY_OUTLINE_COLOR

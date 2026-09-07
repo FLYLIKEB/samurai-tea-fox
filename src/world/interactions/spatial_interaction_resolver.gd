@@ -227,7 +227,7 @@ func landmark_target_near_world_position(
 	var distance_limit := tile_size * 1.6 if max_distance < 0.0 else max_distance
 	for landmark in world_data.get_required_landmarks():
 		var kind := String(landmark.get("kind", landmark.get("type", "")))
-		if kind not in [WorldData.LANDMARK_CORE_DUNGEON, WorldData.LANDMARK_BOSS_ANCHOR, WorldData.LANDMARK_TELEPORT_ZONE, WorldData.LANDMARK_RUIN_BUILDING]:
+		if kind not in [WorldData.LANDMARK_CORE_DUNGEON, WorldData.LANDMARK_BOSS_ANCHOR, WorldData.LANDMARK_TELEPORT_ZONE, WorldData.LANDMARK_ABANDONED_HOUSE]:
 			continue
 		var cell := _vector_from_dictionary(landmark.get("position", {}))
 		var center := world_origin + Vector2(
@@ -260,7 +260,7 @@ func is_landmark_target(in_dungeon_map: bool, target_id: String) -> bool:
 			or is_core_dungeon_target(target_id) \
 			or target_id.begins_with("%s_" % WorldData.LANDMARK_BOSS_ANCHOR) \
 			or target_id.begins_with("%s_" % WorldData.LANDMARK_RUIN) \
-			or target_id.begins_with("%s_" % WorldData.LANDMARK_RUIN_BUILDING) \
+			or target_id.begins_with("%s_" % WorldData.LANDMARK_ABANDONED_HOUSE) \
 			or target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE)
 
 func is_core_dungeon_target(target_id: String) -> bool:

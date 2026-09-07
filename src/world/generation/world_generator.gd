@@ -91,6 +91,12 @@ const TERRAIN_RAINFOREST_AGARWOOD := "rainforest_agarwood_grove"
 const TERRAIN_RAINFOREST_RIVER_BANK := "rainforest_river_bank"
 
 const LARGE_HOUSE_ID := "large_fenced_house"
+const STARTING_HOME_BRIDGE_IDS := [
+	"starting_home_bridge_east",
+	"starting_home_bridge_west",
+	"starting_home_bridge_north",
+	"starting_home_bridge_south"
+]
 
 const BALANCE_MIN_RESOURCE_NODES_ID := "biome_min_resource_nodes"
 const TEMPLATE_PATH_SPINE := "path_spine"
@@ -176,11 +182,12 @@ func _generate_attempt(seed: int, data_version: String, biome_definition: Dictio
 	_apply_map_boundary(world_data, profile, progression_projection.get("edge_exit_positions", []))
 	var templates := _apply_common_templates(world_data, layout_rng, chunks, profile)
 	var biome_id := String(biome_definition.get("id", ""))
-	var landmarks := _place_required_landmarks(world_data, layout_rng, core_dungeon_count, teleport_zone_count, biome_id, profile, core_dungeon_contract)
-	_carve_landmark_paths(world_data, landmarks, profile)
-	var large_house_result := _place_large_fenced_house(world_data, layout_rng, profile)
+	var entry_position := Vector2i(8, layout_rng.next_range(9, MAP_HEIGHT - 10))
+	var large_house_result := _place_starting_home_island(world_data, entry_position, profile)
 	if not large_house_result.ok:
-		return _failed_attempt(seed, data_version, biome_definition, attempt, retry_limit, "large_fenced_house_placement_failed")
+		return _failed_attempt(seed, data_version, biome_definition, attempt, retry_limit, "starting_home_placement_failed")
+	var landmarks := _place_required_landmarks(world_data, layout_rng, core_dungeon_count, teleport_zone_count, biome_id, profile, core_dungeon_contract, entry_position)
+	_carve_landmark_paths(world_data, landmarks, profile)
 	_place_path_edge_fences(world_data, layout_rng, templates, profile)
 	var validator := ConnectivityValidator.new()
 	var facility_nodes := _place_facility_nodes(world_data, layout_rng, landmarks, profile, validator.reachable_cell_keys_from_entry(world_data.to_dictionary()))
@@ -309,52 +316,54 @@ func _strip_presentation_sources(value):
 		return clean_array
 	return value
 
-func _place_large_fenced_house(world_data: WorldData, rng: DeterministicRng, profile: Dictionary) -> Dictionary:
-	var candidates: Array[Vector2i] = []
-	var center := Vector2i(MAP_WIDTH / 2 - 2, MAP_HEIGHT / 2 - 2)
-	for radius in range(0, 28):
-		for offset in [Vector2i(radius, 0), Vector2i(-radius, 0), Vector2i(0, radius), Vector2i(0, -radius), Vector2i(radius, radius), Vector2i(-radius, radius), Vector2i(radius, -radius), Vector2i(-radius, -radius)]:
-			var outer_origin: Vector2i = center + offset
-			if outer_origin.x < 2 or outer_origin.y < 2 or outer_origin.x + 4 >= MAP_WIDTH - 2 or outer_origin.y + 4 >= MAP_HEIGHT - 2:
-				continue
-			if not candidates.has(outer_origin):
-				candidates.append(outer_origin)
-	if candidates.is_empty():
+func _place_starting_home_island(world_data: WorldData, entry_position: Vector2i, profile: Dictionary) -> Dictionary:
+	var island_min := entry_position + Vector2i(-4, -5)
+	var island_max := entry_position + Vector2i(3, 4)
+	var moat_min := island_min - Vector2i(2, 2)
+	var moat_max := island_max + Vector2i(2, 2)
+	for y in range(moat_min.y, moat_max.y + 1):
+		for x in range(moat_min.x, moat_max.x + 1):
+			var position := Vector2i(x, y)
+			if not world_data.contains(position):
+				return {"ok": false}
+			_clear_generated_tree_obstacle(world_data, position)
+			if x < island_min.x or x > island_max.x or y < island_min.y or y > island_max.y:
+				world_data.set_terrain(position, String(profile.water_terrain_id), false)
+	var bridge_result := _reserve_starting_home_bridges(world_data, entry_position, profile)
+	if not bridge_result.ok:
+		return bridge_result
+	var outer_origin := entry_position + Vector2i(-3, -5)
+	var house_origin := outer_origin + Vector2i.ONE
+	var house_reserved := world_data.reserve_entity(LARGE_HOUSE_ID, house_origin, Vector2i(2, 2), false, {"role": "starting_home"})
+	if not house_reserved.ok:
 		return {"ok": false}
-	var start := rng.next_range(0, candidates.size() - 1)
-	var validator := ConnectivityValidator.new()
-	for attempt in range(candidates.size()):
-		var outer_origin: Vector2i = candidates[(start + attempt) % candidates.size()]
-		var all_cells := _large_house_footprint_cells(outer_origin)
-		var blocked := false
-		for position in all_cells:
-			if not world_data.contains(position) or not world_data.is_walkable(position):
-				blocked = true
-				break
-		if blocked:
-			continue
-		var house_origin := outer_origin + Vector2i.ONE
-		var house_reserved := world_data.reserve_entity(LARGE_HOUSE_ID, house_origin, Vector2i(2, 2), false, {
-			"role": "core_dungeon_entrance"
-		})
-		if not house_reserved.ok:
-			continue
-		var fence_result := _reserve_large_house_fence(world_data, outer_origin)
-		if not fence_result.ok or not validator.validate_world_data(world_data.to_dictionary()).valid:
-			world_data.release_footprint(LARGE_HOUSE_ID)
-			for owner_id in fence_result.get("owner_ids", []):
+	var fence_result := _reserve_large_house_fence(world_data, outer_origin)
+	if not fence_result.ok:
+		world_data.release_footprint(LARGE_HOUSE_ID)
+		return {"ok": false}
+	return {"ok": true, "house": {"id": LARGE_HOUSE_ID, "position": _position_dictionary(house_origin), "footprint_size": {"x": 2, "y": 2}, "fence_owner_ids": fence_result.owner_ids, "bridge_owner_ids": bridge_result.owner_ids, "entry_position": _position_dictionary(entry_position)}}
+
+func _reserve_starting_home_bridges(world_data: WorldData, entry_position: Vector2i, profile: Dictionary) -> Dictionary:
+	var bridges := [
+		{"id": STARTING_HOME_BRIDGE_IDS[0], "origin": entry_position + Vector2i(3, 0), "size": Vector2i(3, 2), "rotation_degrees": 0.0},
+		{"id": STARTING_HOME_BRIDGE_IDS[1], "origin": entry_position + Vector2i(-6, 0), "size": Vector2i(3, 2), "rotation_degrees": 0.0},
+		{"id": STARTING_HOME_BRIDGE_IDS[2], "origin": entry_position + Vector2i(1, -7), "size": Vector2i(2, 3), "rotation_degrees": 90.0},
+		{"id": STARTING_HOME_BRIDGE_IDS[3], "origin": entry_position + Vector2i(1, 4), "size": Vector2i(2, 3), "rotation_degrees": 90.0}
+	]
+	var owner_ids: Array = []
+	for bridge in bridges:
+		var origin: Vector2i = bridge.origin
+		var size: Vector2i = bridge.size
+		for y in range(origin.y, origin.y + size.y):
+			for x in range(origin.x, origin.x + size.x):
+				world_data.set_terrain(Vector2i(x, y), String(profile.bridge_terrain_id), true)
+		var reserved := world_data.reserve_entity(String(bridge.id), origin, size, false, {"passable": true, "rotation_degrees": float(bridge.rotation_degrees), "role": "starting_home_bridge"})
+		if not reserved.ok:
+			for owner_id in owner_ids:
 				world_data.release_footprint(String(owner_id))
-			continue
-		return {
-			"ok": true,
-			"house": {
-				"id": LARGE_HOUSE_ID,
-				"position": _position_dictionary(house_origin),
-				"footprint_size": {"x": 2, "y": 2},
-				"fence_owner_ids": fence_result.owner_ids
-			}
-		}
-	return {"ok": false}
+			return {"ok": false, "owner_ids": owner_ids}
+		owner_ids.append(String(bridge.id))
+	return {"ok": true, "owner_ids": owner_ids}
 
 func _large_house_footprint_cells(outer_origin: Vector2i) -> Array:
 	var cells: Array = []
@@ -777,9 +786,9 @@ func _paint_shore_cell(world_data: WorldData, position: Vector2i, profile: Dicti
 	world_data.set_terrain(position, String(profile.shore_terrain_id), true)
 	shore_cells.append(position)
 
-func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, core_dungeon_count: int, teleport_zone_count: int, biome_id: String, profile: Dictionary, core_dungeon_contract: Dictionary) -> Array:
+func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, core_dungeon_count: int, teleport_zone_count: int, biome_id: String, profile: Dictionary, core_dungeon_contract: Dictionary, entry_position: Vector2i) -> Array:
 	var landmarks := []
-	landmarks.append(_add_landmark(world_data, WorldData.LANDMARK_ENTRY, 0, Vector2i(3, rng.next_range(8, MAP_HEIGHT - 9)), profile))
+	landmarks.append(_add_landmark(world_data, WorldData.LANDMARK_ENTRY, 0, entry_position, profile))
 
 	for index in range(teleport_zone_count):
 		landmarks.append(_add_landmark(
@@ -800,13 +809,13 @@ func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, cor
 		Vector2i(rng.next_range(6, MAP_WIDTH / 4), rng.next_range(6, MAP_HEIGHT - 7)),
 		profile
 	))
-	# The travel ruin above is a progression landmark.  Lootable ruined
-	# buildings are separate so their one-time rewards cannot replace travel.
-	var ruin_building_count := rng.next_range(3, 4)
-	for index in range(ruin_building_count):
+	# The travel ruin above is a progression landmark.  Lootable abandoned
+	# houses are separate so their one-time rewards cannot replace travel.
+	var abandoned_house_count := rng.next_range(3, 4)
+	for index in range(abandoned_house_count):
 		landmarks.append(_add_landmark(
 			world_data,
-			WorldData.LANDMARK_RUIN_BUILDING,
+			WorldData.LANDMARK_ABANDONED_HOUSE,
 			index,
 			Vector2i(rng.next_range(6, MAP_WIDTH - 7), rng.next_range(6, MAP_HEIGHT - 7)),
 			profile
@@ -894,6 +903,8 @@ func _carve_path(world_data: WorldData, start: Vector2i, target: Vector2i, profi
 
 func _make_path_cell(world_data: WorldData, position: Vector2i, profile: Dictionary) -> void:
 	if not world_data.contains(position):
+		return
+	if world_data.terrain_id_at(position) == String(profile.bridge_terrain_id):
 		return
 	_clear_generated_tree_obstacle(world_data, position)
 	var is_bridge := not world_data.is_walkable(position)

@@ -55,7 +55,7 @@ var calls := []
 func run(asserts) -> void:
 	_assert_connected_biome_requires_repaired_current_gate(asserts)
 	_assert_craft_command_syncs_saves_and_reports_event(asserts)
-	_assert_ruin_building_interaction_grants_and_persists_loot(asserts)
+	_assert_abandoned_house_interaction_grants_and_persists_loot(asserts)
 
 func _assert_connected_biome_requires_repaired_current_gate(asserts) -> void:
 	_reset_state()
@@ -78,7 +78,7 @@ func _assert_craft_command_syncs_saves_and_reports_event(asserts) -> void:
 	asserts.equal(hud.feedback, ["제작 완료: tea_bowl"], "craft command keeps existing feedback text")
 	asserts.equal(hud.events[0].type, "craft_completed", "craft command emits completion status event")
 
-func _assert_ruin_building_interaction_grants_and_persists_loot(asserts) -> void:
+func _assert_abandoned_house_interaction_grants_and_persists_loot(asserts) -> void:
 	_reset_state()
 	run_state.seed = 11037
 	var catalog := DataCatalog.new()
@@ -86,11 +86,11 @@ func _assert_ruin_building_interaction_grants_and_persists_loot(asserts) -> void
 	var inventory_result: Dictionary = InventoryModel.from_catalog(catalog)
 	asserts.true_value(inventory_result.ok, "ruin interaction creates an inventory")
 	var coordinator := _coordinator(catalog, inventory_result.inventory)
-	asserts.true_value(coordinator.handle_landmark_interaction("ruin_building_2"), "E landmark interaction searches the ruin building")
-	asserts.equal(run_state.world_interactions.ruin_building_2.state, "looted", "ruin building interaction persists the loot state")
+	asserts.true_value(coordinator.handle_landmark_interaction("abandoned_house_2"), "E landmark interaction searches the abandoned house")
+	asserts.equal(run_state.world_interactions.abandoned_house_2.state, "looted", "abandoned house interaction persists the loot state")
 	asserts.equal(calls, ["save"], "successful ruin loot saves the current run")
-	asserts.false_value(coordinator.handle_landmark_interaction("ruin_building_2"), "searched ruin building rejects a duplicate interaction")
-	asserts.true_value(hud.feedback.back().begins_with("이미 수색한 폐허"), "duplicate ruin interaction explains the consumed state")
+	asserts.false_value(coordinator.handle_landmark_interaction("abandoned_house_2"), "searched abandoned house rejects a duplicate interaction")
+	asserts.true_value(hud.feedback.back().begins_with("이미 수색한 폐가"), "duplicate abandoned house interaction explains the consumed state")
 
 func _coordinator(next_catalog = null, next_inventory = null) -> FacilityBiomeCoordinator:
 	var ports := FacilityBiomeCoordinator.Ports.new()

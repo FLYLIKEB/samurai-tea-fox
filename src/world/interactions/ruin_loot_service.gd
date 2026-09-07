@@ -9,8 +9,8 @@ const CATEGORY_TEA := "tea"
 const CATEGORIES := [CATEGORY_WEAPON, CATEGORY_ARMOR, CATEGORY_TEA]
 
 func loot(target_id: String, world_seed: int, biome_id: String, catalog, inventory, run_state) -> Dictionary:
-	if not target_id.begins_with("%s_" % WorldData.LANDMARK_RUIN_BUILDING):
-		return _fail("invalid_ruin_target")
+	if not target_id.begins_with("%s_" % WorldData.LANDMARK_ABANDONED_HOUSE):
+		return _fail("invalid_abandoned_house_target")
 	if catalog == null or inventory == null or run_state == null:
 		return _fail("missing_runtime")
 	if not run_state.world_interactions.get(target_id, {}).is_empty():
@@ -34,7 +34,7 @@ func loot(target_id: String, world_seed: int, biome_id: String, catalog, invento
 	return {"ok": true, "target_id": target_id, "item_id": item_id, "item_name": String(item.get("name", item_id)), "quantity": 1, "category": category}
 
 func _category_for(target_id: String) -> String:
-	var suffix := target_id.trim_prefix("%s_" % WorldData.LANDMARK_RUIN_BUILDING)
+	var suffix := target_id.trim_prefix("%s_" % WorldData.LANDMARK_ABANDONED_HOUSE)
 	return String(CATEGORIES[posmod(int(suffix), CATEGORIES.size())]) if suffix.is_valid_int() else CATEGORY_TEA
 
 func _candidates_for(category: String, biome_id: String, catalog, inventory) -> Array:
