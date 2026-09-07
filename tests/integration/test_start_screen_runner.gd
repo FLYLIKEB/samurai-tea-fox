@@ -105,6 +105,7 @@ func _assert_full_prologue_sequence(gameplay_scene) -> void:
 		["story_pro_08", "dlg_pro_008", "complete_dlg_pro_008", ""],
 	]
 	for step in steps:
+		_assert_prologue_backdrop(gameplay_scene, step[0], step[1])
 		if not gameplay_scene.submit_action_command(GameCommand.new(GameCommand.Type.NARRATIVE_SELECT_OPTION, Vector2i.ZERO, -1, {
 			"event_id": step[0],
 			"node_id": step[1],
@@ -117,6 +118,17 @@ func _assert_full_prologue_sequence(gameplay_scene) -> void:
 			return
 	if gameplay_scene.game_hud.narrative_dialogue_visible():
 		failures.append("new start closes the dialogue only after PRO-08")
+
+func _assert_prologue_backdrop(gameplay_scene, event_id: String, node_id: String) -> void:
+	var presenter := gameplay_scene.game_hud.get_node_or_null("Root/NarrativeOverlay") as Control
+	var backdrop := gameplay_scene.game_hud.get_node_or_null("Root/NarrativeOverlay/NarrativePlaceholderBackdrop") as Control
+	if presenter == null or backdrop == null:
+		failures.append("%s/%s mounts the prologue backdrop" % [event_id, node_id])
+		return
+	if not backdrop.visible:
+		failures.append("%s/%s shows the prologue backdrop" % [event_id, node_id])
+	if backdrop.size != presenter.size or backdrop.size.x <= 0.0 or backdrop.size.y <= 0.0:
+		failures.append("%s/%s backdrop covers the full narrative overlay (backdrop=%s presenter=%s)" % [event_id, node_id, backdrop.size, presenter.size])
 
 func _write_existing_completed_run() -> void:
 	var store := SaveStore.new()

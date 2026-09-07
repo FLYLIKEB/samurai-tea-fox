@@ -153,6 +153,11 @@ func apply_layout(viewport_size: Vector2, margin: Vector4) -> void:
 	offset_top = 0
 	offset_right = 0
 	offset_bottom = 0
+	placeholder_backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	placeholder_backdrop.offset_left = 0
+	placeholder_backdrop.offset_top = 0
+	placeholder_backdrop.offset_right = 0
+	placeholder_backdrop.offset_bottom = 0
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
 	background.offset_left = 0
 	background.offset_top = 0

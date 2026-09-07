@@ -23,6 +23,9 @@ func run(asserts) -> void:
 	var backdrop := presenter.get_node_or_null("NarrativePlaceholderBackdrop") as NarrativePlaceholderBackdrop
 	var texture_background := presenter.get_node_or_null("NarrativeBackground") as TextureRect
 	asserts.true_value(backdrop != null, "presenter mounts the prologue placeholder backdrop")
+	presenter.apply_layout(Vector2(640.0, 360.0), Vector4.ZERO)
+	asserts.equal(backdrop.anchor_right, 1.0, "presenter layout anchors the placeholder backdrop to the right edge")
+	asserts.equal(backdrop.anchor_bottom, 1.0, "presenter layout anchors the placeholder backdrop to the bottom edge")
 	var keys := {}
 	var variants := {}
 	for dialogue_key in DIALOGUE_KEYS:
