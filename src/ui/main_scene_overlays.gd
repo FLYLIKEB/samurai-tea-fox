@@ -45,10 +45,9 @@ static func create_loading(scene_root: Node) -> Label:
 	return label
 
 static func _loading_backdrop_texture() -> Texture2D:
-	var image := Image.load_from_file(LOADING_BACKDROP_PATH)
-	if image == null or image.is_empty():
-		return null
-	return ImageTexture.create_from_image(image)
+	if ResourceLoader.exists(LOADING_BACKDROP_PATH, "Image"):
+		return load(LOADING_BACKDROP_PATH) as Texture2D
+	return null
 
 static func show_ending(scene_root: Node) -> void:
 	var layer := CanvasLayer.new()
