@@ -99,6 +99,11 @@ func _assert_visible_house_accepts_e_before_attack(asserts, catalog: DataCatalog
 	asserts.false_value(dungeon_terrain.has("projection_source_id"), "entered dungeon data stays semantic-only")
 	asserts.false_value(dungeon_terrain.has("render_id"), "entered dungeon data does not store renderer ids")
 	asserts.equal(dungeon_terrain.atlas_coords, {"x": 0, "y": 1}, "dungeon boundary selects an explicit wall tile")
+	var internal_wall_terrain := _terrain_for_cell(dungeon_snapshot, Vector2i(3, 2))
+	var internal_floor_terrain := _terrain_for_cell(dungeon_snapshot, Vector2i(2, 2))
+	asserts.equal(String(internal_wall_terrain.get("id", "")), "dungeon_wall", "internal blocked dungeon cell keeps wall semantics")
+	asserts.equal(int(internal_wall_terrain.get("atlas_coords", {}).get("y", -1)), 2, "internal blocked dungeon cell uses the dedicated wall atlas row")
+	asserts.true_value(internal_wall_terrain.get("atlas_coords", {}) != internal_floor_terrain.get("atlas_coords", {}), "internal wall and floor never share the same dungeon image")
 	var projected_terrain: Dictionary = runtime.main.generated_world.renderer_input.layers[1].cells[0]
 	asserts.equal(projected_terrain.source_id, Main.DUNGEON_TILESET_SOURCE_ID, "entered dungeon projection uses the dedicated mossy dojo tileset")
 	asserts.equal(projected_terrain.atlas_coords, {"x": 0, "y": 1}, "entered dungeon projection preserves atlas presentation data")
@@ -123,9 +128,13 @@ func _assert_visible_house_accepts_e_before_attack(asserts, catalog: DataCatalog
 	asserts.equal(String(missing_tool_result.get("reason", "")), "missing_required_tool", "dungeon ore reports missing pickaxe")
 	asserts.equal(runtime.main.inventory.get_total_quantity("iron_ore"), ore_before, "failed dungeon mining grants no ore")
 	asserts.true_value(runtime.main.inventory.add_item("stone_pickaxe", 1).ok, "dungeon fixture stocks stone pickaxe")
+	var mined_cell := Vector2i(2, 3)
+	asserts.false_value(runtime.main.world_data.is_walkable(mined_cell), "occupied dungeon ore cell blocks movement before mining")
 	asserts.true_value(runtime.main._try_dungeon_interaction_from_input(), "dungeon ore E interaction succeeds")
 	asserts.equal(runtime.main.inventory.get_total_quantity("iron_ore"), ore_before + 1, "dungeon ore is added to inventory")
 	asserts.equal(runtime.main.inventory.get_total_quantity("stone_pickaxe"), 1, "dungeon ore mining does not consume pickaxe")
+	asserts.true_value(runtime.main.world_data.is_walkable(mined_cell), "mined dungeon resource cell becomes walkable immediately")
+	asserts.true_value(runtime.main.world_data.get_occupants(mined_cell).is_empty(), "mined dungeon resource leaves no hidden blocker")
 	var clear_result: Dictionary = runtime.main.dungeon_runtime.complete_dungeon({"objective_complete": true, "resolution_type": "combat", "choice_key": "test_clear", "run_flag": "test_clear", "reward_item_ids": [], "progression_unlock_ids": [String(runtime.main.run_state.current_biome_id)]})
 	asserts.true_value(clear_result.ok, "fixture can mark the active dungeon complete before exit")
 	runtime.main.player.global_position = runtime.main.world_position_for_cell_center(Vector2i(1, 1))
@@ -421,6 +430,13 @@ func _marker_type(markers: Array, id: String) -> String:
 		if String(marker.get("id", "")) == id:
 			return String(marker.get("marker_type", ""))
 	return ""
+
+func _terrain_for_cell(world_snapshot: Dictionary, target_cell: Vector2i) -> Dictionary:
+	for cell in world_snapshot.get("cells", []):
+		var position: Dictionary = cell.get("position", {})
+		if Vector2i(int(position.get("x", -1)), int(position.get("y", -1))) == target_cell:
+			return cell.get("layers", {}).get(WorldData.LAYER_TERRAIN, {})
+	return {}
 
 func _free_runtime(runtime: Dictionary) -> void:
 	var main: Main = runtime.main

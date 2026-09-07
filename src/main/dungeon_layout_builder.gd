@@ -17,6 +17,9 @@ const MAX_RESOURCE_COUNT := 7
 const FLOOR_ATLAS_COORDS := [
 	Vector2i(0, 0), Vector2i(1, 0), Vector2i(2, 0)
 ]
+const WALL_ATLAS_COORDS := [
+	Vector2i(0, 2), Vector2i(1, 2), Vector2i(2, 2)
+]
 const ENEMY_SPECS := [
 	{"id": "dungeon_enemy_0", "cell": Vector2i(7, 2)},
 	{"id": "dungeon_enemy_1", "cell": Vector2i(9, 5)},
@@ -37,7 +40,7 @@ func build(definition: Dictionary, node_kind_resolver := Callable()) -> Dictiona
 		"enemy_specs": ENEMY_SPECS.duplicate(true)
 	}
 
-func atlas_coords_for_cell(cell: Vector2i, bounds: Vector2i) -> Vector2i:
+func atlas_coords_for_cell(cell: Vector2i, bounds: Vector2i, blocked := false) -> Vector2i:
 	if cell.y == 0:
 		return Vector2i(cell.x % 8, 1)
 	if cell.y == bounds.y - 1:
@@ -46,8 +49,9 @@ func atlas_coords_for_cell(cell: Vector2i, bounds: Vector2i) -> Vector2i:
 		return Vector2i(0, 2 + cell.y % 2)
 	if cell.x == bounds.x - 1:
 		return Vector2i(7, 2 + cell.y % 2)
-	var variant_index := absi(cell.x * 31 + cell.y * 17 + cell.x * cell.y * 7) % FLOOR_ATLAS_COORDS.size()
-	return FLOOR_ATLAS_COORDS[variant_index]
+	var atlas_coords: Array = WALL_ATLAS_COORDS if blocked else FLOOR_ATLAS_COORDS
+	var variant_index := absi(cell.x * 31 + cell.y * 17 + cell.x * cell.y * 7) % atlas_coords.size()
+	return atlas_coords[variant_index]
 
 func cell_is_blocked(cell: Vector2i) -> bool:
 	if cell.x == 0 or cell.y == 0 or cell.x == WIDTH - 1 or cell.y == HEIGHT - 1:
@@ -66,7 +70,7 @@ func _apply_terrain(layout: WorldData) -> void:
 		for x in range(layout.width):
 			var cell := Vector2i(x, y)
 			var blocked := cell_is_blocked(cell)
-			layout.set_terrain(cell, WALL_TERRAIN_ID if blocked else FLOOR_TERRAIN_ID, not blocked, atlas_coords_for_cell(cell, bounds))
+			layout.set_terrain(cell, WALL_TERRAIN_ID if blocked else FLOOR_TERRAIN_ID, not blocked, atlas_coords_for_cell(cell, bounds, blocked))
 
 func _reserve_resources(layout: WorldData, node_kind_resolver: Callable) -> Array:
 	var resources := []
