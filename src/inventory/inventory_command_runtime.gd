@@ -211,6 +211,7 @@ func _row_for_slot(index: int, slot: Dictionary) -> Dictionary:
 		"item_id": item_id,
 		"instance_id": String(slot.get("instance_id", "")),
 		"name": String(definition.get("name", item_id)),
+		"description": _item_description(definition),
 		"kind": kind,
 		"quantity": int(slot.get("quantity", 0)),
 		"max_stack": max_stack,
@@ -294,6 +295,9 @@ func _definition(item_id: String) -> Dictionary:
 	if inventory != null and inventory.has_method("definition_for"):
 		return _dictionary_value(inventory.definition_for(item_id))
 	return {}
+
+func _item_description(definition: Dictionary) -> String:
+	return String(definition.get("description", definition.get("effect", "")))
 
 func _command_slot(command: GameCommand) -> int:
 	return int(command.payload.get("slot_index", command.slot))

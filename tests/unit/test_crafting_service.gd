@@ -145,6 +145,7 @@ func _assert_crafting_read_model_reports_filters_detail_and_reasons(asserts) -> 
 	asserts.equal(model.detail.recipe_id, "humble_clay_bowl", "read model keeps selected stable recipe id")
 	asserts.equal(model.detail.result.item_id, "humble_clay_bowl", "read model exposes result item id")
 	asserts.equal(model.detail.result.name, "소박한 흙사발", "read model resolves result item name")
+	asserts.equal(model.detail.result.description, "차를 마실 때 쓰는 기본 다구다.", "read model resolves result item role description")
 	asserts.equal(model.detail.materials[0].item_id, "clay", "read model exposes material item id")
 	asserts.equal(model.detail.materials[0].available, 2, "read model exposes owned material quantity")
 	asserts.equal(model.detail.materials[0].required, 3, "read model exposes required material quantity")
@@ -472,7 +473,7 @@ func _item_rows() -> Array:
 		{"id": "stone", "name": "돌", "status": "테스트", "type": "재료", "max_stack": 10},
 		{"id": "clay", "name": "점토", "status": "테스트", "type": "재료", "max_stack": 10},
 		{"id": "wooden_workbench", "name": "목재 작업대", "status": "테스트", "type": "도구"},
-		{"id": "humble_clay_bowl", "name": "소박한 흙사발", "status": "테스트", "type": "다구"},
+		{"id": "humble_clay_bowl", "name": "소박한 흙사발", "status": "테스트", "type": "다구", "effect": "차를 마실 때 쓰는 기본 다구다."},
 		{"id": "crowded_bowl", "name": "꽉 찬 사발", "status": "테스트", "type": "다구"}
 	]
 

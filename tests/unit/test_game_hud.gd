@@ -152,7 +152,7 @@ class FakeCraftingService:
 			"craftable": bool(availability.craftable),
 			"reason": String(availability.get("reason", "")),
 			"reason_label": "제작 가능" if bool(availability.craftable) else "재료 부족",
-			"result": {"item_id": "wooden_workbench", "name": "목재 작업대", "quantity": 1, "icon_asset_id": "asset_assets_sprites_objects_crafting_workbench_32x32_png"},
+			"result": {"item_id": "wooden_workbench", "name": "목재 작업대", "description": "기초 제작을 여는 배치형 시설.", "quantity": 1, "icon_asset_id": "asset_assets_sprites_objects_crafting_workbench_32x32_png"},
 			"materials": [{"item_id": "wood", "name": "목재", "available": inventory.get_total_quantity("wood"), "required": 2}],
 			"facilities": [],
 			"unlock_biome_id": "common_region"
@@ -609,6 +609,7 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	asserts.true_value(crafting_grid != null and crafting_grid.columns == 3, "crafting menu renders a mobile-friendly three-column grid")
 	asserts.true_value(_tree_has_text(hud, "wooden_workbench → 목재 작업대 x1"), "crafting menu shows selected recipe result")
 	asserts.true_value(_tree_has_text(hud, "상태 제작 가능"), "crafting menu shows selected recipe status on its own row")
+	asserts.true_value(_tree_has_text(hud, "기초 제작을 여는 배치형 시설."), "crafting menu shows the crafted item's role description")
 	asserts.true_value(_tree_has_text(hud, "재료 목재 3/2"), "crafting menu shows selected recipe materials on their own row")
 	asserts.true_value(_tree_has_text(hud, "시설 손제작"), "crafting menu shows selected recipe facility on its own row")
 	asserts.true_value(_tree_has_text(hud, "해금 common_region"), "crafting menu shows selected recipe unlock on its own row")

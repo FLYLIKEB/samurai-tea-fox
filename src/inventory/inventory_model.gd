@@ -348,6 +348,7 @@ static func _definition_from_item(row: Dictionary) -> Dictionary:
 		"source": ITEM_SOURCE,
 		"max_stack": max_stack_result.value,
 		"max_owned": max_owned_result.value,
+		"description": String(row.get("description", row.get("effect", ""))),
 		"effect_type": _normalized_item_effect_type(row),
 		"requires_instance": bool(INDIVIDUAL_ITEM_TYPES.get(kind, false))
 	}

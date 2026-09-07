@@ -1,5 +1,5 @@
 {
-  "content_hash": "25bf32df5634f7d6e6b414d33988684b69e181d8baae0d1040b26a241ac7646f",
+  "content_hash": "df3e25d5856278cc36e1145b34496b4ef96773729d35189a18fb1e9024065460",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -69,6 +69,7 @@
     {
       "core_tea_ware": false,
       "craftable": false,
+      "effect": "금속 장비와 상위 도구를 제작하는 배치형 제작 시설.",
       "grade": "일반",
       "id": "blacksmith_forge",
       "max_stack": 1,
@@ -335,6 +336,7 @@
     {
       "core_tea_ware": false,
       "craftable": false,
+      "effect": "금속 재료를 가공해 도구와 다구 제작에 쓰는 작업 시설.",
       "grade": "일반",
       "id": "metal_workbench",
       "max_stack": 1,
@@ -729,6 +731,7 @@
     {
       "core_tea_ware": false,
       "craftable": true,
+      "effect": "나무 자원을 채집할 때 인벤토리에 보유해 사용하는 재사용 도구. 장착·소모·내구도는 없다.",
       "grade": "일반",
       "id": "stone_axe",
       "max_owned": 1,

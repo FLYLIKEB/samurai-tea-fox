@@ -1188,6 +1188,9 @@ func _inventory_detail_card(row: Dictionary) -> Control:
 			int(row.get("quantity", 0)),
 			String(row.get("stack_label", ""))
 		], 10))
+		var description := String(row.get("description", "")).strip_edges()
+		if not description.is_empty():
+			rows.add_child(_label(description, 10))
 	else:
 		rows.add_child(_icon_text_row("", "표시할 항목 없음", 11))
 	var actions := HBoxContainer.new()
@@ -1641,6 +1644,9 @@ func _crafting_detail_row(detail: Dictionary) -> Control:
 		int(result.get("quantity", 1))
 	], 11))
 	rows.add_child(_label("상태 %s" % String(detail.get("reason_label", "")), 10))
+	var description := String(result.get("description", "")).strip_edges()
+	if not description.is_empty():
+		rows.add_child(_label(description, 10))
 	if not materials.is_empty():
 		rows.add_child(_label("재료 %s" % ", ".join(materials), 10))
 	rows.add_child(_label("시설 %s" % ("손제작" if facilities.is_empty() else ", ".join(facilities)), 10))

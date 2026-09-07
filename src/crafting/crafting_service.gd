@@ -168,6 +168,10 @@ func required_facility_item_ids(recipe_id: String) -> Array:
 func item_name(item_id: String) -> String:
 	return String(item_definitions.get(item_id, {}).get("name", item_id))
 
+func item_description(item_id: String) -> String:
+	var definition: Dictionary = item_definitions.get(item_id, {})
+	return String(definition.get("description", definition.get("effect", "")))
+
 func is_handcraft(recipe_id: String) -> bool:
 	return required_facility_item_ids(recipe_id).is_empty()
 
@@ -241,6 +245,7 @@ func _recipe_read_model_row(recipe: Dictionary, availability: Dictionary, invent
 		"result": {
 			"item_id": String(recipe.get("result_item_id", "")),
 			"name": item_name(String(recipe.get("result_item_id", ""))),
+			"description": item_description(String(recipe.get("result_item_id", ""))),
 			"quantity": int(recipe.get("result_quantity", 1))
 		},
 		"materials": _material_read_model_rows(_duplicate_array(recipe.get("materials", [])), inventory),

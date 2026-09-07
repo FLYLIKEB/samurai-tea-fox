@@ -29,6 +29,7 @@ func _assert_read_model_filter_sort_and_capacity(asserts) -> void:
 	asserts.true_value(model.available_filters.has("소모품"), "read model exposes kind filters")
 	asserts.true_value(model.available_filters.has("무기"), "read model exposes equipment filters")
 	asserts.true_value(model.slots[0].has("stack_label"), "read model exposes stack labels")
+	asserts.equal(model.slots[0].description, "전투 중 사용해 HP 25 회복. 사용 중 피격되면 취소되며 차와 별개인 응급처치 수단이다.", "read model exposes the item role description")
 	asserts.true_value(model.slots[0].commands.has("select"), "read model exposes stable selection command descriptors")
 
 	var filtered: Dictionary = runtime.handle_command(GameCommand.new(GameCommand.Type.INVENTORY_SET_FILTER, Vector2i.ZERO, -1, {"kind": "소모품"}))
@@ -128,11 +129,11 @@ func _assert_hud_inventory_menu_uses_command_read_model(asserts) -> void:
 	asserts.true_value(_tree_has_text(hud, "정렬"), "HUD exposes sort command without dragging")
 	asserts.true_value(_tree_has_text(hud, "사용"), "HUD exposes use command without dragging")
 	asserts.true_value(_tree_has_text(hud, "장착"), "HUD exposes equip command without dragging")
-	var leaf_row := _row_for_item(runtime, "father_spring_pan_fired_tea")
-	runtime.handle_command(GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, int(leaf_row.slot_index), {"slot_index": int(leaf_row.slot_index)}))
+	var tea_ware_row := _row_for_item(runtime, "ash_stained_iron_kettle")
+	runtime.handle_command(GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, int(tea_ware_row.slot_index), {"slot_index": int(tea_ware_row.slot_index)}))
 	hud.show_inventory_menu()
-	asserts.true_value(_tree_has_text(hud, "서호용정"), "HUD shows selected tea leaf in inventory")
-	asserts.false_value(_tree_has_text(hud, "사용"), "HUD does not expose direct use for selected tea leaf")
+	asserts.true_value(_tree_has_text(hud, "재 묻은 철솥"), "HUD shows selected tea ware in inventory")
+	asserts.true_value(_tree_has_text(hud, "지워버리려 한 감정의 흔적을 재처럼 남긴 철솥."), "HUD shows the selected item's role description")
 	hud.free()
 
 func _assert_project_input_map_exposes_inventory_keyboard_actions(asserts) -> void:
