@@ -4,6 +4,7 @@ const CombatConfig = preload("res://src/combat/combat_config.gd")
 const CombatDummy = preload("res://src/combat/combat_dummy.gd")
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
 const Main = preload("res://src/main/main.gd")
+const WorldData = preload("res://src/world/data/world_data.gd")
 
 var failures: Array[String] = []
 
@@ -88,7 +89,48 @@ func run() -> void:
 	if finished_steps != [destination_cell]:
 		failures.append("enemy movement emits one finished signal for the destination cell")
 
+	_assert_world_data_blockers_stop_enemy(dummy, target)
+
 	_finish(dummy, target)
+
+func _assert_world_data_blockers_stop_enemy(dummy: CombatDummy, target: Node2D) -> void:
+	var tile_size := 32.0
+	var start_cell := Vector2i(1, 1)
+	var blocked_cell := Vector2i(2, 1)
+	var target_cell := Vector2i(3, 1)
+	var world_data := WorldData.new(5, 3, "floor", true)
+	dummy.configure_grid_navigation(world_data, Vector2.ZERO, tile_size)
+	dummy.global_position = _cell_center(start_cell, tile_size)
+	target.global_position = _cell_center(target_cell, tile_size)
+
+	world_data.set_terrain(blocked_cell, "water", false)
+	var water_turn: Dictionary = dummy.take_turn(target)
+	if String(water_turn.get("action", "")) != "wait" or dummy.current_grid_cell() != start_cell:
+		failures.append("enemy cannot cross non-walkable water terrain")
+
+	world_data.set_terrain(blocked_cell, "floor", true)
+	var reservation: Dictionary = world_data.reserve_entity("dungeon_ore", blocked_cell, Vector2i.ONE, true)
+	if not bool(reservation.get("ok", false)):
+		failures.append("enemy blocker fixture reserves a dungeon resource node")
+	else:
+		var resource_turn: Dictionary = dummy.take_turn(target)
+		if String(resource_turn.get("action", "")) != "wait" or dummy.current_grid_cell() != start_cell:
+			failures.append("enemy cannot cross a dungeon mining resource")
+
+	world_data.release_footprint("dungeon_ore")
+	var facility_reservation: Dictionary = world_data.reserve_facility("mine", blocked_cell)
+	if not bool(facility_reservation.get("ok", false)):
+		failures.append("enemy blocker fixture reserves a mine facility")
+	else:
+		var facility_turn: Dictionary = dummy.take_turn(target)
+		if String(facility_turn.get("action", "")) != "wait" or dummy.current_grid_cell() != start_cell:
+			failures.append("enemy cannot cross a mine facility")
+
+func _cell_center(cell: Vector2i, tile_size: float) -> Vector2:
+	return Vector2(
+		float(cell.x) * tile_size + tile_size * 0.5,
+		float(cell.y) * tile_size + tile_size * 0.5
+	)
 
 func _combat_dummy() -> CombatDummy:
 	var dummy := CombatDummy.new()

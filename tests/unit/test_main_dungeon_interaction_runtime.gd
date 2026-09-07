@@ -102,7 +102,17 @@ func _assert_visible_house_accepts_e_before_attack(asserts, catalog: DataCatalog
 	var projected_terrain: Dictionary = runtime.main.generated_world.renderer_input.layers[1].cells[0]
 	asserts.equal(projected_terrain.source_id, Main.DUNGEON_TILESET_SOURCE_ID, "entered dungeon projection uses the dedicated mossy dojo tileset")
 	asserts.equal(projected_terrain.atlas_coords, {"x": 0, "y": 1}, "entered dungeon projection preserves atlas presentation data")
-	asserts.equal(runtime.main._dungeon_resources.size(), 18, "dungeon has the generated resource-node set")
+	asserts.equal(runtime.main._dungeon_resources.size(), 7, "dungeon limits the generated resource-node set")
+	var stone_resource_count := 0
+	for resource in runtime.main._dungeon_resources:
+		if String(resource.get("resource_id", "")) == "stone":
+			stone_resource_count += 1
+			asserts.equal(
+				String(resource.get("source_id", "")),
+				"asset_assets_tiles_terrain_mountain_mountain_rock_01_32x32_png",
+				"pickaxe-only dungeon stone uses the mountain rock terrain image"
+			)
+	asserts.equal(stone_resource_count, 2, "limited dungeon resources still include pickaxe-only stone")
 	asserts.true_value(not runtime.main.acquisition_service.gatherable_for("dungeon_iron_ore_0").is_empty(), "dungeon ore is registered as gatherable")
 	var ore_cell := Vector2i(4, 3)
 	runtime.main.player.global_position = runtime.main.world_position_for_cell_center(ore_cell + Vector2i.LEFT)
@@ -202,16 +212,15 @@ func _assert_dungeon_combatants_do_not_cross_world_boundary(asserts, catalog: Da
 		main._dungeon_resources.append({"id": "dungeon_iron_ore_pointer_fixture", "position": {"x": 7, "y": 3}})
 		asserts.true_value(main.submit_pointer_interaction(first_regular_enemy.global_position), "pointer attacks a dungeon enemy even when ore is nearby")
 		asserts.equal(player.submitted_commands.back().type, GameCommand.Type.ATTACK, "pointer enemy selection wins over nearby ore acquisition")
-		first_regular_enemy.global_position = main.world_position_for_cell_center(Vector2i(5, 2))
-		main._sync_dungeon_enemy_reservation("dungeon_enemy_0", Vector2i(5, 2), true)
-		main.player.global_position = main.world_position_for_cell_center(Vector2i(3, 2))
-		player.movement_state.face(Vector2i.RIGHT)
+		asserts.true_value(main.world_data.release_footprint("dungeon_iron_ore_2"), "blocked mining fixture clears the farther enemy cell")
+		first_regular_enemy.global_position = main.world_position_for_cell_center(Vector2i(1, 3))
+		main._sync_dungeon_enemy_reservation("dungeon_enemy_0", Vector2i(1, 3), true)
+		main.player.global_position = main.world_position_for_cell_center(Vector2i(1, 5))
+		player.movement_state.face(Vector2i.UP)
 		asserts.true_value(main.inventory.add_item("stone_pickaxe", 1).ok, "blocked mining fixture stocks a stone pickaxe")
 		var stone_before: int = main.inventory.get_total_quantity("stone")
-		var side_ore_before: Dictionary = main.acquisition_service.gatherable_for("dungeon_iron_ore_3").duplicate(true)
 		asserts.true_value(main._try_dungeon_interaction_from_input(), "E mines the blocking stone before a farther enemy")
 		asserts.equal(main.inventory.get_total_quantity("stone"), stone_before + 1, "blocking dungeon stone is added to inventory")
-		asserts.equal(main.acquisition_service.gatherable_for("dungeon_iron_ore_3").get("depleted", false), side_ore_before.get("depleted", false), "side ore is not selected ahead of the blocking stone")
 	main._enemy_turn_queued = true
 	main._return_from_dungeon_map()
 	asserts.false_value(main._in_dungeon_map, "direct dungeon exit returns to overworld mode")
