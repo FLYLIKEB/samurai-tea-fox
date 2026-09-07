@@ -800,6 +800,17 @@ func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, cor
 		Vector2i(rng.next_range(6, MAP_WIDTH / 4), rng.next_range(6, MAP_HEIGHT - 7)),
 		profile
 	))
+	# The travel ruin above is a progression landmark.  Lootable ruined
+	# buildings are separate so their one-time rewards cannot replace travel.
+	var ruin_building_count := rng.next_range(3, 4)
+	for index in range(ruin_building_count):
+		landmarks.append(_add_landmark(
+			world_data,
+			WorldData.LANDMARK_RUIN_BUILDING,
+			index,
+			Vector2i(rng.next_range(6, MAP_WIDTH - 7), rng.next_range(6, MAP_HEIGHT - 7)),
+			profile
+		))
 
 	for index in range(core_dungeon_count):
 		var dungeon_position := Vector2i(rng.next_range(MAP_WIDTH - 6, MAP_WIDTH - 3), rng.next_range(6, MAP_HEIGHT - 7))

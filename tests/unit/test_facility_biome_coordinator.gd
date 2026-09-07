@@ -5,6 +5,8 @@ const FacilityBiomeCoordinator = preload("res://src/main/facility_biome_coordina
 const FacilityPlacementSession = preload("res://src/main/facility_placement_session.gd")
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const RunState = preload("res://src/save/run_state.gd")
+const DataCatalog = preload("res://src/core/data/data_catalog.gd")
+const InventoryModel = preload("res://src/inventory/inventory_model.gd")
 
 class ProgressionStub:
 	extends RefCounted
@@ -53,6 +55,7 @@ var calls := []
 func run(asserts) -> void:
 	_assert_connected_biome_requires_repaired_current_gate(asserts)
 	_assert_craft_command_syncs_saves_and_reports_event(asserts)
+	_assert_ruin_building_interaction_grants_and_persists_loot(asserts)
 
 func _assert_connected_biome_requires_repaired_current_gate(asserts) -> void:
 	_reset_state()
@@ -75,7 +78,21 @@ func _assert_craft_command_syncs_saves_and_reports_event(asserts) -> void:
 	asserts.equal(hud.feedback, ["제작 완료: tea_bowl"], "craft command keeps existing feedback text")
 	asserts.equal(hud.events[0].type, "craft_completed", "craft command emits completion status event")
 
-func _coordinator() -> FacilityBiomeCoordinator:
+func _assert_ruin_building_interaction_grants_and_persists_loot(asserts) -> void:
+	_reset_state()
+	run_state.seed = 11037
+	var catalog := DataCatalog.new()
+	asserts.true_value(catalog.load_from_directory("res://data/generated").ok, "ruin interaction loads generated catalog")
+	var inventory_result: Dictionary = InventoryModel.from_catalog(catalog)
+	asserts.true_value(inventory_result.ok, "ruin interaction creates an inventory")
+	var coordinator := _coordinator(catalog, inventory_result.inventory)
+	asserts.true_value(coordinator.handle_landmark_interaction("ruin_building_2"), "E landmark interaction searches the ruin building")
+	asserts.equal(run_state.world_interactions.ruin_building_2.state, "looted", "ruin building interaction persists the loot state")
+	asserts.equal(calls, ["save"], "successful ruin loot saves the current run")
+	asserts.false_value(coordinator.handle_landmark_interaction("ruin_building_2"), "searched ruin building rejects a duplicate interaction")
+	asserts.true_value(hud.feedback.back().begins_with("이미 수색한 폐허"), "duplicate ruin interaction explains the consumed state")
+
+func _coordinator(next_catalog = null, next_inventory = null) -> FacilityBiomeCoordinator:
 	var ports := FacilityBiomeCoordinator.Ports.new()
 	ports.is_in_dungeon_map = func(): return false
 	ports.get_dungeon_runtime = func(): return null
@@ -105,7 +122,7 @@ func _coordinator() -> FacilityBiomeCoordinator:
 	ports.loading_biome_label = func(): return "테스트"
 	ports.debug = func(_message): pass
 	ports.get_crafting_service = func(): return CraftingStub.new()
-	ports.get_inventory = func(): return {}
+	ports.get_inventory = func(): return next_inventory if next_inventory != null else {}
 	ports.get_facility_placement_service = func(): return null
 	ports.get_world_data = func(): return null
 	ports.get_player = func(): return null
@@ -122,7 +139,7 @@ func _coordinator() -> FacilityBiomeCoordinator:
 	ports.queue_enemy_turn_after_player_action = func(): calls.append("enemy")
 	ports.content_image_asset_id = func(_dataset, _content_id): return ""
 	ports.get_start_mode = func(): return "resume"
-	ports.get_catalog = func(): return null
+	ports.get_catalog = func(): return next_catalog
 	return FacilityBiomeCoordinator.new(FacilityPlacementSession.new(), ports)
 
 func _reset_state() -> void:

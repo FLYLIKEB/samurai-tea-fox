@@ -37,7 +37,8 @@ func run(asserts) -> void:
 	asserts.equal(a.min_resource_nodes, 14, "minimum resource nodes come from balance data")
 	asserts.true_value(a.resource_nodes.size() >= a.min_resource_nodes, "world places minimum resources")
 	asserts.equal(_resource_count(a.resource_nodes, "clay"), 5, "common starting map places clay through the configured resource rotation")
-	asserts.equal(a.connectivity.required_landmark_ids.size(), 5, "entry, teleport, ruin, core dungeon, and boss anchor are required")
+	asserts.true_value(_landmarks_of_kind(a.world_data, WorldData.LANDMARK_RUIN_BUILDING).size() in [3, 4], "each map has three or four searchable ruin buildings")
+	asserts.equal(a.connectivity.required_landmark_ids.size(), 5 + _landmarks_of_kind(a.world_data, WorldData.LANDMARK_RUIN_BUILDING).size(), "entry, travel ruin, searchable ruins, teleport, core dungeon, and boss anchor are required")
 	asserts.equal(a.biome_generation_rule_id, "common_region", "common biome uses its own generation ruleset")
 	asserts.true_value(a.has("world_data"), "generator exposes pure world data")
 	asserts.false_value(a.has("renderer_input"), "generator does not own renderer input projection")
@@ -496,6 +497,13 @@ func _assert_facility_accessibility_for_ids(asserts, world: Dictionary, expected
 		asserts.true_value(seen_ids.has(facility_id), "%s facility ID is placed" % facility_id)
 	var access_validation := validator.validate_access_points(world.world_data, access_points)
 	asserts.true_value(access_validation.valid, "all facility access points are entry-reachable")
+
+func _landmarks_of_kind(world_data: Dictionary, kind: String) -> Array:
+	var matches := []
+	for landmark in world_data.get("required_landmarks", []):
+		if String(landmark.get("kind", landmark.get("type", ""))) == kind:
+			matches.append(landmark)
+	return matches
 
 func _assert_teleport_landmark_metadata(asserts, world_data: Dictionary, biome_id: String) -> void:
 	var teleports := []

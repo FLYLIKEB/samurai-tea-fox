@@ -8,6 +8,7 @@ const FacilityPlacementSession = preload("res://src/main/facility_placement_sess
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const RunState = preload("res://src/save/run_state.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
+const RuinLootService = preload("res://src/world/interactions/ruin_loot_service.gd")
 
 class Ports:
 	var is_in_dungeon_map: Callable
@@ -83,6 +84,8 @@ func handle_landmark_interaction(target_id: String) -> bool:
 				hud.show_command_feedback("이미 정리한 보스 흔적입니다")
 			return true
 		return _call_bool(_ports.handle_complete_dungeon_command, [GameCommand.new(GameCommand.Type.COMPLETE_DUNGEON, Vector2i.ZERO, -1, {"entry_only": true, "target_id": target_id})])
+	if target_id.begins_with("%s_" % WorldData.LANDMARK_RUIN_BUILDING):
+		return _handle_ruin_building_interaction(target_id)
 	if target_id.begins_with("%s_" % WorldData.LANDMARK_RUIN):
 		return _handle_ruin_landmark()
 	if target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE):
@@ -421,6 +424,31 @@ func _handle_ruin_landmark() -> bool:
 	if hud != null:
 		hud.show_command_feedback("유적 연결은 던전 클리어 후 이용할 수 있습니다")
 	return true
+
+func _handle_ruin_building_interaction(target_id: String) -> bool:
+	var run_state = _call_value(_ports.get_run_state)
+	var inventory = _call_value(_ports.get_inventory)
+	var catalog = _call_value(_ports.get_catalog)
+	if run_state == null or inventory == null or catalog == null:
+		return false
+	var result: Dictionary = RuinLootService.new().loot(
+		target_id,
+		int(run_state.seed),
+		String(run_state.current_biome_id),
+		catalog,
+		inventory,
+		run_state
+	)
+	var hud = _call_value(_ports.get_game_hud)
+	if result.ok:
+		if hud != null:
+			hud.show_command_feedback("폐허에서 %s을(를) 발견했습니다" % String(result.get("item_name", result.get("item_id", "보상"))))
+		_call_dictionary(_ports.save_current_run)
+		return true
+	if hud != null:
+		var message := "이미 수색한 폐허입니다" if String(result.get("reason", "")) == "already_looted" else "폐허를 수색할 수 없습니다"
+		hud.show_command_feedback(message)
+	return false
 
 func _handle_teleport_landmark() -> bool:
 	var run_state = _call_value(_ports.get_run_state)
