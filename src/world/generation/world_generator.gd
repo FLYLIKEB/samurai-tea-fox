@@ -1018,10 +1018,6 @@ func _template_path_key_set(templates: Array) -> Dictionary:
 func _try_place_resource_node(world_data: WorldData, position: Vector2i, access_position: Vector2i, resource_ids: Array, item_definitions: Array, biome_rule_id: String, nodes: Array) -> bool:
 	var owner_id := "resource_%d" % nodes.size()
 	var resource_id: String = String(resource_ids[nodes.size() % resource_ids.size()])
-	# Stones are common roadside pickups: bias the deterministic rotation so
-	# roughly one out of every three generated nodes is a stone when available.
-	if resource_ids.has("stone") and nodes.size() % 3 == 0:
-		resource_id = "stone"
 	var node_kind := _node_kind_for_resource_context(resource_id, biome_rule_id, item_definitions)
 	var metadata := {"resource_id": resource_id, "biome_rule_id": biome_rule_id}
 	if not node_kind.is_empty():
