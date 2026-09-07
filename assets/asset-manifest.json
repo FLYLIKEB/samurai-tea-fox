@@ -7914,29 +7914,6 @@
       "rgba_sha256": "sha256:82c87d065668c51d0eba850b8d6184f98d9184ed98e7e2893e5884ab88a8c254"
     },
     {
-      "id": "asset_assets_ui_logo_png",
-      "name": "logo",
-      "status": "완료",
-      "kind": "ui_asset",
-      "path": "res://assets/ui/logo.png",
-      "width": 1536,
-      "height": 1024,
-      "direction_count": 1,
-      "frame_count": 1,
-      "frame_grid": {
-        "columns": 1,
-        "rows": 1,
-        "frame_width": 1536,
-        "frame_height": 1024
-      },
-      "alpha_required": true,
-      "texture_filter": "nearest",
-      "placeholder": false,
-      "runtime_scale": 1,
-      "source_sha256": "sha256:4e2b2f21663013e65929ef55d310c185fb563acfd263a720ae7c1569b9f2d776",
-      "rgba_sha256": "sha256:84b553bd91e7f9c4569a69de26be58607ece48c0941c14e15a94e3e50af0475d"
-    },
-    {
       "id": "asset_assets_sprites_characters_bosses_chr_2_wasteland_daimyo_wasteland_daimyo_back_32x32_png",
       "name": "wasteland_daimyo_back_32x32",
       "status": "완료",

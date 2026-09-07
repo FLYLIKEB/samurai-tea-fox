@@ -4650,15 +4650,6 @@
       "rgba_sha256": "sha256:45c256720796a51c063e42cee613ccec0f8f20d489519799c63d12f4371d24dc"
     },
     {
-      "path": "assets/ui/logo.png",
-      "width": 1536,
-      "height": 1024,
-      "mode": "RGBA",
-      "alpha_empty": true,
-      "source_sha256": "sha256:4e2b2f21663013e65929ef55d310c185fb563acfd263a720ae7c1569b9f2d776",
-      "rgba_sha256": "sha256:84b553bd91e7f9c4569a69de26be58607ece48c0941c14e15a94e3e50af0475d"
-    },
-    {
       "path": "assets/ui/mockups/screens/fox_tea_ui_flow_mockups.png",
       "width": 1448,
       "height": 1086,

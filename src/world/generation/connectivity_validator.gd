@@ -33,7 +33,7 @@ func validate_world_data(world_data: Dictionary) -> Dictionary:
 			"reason": "missing_entry"
 		}
 
-	var reachable := _reachable_cells(world_data, _vector_from_dictionary(entry.position), _cell_index(world_data))
+	var reachable := _reachable_cells(world_data, _vector_from_dictionary(entry.position), _cell_index(world_data), _passable_owner_ids(world_data))
 	var reachable_landmarks := []
 	var unreachable_landmarks := []
 	for landmark in required_landmarks:
@@ -55,7 +55,7 @@ func reachable_cell_keys_from_entry(world_data: Dictionary) -> Dictionary:
 	var entry := _entry_landmark(world_data)
 	if entry.is_empty():
 		return {}
-	return _reachable_cells(world_data, _vector_from_dictionary(entry.position), _cell_index(world_data))
+	return _reachable_cells(world_data, _vector_from_dictionary(entry.position), _cell_index(world_data), _passable_owner_ids(world_data))
 
 func validate_access_points(world_data: Dictionary, access_points: Array) -> Dictionary:
 	var reachable := reachable_cell_keys_from_entry(world_data)
@@ -76,9 +76,9 @@ func _entry_landmark(world_data: Dictionary) -> Dictionary:
 			return landmark
 	return {}
 
-func _reachable_cells(world_data: Dictionary, start: Vector2i, cells_by_position: Dictionary) -> Dictionary:
+func _reachable_cells(world_data: Dictionary, start: Vector2i, cells_by_position: Dictionary, passable_owner_ids: Dictionary) -> Dictionary:
 	var reachable := {}
-	if not _is_walkable(world_data, start, cells_by_position):
+	if not _is_walkable(world_data, start, cells_by_position, passable_owner_ids):
 		return reachable
 
 	var queue := [start]
@@ -90,13 +90,13 @@ func _reachable_cells(world_data: Dictionary, start: Vector2i, cells_by_position
 		for offset in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.DOWN, Vector2i.UP]:
 			var next_position: Vector2i = current + offset
 			var key := _key(next_position)
-			if reachable.has(key) or not _is_walkable(world_data, next_position, cells_by_position):
+			if reachable.has(key) or not _is_walkable(world_data, next_position, cells_by_position, passable_owner_ids):
 				continue
 			reachable[key] = true
 			queue.append(next_position)
 	return reachable
 
-func _is_walkable(world_data: Dictionary, position: Vector2i, cells_by_position: Dictionary) -> bool:
+func _is_walkable(world_data: Dictionary, position: Vector2i, cells_by_position: Dictionary, passable_owner_ids: Dictionary) -> bool:
 	var bounds: Dictionary = world_data.get("bounds", {})
 	if position.x < 0 or position.y < 0 or position.x >= int(bounds.get("width", 0)) or position.y >= int(bounds.get("height", 0)):
 		return false
@@ -105,7 +105,20 @@ func _is_walkable(world_data: Dictionary, position: Vector2i, cells_by_position:
 		return false
 	var layers: Dictionary = cell.get("layers", {})
 	var terrain: Dictionary = layers.get(WorldData.LAYER_TERRAIN, {})
-	return bool(terrain.get("walkable", false)) and layers.get(WorldData.LAYER_ENTITIES, []).is_empty() and layers.get(WorldData.LAYER_FACILITIES, []).is_empty()
+	return bool(terrain.get("walkable", false)) and _owners_are_passable(layers.get(WorldData.LAYER_ENTITIES, []), passable_owner_ids) and _owners_are_passable(layers.get(WorldData.LAYER_FACILITIES, []), passable_owner_ids)
+
+func _passable_owner_ids(world_data: Dictionary) -> Dictionary:
+	var owner_ids := {}
+	for reservation in world_data.get("reservations", []):
+		if bool(reservation.get("metadata", {}).get("passable", false)):
+			owner_ids[String(reservation.get("owner_id", ""))] = true
+	return owner_ids
+
+func _owners_are_passable(owner_ids: Array, passable_owner_ids: Dictionary) -> bool:
+	for owner_id in owner_ids:
+		if not passable_owner_ids.has(String(owner_id)):
+			return false
+	return true
 
 func _cell_index(world_data: Dictionary) -> Dictionary:
 	var cells_by_position := {}

@@ -92,10 +92,7 @@ const TERRAIN_RAINFOREST_RIVER_BANK := "rainforest_river_bank"
 
 const LARGE_HOUSE_ID := "large_fenced_house"
 const STARTING_HOME_BRIDGE_IDS := [
-	"starting_home_bridge_east",
-	"starting_home_bridge_west",
-	"starting_home_bridge_north",
-	"starting_home_bridge_south"
+	"starting_home_bridge_east"
 ]
 
 const BALANCE_MIN_RESOURCE_NODES_ID := "biome_min_resource_nodes"
@@ -317,8 +314,8 @@ func _strip_presentation_sources(value):
 	return value
 
 func _place_starting_home_island(world_data: WorldData, entry_position: Vector2i, profile: Dictionary) -> Dictionary:
-	var island_min := entry_position + Vector2i(-4, -5)
-	var island_max := entry_position + Vector2i(3, 4)
+	var island_min := entry_position + Vector2i(-3, -5)
+	var island_max := entry_position + Vector2i(1, 1)
 	var moat_min := island_min - Vector2i(2, 2)
 	var moat_max := island_max + Vector2i(2, 2)
 	for y in range(moat_min.y, moat_max.y + 1):
@@ -345,10 +342,7 @@ func _place_starting_home_island(world_data: WorldData, entry_position: Vector2i
 
 func _reserve_starting_home_bridges(world_data: WorldData, entry_position: Vector2i, profile: Dictionary) -> Dictionary:
 	var bridges := [
-		{"id": STARTING_HOME_BRIDGE_IDS[0], "origin": entry_position + Vector2i(3, 0), "size": Vector2i(3, 2), "rotation_degrees": 0.0},
-		{"id": STARTING_HOME_BRIDGE_IDS[1], "origin": entry_position + Vector2i(-6, 0), "size": Vector2i(3, 2), "rotation_degrees": 0.0},
-		{"id": STARTING_HOME_BRIDGE_IDS[2], "origin": entry_position + Vector2i(1, -7), "size": Vector2i(2, 3), "rotation_degrees": 90.0},
-		{"id": STARTING_HOME_BRIDGE_IDS[3], "origin": entry_position + Vector2i(1, 4), "size": Vector2i(2, 3), "rotation_degrees": 90.0}
+		{"id": STARTING_HOME_BRIDGE_IDS[0], "origin": entry_position + Vector2i(1, 0), "size": Vector2i(3, 2), "rotation_degrees": 0.0}
 	]
 	var owner_ids: Array = []
 	for bridge in bridges:
@@ -806,7 +800,7 @@ func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, cor
 		world_data,
 		WorldData.LANDMARK_RUIN,
 		0,
-		Vector2i(rng.next_range(6, MAP_WIDTH / 4), rng.next_range(6, MAP_HEIGHT - 7)),
+			Vector2i(rng.next_range(MAP_WIDTH / 3, MAP_WIDTH / 2), rng.next_range(6, MAP_HEIGHT - 7)),
 		profile
 	))
 	# The travel ruin above is a progression landmark.  Lootable abandoned
@@ -817,7 +811,7 @@ func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, cor
 			world_data,
 			WorldData.LANDMARK_ABANDONED_HOUSE,
 			index,
-			Vector2i(rng.next_range(6, MAP_WIDTH - 7), rng.next_range(6, MAP_HEIGHT - 7)),
+			Vector2i(rng.next_range(MAP_WIDTH / 3, MAP_WIDTH - 7), rng.next_range(6, MAP_HEIGHT - 7)),
 			profile
 		))
 
