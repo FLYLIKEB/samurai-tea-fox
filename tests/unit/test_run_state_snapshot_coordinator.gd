@@ -2,7 +2,7 @@ extends RefCounted
 
 const RunRuntimeStateBinder = preload("res://src/save/run_runtime_state_binder.gd")
 const RunState = preload("res://src/save/run_state.gd")
-const RunStateSnapshotCoordinator = preload("res://src/main/run_state_snapshot_coordinator.gd")
+const RunStateSnapshotCoordinator = preload("res://src/save/run_state_snapshot_coordinator.gd")
 
 class FakeRuntime:
 	extends RefCounted

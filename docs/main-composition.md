@@ -13,26 +13,26 @@
 | `src/main/world_interaction_coordinator.gd` | 포인터 이동, 월드 대상 판정, 채집·드롭·던전 상호작용 | 호출 시점의 현재 Main과 기존 탐색·획득 서비스 |
 | `src/main/dungeon_scene_coordinator.gd` | 던전 진입·복귀, 장면 복원, 적 생성·제거, 보스 대화와 저장 동기화 | 호출 시점의 현재 Main과 던전 도메인 서비스 |
 | `src/main/dungeon_command_coordinator.gd` | 던전 입장·완료 명령의 검증 및 부작용 순서 | 던전 기능만 노출하는 callback 집합 |
-| `src/main/dungeon_combatant_session.gd` | 던전 적 노드와 던전 진입 전 월드·전투 대상 스냅샷 | Main의 호환 프로퍼티가 단일 상태를 위임 |
+| `src/dungeon/session/dungeon_combatant_session.gd` | 던전 런타임 세션의 적 노드와 던전 진입 전 월드·전투 대상 스냅샷 | 순수 도메인이 아닌 Node 수명주기 상태이며 Main의 호환 프로퍼티가 단일 상태를 위임 |
 | `src/main/facility_biome_coordinator.gd` | 시설 제작·배치와 바이옴 진행·텔레포트 전환 | 명시적 `Ports`와 `FacilityPlacementSession` |
-| `src/main/facility_preview_presenter.gd` | 시설 배치 미리보기 노드와 에셋 카탈로그 수명 | 현재 장면·카탈로그·설치 정보 |
+| `src/presentation/facility_preview_presenter.gd` | 시설 배치 미리보기 노드와 에셋 카탈로그 수명 | 현재 장면·카탈로그·설치 정보 |
 | `src/main/player_runtime_coordinator.gd` | 차, 소모품, 수면, 양조, 인벤토리, 지도 발견, 기억의 차 | 명시적 `Ports`와 기존 플레이어 기능 서비스 |
 | `src/main/hud_presentation_coordinator.gd` | 월드 렌더, 카메라, HUD, 서사 표시, 효과음 | 현재 런타임 값을 읽고 쓰는 명시적 `Ports` |
 | `src/main/game_progression_coordinator.gd` | 센리큐 단계, 엔딩, 최종 방, 보상과 능력 대상 | 호출 시점의 현재 Main과 진행 도메인 서비스 |
-| `src/main/run_state_snapshot_coordinator.gd` | RunState 로드·생성·복원·스냅샷과 바이옴별 별칭 | RunState, 저장소, `RunRuntimeStateBinder` |
+| `src/save/run_state_snapshot_coordinator.gd` | RunState 로드·생성·복원·스냅샷과 바이옴별 별칭 | RunState, 저장소, `RunRuntimeStateBinder` |
 | `src/main/run_service_factory.gd` | 카탈로그 검증 및 기본 런 서비스 생성 | 현재 카탈로그를 받아 생성 결과 반환 |
 | `src/main/cheat_start_configurator.gd` | 치트 인벤토리와 바이옴 진행 초기화 | 현재 카탈로그·인벤토리·장비·RunState, 동기화 callback |
-| `src/main/acquisition_definition_builder.gd` | 채집·나무·광물·드롭 정의와 채집 대상 등록 | 현재 카탈로그·인벤토리·WorldData·바이옴 |
-| `src/main/dungeon_layout_builder.gd` | 던전 지형·자원 배치·적 점유 셀 생성 | 던전 정의, 자원 상호작용 종류 조회 callback |
-| `src/main/dungeon_definition_resolver.gd` | 바이옴 던전·보스·대화 정의 해석 | 현재 카탈로그·RunState·NarrativeRuntime |
+| `src/world/interactions/acquisition_definition_builder.gd` | 채집·나무·광물·드롭 정의와 채집 대상 등록 | 현재 카탈로그·인벤토리·WorldData·바이옴 |
+| `src/dungeon/dungeon_layout_builder.gd` | 던전 지형·자원 배치·적 점유 셀 생성 | 던전 정의, 자원 상호작용 종류 조회 callback |
+| `src/dungeon/dungeon_definition_resolver.gd` | 바이옴 던전·보스·대화 정의 해석 | 현재 카탈로그·RunState·NarrativeRuntime |
 | `src/main/pointer_route_controller.gd` | 포인터 경로 및 도착 대기 상태 | 현재 월드와 좌표 변환·도착 callback |
-| `src/main/spatial_interaction_resolver.gd` | 대상 후보·방향 우선순위·거리·시설 점유 영역 탐색 | 현재 월드·대상 서비스·플레이어 방향/좌표 |
+| `src/world/interactions/spatial_interaction_resolver.gd` | 대상 후보·방향 우선순위·거리·시설 점유 영역 탐색 | 현재 월드·대상 서비스·플레이어 방향/좌표 |
 | `src/main/facility_placement_session.gd` | 시설 배치 대기 상태, 선택·회전·검증·제작 거래, 시설 복원 | 현재 제작/배치 서비스·인벤토리·월드·RunState |
 | `src/presentation/facility_placement_preview.gd` | 설치 예정 시설의 유령 이미지와 영역 표시 | 위치·크기·유효성·텍스처 |
-| `src/main/narrative_session.gd` | 활성 대화 ID, 선택지 결과, 기억의 차 상태 반영 | 현재 내러티브 서비스·RunState·메타 상태 |
+| `src/narrative/narrative_session.gd` | 활성 대화 ID, 선택지 결과, 기억의 차 상태 반영 | 현재 내러티브 서비스·RunState·메타 상태 |
 | `src/main/player_item_actions.gd` | 차 마시기 진행, 소모품 시작·중단·완료 순서 | 매 호출의 서비스·자원 및 저장/화면/턴 callback |
-| `src/main/world_presentation.gd` | 스프라이트 출처, 카메라 경계, 상호작용 표시 | 월드 스냅샷·표시 노드·좌표 |
-| `src/main/main_scene_overlays.gd` | 로딩 및 종료 화면 노드 구성 | 장면 부모 노드 |
+| `src/world/rendering/world_presentation.gd` | 스프라이트 출처, 카메라 경계, 상호작용 표시 | 월드 스냅샷·표시 노드·좌표 |
+| `src/ui/main_scene_overlays.gd` | 로딩 및 종료 화면 노드 구성 | 장면 부모 노드 |
 
 ## 상태 소유와 호출 계약
 

@@ -1,6 +1,6 @@
 extends RefCounted
 
-const SpatialInteractionResolver = preload("res://src/main/spatial_interaction_resolver.gd")
+const SpatialInteractionResolver = preload("res://src/world/interactions/spatial_interaction_resolver.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 

@@ -1,6 +1,6 @@
 extends RefCounted
 
-const DungeonCombatantSession = preload("res://src/main/dungeon_combatant_session.gd")
+const DungeonCombatantSession = preload("res://src/dungeon/session/dungeon_combatant_session.gd")
 
 class TestCombatant:
 	extends Node2D
