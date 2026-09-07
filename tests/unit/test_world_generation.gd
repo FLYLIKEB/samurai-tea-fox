@@ -36,6 +36,7 @@ func run(asserts) -> void:
 	asserts.true_value(a.chunks.size() > 0, "world records deterministic chunk composition")
 	asserts.equal(a.min_resource_nodes, 14, "minimum resource nodes come from balance data")
 	asserts.true_value(a.resource_nodes.size() >= a.min_resource_nodes, "world places minimum resources")
+	asserts.equal(_resource_count(a.resource_nodes, "clay"), 5, "common starting map places clay through the configured resource rotation")
 	asserts.equal(a.connectivity.required_landmark_ids.size(), 5, "entry, teleport, ruin, core dungeon, and boss anchor are required")
 	asserts.equal(a.biome_generation_rule_id, "common_region", "common biome uses its own generation ruleset")
 	asserts.true_value(a.has("world_data"), "generator exposes pure world data")
@@ -87,6 +88,7 @@ func run(asserts) -> void:
 		asserts.true_value(generated.resource_accessibility.valid, "seed %d keeps resources reachable" % seed)
 		asserts.true_value(generated.retry_attempt <= generated.retry_limit, "seed %d stays inside retry limit" % seed)
 		asserts.true_value(generated.resource_nodes.size() >= generated.min_resource_nodes, "seed %d places minimum resources" % seed)
+		asserts.equal(_resource_count(generated.resource_nodes, "clay"), 5, "seed %d preserves the common-map clay allocation" % seed)
 		_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 		_assert_resource_accessibility(asserts, generated)
 		_assert_common_templates(asserts, generated)
@@ -946,6 +948,13 @@ func _assert_resource_node_kind(asserts, resource_nodes: Array, resource_id: Str
 		asserts.equal(String(node.get("node_kind", "")), node_kind, message)
 	if required:
 		asserts.true_value(matched, "%s exists in generated resource nodes" % resource_id)
+
+func _resource_count(resource_nodes: Array, resource_id: String) -> int:
+	var count := 0
+	for node in resource_nodes:
+		if String(node.get("resource_id", "")) == resource_id:
+			count += 1
+	return count
 
 func _assert_resource_node_kind_policy(asserts, generator: WorldGenerator, item_definitions: Array) -> void:
 	asserts.equal(
