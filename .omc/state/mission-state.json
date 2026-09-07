@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-07T14:52:07.662Z",
+  "updatedAt": "2026-09-07T14:53:12.335Z",
   "missions": [
     {
       "id": "session:d7123daf-f507-4d12-8a3e-6e899bfc1f10:none",
@@ -7,15 +7,15 @@
       "name": "none",
       "objective": "Session mission",
       "createdAt": "2026-09-07T14:52:07.662Z",
-      "updatedAt": "2026-09-07T14:52:07.662Z",
-      "status": "running",
+      "updatedAt": "2026-09-07T14:53:12.335Z",
+      "status": "done",
       "workerCount": 1,
       "taskCounts": {
         "total": 1,
         "pending": 0,
         "blocked": 0,
-        "inProgress": 1,
-        "completed": 0,
+        "inProgress": 0,
+        "completed": 1,
         "failed": 0
       },
       "agents": [
@@ -23,11 +23,11 @@
           "name": "explore-resources:aexplor",
           "role": "explore-resources",
           "ownership": "aexplore-resources-15573616f57ca709",
-          "status": "running",
+          "status": "done",
           "currentStep": null,
-          "latestUpdate": null,
+          "latestUpdate": "completed",
           "completedSummary": null,
-          "updatedAt": "2026-09-07T14:52:07.662Z"
+          "updatedAt": "2026-09-07T14:53:12.335Z"
         }
       ],
       "timeline": [
@@ -38,6 +38,78 @@
           "agent": "explore-resources:aexplor",
           "detail": "started explore-resources:aexplor",
           "sourceKey": "session-start:aexplore-resources-15573616f57ca709"
+        },
+        {
+          "id": "session-stop:aexplore-resources-15573616f57ca709:2026-09-07T14:52:57.464Z",
+          "at": "2026-09-07T14:52:57.464Z",
+          "kind": "completion",
+          "agent": "explore-resources:aexplor",
+          "detail": "completed",
+          "sourceKey": "session-stop:aexplore-resources-15573616f57ca709"
+        },
+        {
+          "id": "session-stop:aexplore-resources-15573616f57ca709:2026-09-07T14:53:00.897Z",
+          "at": "2026-09-07T14:53:00.897Z",
+          "kind": "completion",
+          "agent": "explore-resources:aexplor",
+          "detail": "completed",
+          "sourceKey": "session-stop:aexplore-resources-15573616f57ca709"
+        },
+        {
+          "id": "session-stop:aexplore-resources-15573616f57ca709:2026-09-07T14:53:02.806Z",
+          "at": "2026-09-07T14:53:02.806Z",
+          "kind": "completion",
+          "agent": "explore-resources:aexplor",
+          "detail": "completed",
+          "sourceKey": "session-stop:aexplore-resources-15573616f57ca709"
+        },
+        {
+          "id": "session-stop:aexplore-resources-15573616f57ca709:2026-09-07T14:53:04.686Z",
+          "at": "2026-09-07T14:53:04.686Z",
+          "kind": "completion",
+          "agent": "explore-resources:aexplor",
+          "detail": "completed",
+          "sourceKey": "session-stop:aexplore-resources-15573616f57ca709"
+        },
+        {
+          "id": "session-stop:aexplore-resources-15573616f57ca709:2026-09-07T14:53:06.369Z",
+          "at": "2026-09-07T14:53:06.369Z",
+          "kind": "completion",
+          "agent": "explore-resources:aexplor",
+          "detail": "completed",
+          "sourceKey": "session-stop:aexplore-resources-15573616f57ca709"
+        },
+        {
+          "id": "session-stop:aexplore-resources-15573616f57ca709:2026-09-07T14:53:07.930Z",
+          "at": "2026-09-07T14:53:07.930Z",
+          "kind": "completion",
+          "agent": "explore-resources:aexplor",
+          "detail": "completed",
+          "sourceKey": "session-stop:aexplore-resources-15573616f57ca709"
+        },
+        {
+          "id": "session-stop:aexplore-resources-15573616f57ca709:2026-09-07T14:53:09.476Z",
+          "at": "2026-09-07T14:53:09.476Z",
+          "kind": "completion",
+          "agent": "explore-resources:aexplor",
+          "detail": "completed",
+          "sourceKey": "session-stop:aexplore-resources-15573616f57ca709"
+        },
+        {
+          "id": "session-stop:aexplore-resources-15573616f57ca709:2026-09-07T14:53:10.815Z",
+          "at": "2026-09-07T14:53:10.815Z",
+          "kind": "completion",
+          "agent": "explore-resources:aexplor",
+          "detail": "completed",
+          "sourceKey": "session-stop:aexplore-resources-15573616f57ca709"
+        },
+        {
+          "id": "session-stop:aexplore-resources-15573616f57ca709:2026-09-07T14:53:12.335Z",
+          "at": "2026-09-07T14:53:12.335Z",
+          "kind": "completion",
+          "agent": "explore-resources:aexplor",
+          "detail": "completed",
+          "sourceKey": "session-stop:aexplore-resources-15573616f57ca709"
         }
       ]
     }

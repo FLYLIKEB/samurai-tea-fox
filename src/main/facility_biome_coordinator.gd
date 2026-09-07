@@ -64,8 +64,9 @@ func _init(session: FacilityPlacementSession, ports: Ports) -> void:
 	_ports = ports
 
 func handle_landmark_interaction(target_id: String) -> bool:
-	if bool(_call_value(_ports.is_in_dungeon_map, false)) and target_id == "dungeon_entry":
-		return _handle_dungeon_entry_return(target_id)
+	if bool(_call_value(_ports.is_in_dungeon_map, false)):
+		if target_id == "dungeon_entry" or target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE):
+			return _handle_dungeon_entry_return(target_id)
 	if _call_bool(_ports.is_core_dungeon_target, [target_id]):
 		_debug("던전 랜드마크 상호작용: %s" % target_id)
 		var run_state = _call_value(_ports.get_run_state)
