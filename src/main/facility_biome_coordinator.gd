@@ -65,7 +65,9 @@ func _init(session: FacilityPlacementSession, ports: Ports) -> void:
 
 func handle_landmark_interaction(target_id: String) -> bool:
 	if bool(_call_value(_ports.is_in_dungeon_map, false)):
-		if target_id == "dungeon_entry" or target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE):
+		if target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE):
+			return _handle_dungeon_teleport_exit()
+		if target_id == "dungeon_entry":
 			return _handle_dungeon_entry_return(target_id)
 	if _call_bool(_ports.is_core_dungeon_target, [target_id]):
 		_debug("던전 랜드마크 상호작용: %s" % target_id)
@@ -411,6 +413,21 @@ func _handle_dungeon_entry_return(target_id: String) -> bool:
 			"dungeon_id": String(dungeon_runtime.to_projection().get("dungeon_id", "")),
 			"event_id": "return:%s" % target_id
 		})
+	return true
+
+func _handle_dungeon_teleport_exit() -> bool:
+	var dungeon_runtime = _call_value(_ports.get_dungeon_runtime)
+	if dungeon_runtime == null:
+		return false
+	var lifecycle := String(dungeon_runtime.to_projection().get("lifecycle_state", DungeonInstanceState.STATE_OUTSIDE))
+	if lifecycle != DungeonInstanceState.STATE_ACTIVE:
+		return false
+	_call_void(_ports.return_from_dungeon_map)
+	_call_dictionary(_ports.save_current_run)
+	_call_void(_ports.configure_game_hud)
+	var hud = _call_value(_ports.get_game_hud)
+	if hud != null:
+		hud.show_command_feedback("던전에서 귀환")
 	return true
 
 func _handle_ruin_landmark() -> bool:

@@ -41,25 +41,33 @@ data/
 docs/
 scenes/
 src/
+  ability/
+  audio/
+  boss/
+  choice/
+  combat/
+  consumable/
   core/
     commands/
     data/
     rng/
-  player/
-  combat/
-  tea/
-  inventory/
   crafting/
+  dungeon/
+  economy/
+  enemy/
+  inventory/
+  main/
+  meta/
+  narrative/
+  player/
+  presentation/
+  save/
+  tea/
+  time/
+  ui/
   world/
     biome/
     generation/
-  dungeon/
-  enemy/
-  ability/
-  time/
-  save/
-  meta/
-  ui/
 tests/
 tools/
   asset_browser/
