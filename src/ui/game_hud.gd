@@ -18,6 +18,8 @@ const ICON_DODGE := "asset_assets_ui_icons_atlas_dash_streaks_png"
 const ICON_ATTACK := "asset_assets_ui_icons_atlas_attack_sword_png"
 const ICON_TEA := "asset_assets_ui_icons_atlas_tea_action_cup_png"
 const ICON_CONSUMABLE := "asset_assets_ui_icons_atlas_gourd_png"
+const ICON_CRAFTING_SHORTCUT := "res://assets/sprites/objects/crafting/workbench_32x32.png"
+const ICON_MAP_SHORTCUT := "res://assets/ui/icons/atlas/menu_map.png"
 const ICON_MOON := "asset_assets_ui_icons_atlas_moon_png"
 const ICON_MATERIAL := "asset_assets_ui_icons_atlas_crate_png"
 const ICON_TOOL := "asset_assets_ui_icons_atlas_low_table_png"
@@ -58,6 +60,8 @@ const DPAD_BOARD_SIZE := Vector2(72, 72)
 const ACTION_BUTTON_SIZE := Vector2(58, 26)
 const ACTION_MENU_BUTTON_SIZE := Vector2(24, 20)
 const SECONDARY_ACTION_ICON_BUTTON_SIZE := Vector2(20, 20)
+const SHORTCUT_BUTTON_SIZE := Vector2(44, 44)
+const SHORTCUT_PANEL_SIZE := Vector2(92, 44)
 const ACTION_PANEL_SIZE := Vector2(132, 100)
 const ACTION_MENU_PANEL_SIZE := Vector2(132, 120)
 const ACTION_PANEL_COLUMNS := 2
@@ -595,6 +599,12 @@ func _build() -> void:
 	_panels.action = action_panel
 	_build_actions(action_panel)
 
+	var shortcut_panel := _unstyled_panel(SHORTCUT_PANEL_SIZE)
+	shortcut_panel.name = "ShortcutPanel"
+	root.add_child(shortcut_panel)
+	_panels.shortcuts = shortcut_panel
+	_build_shortcuts(shortcut_panel)
+
 	var action_menu_panel := _panel(ACTION_MENU_PANEL_SIZE)
 	action_menu_panel.name = "ActionMenuPanel"
 	action_menu_panel.visible = false
@@ -810,8 +820,6 @@ func _rebuild_action_buttons() -> void:
 			_add_text_action(_action_menu_grid, "AbilityButton%d" % (slot + 1), ICON_ABILITY, "요술%d" % (slot + 1), "cast_ability", Vector2i.ZERO, slot)
 		_add_text_action(_action_menu_grid, "TeaBrewingButton", ICON_TEA, "우리기", "open_tea_brewing", Vector2i.ZERO, 0)
 		_add_text_action(_action_menu_grid, "MetaCodexButton", ICON_BAG, "도감", "open_meta_codex", Vector2i.ZERO, 0)
-		_add_text_action(_action_menu_grid, "MapButton", ICON_MAP, "지도", "open_map", Vector2i.ZERO, 0)
-		_add_text_action(_action_menu_grid, "CraftingButton", ICON_CONSUMABLE, "제작", "open_crafting", Vector2i.ZERO, 0)
 		_add_text_action(_action_menu_grid, "FacilitiesButton", ICON_MAP, "시설", "open_facilities", Vector2i.ZERO, 0)
 		_add_text_action(_action_menu_grid, "SleepButton", ICON_TEA, "수면", "sleep", Vector2i.ZERO, 0)
 	var action_panel := _panels.get("action") as Control
@@ -829,6 +837,32 @@ func _toggle_action_menu() -> void:
 	var action_menu_panel := _panels.get("action_menu") as Control
 	if action_menu_panel != null:
 		action_menu_panel.visible = _action_menu_open
+
+func _build_shortcuts(parent: PanelContainer) -> void:
+	var row := HBoxContainer.new()
+	row.name = "ShortcutRow"
+	row.add_theme_constant_override("separation", 4)
+	_ignore_mouse(row)
+	parent.add_child(row)
+	_add_shortcut_button(row, "CraftingShortcutButton", ICON_CRAFTING_SHORTCUT, "제작", "open_crafting")
+	_add_shortcut_button(row, "MapShortcutButton", ICON_MAP_SHORTCUT, "지도", "open_map")
+
+func _add_shortcut_button(parent: Container, name: String, icon_path: String, tooltip: String, button_id: String) -> void:
+	var button := Button.new()
+	button.name = name
+	button.custom_minimum_size = SHORTCUT_BUTTON_SIZE
+	button.text = ""
+	button.icon = _load_texture(icon_path)
+	button.expand_icon = true
+	button.add_theme_constant_override("icon_max_width", 28)
+	button.tooltip_text = tooltip
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.add_theme_stylebox_override("normal", _circle_button_style(Color(0.10, 0.08, 0.06, 0.94)))
+	button.add_theme_stylebox_override("hover", _circle_button_style(Color(0.26, 0.18, 0.08, 0.98)))
+	button.add_theme_stylebox_override("pressed", _circle_button_style(Color(0.77, 0.54, 0.25, 1.0)))
+	button.pressed.connect(func(): press_mobile_button(button_id, Vector2i.ZERO, 0))
+	parent.add_child(button)
 
 func _add_direction_button(parent: Control, name: String, rect: Rect2, direction: Vector2i, tooltip: String) -> void:
 	var button := Button.new()
@@ -995,7 +1029,7 @@ func _placement_command_button(text: String, command_type: int) -> Button:
 	return button
 
 func _set_gameplay_hud_visible(visible: bool) -> void:
-	for panel_id in ["status", "map", "enemy", "quickslot", "dpad", "action", "action_menu", "menu"]:
+	for panel_id in ["status", "map", "enemy", "quickslot", "dpad", "action", "shortcuts", "action_menu", "menu"]:
 		var panel := _panels.get(panel_id) as Control
 		if panel != null:
 			panel.visible = visible and (
@@ -2138,6 +2172,8 @@ func _apply_safe_area_layout() -> void:
 	_place_panel(_panels.menu, Control.PRESET_CENTER, Vector2.ZERO)
 	_place_panel(_panels.dpad, Control.PRESET_BOTTOM_LEFT, Vector2(margin.x, -margin.w))
 	_place_panel(_panels.action, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w))
+	var action_rect := _panel_rect(_panels.action)
+	_place_panel(_panels.shortcuts, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z - action_rect.size.x - HUD_EDGE_GAP, -margin.w))
 	_resolve_enemy_bottom_overlap(top_stack_bottom)
 	_resize_action_menu_panel(viewport_size, margin, top_stack_bottom)
 	_place_action_menu_panel(viewport_size, margin, top_stack_bottom)
@@ -2188,6 +2224,17 @@ func _place_action_menu_panel(viewport_size: Vector2, margin: Vector4, top_stack
 		_place_panel(action_menu_panel, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, action_rect.position.y - viewport_size.y - HUD_EDGE_GAP))
 		return
 	var side_x := action_rect.position.x - HUD_EDGE_GAP - menu_size.x
+	var quickslot_rect := _panel_rect(_panels.quickslot)
+	var above_quickslot_y := quickslot_rect.position.y - HUD_EDGE_GAP - menu_size.y
+	var above_quickslot_rect := Rect2(Vector2(side_x, above_quickslot_y), menu_size)
+	if (
+		side_x >= margin.x
+		and above_quickslot_y >= margin.y
+		and not above_quickslot_rect.intersects(_panel_rect(_panels.status))
+		and not above_quickslot_rect.intersects(_panel_rect(_panels.map))
+	):
+		_place_panel(action_menu_panel, Control.PRESET_TOP_LEFT, above_quickslot_rect.position)
+		return
 	var side_y := viewport_size.y - margin.w - menu_size.y
 	if side_x >= margin.x:
 		_place_panel(action_menu_panel, Control.PRESET_TOP_LEFT, Vector2(side_x, side_y))
@@ -2202,10 +2249,13 @@ func _resolve_enemy_bottom_overlap(top_stack_bottom: float) -> void:
 	var bottom_controls: Array[Rect2] = []
 	var dpad_rect := _panel_rect(_panels.dpad)
 	var action_rect := _panel_rect(_panels.action)
+	var shortcuts_rect := _panel_rect(_panels.shortcuts)
 	if dpad_rect.size != Vector2.ZERO:
 		bottom_controls.append(dpad_rect)
 	if action_rect.size != Vector2.ZERO:
 		bottom_controls.append(action_rect)
+	if shortcuts_rect.size != Vector2.ZERO:
+		bottom_controls.append(shortcuts_rect)
 	for control_rect in bottom_controls:
 		if not enemy_rect.intersects(control_rect):
 			continue
