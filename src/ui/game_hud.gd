@@ -841,6 +841,7 @@ func _toggle_action_menu() -> void:
 func _build_shortcuts(parent: PanelContainer) -> void:
 	var row := HBoxContainer.new()
 	row.name = "ShortcutRow"
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 4)
 	_ignore_mouse(row)
 	parent.add_child(row)
