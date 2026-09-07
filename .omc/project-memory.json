@@ -141,21 +141,39 @@
   },
   "hotPaths": [
     {
+      "path": "src/ui/game_hud.gd",
+      "accessCount": 11,
+      "lastAccessed": 1788793189227,
+      "type": "file"
+    },
+    {
       "path": "src/world/rendering/world_renderer_projection.gd",
-      "accessCount": 9,
-      "lastAccessed": 1788792805377,
+      "accessCount": 10,
+      "lastAccessed": 1788793064152,
+      "type": "file"
+    },
+    {
+      "path": "AGENTS.md",
+      "accessCount": 10,
+      "lastAccessed": 1788793208645,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 7,
+      "lastAccessed": 1788793126398,
       "type": "file"
     },
     {
       "path": "src/main/facility_biome_coordinator.gd",
-      "accessCount": 5,
-      "lastAccessed": 1788792949167,
+      "accessCount": 6,
+      "lastAccessed": 1788793193273,
       "type": "file"
     },
     {
-      "path": "src/ui/game_hud.gd",
-      "accessCount": 3,
-      "lastAccessed": 1788792944121,
+      "path": "DESIGN.md",
+      "accessCount": 6,
+      "lastAccessed": 1788793208967,
       "type": "file"
     },
     {
@@ -165,15 +183,21 @@
       "type": "file"
     },
     {
-      "path": "README.md",
+      "path": "src/ui/main_scene_overlays.gd",
       "accessCount": 2,
-      "lastAccessed": 1788792837448,
+      "lastAccessed": 1788793022904,
       "type": "file"
     },
     {
-      "path": "AGENTS.md",
+      "path": "src/main/world_interaction_coordinator.gd",
       "accessCount": 2,
-      "lastAccessed": 1788792837845,
+      "lastAccessed": 1788793198797,
+      "type": "file"
+    },
+    {
+      "path": "src/world/interactions/spatial_interaction_resolver.gd",
+      "accessCount": 2,
+      "lastAccessed": 1788793210642,
       "type": "file"
     },
     {
@@ -213,12 +237,6 @@
       "type": "file"
     },
     {
-      "path": "src/main/world_interaction_coordinator.gd",
-      "accessCount": 1,
-      "lastAccessed": 1788792771333,
-      "type": "file"
-    },
-    {
       "path": "tests/unit/test_world_scene_renderer.gd",
       "accessCount": 1,
       "lastAccessed": 1788792783420,
@@ -228,12 +246,6 @@
       "path": "src/main/main_command_coordinator.gd",
       "accessCount": 1,
       "lastAccessed": 1788792791612,
-      "type": "file"
-    },
-    {
-      "path": "DESIGN.md",
-      "accessCount": 1,
-      "lastAccessed": 1788792838029,
       "type": "file"
     }
   ],

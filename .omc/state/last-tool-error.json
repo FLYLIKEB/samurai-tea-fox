@@ -1,0 +1,7 @@
+{
+  "tool_name": "Read",
+  "tool_input_preview": "{\"file_path\":\"/Users/jwp/Developer/samurai-tea-fox\"}",
+  "error": "EISDIR: illegal operation on a directory, read '/Users/jwp/Developer/samurai-tea-fox'",
+  "timestamp": "2026-09-07T14:59:59.834Z",
+  "retry_count": 1
+}
