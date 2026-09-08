@@ -72,6 +72,7 @@ const TESTS := [
 	preload("res://tests/unit/test_boss_encounter_runtime.gd"),
 	preload("res://tests/unit/test_boss_tea_resolution_runtime.gd"),
 	preload("res://tests/unit/test_world_data.gd"),
+	preload("res://tests/unit/test_world_renderer_projection.gd"),
 	preload("res://tests/unit/test_starting_home_island.gd"),
 	preload("res://tests/unit/test_world_scene_renderer.gd"),
 	preload("res://tests/unit/test_acquisition_service.gd"),

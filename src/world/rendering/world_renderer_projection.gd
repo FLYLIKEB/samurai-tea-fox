@@ -89,6 +89,12 @@ const RESOURCE_SOURCE_BY_BIOME_RESOURCE := {
 	"rainforest|clay": "asset_assets_sprites_objects_natural_props_reed_clump_32x32_png"
 }
 
+const PICKUP_WOOD_SOURCE_BY_ITEM := {
+	"wood": "item_wood_icon",
+	"old_wood": "item_old_wood_icon",
+	"conifer_wood": "item_conifer_wood_icon"
+}
+
 const PATH_FENCE_SOURCE_ID := "asset_assets_sprites_objects_structures_wood_fence_horizontal_1x2_64x32_png"
 
 const TREE_SOURCE_BY_TERRAIN := {
@@ -235,15 +241,17 @@ func _owner_source_id(owner_id: String, metadata: Dictionary) -> String:
 		return String(TREE_SOURCE_BY_TERRAIN.get(String(metadata.get("terrain_id", "")), ""))
 	if String(metadata.get("terrain_overlay", "")) == "path_fence":
 		return PATH_FENCE_SOURCE_ID
+	var resource_id := String(metadata.get("resource_id", ""))
+	if owner_id.begins_with("resource_") and PICKUP_WOOD_SOURCE_BY_ITEM.has(resource_id):
+		return String(PICKUP_WOOD_SOURCE_BY_ITEM[resource_id])
 	var facility_key := "%s|%s" % [String(metadata.get("biome_rule_id", "")), String(metadata.get("facility_id", ""))]
 	if FACILITY_SOURCE_BY_BIOME_FACILITY.has(facility_key):
 		return String(FACILITY_SOURCE_BY_BIOME_FACILITY[facility_key])
-	var resource_key := "%s|%s" % [String(metadata.get("biome_rule_id", "")), String(metadata.get("resource_id", ""))]
+	var resource_key := "%s|%s" % [String(metadata.get("biome_rule_id", "")), resource_id]
 	if RESOURCE_SOURCE_BY_BIOME_RESOURCE.has(resource_key):
 		return String(RESOURCE_SOURCE_BY_BIOME_RESOURCE[resource_key])
 	if owner_id.begins_with("resource_"):
 		var biome_rule_id := String(metadata.get("biome_rule_id", ""))
-		var resource_id := String(metadata.get("resource_id", ""))
 		match biome_rule_id:
 			"common_region":
 				match resource_id:
