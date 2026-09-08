@@ -18,6 +18,7 @@ func _setup_fade_rect() -> void:
 	_fade_rect.color = Color.BLACK
 	_fade_rect.modulate.a = 0.0
 	_fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_fade_rect)
 
 func _setup_sleep_label() -> void:
@@ -26,6 +27,7 @@ func _setup_sleep_label() -> void:
 	_sleep_label.add_theme_font_size_override("font_size", 32)
 	_sleep_label.set_anchors_preset(Control.PRESET_CENTER)
 	_sleep_label.modulate.a = 0.0
+	_sleep_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_sleep_label)
 
 func play_sleep_transition() -> void:
