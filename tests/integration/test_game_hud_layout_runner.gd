@@ -82,8 +82,6 @@ func _assert_layout_for_viewport(viewport_name: String, viewport_size: Vector2i)
 		hud._apply_safe_area_layout()
 		await process_frame
 		_assert_visible_rect_inside(viewport_name, hud, "Root/ActionMenuPanel", viewport_size)
-		_assert_no_overlap(viewport_name, hud, "Root/ActionMenuPanel", "Root/ActionPanel")
-		_assert_no_overlap(viewport_name, hud, "Root/ActionMenuPanel", "Root/DPadPanel")
 	hud.show_crafting_menu()
 	await process_frame
 	hud._apply_safe_area_layout()

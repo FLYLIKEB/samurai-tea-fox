@@ -40,17 +40,15 @@ func _check_viewport(viewport_size: Vector2i) -> void:
 		var viewport_rect := Rect2(Vector2.ZERO, Vector2(viewport_size))
 		if not viewport_rect.encloses(shortcut_rect):
 			_failures.append("%s shortcut outside viewport: %s" % [viewport_size, shortcut_rect])
-		for path in ["Root/MapPanel", "Root/QuickSlotPanel", "Root/DPadPanel", "Root/ActionPanel"]:
-			var other := hud.get_node_or_null(path) as Control
-			if other != null and other.visible and shortcut_rect.intersects(other.get_global_rect()):
-				_failures.append("%s shortcut overlaps %s" % [viewport_size, path])
+		if shortcut_rect.get_center().distance_to(viewport_rect.get_center()) > 1.0:
+			_failures.append("%s settings is not centered: %s" % [viewport_size, shortcut_rect])
 	var wide_landscape := viewport_size.x >= 600 and viewport_size.x > viewport_size.y
-	for path in ["Root/SettingsButton", "Root/BottomNavPanel"]:
+	for path in ["Root/SettingsButton", "Root/FacilitiesShortcutButton", "Root/BottomNavPanel"]:
 		var panel := hud.get_node_or_null(path) as Control
 		if panel == null:
 			_failures.append("%s missing %s" % [viewport_size, path])
 			continue
-		if path != "Root/SettingsButton" and panel.visible != wide_landscape:
+		if path == "Root/BottomNavPanel" and panel.visible != wide_landscape:
 			_failures.append("%s unexpected visibility for %s" % [viewport_size, path])
 		if panel.visible and not Rect2(Vector2.ZERO, Vector2(viewport_size)).encloses(panel.get_global_rect()):
 			_failures.append("%s %s outside viewport" % [viewport_size, path])

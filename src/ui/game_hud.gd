@@ -60,9 +60,8 @@ const QUICKSLOT_PANEL_SIZE := Vector2(172, 26)
 const DPAD_BOARD_SIZE := Vector2(96, 96)
 const ACTION_BUTTON_SIZE := Vector2(48, 48)
 const SECONDARY_ACTION_ICON_BUTTON_SIZE := Vector2(20, 20)
-const SHORTCUT_BUTTON_SIZE := Vector2(44, 44)
 const ACTION_PANEL_SIZE := Vector2(132, 126)
-const ACTION_MENU_PANEL_SIZE := Vector2(148, 100)
+const ACTION_MENU_PANEL_SIZE := Vector2(280, 180)
 const BOTTOM_NAV_PANEL_SIZE := Vector2(326, 50)
 const SETTINGS_BUTTON_SIZE := Vector2(36, 36)
 const ACTION_PANEL_COLUMNS := 2
@@ -133,6 +132,7 @@ signal mobile_command_issued(command)
 signal movement_button_changed(direction: Vector2i)
 
 signal status_toast_presented(kind: String, event_key: String)
+signal return_to_start_requested
 
 var asset_catalog := AssetCatalog.new()
 var _asset_catalog_ready := false
@@ -157,12 +157,10 @@ var _time_refresh_elapsed := 0.0
 var _action_menu_open := false
 var _action_grid: GridContainer
 var _secondary_action_bar: GridContainer
-var _action_menu_grid: GridContainer
 var _interaction_button: Button
 var _menu_content: VBoxContainer
 var _minimap_grid: GridContainer
 var _action_scroll: ScrollContainer
-var _action_menu_scroll: ScrollContainer
 var _narrative_presenter: NarrativeDialoguePresenter
 var _detail_popup: Control
 var _open_menu_id := ""
@@ -620,20 +618,30 @@ func _build() -> void:
 	action_menu_panel.visible = false
 	root.add_child(action_menu_panel)
 	_panels.action_menu = action_menu_panel
-	_build_action_menu(action_menu_panel)
-	_build_settings_shortcuts(_action_menu_grid)
+	_build_settings_panel(action_menu_panel)
 
 	var settings_button := Button.new()
 	settings_button.name = "SettingsButton"
 	settings_button.custom_minimum_size = SETTINGS_BUTTON_SIZE
 	settings_button.text = "설정"
-	settings_button.tooltip_text = "수면·시설"
+	settings_button.tooltip_text = "설정"
 	settings_button.focus_mode = Control.FOCUS_NONE
 	settings_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	settings_button.add_theme_font_size_override("font_size", 9)
 	settings_button.pressed.connect(_toggle_action_menu)
 	root.add_child(settings_button)
 	_panels.settings = settings_button
+	var facilities_button := Button.new()
+	facilities_button.name = "FacilitiesShortcutButton"
+	facilities_button.custom_minimum_size = SETTINGS_BUTTON_SIZE
+	facilities_button.text = "시설"
+	facilities_button.tooltip_text = "시설"
+	facilities_button.focus_mode = Control.FOCUS_NONE
+	facilities_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	facilities_button.add_theme_font_size_override("font_size", 9)
+	facilities_button.pressed.connect(func(): press_mobile_button("open_facilities"))
+	root.add_child(facilities_button)
+	_panels.facilities_shortcut = facilities_button
 
 	var bottom_nav := _panel(BOTTOM_NAV_PANEL_SIZE)
 	bottom_nav.name = "BottomNavPanel"
@@ -799,26 +807,45 @@ func _build_actions(parent: PanelContainer) -> void:
 	action_rows.add_child(_action_grid)
 	_rebuild_action_buttons()
 
-func _build_action_menu(parent: PanelContainer) -> void:
+func _build_settings_panel(parent: PanelContainer) -> void:
 	_block_mouse(parent)
-	_action_menu_scroll = ScrollContainer.new()
-	_action_menu_scroll.name = "ActionMenuScroll"
-	_action_menu_scroll.custom_minimum_size = Vector2(ACTION_MENU_PANEL_SIZE.x - 12.0, ACTION_MENU_PANEL_SIZE.y - 12.0)
-	_action_menu_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_action_menu_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_action_menu_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_action_menu_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
-	_action_menu_scroll.get_h_scroll_bar().mouse_filter = Control.MOUSE_FILTER_STOP
-	_action_menu_scroll.get_v_scroll_bar().mouse_filter = Control.MOUSE_FILTER_STOP
-	parent.add_child(_action_menu_scroll)
-	_action_menu_grid = GridContainer.new()
-	_action_menu_grid.name = "ActionMenuGrid"
-	_ignore_mouse(_action_menu_grid)
-	_action_menu_grid.columns = 2
-	_action_menu_grid.add_theme_constant_override("h_separation", 4)
-	_action_menu_grid.add_theme_constant_override("v_separation", 4)
-	_action_menu_scroll.add_child(_action_menu_grid)
+	var rows := VBoxContainer.new()
+	rows.name = "SettingsRows"
+	rows.add_theme_constant_override("separation", 10)
+	parent.add_child(rows)
+	var title := _label("설정", 16)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rows.add_child(title)
+	rows.add_child(_label("게임 음량", 11))
+	var volume := HSlider.new()
+	volume.name = "GameVolumeSlider"
+	volume.min_value = 0.0
+	volume.max_value = 100.0
+	volume.step = 5.0
+	var master_bus := AudioServer.get_bus_index("Master")
+	volume.value = db_to_linear(AudioServer.get_bus_volume_db(master_bus)) * 100.0 if master_bus >= 0 else 100.0
+	volume.value_changed.connect(_set_game_volume)
+	rows.add_child(volume)
+	var home_button := Button.new()
+	home_button.name = "ReturnHomeButton"
+	home_button.text = "홈 화면으로 돌아가기"
+	home_button.custom_minimum_size = Vector2(0, 38)
+	home_button.pressed.connect(func(): return_to_start_requested.emit())
+	rows.add_child(home_button)
+	var close_button := Button.new()
+	close_button.name = "CloseSettingsButton"
+	close_button.text = "닫기"
+	close_button.custom_minimum_size = Vector2(0, 34)
+	close_button.pressed.connect(_toggle_action_menu)
+	rows.add_child(close_button)
 	_rebuild_action_buttons()
+
+func _set_game_volume(percent: float) -> void:
+	var master_bus := AudioServer.get_bus_index("Master")
+	if master_bus < 0:
+		return
+	AudioServer.set_bus_mute(master_bus, percent <= 0.0)
+	AudioServer.set_bus_volume_db(master_bus, linear_to_db(maxf(percent / 100.0, 0.0001)))
 
 func _rebuild_action_buttons() -> void:
 	if _action_grid == null:
@@ -851,35 +878,6 @@ func _toggle_action_menu() -> void:
 	if action_menu_panel != null:
 		action_menu_panel.visible = _action_menu_open
 	_apply_safe_area_layout()
-
-func _build_settings_shortcuts(parent: GridContainer) -> void:
-	parent.name = "ShortcutGrid"
-	parent.columns = 1
-	_add_shortcut_button(parent, "FacilitiesShortcutButton", ICON_MAP, "시설", "open_facilities")
-
-func _add_shortcut_button(parent: Container, name: String, icon_path: String, tooltip: String, button_id: String) -> void:
-	var button := Button.new()
-	button.name = name
-	button.custom_minimum_size = SHORTCUT_BUTTON_SIZE
-	button.text = ""
-	button.icon = _load_texture(icon_path)
-	button.expand_icon = true
-	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	button.add_theme_constant_override("icon_max_width", 28)
-	button.tooltip_text = tooltip
-	button.focus_mode = Control.FOCUS_NONE
-	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	button.add_theme_stylebox_override("normal", _circle_button_style(Color(0.10, 0.08, 0.06, 0.94)))
-	button.add_theme_stylebox_override("hover", _circle_button_style(Color(0.26, 0.18, 0.08, 0.98)))
-	button.add_theme_stylebox_override("pressed", _circle_button_style(Color(0.77, 0.54, 0.25, 1.0)))
-	button.pressed.connect(func():
-		_action_menu_open = false
-		var panel := _panels.get("action_menu") as Control
-		if panel != null:
-			panel.visible = false
-		press_mobile_button(button_id, Vector2i.ZERO, 0)
-	)
-	parent.add_child(button)
 
 func _add_nav_button(parent: Container, name: String, icon_path: String, text: String, button_id: String, size: Vector2) -> void:
 	var button := Button.new()
@@ -1095,7 +1093,7 @@ func _placement_command_button(text: String, command_type: int) -> Button:
 	return button
 
 func _set_gameplay_hud_visible(visible: bool) -> void:
-	for panel_id in ["status", "map", "enemy", "quickslot", "dpad", "action", "settings", "bottom_nav", "action_menu", "menu"]:
+	for panel_id in ["status", "map", "enemy", "quickslot", "dpad", "action", "settings", "facilities_shortcut", "bottom_nav", "action_menu", "menu"]:
 		var panel := _panels.get(panel_id) as Control
 		if panel != null:
 			panel.visible = visible and (
@@ -2308,6 +2306,7 @@ func _apply_safe_area_layout() -> void:
 	_place_panel(_panels.dpad, Control.PRESET_BOTTOM_LEFT, Vector2(margin.x, -margin.w))
 	_place_panel(_panels.action, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w))
 	_place_panel(_panels.settings, Control.PRESET_TOP_RIGHT, Vector2(-margin.z, map_rect.end.y + HUD_EDGE_GAP))
+	_place_panel(_panels.facilities_shortcut, Control.PRESET_TOP_RIGHT, Vector2(-margin.z, map_rect.end.y + HUD_EDGE_GAP + SETTINGS_BUTTON_SIZE.y + HUD_EDGE_GAP))
 	_place_panel(_panels.bottom_nav, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w))
 	_panels.bottom_nav.visible = wide_landscape
 	var action_rect := _panel_rect(_panels.action)
@@ -2340,43 +2339,15 @@ func _resize_action_menu_panel(viewport_size: Vector2, margin: Vector4, top_stac
 	var action_menu_panel := _panels.get("action_menu") as Control
 	if action_menu_panel == null:
 		return
-	var action_rect := _panel_rect(_panels.action)
-	var action_top := action_rect.position.y if action_rect.size.y > 0.0 else viewport_size.y - margin.w - ACTION_PANEL_SIZE.y
-	var available_height := action_top - top_stack_bottom - (HUD_EDGE_GAP * 2.0)
-	var panel_height := minf(ACTION_MENU_PANEL_SIZE.y, maxf(56.0, available_height))
-	var panel_size := Vector2(ACTION_MENU_PANEL_SIZE.x, panel_height)
+	var panel_size := Vector2(minf(ACTION_MENU_PANEL_SIZE.x, viewport_size.x - margin.x - margin.z), ACTION_MENU_PANEL_SIZE.y)
 	action_menu_panel.custom_minimum_size = panel_size
 	action_menu_panel.size = panel_size
-	if _action_menu_scroll != null:
-		_action_menu_scroll.custom_minimum_size = Vector2(panel_size.x - 12.0, maxf(44.0, panel_size.y - 12.0))
 
 func _place_action_menu_panel(viewport_size: Vector2, margin: Vector4, top_stack_bottom: float) -> void:
 	var action_menu_panel := _panels.get("action_menu") as Control
 	if action_menu_panel == null:
 		return
-	var action_rect := _panel_rect(_panels.action)
-	var menu_size := _control_layout_size(action_menu_panel)
-	var above_top := action_rect.position.y - HUD_EDGE_GAP - menu_size.y
-	if above_top >= top_stack_bottom + HUD_EDGE_GAP:
-		_place_panel(action_menu_panel, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, action_rect.position.y - viewport_size.y - HUD_EDGE_GAP))
-		return
-	var side_x := action_rect.position.x - HUD_EDGE_GAP - menu_size.x
-	var quickslot_rect := _panel_rect(_panels.quickslot)
-	var above_quickslot_y := quickslot_rect.position.y - HUD_EDGE_GAP - menu_size.y
-	var above_quickslot_rect := Rect2(Vector2(side_x, above_quickslot_y), menu_size)
-	if (
-		side_x >= margin.x
-		and above_quickslot_y >= margin.y
-		and not above_quickslot_rect.intersects(_panel_rect(_panels.status))
-		and not above_quickslot_rect.intersects(_panel_rect(_panels.map))
-	):
-		_place_panel(action_menu_panel, Control.PRESET_TOP_LEFT, above_quickslot_rect.position)
-		return
-	var side_y := viewport_size.y - margin.w - menu_size.y
-	if side_x >= margin.x:
-		_place_panel(action_menu_panel, Control.PRESET_TOP_LEFT, Vector2(side_x, side_y))
-		return
-	_place_panel(action_menu_panel, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w))
+	_place_panel(action_menu_panel, Control.PRESET_CENTER, Vector2.ZERO)
 
 func _resolve_enemy_bottom_overlap(top_stack_bottom: float) -> void:
 	var enemy_panel := _panels.get("enemy") as Control

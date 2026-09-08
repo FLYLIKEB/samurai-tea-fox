@@ -666,6 +666,13 @@ func _connect_hud_commands() -> void:
 	var callback := Callable(self, "_on_hud_movement_button_changed")
 	if not game_hud.is_connected("movement_button_changed", callback):
 		game_hud.connect("movement_button_changed", callback)
+	var home_callback := Callable(self, "_return_to_start_screen")
+	if game_hud.has_signal("return_to_start_requested") and not game_hud.is_connected("return_to_start_requested", home_callback):
+		game_hud.connect("return_to_start_requested", home_callback)
+
+func _return_to_start_screen() -> void:
+	save_current_run()
+	get_tree().change_scene_to_file(START_SCREEN_SCENE_PATH)
 
 func _on_hud_movement_button_changed(direction: Vector2i) -> void:
 	submit_mobile_movement_direction(direction)
