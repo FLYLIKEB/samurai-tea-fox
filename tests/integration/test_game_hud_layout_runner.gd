@@ -86,12 +86,17 @@ func _assert_layout_for_viewport(viewport_name: String, viewport_size: Vector2i)
 	_assert_visible_rect_inside(viewport_name, hud, "Root/MenuPanel", viewport_size)
 	_assert_horizontal_inside_node(viewport_name, hud, "Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingFilterBar", "Root/MenuPanel")
 	_assert_horizontal_inside_node(viewport_name, hud, "Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip", "Root/MenuPanel")
-	_assert_horizontal_inside_node(viewport_name, hud, "Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingDetailCard", "Root/MenuPanel")
 	var crafting_filters := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingFilterBar") as GridContainer
-	var crafting_facts := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingDetailCard/Rows/CraftingFacts") as GridContainer
 	var compact := viewport_size.x <= 480
 	if crafting_filters != null and crafting_filters.columns != (3 if compact else 7):
 		_failures.append("%s crafting filters use %d columns" % [viewport_name, crafting_filters.columns])
+	var recipe_strip := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip")
+	var recipe_card := recipe_strip.get_child(0) as Button if recipe_strip != null and recipe_strip.get_child_count() > 0 else null
+	if recipe_card != null:
+		recipe_card.pressed.emit()
+		await process_frame
+	var crafting_facts := hud.get_node_or_null("Root/DetailPopup/PopupCenter/PopupPanel/PopupRows/PopupScroll/CraftingDetailCard/Rows/CraftingFacts") as GridContainer
+	_assert_visible_rect_inside(viewport_name, hud, "Root/DetailPopup/PopupCenter/PopupPanel", viewport_size)
 	if crafting_facts != null and crafting_facts.columns != (1 if compact else 3):
 		_failures.append("%s crafting facts use %d columns" % [viewport_name, crafting_facts.columns])
 	hud.show_narrative_dialogue({

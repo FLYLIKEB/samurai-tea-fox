@@ -4,6 +4,7 @@ const GameCommand = preload("res://src/core/commands/game_command.gd")
 const GameHud = preload("res://src/ui/game_hud.gd")
 const GameHudReadModelProvider = preload("res://src/ui/game_hud_read_model_provider.gd")
 const NarrativeDialoguePresenter = preload("res://src/ui/narrative_dialogue_presenter.gd")
+const DetailPopup = preload("res://src/ui/detail_popup.gd")
 
 class FakeResources:
 	signal hp_changed(previous: int, current: int, maximum: int)
@@ -619,7 +620,14 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 		asserts.equal(inventory_card.custom_minimum_size, Vector2(66, 60), "inventory slot cards keep a stable mobile touch size")
 	asserts.true_value(_tree_has_text(hud, "wood\n* 10"), "inventory menu groups duplicate item slots into one total")
 	asserts.false_value(_tree_has_text(hud, "wood\n* 7"), "inventory menu does not render duplicate item stacks as separate cards")
-	asserts.true_value(_panel_uses_dark_background(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/DetailCard") as Control), "inventory detail card uses the shared dark inner background")
+	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/DetailCard") == null, "inventory keeps details out of the scrolling item list")
+	if inventory_card != null:
+		inventory_card.pressed.emit()
+	var inventory_popup := hud.get_node_or_null("Root/DetailPopup")
+	asserts.true_value(inventory_popup != null and inventory_popup.get_script() == DetailPopup, "inventory opens the shared detail popup")
+	asserts.true_value(_tree_has_text(inventory_popup, "wood"), "inventory popup shows the selected item")
+	asserts.true_value(inventory_popup.get_node_or_null("PopupCenter/PopupPanel/PopupRows/PopupHeader/CloseDetailPopupButton") is Button, "inventory popup exposes a touch-sized close button")
+	hud._dismiss_detail_popup()
 	asserts.true_value(hud.show_facilities_menu(), "HUD opens the facilities menu")
 	asserts.true_value(_tree_has_text(hud, "우물 (4,5)"), "facilities menu lists generated facility nodes")
 	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/FacilityCardStrip") != null, "facilities menu renders facility cards")
@@ -632,27 +640,29 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	asserts.true_value(crafting_filter_bar != null and crafting_filter_bar.columns == 7, "crafting filters stay on one row when room is available")
 	var crafting_grid := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip") as GridContainer
 	asserts.true_value(crafting_grid != null and crafting_grid.columns == 3, "crafting menu renders a mobile-friendly three-column grid")
-	var crafting_detail := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingDetailCard") as Control
-	asserts.true_value(crafting_detail != null and crafting_detail.get_index() < crafting_grid.get_index(), "selected recipe detail appears before the recipe catalog")
-	asserts.true_value(_tree_has_text(hud, "결과 목재 작업대 x1"), "crafting menu shows selected recipe result without an internal ID")
-	asserts.true_value(_tree_has_text(hud, "상태 제작 가능"), "crafting menu shows selected recipe status on its own row")
-	var crafting_facts := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingDetailCard/Rows/CraftingFacts") as GridContainer
-	asserts.true_value(crafting_detail != null, "crafting detail uses a stable scannable card")
+	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingDetailCard") == null, "crafting keeps details out of the recipe list")
+	var recipe_card := crafting_grid.get_child(0) as Button if crafting_grid != null and crafting_grid.get_child_count() > 0 else null
+	asserts.true_value(recipe_card != null and recipe_card.name == "CraftingRecipeCard", "the whole recipe card is touchable")
+	if recipe_card != null:
+		recipe_card.pressed.emit()
+	var crafting_popup := hud.get_node_or_null("Root/DetailPopup")
+	var crafting_detail := crafting_popup.get_node_or_null("PopupCenter/PopupPanel/PopupRows/PopupScroll/CraftingDetailCard") as Control if crafting_popup != null else null
+	var crafting_facts := crafting_detail.get_node_or_null("Rows/CraftingFacts") as GridContainer if crafting_detail != null else null
+	asserts.true_value(crafting_popup != null and crafting_popup.get_script() == DetailPopup, "crafting opens the shared detail popup")
+	asserts.true_value(_tree_has_text(crafting_popup, "결과 목재 작업대 x1"), "crafting popup shows selected recipe result without an internal ID")
+	asserts.true_value(_tree_has_text(crafting_popup, "상태 제작 가능"), "crafting popup shows selected recipe status")
 	asserts.true_value(crafting_facts != null and crafting_facts.columns == 3, "crafting facts use three columns when room is available")
-	asserts.true_value(_tree_has_text(hud, "기초 제작을 여는 배치형 시설."), "crafting menu shows the crafted item's role description")
-	var description_label := _find_label(hud, "기초 제작을 여는 배치형 시설.")
+	asserts.true_value(_tree_has_text(crafting_popup, "기초 제작을 여는 배치형 시설."), "crafting popup shows the crafted item's role description")
+	var description_label := _find_label(crafting_popup, "기초 제작을 여는 배치형 시설.")
 	asserts.equal(description_label.autowrap_mode, TextServer.AUTOWRAP_WORD_SMART, "crafting item descriptions wrap at the detail card width")
-	asserts.true_value(_tree_has_text(hud, "목재 3/2"), "crafting menu shows selected recipe material availability")
-	asserts.true_value(_tree_has_text(hud, "손제작"), "crafting menu shows selected recipe facility mode")
-	asserts.true_value(_tree_has_text(hud, "일반 지역"), "crafting menu shows the Korean unlock biome name")
-	asserts.true_value(_tree_has_text(hud, "필요 재료"), "crafting detail groups materials under a clear heading")
-	asserts.true_value(_tree_has_text(hud, "제작 방식"), "crafting detail groups its facility requirement")
-	asserts.true_value(_tree_has_text(hud, "해금 조건"), "crafting detail groups its unlock condition")
+	asserts.true_value(_tree_has_text(crafting_popup, "목재 3/2"), "crafting popup shows selected recipe material availability")
+	asserts.true_value(_tree_has_text(crafting_popup, "손제작"), "crafting popup shows selected recipe facility mode")
+	asserts.true_value(_tree_has_text(crafting_popup, "일반 지역"), "crafting popup shows the Korean unlock biome name")
 	asserts.true_value(_tree_has_textured_item_icon(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip")), "crafting recipe cards render result item images")
 	asserts.true_value(_tree_has_textured_item_icon(crafting_grid), "crafting recipe cards include state/result icons")
-	asserts.true_value(_panel_uses_dark_background(crafting_detail), "crafting detail card uses the shared dark inner background")
+	asserts.true_value(_panel_uses_dark_background(crafting_detail), "crafting popup detail uses the shared dark inner background")
 	asserts.true_value(_crafting_recipe_cards_have_distinct_state_styles(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip")), "crafting cards visibly separate craftable and missing-material states")
-	var craft_button := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingDetailCard/Rows/CraftSelectedRecipeButton") as Button
+	var craft_button := crafting_detail.get_node_or_null("Rows/CraftSelectedRecipeButton") as Button if crafting_detail != null else null
 	asserts.true_value(craft_button != null and craft_button.custom_minimum_size.y >= 34, "selected recipe exposes one prominent touch-sized craft action")
 	asserts.false_value(_tree_has_text(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip"), "제작"), "recipe cards avoid duplicated craft actions")
 	if craft_button != null:
@@ -896,10 +906,10 @@ func _crafting_recipe_cards_have_distinct_state_styles(node: Node) -> bool:
 		return false
 	var border_colors := {}
 	for child in node.get_children():
-		var panel := child as PanelContainer
-		if panel == null:
+		var button := child as Button
+		if button == null:
 			continue
-		var style := panel.get_theme_stylebox("panel") as StyleBoxFlat
+		var style := button.get_theme_stylebox("normal") as StyleBoxFlat
 		if style == null:
 			continue
 		border_colors["%.3f,%.3f,%.3f" % [style.border_color.r, style.border_color.g, style.border_color.b]] = true

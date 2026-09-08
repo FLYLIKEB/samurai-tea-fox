@@ -6,6 +6,7 @@ const MobileCommandAdapter = preload("res://src/core/commands/mobile_command_ada
 const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
 const GameHudReadModelProvider = preload("res://src/ui/game_hud_read_model_provider.gd")
 const NarrativeDialoguePresenter = preload("res://src/ui/narrative_dialogue_presenter.gd")
+const DetailPopup = preload("res://src/ui/detail_popup.gd")
 
 const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
 const ICON_HP := "ui_hp_heart_icon"
@@ -163,6 +164,7 @@ var _minimap_grid: GridContainer
 var _action_scroll: ScrollContainer
 var _action_menu_scroll: ScrollContainer
 var _narrative_presenter: NarrativeDialoguePresenter
+var _detail_popup: Control
 var _open_menu_id := ""
 var _time_dial: TimeDial
 var _resource_detail_label: Label
@@ -284,6 +286,7 @@ func show_teleport_travel_menu() -> bool:
 	return true
 
 func hide_menu() -> bool:
+	_dismiss_detail_popup()
 	_open_menu_id = ""
 	var panel := _panels.get("menu") as Control
 	if panel != null:
@@ -1101,8 +1104,6 @@ func _inventory_rows() -> Array:
 		rows.append(slot_strip)
 		if visible_rows.size() > 8:
 			rows.append(_label("%d-%d / %d" % [page_start + 1, page_end, visible_rows.size()], 11))
-		var selected := _selected_inventory_row(visible_rows, int(model.get("selected_slot_index", -1)))
-		rows.append(_inventory_detail_card(selected))
 		return rows
 	rows.append(_label("인벤토리 read model 없음", 11))
 	return rows
@@ -1125,6 +1126,7 @@ func _inventory_slot_card(row: Dictionary) -> Button:
 		button.add_theme_stylebox_override("normal", _menu_card_style(true))
 	button.disabled = bool(row.get("empty", false))
 	button.tooltip_text = String(row.get("name", row.get("item_id", "")))
+	button.pressed.connect(func(): _show_detail_popup("아이템 상세", _inventory_detail_card(row)))
 	return button
 
 func _inventory_display_rows(slot_rows: Array, selected_slot_index: int) -> Array:
@@ -1487,7 +1489,6 @@ func _crafting_rows() -> Array:
 		var category_id := String(category)
 		filters.add_child(_crafting_filter_button(_crafting_filter_label(category_id), category_id))
 	rows.append(filters)
-	rows.append(_crafting_detail_row(model.get("detail", {})))
 	rows.append(_section_label("제작법 목록"))
 	var model_rows: Array = model.get("rows", [])
 	# Keep the full recipe list visible; the menu is scrollable and hiding
@@ -1507,9 +1508,9 @@ func _crafting_rows() -> Array:
 
 func _crafting_row(row_model: Dictionary) -> Control:
 	var card := VBoxContainer.new()
-	card.name = "CraftingRecipeCard"
+	card.name = "CraftingRecipeContent"
 	_ignore_mouse(card)
-	card.custom_minimum_size = Vector2(104, 76)
+	card.custom_minimum_size = Vector2(104, 70)
 	card.add_theme_constant_override("separation", 3)
 	var summary := VBoxContainer.new()
 	summary.name = "CraftingRecipeSummary"
@@ -1529,28 +1530,21 @@ func _crafting_row(row_model: Dictionary) -> Control:
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	summary.add_child(label)
 	card.add_child(summary)
-	var select_button := Button.new()
-	select_button.text = "선택됨" if bool(row_model.get("selected", false)) else "상세"
-	select_button.icon = _load_texture(ICON_SCROLL)
-	select_button.expand_icon = true
-	select_button.add_theme_constant_override("icon_max_width", 14)
-	select_button.custom_minimum_size = Vector2(92, 30)
-	select_button.focus_mode = Control.FOCUS_ALL
-	select_button.mouse_filter = Control.MOUSE_FILTER_STOP
-	select_button.tooltip_text = "상세"
-	select_button.disabled = bool(row_model.get("selected", false))
-	select_button.add_theme_stylebox_override("normal", _button_style(Color(0.08, 0.065, 0.05, 0.92)))
-	select_button.add_theme_stylebox_override("hover", _button_style(Color(0.13, 0.10, 0.07, 0.96)))
-	select_button.add_theme_stylebox_override("pressed", _button_style(Color(0.23, 0.17, 0.09, 0.98)))
 	var recipe_id := String(row_model.get("recipe_id", ""))
-	select_button.pressed.connect(func():
-		_selected_recipe_id = recipe_id
-		_refresh_open_menu()
+	var button := Button.new()
+	button.name = "CraftingRecipeCard"
+	button.custom_minimum_size = card.custom_minimum_size + Vector2(6, 6)
+	button.focus_mode = Control.FOCUS_ALL
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.tooltip_text = "%s 상세" % String(result.get("name", row_model.get("name", recipe_id)))
+	button.add_theme_stylebox_override("normal", _crafting_card_style(row_model))
+	button.add_theme_stylebox_override("hover", _menu_card_style(true))
+	button.add_theme_stylebox_override("pressed", _button_style(Color(0.23, 0.17, 0.09, 0.98)))
+	button.pressed.connect(func():
+		_show_crafting_detail_popup(recipe_id)
 	)
-	card.add_child(select_button)
-	var frame := _card_frame(card, bool(row_model.get("selected", false)))
-	frame.add_theme_stylebox_override("panel", _crafting_card_style(row_model))
-	return frame
+	button.add_child(card)
+	return button
 
 func _crafting_filter_button(text: String, category: String) -> Button:
 	var button := Button.new()
@@ -1668,6 +1662,29 @@ func _crafting_fact_card(title: String, text: String) -> PanelContainer:
 	rows.add_child(_label(title, 9))
 	rows.add_child(_wrapped_label(text, 10))
 	return card
+
+func _show_crafting_detail_popup(recipe_id: String) -> void:
+	_selected_recipe_id = recipe_id
+	_refresh_open_menu()
+	var model := _crafting_read_model(_crafting_filter, recipe_id)
+	_show_detail_popup("제작 상세", _crafting_detail_row(model.get("detail", {})))
+
+func _show_detail_popup(title: String, content: Control) -> void:
+	_dismiss_detail_popup()
+	var viewport_size := get_viewport().get_visible_rect().size if get_viewport() != null else Vector2(640, 360)
+	var popup_size := Vector2(minf(540.0, viewport_size.x - 32.0), minf(300.0, viewport_size.y - 32.0))
+	_detail_popup = DetailPopup.new()
+	_detail_popup.setup(title, content, popup_size, _panel_style())
+	_detail_popup.dismissed.connect(func(): _detail_popup = null)
+	get_node("Root").add_child(_detail_popup)
+	_detail_popup.move_to_front()
+
+func _dismiss_detail_popup() -> void:
+	if is_instance_valid(_detail_popup):
+		if _detail_popup.get_parent() != null:
+			_detail_popup.get_parent().remove_child(_detail_popup)
+		_detail_popup.queue_free()
+	_detail_popup = null
 
 func _crafting_page_start(rows: Array, selected: String, page_size: int) -> int:
 	if rows.size() <= page_size:
