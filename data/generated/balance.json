@@ -1,5 +1,5 @@
 {
-  "content_hash": "2797d970b8e93ace4670be0af9bbe0f64cfef8fe3958c74f54e2305ce9b44558",
+  "content_hash": "73a9e7d161c0599326637c7b00e36c7a099102dc09b387d60351e852ebdec46b",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -290,24 +290,24 @@
     {
       "category": "기운",
       "description": "기운이 완전히 고갈됐을 때 검 피해 배율",
-      "formula_note": "검 피해 = 기본 피해 × (0.7 + 현재 기운/100 × 0.6)",
+      "formula_note": "검 피해 = 기본 피해 × (0.9 + 현재 기운/100 × 0.6)",
       "id": "ki_attack_multiplier_0",
       "name": "기운 0 공격 배율",
       "notion_id": "3cd37369-9e66-8104-bec7-df44961d184e",
       "status": "테스트",
       "unit": "배",
-      "value": 0.7
+      "value": 0.9
     },
     {
       "category": "기운",
       "description": "기운 최대 상태의 검 피해 배율",
-      "formula_note": "검 피해 = 기본 피해 × (0.7 + 현재 기운/100 × 0.6). 기운 100일 때 1.3배. 요술을 쓰면 강한 순간 효과 대신 이후 검술이 자연스럽게 약해진다.",
+      "formula_note": "검 피해 = 기본 피해 × (0.9 + 현재 기운/100 × 0.6). 기운 100일 때 1.5배. 요술을 쓰면 강한 순간 효과 대신 이후 검술이 자연스럽게 약해진다.",
       "id": "ki_attack_multiplier_100",
       "name": "기운 100 공격 배율",
       "notion_id": "3cd37369-9e66-818c-8e8a-c567c67d7201",
       "status": "테스트",
       "unit": "배",
-      "value": 1.3
+      "value": 1.5
     },
     {
       "category": "기운",
