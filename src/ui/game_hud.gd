@@ -1992,8 +1992,13 @@ func _render_minimap_grid(grid: GridContainer, minimap: Dictionary, cell_size: V
 			var tile: Control
 			if marker_data_by_position.has(key):
 				var marker_button := Button.new()
-				marker_button.text = _marker_glyph(String(marker_by_position.get(key, "")))
+				var marker_type := String(marker_by_position.get(key, ""))
+				var marker_color := _minimap_marker_color(marker_type)
+				marker_button.text = ""
 				marker_button.custom_minimum_size = cell_size
+				marker_button.add_theme_stylebox_override("normal", _button_style(marker_color))
+				marker_button.add_theme_stylebox_override("hover", _button_style(marker_color.lightened(0.16)))
+				marker_button.add_theme_stylebox_override("pressed", _button_style(marker_color.darkened(0.16)))
 				marker_button.name = "MapMarker_%s" % String(marker_data_by_position[key].get("id", "unknown"))
 				marker_button.tooltip_text = "%s: %s" % [
 					String(marker_data_by_position[key].get("display_name", "중요 지점")),

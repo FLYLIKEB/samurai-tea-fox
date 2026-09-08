@@ -123,7 +123,9 @@ func _assert_commands_and_hud_open_full_map(asserts) -> void:
 	asserts.false_value(_tree_has_text(hud, "teleport_0"), "full map menu does not expose the internal marker ID")
 	var teleport_button := _marker_button(map_grid, "teleport_0") if map_grid != null else null
 	asserts.true_value(teleport_button != null, "teleport marker is clickable")
-	asserts.equal(teleport_button.text, "T", "map grid keeps its compact teleport glyph")
+	asserts.equal(teleport_button.text, "", "map grid uses color without a letter glyph")
+	var teleport_style := teleport_button.get_theme_stylebox("normal") as StyleBoxFlat if teleport_button != null else null
+	asserts.true_value(teleport_style != null and teleport_style.bg_color == Color(0.56, 0.38, 0.92, 1.0), "teleport marker keeps its distinct map color")
 	var teleport_list_button := _marker_button(marker_grid, "teleport_0") if marker_grid != null else null
 	asserts.true_value(teleport_list_button != null, "compact marker grid includes teleport details")
 	asserts.equal(teleport_list_button.text, "텔레포트", "compact marker button omits coordinates until selected")
