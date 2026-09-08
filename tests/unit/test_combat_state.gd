@@ -44,7 +44,7 @@ func _assert_generated_catalog_loads_combat_values(asserts) -> void:
 	asserts.equal(config.ki_attack_multiplier_0, 0.7, "low ki multiplier comes from balance data")
 	asserts.equal(config.ki_attack_multiplier_100, 1.3, "high ki multiplier comes from balance data")
 	asserts.equal(config.weapon_id, "short_travel_sword", "default weapon stable ID is loaded")
-	asserts.equal(config.weapon_base_damage, 14, "weapon damage comes from item data")
+	asserts.equal(config.weapon_base_damage, 16, "weapon damage comes from item data")
 	asserts.equal(config.weapon_range_tiles, 1.15, "weapon range comes from item data")
 	asserts.equal(config.weapon_attack_speed, 1.0, "weapon attack speed comes from item data")
 

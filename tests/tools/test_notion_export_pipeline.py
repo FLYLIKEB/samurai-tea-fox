@@ -1285,7 +1285,7 @@ class NotionExportPipelineTests(unittest.TestCase):
         oribe_bowl = next(item for item in items if item["id"] == "oribe_green_glazed_bowl")
         road_bandit = next(monster for monster in monsters if monster["id"] == "road_bandit")
 
-        self.assertEqual(sword["base_damage"], 14)
+        self.assertEqual(sword["base_damage"], 16)
         self.assertEqual(sword["attack_speed"], 1)
         self.assertEqual(sword["range"], 1.15)
         self.assertEqual(sword["status"], "확정")

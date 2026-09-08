@@ -1,5 +1,5 @@
 {
-  "content_hash": "3f969d12eaca324e175520d54ead6ea979dd2021a1ecdac66563dbc3da348f35",
+  "content_hash": "71a5e73108bcfce5bd7d9e3c766e09bb4905b41306695b4172c8dea4f1230ebe",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -636,7 +636,7 @@
     {
       "acquisition": "런 시작 기본 장비",
       "attack_speed": 1,
-      "base_damage": 14,
+      "base_damage": 16,
       "biome_ids": [
         "common_region"
       ],
@@ -644,7 +644,7 @@
       "craftable": false,
       "effect": "기본 시작 무기. 현재 기운 배율을 적용해 피해를 계산한다.",
       "effect_type": "공격",
-      "effect_value": 14,
+      "effect_value": 16,
       "equipment_slot": "무기",
       "grade": "일반",
       "id": "short_travel_sword",
