@@ -1672,7 +1672,7 @@ func _show_crafting_detail_popup(recipe_id: String) -> void:
 func _show_detail_popup(title: String, content: Control) -> void:
 	_dismiss_detail_popup()
 	var viewport_size := get_viewport().get_visible_rect().size if get_viewport() != null else Vector2(640, 360)
-	var popup_size := Vector2(minf(540.0, viewport_size.x - 32.0), minf(300.0, viewport_size.y - 32.0))
+	var popup_size := Vector2(minf(420.0, viewport_size.x - 48.0), minf(240.0, viewport_size.y - 48.0))
 	_detail_popup = DetailPopup.new()
 	_detail_popup.setup(title, content, popup_size, _panel_style())
 	_detail_popup.dismissed.connect(func(): _detail_popup = null)
