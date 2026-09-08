@@ -47,7 +47,7 @@ func run(asserts) -> void:
 	var projection := WorldRendererProjection.new().project(generated.world_data)
 	var entity_sources := _entity_sources(projection)
 	for owner_id in WorldGenerator.STARTING_HOME_BRIDGE_IDS:
-		asserts.equal(entity_sources.get(owner_id, ""), "asset_assets_sprites_objects_structures_wooden_stage_platform_96x64_png", "%s uses the supplied bridge image" % owner_id)
+		asserts.equal(entity_sources.get(owner_id, ""), "", "%s does not add a structure sprite over the bridge terrain" % owner_id)
 
 func _entry_position(world_data: Dictionary) -> Vector2i:
 	for landmark in world_data.get("required_landmarks", []):

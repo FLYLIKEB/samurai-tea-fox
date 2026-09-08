@@ -9,18 +9,6 @@ const ADJACENT_OFFSETS := [
 	Vector2i.RIGHT,
 	Vector2i.UP
 ]
-const LARGE_HOUSE_DUNGEON_OWNER_IDS := [
-	"large_fenced_house",
-	"large_house_fence_nw",
-	"large_house_fence_ne",
-	"large_house_fence_sw",
-	"large_house_fence_se",
-	"large_house_fence_n",
-	"large_house_fence_s",
-	"large_house_fence_w",
-	"large_house_fence_e"
-]
-
 func cells_are_adjacent(first: Vector2i, second: Vector2i) -> bool:
 	var offset := second - first
 	return absi(offset.x) + absi(offset.y) <= 1
@@ -86,33 +74,7 @@ func player_can_interact_with_target(world_data, in_dungeon_map: bool, player_ce
 	return false
 
 func target_footprint_cells(world_data, target_id: String, fallback_cell: Vector2i) -> Array:
-	if is_large_house_dungeon_target(target_id):
-		var compound_cells := []
-		for owner_id in LARGE_HOUSE_DUNGEON_OWNER_IDS:
-			compound_cells.append_array(reservation_cells_for_owner(world_data, owner_id))
-		if not compound_cells.is_empty():
-			return unique_cells(compound_cells)
 	return [fallback_cell]
-
-func reservation_cells_for_owner(world_data, owner_id: String) -> Array:
-	if world_data == null:
-		return []
-	var reservation: Dictionary = world_data.get_reservation(owner_id)
-	var cells := []
-	for cell_value in reservation.get("cells", []):
-		cells.append(_vector_from_dictionary(cell_value))
-	return cells
-
-func unique_cells(cells: Array) -> Array:
-	var seen := {}
-	var unique := []
-	for cell in cells:
-		var key := _cell_key(cell)
-		if seen.has(key):
-			continue
-		seen[key] = true
-		unique.append(cell)
-	return unique
 
 func acquisition_target_near_cell(world_data, in_dungeon_map: bool, origin_cell: Vector2i, forward: Vector2i, is_available_acquisition_target: Callable) -> Dictionary:
 	for cell in interaction_candidate_cells(origin_cell, forward):
@@ -238,23 +200,6 @@ func landmark_target_near_world_position(
 			return {"target_id": String(landmark.get("id", "")), "cell": cell}
 	return {}
 
-func large_house_target_near_world_position(
-		generated_world: Dictionary,
-		world_position: Vector2,
-		tile_size: float,
-		world_origin: Vector2,
-		max_distance := -1.0
-) -> Dictionary:
-	var house: Dictionary = generated_world.get("large_house", {})
-	if house.is_empty():
-		return {}
-	var origin := _vector_from_dictionary(house.get("position", {}))
-	var center := world_origin + Vector2((origin.x + 1.0) * tile_size, (origin.y + 1.0) * tile_size)
-	var distance_limit := tile_size * 2.0 if max_distance < 0.0 else max_distance
-	if world_position.distance_to(center) <= distance_limit:
-		return {"target_id": WorldGenerator.LARGE_HOUSE_ID, "cell": origin}
-	return {}
-
 func is_landmark_target(in_dungeon_map: bool, target_id: String) -> bool:
 	return (in_dungeon_map and target_id == "dungeon_entry") \
 			or is_core_dungeon_target(target_id) \
@@ -264,12 +209,7 @@ func is_landmark_target(in_dungeon_map: bool, target_id: String) -> bool:
 			or target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE)
 
 func is_core_dungeon_target(target_id: String) -> bool:
-	return target_id.begins_with("%s_" % WorldData.LANDMARK_CORE_DUNGEON) \
-		or is_large_house_dungeon_target(target_id)
-
-func is_large_house_dungeon_target(target_id: String) -> bool:
-	return target_id == WorldGenerator.LARGE_HOUSE_ID \
-		or target_id.begins_with("large_house_fence_")
+	return target_id.begins_with("%s_" % WorldData.LANDMARK_CORE_DUNGEON)
 
 func _cell_key(cell: Vector2i) -> String:
 	return "%d,%d" % [cell.x, cell.y]

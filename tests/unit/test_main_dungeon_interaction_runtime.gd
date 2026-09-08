@@ -75,24 +75,24 @@ func run(asserts) -> void:
 	_cleanup()
 	var catalog := DataCatalog.new()
 	asserts.true_value(catalog.load_from_directory("res://data/generated").ok, "dungeon input catalog loads")
-	_assert_visible_house_accepts_e_before_attack(asserts, catalog)
-	_assert_visible_house_click_queues_entry(asserts, catalog)
+	_assert_core_dungeon_accepts_e_before_attack(asserts, catalog)
+	_assert_core_dungeon_click_queues_entry(asserts, catalog)
 	_assert_dungeon_combatants_do_not_cross_world_boundary(asserts, catalog)
 	_assert_dungeon_entry_rebinds_map_and_movement_context(asserts, catalog)
 	_assert_boss_precombat_dialogue_blocks_combat_until_completion(asserts, catalog)
 	_cleanup()
 
-func _assert_visible_house_accepts_e_before_attack(asserts, catalog: DataCatalog) -> void:
+func _assert_core_dungeon_accepts_e_before_attack(asserts, catalog: DataCatalog) -> void:
 	var runtime := _configured_runtime(catalog)
 	asserts.true_value(runtime.result.ok, "E dungeon fixture configures")
 	if not runtime.result.ok:
 		_free_runtime(runtime)
 		return
-	var house_origin := _large_house_origin(runtime.main)
-	var approach_cell := _nearest_walkable_adjacent_cell_to_compound(runtime.main, house_origin)
-	asserts.true_value(approach_cell != Vector2i(-1, -1), "visible dungeon house has a walkable adjacent E cell")
+	var dungeon_origin := _core_dungeon_origin(runtime.main)
+	var approach_cell: Vector2i = runtime.main._world_interaction_coordinator.nearest_walkable_adjacent_cell(runtime.main, dungeon_origin, dungeon_origin + Vector2i.LEFT)
+	asserts.true_value(approach_cell != Vector2i(-1, -1), "core dungeon has a walkable adjacent E cell")
 	runtime.main.player.global_position = runtime.main.world_position_for_cell_center(approach_cell)
-	asserts.true_value(runtime.main._try_dungeon_interaction_from_input(), "E attack path enters from the visible dungeon house approach cell")
+	asserts.true_value(runtime.main._try_dungeon_interaction_from_input(), "E attack path enters from the core dungeon approach cell")
 	asserts.true_value(runtime.main._in_dungeon_map, "E switches to the dungeon map instead of attacking")
 	var dungeon_snapshot: Dictionary = runtime.main.world_data.to_dictionary()
 	var dungeon_terrain: Dictionary = dungeon_snapshot.cells[0].layers[WorldData.LAYER_TERRAIN]
@@ -142,21 +142,21 @@ func _assert_visible_house_accepts_e_before_attack(asserts, catalog: DataCatalog
 	asserts.false_value(runtime.main._in_dungeon_map, "completed dungeon E exit leaves dungeon mode")
 	_free_runtime(runtime)
 
-func _assert_visible_house_click_queues_entry(asserts, catalog: DataCatalog) -> void:
+func _assert_core_dungeon_click_queues_entry(asserts, catalog: DataCatalog) -> void:
 	var runtime := _configured_runtime(catalog)
 	asserts.true_value(runtime.result.ok, "click dungeon fixture configures")
 	if not runtime.result.ok:
 		_free_runtime(runtime)
 		return
-	var house_origin := _large_house_origin(runtime.main)
-	var approach_cell := _nearest_walkable_adjacent_cell_to_compound(runtime.main, house_origin)
-	asserts.true_value(approach_cell != Vector2i(-1, -1), "visible dungeon house has a walkable adjacent click cell")
+	var dungeon_origin := _core_dungeon_origin(runtime.main)
+	var approach_cell: Vector2i = runtime.main._world_interaction_coordinator.nearest_walkable_adjacent_cell(runtime.main, dungeon_origin, dungeon_origin + Vector2i.LEFT)
+	asserts.true_value(approach_cell != Vector2i(-1, -1), "core dungeon has a walkable adjacent click cell")
 	runtime.main.player.global_position = runtime.main.world_position_for_cell_center(approach_cell + Vector2i.LEFT * 3)
-	asserts.true_value(runtime.main.submit_pointer_interaction(runtime.main.world_position_for_cell_center(house_origin)), "clicking the visible dungeon house queues dungeon entry movement")
+	asserts.true_value(runtime.main.submit_pointer_interaction(runtime.main.world_position_for_cell_center(dungeon_origin)), "clicking the core dungeon queues dungeon entry movement")
 	while runtime.main._has_pointer_move_target:
 		runtime.main.player.global_position = runtime.main._pointer_move_target_world
 		runtime.main.movement_command_for_current_inputs(GameCommand.new(GameCommand.Type.MOVE, Vector2i.ZERO))
-	asserts.true_value(runtime.main._in_dungeon_map, "arriving from a visible dungeon house click switches to the dungeon map")
+	asserts.true_value(runtime.main._in_dungeon_map, "arriving from a core dungeon click switches to the dungeon map")
 	_free_runtime(runtime)
 
 func _assert_dungeon_combatants_do_not_cross_world_boundary(asserts, catalog: DataCatalog) -> void:
@@ -400,21 +400,10 @@ func _configured_runtime(catalog: DataCatalog) -> Dictionary:
 	var world_result: Dictionary = runtime._configure_world_for_current_run()
 	return {"main": runtime, "result": world_result}
 
-func _large_house_origin(main: Main) -> Vector2i:
-	return main._vector_from_dictionary(main.generated_world.get("large_house", {}).get("position", {}))
-
-func _nearest_walkable_adjacent_cell_to_compound(main: Main, house_origin: Vector2i) -> Vector2i:
-	var cells: Array = main._target_footprint_cells(WorldGenerator.LARGE_HOUSE_ID, house_origin)
-	var cell_lookup := {}
-	for cell in cells:
-		cell_lookup[main._cell_key(cell)] = true
-	for cell in cells:
-		for offset in [Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP]:
-			var candidate: Vector2i = cell + offset
-			if cell_lookup.has(main._cell_key(candidate)):
-				continue
-			if main.world_data.contains(candidate) and main.world_data.is_walkable(candidate):
-				return candidate
+func _core_dungeon_origin(main: Main) -> Vector2i:
+	for landmark in main.world_data.get_required_landmarks():
+		if String(landmark.get("kind", "")) == WorldData.LANDMARK_CORE_DUNGEON:
+			return main._vector_from_dictionary(landmark.get("position", {}))
 	return Vector2i(-1, -1)
 
 func _first_free_dungeon_cell(main: Main) -> Vector2i:

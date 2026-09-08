@@ -25,10 +25,6 @@ func submit_pointer_interaction(main, world_position: Vector2) -> bool:
 	if not landmark_hit.is_empty():
 		main._dungeon_debug("클릭 대상: required dungeon landmark %s" % landmark_hit)
 		return queue_pointer_landmark(main, landmark_hit.target_id, landmark_hit.cell)
-	var house_hit: Dictionary = large_house_target_near_world_position(main, world_position)
-	if not house_hit.is_empty():
-		main._dungeon_debug("클릭 대상: large house dungeon %s" % house_hit)
-		return queue_pointer_landmark(main, house_hit.target_id, house_hit.cell)
 	var clicked_cell: Vector2i = main.world_cell_from_world_position(world_position)
 	for cell in pointer_candidate_cells(main, clicked_cell):
 		var target_id := interaction_target_id_for_cell(main, cell)
@@ -64,8 +60,6 @@ func try_dungeon_interaction_from_input(main) -> bool:
 		main._dungeon_debug("E 광석 대상 발견: %s" % ore_target)
 		return gather_dungeon_ore(main, String(ore_target.target_id), ore_target.cell)
 	var landmark: Dictionary = landmark_target_near_world_position(main, main.player.global_position, main._runtime_tile_size() * 2.5)
-	if landmark.is_empty():
-		landmark = large_house_target_near_world_position(main, main.player.global_position, main._runtime_tile_size() * 3.5)
 	if landmark.is_empty():
 		main._dungeon_debug("E 대상 없음: origin_cell=%s" % origin_cell)
 		return false
@@ -218,8 +212,6 @@ func submit_player_interaction(main, direction := Vector2i.ZERO) -> bool:
 				return true
 	if main.player != null:
 		var nearby_landmark: Dictionary = landmark_target_near_world_position(main, main.player.global_position, main._runtime_tile_size() * 2.5)
-		if nearby_landmark.is_empty():
-			nearby_landmark = large_house_target_near_world_position(main, main.player.global_position, main._runtime_tile_size() * 3.5)
 		if not nearby_landmark.is_empty():
 			return main.submit_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": String(nearby_landmark.target_id)}))
 	main._play_sfx_event(SfxEventRouter.EVENT_INTERACT_FAIL, {"direction": direction}, "interact_empty")
@@ -227,9 +219,6 @@ func submit_player_interaction(main, direction := Vector2i.ZERO) -> bool:
 
 func landmark_target_near_world_position(main, world_position: Vector2, max_distance := -1.0) -> Dictionary:
 	return main._spatial_resolver.landmark_target_near_world_position(main.world_data, world_position, main._runtime_tile_size(), main._runtime_world_origin(), max_distance)
-
-func large_house_target_near_world_position(main, world_position: Vector2, max_distance := -1.0) -> Dictionary:
-	return main._spatial_resolver.large_house_target_near_world_position(main.generated_world, world_position, main._runtime_tile_size(), main._runtime_world_origin(), max_distance)
 
 func configure_acquisition_for_generated_world(main) -> Dictionary:
 	if not main.generated_world.get("ok", false) or typeof(main.generated_world.get("world_data")) != TYPE_DICTIONARY:

@@ -56,8 +56,7 @@ const OWNER_SOURCE_IDS := {
 	"large_house_fence_n": "asset_assets_sprites_objects_structures_wood_fence_horizontal_1x2_64x32_png",
 	"large_house_fence_s": "asset_assets_sprites_objects_structures_wood_fence_horizontal_1x2_64x32_png",
 	"large_house_fence_w": "asset_assets_sprites_objects_structures_wood_fence_horizontal_1x2_64x32_png",
-	"large_house_fence_e": "asset_assets_sprites_objects_structures_wood_fence_horizontal_1x2_64x32_png",
-	"starting_home_bridge_east": "asset_assets_sprites_objects_structures_wooden_stage_platform_96x64_png"
+	"large_house_fence_e": "asset_assets_sprites_objects_structures_wood_fence_horizontal_1x2_64x32_png"
 }
 
 const FACILITY_SOURCE_BY_BIOME_FACILITY := {
