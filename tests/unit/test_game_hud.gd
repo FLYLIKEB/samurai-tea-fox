@@ -525,10 +525,11 @@ func _assert_dpad_emits_press_and_release_movement(asserts) -> void:
 	if dpad_panel != null:
 		asserts.true_value(dpad_panel.visible, "HUD displays the compact directional pad")
 		asserts.false_value(_panel_uses_dark_background(dpad_panel), "dpad omits the outer dark panel background")
-		asserts.equal(dpad_panel.custom_minimum_size, Vector2(72, 72), "dpad provides a compact mobile touch surface")
+		asserts.equal(dpad_panel.custom_minimum_size, Vector2(96, 96), "dpad provides a readable mobile touch surface")
 	var left_button := hud.get_node_or_null("Root/DPadPanel/DPadBoard/DPadLeft") as Button
 	asserts.true_value(left_button != null, "HUD owns a left dpad button")
 	if left_button != null:
+		asserts.equal(left_button.size, Vector2(32, 32), "each dpad direction has a full tile-sized touch target")
 		var press_feedback := left_button.get_node_or_null("PressFeedback") as Control
 		asserts.true_value(press_feedback != null and not press_feedback.visible, "dpad direction owns hidden press feedback")
 		left_button.button_down.emit()
