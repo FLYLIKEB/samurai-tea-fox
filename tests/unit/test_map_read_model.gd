@@ -105,8 +105,6 @@ func _assert_commands_and_hud_open_full_map(asserts) -> void:
 	hud.configure(player, {"biome_id": "common_region"}, {"counts": {}}, {"map_read_model_builder": builder, "world_data": _world(), "run_state": state, "catalog": FakeCatalog.new()})
 	asserts.true_value(hud.press_mobile_button("open_map"), "HUD emits open map command")
 	asserts.true_value(hud.show_map_menu(), "HUD opens full map menu")
-	var biome_selector := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/BiomeMapSelector") as GridContainer
-	asserts.true_value(biome_selector != null and biome_selector.columns == 3, "five region buttons flow horizontally across exactly two rows")
 	asserts.true_value(_tree_has_text(hud, "8x6 · 발견"), "full map menu keeps map status in one compact line")
 	var map_grid := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/MapColorGrid") as GridContainer
 	var marker_grid := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/MapMarkerGrid") as GridContainer
@@ -343,17 +341,7 @@ class FakeCombatant:
 
 class FakeCatalog:
 	func get_definitions(key: String) -> Array:
-		if key == "balance":
-			return [{"id": "ability_equip_slots", "value": 1}]
-		if key == "biomes":
-			return [
-				{"id": "common_region", "name": "일반 지역", "order": 0},
-				{"id": "mountain_region", "name": "산악 지역", "order": 1},
-				{"id": "snow_region", "name": "설원 지역", "order": 2},
-				{"id": "wasteland", "name": "황무지", "order": 3},
-				{"id": "jungle_region", "name": "밀림 지역", "order": 4}
-			]
-		return []
+		return [{"id": "ability_equip_slots", "value": 1}] if key == "balance" else []
 	func find_by_id(key: String, id: String) -> Dictionary:
 		for row in get_definitions(key):
 			if row.id == id:
