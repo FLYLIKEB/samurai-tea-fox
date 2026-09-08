@@ -161,6 +161,15 @@ func handle_tea_brewing_command(command: GameCommand) -> bool:
 		return false
 	_call_void(_ports.sync_runtime_state)
 	if game_hud != null:
+		if command.type == GameCommand.Type.BREW_TEA:
+			var prepared: Dictionary = result.get("prepared_tea", {})
+			game_hud.show_status_event({
+				"type": "tea_brewed",
+				"ok": true,
+				"tea_id": String(prepared.get("tea_id", "")),
+				"name": String(prepared.get("tea_name", "")),
+				"event_id": "brew:%s:%d" % [String(prepared.get("tea_id", "")), int(result.get("slot", -1))]
+			})
 		game_hud.show_tea_brewing_menu()
 	return true
 

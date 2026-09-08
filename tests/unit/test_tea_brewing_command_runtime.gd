@@ -12,6 +12,17 @@ const SaveCodec = preload("res://src/save/save_codec.gd")
 const TeaBrewingCommandRuntime = preload("res://src/tea/tea_brewing_command_runtime.gd")
 const TeaService = preload("res://src/tea/tea_service.gd")
 
+class FakeHud:
+	extends RefCounted
+	var events := []
+	func show_command_feedback(_message: String) -> void:
+		pass
+	func show_status_event(event: Dictionary) -> bool:
+		events.append(event)
+		return true
+	func show_tea_brewing_menu() -> bool:
+		return true
+
 func run(asserts) -> void:
 	_assert_read_model_previews_valid_combo(asserts)
 	_assert_brew_command_consumes_leaf_and_places_quickslot(asserts)
@@ -45,6 +56,14 @@ func _assert_brew_command_consumes_leaf_and_places_quickslot(asserts) -> void:
 	asserts.equal(fixture.inventory.get_total_quantity("green_tea"), int(before_inventory.slots[0].quantity) - 1, "brew command consumes tea leaf in domain service")
 	asserts.true_value(fixture.tea_service.has_prepared_tea(1), "brew command places portable tea in selected quickslot")
 	asserts.equal(fixture.tea_service.get_prepared_tea(1).tea_id, "green_tea", "prepared tea preserves selected leaf")
+	var hud := GameHud.new()
+	hud.configure(FakePlayer.new(), {"biome_id": "common_region"}, {"counts": {}}, {"tea_service": fixture.tea_service, "inventory": fixture.inventory, "catalog": FakeCatalog.new(_definitions())})
+	asserts.true_value(hud.show_inventory_menu(), "inventory opens after brewing")
+	asserts.true_value(_tree_has_text(hud, "우린 차"), "inventory displays prepared quickslot tea")
+	asserts.true_value(_tree_has_text(hud, "들녘 덖음차\n1회"), "inventory displays prepared tea name and remaining uses")
+	asserts.true_value(hud.show_status_event({"type": "tea_brewed", "tea_id": "green_tea", "name": "들녘 덖음차", "event_id": "brew-test"}), "brew completion creates a toast")
+	asserts.equal(hud.status_toast_debug_snapshot().label_text, "들녘 덖음차을(를) 우렸다!", "brew toast names the prepared tea")
+	hud.free()
 
 func _assert_invalid_selection_is_rejected_without_mutation(asserts) -> void:
 	var fixture := _fixture()
@@ -99,10 +118,14 @@ func _assert_main_and_save_round_trip_portable_tea(asserts) -> void:
 	main.tea_brewing_command_runtime = fixture.runtime
 	main.inventory = fixture.inventory
 	main.run_state = RunState.new()
+	var hud := FakeHud.new()
+	main.game_hud = hud
 	asserts.true_value(main.tea_brewing_read_model().ok, "Main exposes brewing read model")
 	main.tea_brewing_command_runtime.select_leaf("green_tea")
 	asserts.true_value(main.submit_action_command(GameCommand.new(GameCommand.Type.BREW_TEA)), "Main routes brew command")
 	asserts.true_value(main.run_state.tea.quick_slots[0].has("tea_id"), "Main syncs portable tea state after brewing")
+	asserts.equal(hud.events.size(), 1, "successful brewing emits one HUD event")
+	asserts.equal(hud.events[0].type, "tea_brewed", "successful brewing emits the tea toast event")
 	var decoded: Dictionary = SaveCodec.decode_run(SaveCodec.encode_run(main.run_state))
 	asserts.true_value(decoded.ok, "Run save with portable tea decodes")
 	asserts.equal(decoded.run_state.tea.quick_slots[0].tea_id, "green_tea", "portable tea quickslot round-trips through run save")

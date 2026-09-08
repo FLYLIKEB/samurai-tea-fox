@@ -76,6 +76,7 @@ const STATUS_TOAST_ICON_SIZE := Vector2(18, 18)
 const STATUS_TOAST_PANEL_SIZE := Vector2(300, 32)
 const TOAST_ITEM_ACQUIRED := "item_acquired"
 const TOAST_CRAFT_COMPLETED := "craft_completed"
+const TOAST_TEA_BREWED := "tea_brewed"
 const TOAST_ENEMY_DEFEATED := "enemy_defeated"
 const TOAST_DUNGEON_ENTERED := "dungeon_entered"
 const TOAST_DUNGEON_EXITED := "dungeon_exited"
@@ -375,6 +376,8 @@ func _status_toast_model(event: Dictionary) -> Dictionary:
 			return _content_toast_model(event, "items", String(event.get("item_id", "")), "을(를) 얻었다!", "item")
 		TOAST_CRAFT_COMPLETED:
 			return _content_toast_model(event, "items", String(event.get("result_item_id", event.get("item_id", ""))), "을(를) 제작했다!", "craft")
+		TOAST_TEA_BREWED:
+			return _content_toast_model(event, "teas", String(event.get("tea_id", "")), "을(를) 우렸다!", "tea-brew")
 		TOAST_ENEMY_DEFEATED:
 			return _content_toast_model(event, "monsters", String(event.get("monster_id", event.get("enemy_id", ""))), "을(를) 쓰러뜨렸다!", "enemy")
 		TOAST_DUNGEON_ENTERED:
@@ -1172,9 +1175,27 @@ func _inventory_rows() -> Array:
 		rows.append(slot_strip)
 		if visible_rows.size() > 8:
 			rows.append(_label("%d-%d / %d" % [page_start + 1, page_end, visible_rows.size()], 11))
+		_append_prepared_tea_rows(rows)
 		return rows
 	rows.append(_label("인벤토리 read model 없음", 11))
+	_append_prepared_tea_rows(rows)
 	return rows
+
+func _append_prepared_tea_rows(rows: Array) -> void:
+	var prepared_teas := read_model_provider.prepared_tea_rows() if read_model_provider != null else []
+	if prepared_teas.is_empty():
+		return
+	rows.append(_section_label("우린 차"))
+	var tea_strip := GridContainer.new()
+	tea_strip.name = "PreparedTeaStrip"
+	tea_strip.columns = 3 if _inventory_uses_compact_layout() else 4
+	tea_strip.add_theme_constant_override("h_separation", 5)
+	tea_strip.add_theme_constant_override("v_separation", 5)
+	for prepared in prepared_teas:
+		var card := _card_frame(_label("%s\n%d회" % [String(prepared.get("tea_name", prepared.get("tea_id", "차"))), int(prepared.get("remaining_uses", 1))], 9))
+		card.custom_minimum_size = Vector2(66, 60)
+		tea_strip.add_child(card)
+	rows.append(tea_strip)
 
 func _inventory_slot_card(row: Dictionary) -> Button:
 	var button := _inventory_command_button(

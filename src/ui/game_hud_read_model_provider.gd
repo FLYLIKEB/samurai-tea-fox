@@ -93,6 +93,18 @@ func tea_brewing_read_model() -> Dictionary:
 		return {}
 	return _dictionary_value(tea_brewing_command_runtime.read_model())
 
+func prepared_tea_rows() -> Array:
+	var rows := []
+	if tea_service == null or not tea_service.has_method("get_prepared_tea"):
+		return rows
+	for slot in range(tea_quickslot_count()):
+		var prepared: Dictionary = tea_service.get_prepared_tea(slot)
+		if prepared.is_empty():
+			continue
+		prepared["slot_index"] = slot
+		rows.append(prepared)
+	return rows
+
 func meta_codex_read_model() -> Dictionary:
 	if meta_codex_command_runtime == null or not meta_codex_command_runtime.has_method("read_model"):
 		return {}
