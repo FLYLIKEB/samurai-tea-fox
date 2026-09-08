@@ -353,7 +353,7 @@ func acquisition_failed(main, error: Dictionary) -> void:
 	if String(error.get("reason", "")) != "inventory_full":
 		return
 	if main.game_hud != null:
-		main.game_hud.show_status_toast("인벤토리가 가득 찼습니다.")
+		main.game_hud.show_status_toast("인벤토리가 가득 찼습니다.", "failure")
 
 func combat_drop_requested(main, event: Dictionary, source = null) -> void:
 	if main.acquisition_service == null:

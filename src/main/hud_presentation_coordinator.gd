@@ -140,6 +140,9 @@ func configure_game_hud() -> void:
 	var hud_callback := Callable(self, "on_hud_mobile_command_issued")
 	if game_hud.has_signal("mobile_command_issued") and not game_hud.is_connected("mobile_command_issued", hud_callback):
 		game_hud.connect("mobile_command_issued", hud_callback)
+	var toast_callback := Callable(self, "on_status_toast_presented")
+	if game_hud.has_signal("status_toast_presented") and not game_hud.is_connected("status_toast_presented", toast_callback):
+		game_hud.connect("status_toast_presented", toast_callback)
 	game_hud.configure(_call_object(_ports.get_player), _call_dictionary(_ports.get_generated_world), _call_dictionary(_ports.get_world_render_result), {
 		"catalog": _call_object(_ports.get_catalog),
 		"inventory": _call_object(_ports.get_inventory),
@@ -282,6 +285,9 @@ func _render_world_snapshot(world: Dictionary) -> void:
 
 func on_hud_mobile_command_issued(command) -> void:
 	_call_bool(_ports.submit_mobile_action_command, [command])
+
+func on_status_toast_presented(kind: String, event_key: String) -> void:
+	play_sfx_event(SfxEventRouter.event_id_for_toast_kind(kind), {"kind": kind}, "toast:%s" % event_key)
 
 func _call_bool(callback: Callable, arguments := []) -> bool:
 	return bool(_call_value(callback, false, arguments))
