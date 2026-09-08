@@ -183,6 +183,10 @@ func _add_owner_cells(output: Array, position: Dictionary, owners: Array, owner_
 		var metadata: Dictionary = _owner_metadata.get(String(owner_id), {})
 		if metadata.has("rotation_degrees"):
 			cell["rotation_degrees"] = float(metadata.get("rotation_degrees", 0.0))
+		if metadata.has("facility_name"):
+			cell["facility_name"] = String(metadata.get("facility_name", ""))
+		if metadata.has("facility_capabilities"):
+			cell["facility_capabilities"] = metadata.get("facility_capabilities", []).duplicate()
 		output.append(cell)
 
 var _owner_metadata: Dictionary = {}

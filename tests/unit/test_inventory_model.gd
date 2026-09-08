@@ -46,6 +46,8 @@ func _assert_generated_catalog_configures_inventory(asserts) -> void:
 	asserts.equal(inventory.definition_for("bandage").max_stack, 5, "consumable stack size comes from generated item data")
 	asserts.true_value(inventory.has_definition("father_spring_pan_fired_tea"), "tea definitions are inventory items")
 	asserts.equal(inventory.definition_for("short_travel_sword").requires_instance, true, "weapon policy is individual")
+	asserts.true_value(inventory.definition_for("wood").max_stack > 1, "material without max_stack still stacks (not 1 slot per unit)")
+	asserts.equal(inventory.definition_for("ash_stained_iron_kettle").max_stack, 1, "individual item without explicit max_stack stays 1")
 
 func _assert_stack_merge_split_and_overflow_are_data_driven(asserts) -> void:
 	var inventory := _fixture_inventory(3)

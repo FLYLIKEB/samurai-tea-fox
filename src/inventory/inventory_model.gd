@@ -14,6 +14,9 @@ const INDIVIDUAL_ITEM_TYPES := {
 	"방어구": true,
 	"다구": true
 }
+## max_stack 미지정 시 기본 스택 한도. 개별 슬롯 아이템(무기/방어구/다구)은 1,
+## 나머지(재료/향/소모품/찻잎 등)는 넉넉히 쌓이도록.
+const DEFAULT_STACKABLE_MAX_STACK := 99
 
 var data_version := ""
 var slot_count := 0
@@ -334,13 +337,14 @@ static func _definitions_from_catalog(catalog) -> Dictionary:
 	return {"ok": true, "definitions": definitions}
 
 static func _definition_from_item(row: Dictionary) -> Dictionary:
-	var max_stack_result := _optional_positive_integer(row, "max_stack", 1)
+	var kind := String(row.get("type", ""))
+	var default_stack := 1 if bool(INDIVIDUAL_ITEM_TYPES.get(kind, false)) else DEFAULT_STACKABLE_MAX_STACK
+	var max_stack_result := _optional_positive_integer(row, "max_stack", default_stack)
 	if not max_stack_result.ok:
 		return max_stack_result
 	var max_owned_result := _optional_non_negative_integer(row, "max_owned", 0)
 	if not max_owned_result.ok:
 		return max_owned_result
-	var kind := String(row.get("type", ""))
 	var definition := {
 		"id": String(row.id),
 		"name": String(row.get("name", row.id)),
@@ -355,7 +359,7 @@ static func _definition_from_item(row: Dictionary) -> Dictionary:
 	return {"ok": true, "definition": definition}
 
 static func _definition_from_tea(row: Dictionary) -> Dictionary:
-	var max_stack_result := _optional_positive_integer(row, "max_stack", 1)
+	var max_stack_result := _optional_positive_integer(row, "max_stack", DEFAULT_STACKABLE_MAX_STACK)
 	if not max_stack_result.ok:
 		return max_stack_result
 	var max_owned_result := _optional_non_negative_integer(row, "max_owned", 0)

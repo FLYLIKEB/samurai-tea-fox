@@ -7,7 +7,6 @@ const FRAME_ACTIONS := [
 	"attack",
 	"dodge",
 	"drink_tea",
-	"sleep",
 	"open_tea_brewing",
 	"tea_brew_previous_leaf",
 	"tea_brew_next_leaf",
@@ -39,7 +38,6 @@ const FRAME_ACTIONS := [
 const GENERAL_FRONT_ACTIONS := [
 	"dodge",
 	"drink_tea",
-	"sleep",
 	"open_tea_brewing"
 ]
 

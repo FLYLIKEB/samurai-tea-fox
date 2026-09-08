@@ -94,7 +94,10 @@ func place_validated_facility(placement_result: Dictionary, world_data, context 
 	if not _same_validated_placement(placement_result, current_validation):
 		return _fail_and_emit(_fail("stale_placement_result", "Facility placement result no longer matches current world state."))
 	var metadata := _duplicate_dictionary(_context_value(context, "metadata", {}))
+	var definition: Dictionary = facility_definitions.get(facility_item_id, {})
 	metadata["facility_item_id"] = facility_item_id
+	metadata["facility_name"] = String(definition.get("name", facility_item_id))
+	metadata["facility_capabilities"] = definition.get("facility_capabilities", []).duplicate()
 	metadata["footprint_size"] = placement_result.footprint_size
 	metadata["rotation_quarter_turns"] = int(_context_value(context, "rotation_quarter_turns", metadata.get("rotation_quarter_turns", 0)))
 	var reserved: Dictionary = world_data.reserve_facility(String(placement_result.owner_id), origin, size, true, metadata)

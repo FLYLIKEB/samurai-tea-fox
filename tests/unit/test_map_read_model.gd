@@ -26,6 +26,7 @@ func run(asserts) -> void:
 func _assert_map_read_model_respects_discovery_and_markers(asserts) -> void:
 	var world := _world()
 	var state := RunState.new()
+	state.seed = 424242
 	state.current_biome_id = "common_region"
 	state.map_discovery = MapReadModelBuilder.discover_cells({}, Vector2i(2, 2), 1)
 	var builder := MapReadModelBuilder.new()
@@ -33,6 +34,7 @@ func _assert_map_read_model_respects_discovery_and_markers(asserts) -> void:
 	var model: Dictionary = builder.build(world, state, Vector2i(2, 2), {"discovery_radius": 0})
 	asserts.true_value(model.ok, "map read model builds")
 	asserts.true_value(model.read_only, "map read model is read-only")
+	asserts.equal(model.seed, 424242, "map exposes the current run seed")
 	asserts.equal(model.bounds.width, 8, "map exposes world width")
 	asserts.equal(model.bounds.height, 6, "map exposes world height")
 	asserts.equal(model.discovered_count, 9, "map shows only discovered cells plus requested player reveal")
@@ -100,11 +102,13 @@ func _assert_commands_and_hud_open_full_map(asserts) -> void:
 	var player := FakePlayer.new()
 	player.global_position = Vector2(64, 64)
 	var state := RunState.new()
+	state.seed = 424242
 	state.current_biome_id = "common_region"
 	state.map_discovery = MapReadModelBuilder.discover_cells({}, Vector2i(2, 2), 1)
 	hud.configure(player, {"biome_id": "common_region"}, {"counts": {}}, {"map_read_model_builder": builder, "world_data": _world(), "run_state": state, "catalog": FakeCatalog.new()})
 	asserts.true_value(hud.press_mobile_button("open_map"), "HUD emits open map command")
 	asserts.true_value(hud.show_map_menu(), "HUD opens full map menu")
+	asserts.true_value(_tree_has_text(hud, "시드: 424242"), "full map menu displays the current run seed")
 	var biome_selector := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/BiomeMapSelector") as GridContainer
 	asserts.true_value(biome_selector != null and biome_selector.columns == 3, "five region buttons flow horizontally across exactly two rows")
 	asserts.true_value(_tree_has_text(hud, "8x6 · 발견"), "full map menu keeps map status in one compact line")

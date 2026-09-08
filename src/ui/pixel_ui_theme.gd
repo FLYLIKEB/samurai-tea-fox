@@ -2,7 +2,7 @@ class_name PixelUiTheme
 extends RefCounted
 
 const FONT_GALMURI := "res://assets/fonts/galmuri/Galmuri11.ttf"
-const BORDER_COLOR := Color(0.73, 0.55, 0.31, 0.95)
+const BORDER_COLOR := Color(0.78, 0.58, 0.32, 1.0)
 
 static func create() -> Theme:
 	var theme := Theme.new()
@@ -42,9 +42,11 @@ static func button_style(color: Color, rounded := false) -> StyleBoxFlat:
 
 static func panel_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.055, 0.049, 0.038, 0.90)
+	style.bg_color = Color(0.045, 0.041, 0.034, 0.96)
 	style.border_color = BORDER_COLOR
 	style.set_border_width_all(2)
+	style.shadow_color = Color(0.01, 0.008, 0.006, 0.72)
+	style.shadow_size = 2
 	style.content_margin_left = 6
 	style.content_margin_top = 6
 	style.content_margin_right = 6

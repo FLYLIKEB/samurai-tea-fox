@@ -88,10 +88,9 @@ func _assert_generated_catalog_configures_crafting(asserts) -> void:
 	asserts.true_value(placement_result.ok, "placement service initializes from generated catalog")
 	if placement_result.ok:
 		var world := WorldData.new(3, 3, "grass", true)
-		asserts.true_value(
-			placement_result.facility_placement_service.place_facility("wooden_workbench", world, Vector2i(1, 1)).ok,
-			"generated facility can be placed with default footprint"
-		)
+		var placed: Dictionary = placement_result.facility_placement_service.place_facility("wooden_workbench", world, Vector2i(1, 1))
+		asserts.true_value(placed.ok, "generated facility can be placed with its exported footprint")
+		asserts.equal(placed.get("footprint_size", {}), {"x": 2, "y": 2}, "generated facility uses its exported 2x2 footprint")
 
 func _assert_handcraft_consumes_materials_and_grants_result(asserts) -> void:
 	var service := _fixture_crafting_service()

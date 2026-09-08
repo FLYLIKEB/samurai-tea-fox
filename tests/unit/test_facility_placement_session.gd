@@ -11,6 +11,7 @@ func run(asserts) -> void:
 	_assert_pending_lifecycle_preserves_materials_until_confirm(asserts)
 	_assert_player_required_for_facility_placement(asserts)
 	_assert_available_and_restore_use_current_arguments(asserts)
+	_assert_portable_facility_can_be_picked_up(asserts)
 
 func _assert_pending_lifecycle_preserves_materials_until_confirm(asserts) -> void:
 	var fixture := _facility_fixture(asserts)
@@ -95,6 +96,22 @@ func _assert_available_and_restore_use_current_arguments(asserts) -> void:
 	var next_world := WorldData.new(6, 6, "grass", true)
 	asserts.equal(session.available_facility_item_ids(fixture.crafting, fixture.placement, next_world, run_state, {"biome_id": "common_region", "facility_nodes": []}, Vector2i(5, 5)), [], "session does not keep stale world state")
 
+func _assert_portable_facility_can_be_picked_up(asserts) -> void:
+	var fixture := _facility_fixture(asserts)
+	var run_state := RunState.new()
+	var owner_id := "portable_brazier@3,3"
+	asserts.true_value(fixture.placement.place_facility("portable_brazier", fixture.world, Vector2i(3, 3), {"owner_id": owner_id}).ok, "portable brazier installs")
+	run_state.placed_facilities.append({"biome_id": "common_region", "facility_item_id": "portable_brazier", "owner_id": owner_id, "origin": {"x": 3, "y": 3}})
+	asserts.true_value(fixture.inventory.add_item("portable_brazier", 4).ok, "fixture fills remaining inventory slots")
+	asserts.false_value(fixture.session.pickup_placed_facility(owner_id, "portable_brazier", fixture.inventory, fixture.world, run_state).ok, "full inventory rejects pickup")
+	asserts.false_value(fixture.world.get_reservation(owner_id).is_empty(), "failed pickup keeps the facility installed")
+	asserts.true_value(fixture.inventory.remove_item("portable_brazier", 4).ok, "fixture frees inventory slots")
+	var picked_up: Dictionary = fixture.session.pickup_placed_facility(owner_id, "portable_brazier", fixture.inventory, fixture.world, run_state)
+	asserts.true_value(picked_up.ok, "installed portable brazier can be picked up")
+	asserts.equal(fixture.inventory.get_total_quantity("portable_brazier"), 1, "pickup returns the portable brazier item")
+	asserts.true_value(fixture.world.get_reservation(owner_id).is_empty(), "pickup releases the world footprint")
+	asserts.equal(run_state.placed_facilities, [], "pickup removes the saved placement")
+
 func _facility_fixture(asserts) -> Dictionary:
 	var inventory := InventoryModel.new()
 	asserts.true_value(inventory.configure(6, _item_definitions()).ok, "fixture inventory configures")
@@ -117,6 +134,7 @@ func _item_definitions() -> Dictionary:
 		"wood": {"id": "wood", "name": "목재", "type": "재료", "max_stack": 10},
 		"stone": {"id": "stone", "name": "돌", "type": "재료", "max_stack": 10},
 		"wooden_workbench": {"id": "wooden_workbench", "name": "목재 작업대", "type": "도구", "max_stack": 1, "footprint_size": Vector2i(2, 2)},
+		"portable_brazier": {"id": "portable_brazier", "name": "휴대 화로", "type": "도구", "max_stack": 1, "footprint_size": Vector2i.ONE},
 		"humble_clay_bowl": {"id": "humble_clay_bowl", "name": "소박한 흙사발", "type": "다구", "max_stack": 1}
 	}
 

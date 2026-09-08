@@ -21,6 +21,8 @@ func process_frame(main, delta: float) -> void:
 		interaction_handled = main._try_dungeon_interaction_from_input()
 		if not interaction_handled:
 			interaction_handled = main._try_landmark_interaction_from_input()
+		if not interaction_handled:
+			interaction_handled = main._try_facility_interaction_from_input()
 		main._dungeon_debug("E/attack 처리 결과: dungeon_handled=%s in_dungeon=%s" % [interaction_handled, main._in_dungeon_map])
 		if not interaction_handled:
 			main.submit_desktop_action_command("attack", desktop_command.direction)

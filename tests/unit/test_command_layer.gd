@@ -23,7 +23,7 @@ func run(asserts) -> void:
 	var tea = mobile.command_for_button("drink_tea", Vector2i.ZERO, 1)
 	asserts.equal(tea.type, GameCommand.Type.DRINK_TEA, "mobile tea maps to shared command")
 	asserts.equal(tea.slot, 1, "mobile tea preserves slot")
-	asserts.equal(mobile.command_for_button("sleep").type, GameCommand.Type.SLEEP, "mobile sleep maps to shared command")
+	asserts.equal(mobile.command_for_button("sleep"), null, "mobile sleep requires nearby facility interaction")
 	var brewing = mobile.command_for_button("open_tea_brewing")
 	asserts.equal(brewing.type, GameCommand.Type.OPEN_TEA_BREWING, "mobile tea brewing menu maps to shared command")
 	var brew = mobile.command_for_button("brew_tea")
@@ -46,7 +46,7 @@ func run(asserts) -> void:
 	asserts.equal(desktop.command_for_action("complete_dungeon").type, GameCommand.Type.COMPLETE_DUNGEON, "desktop dungeon completion maps to shared command")
 	asserts.equal(mobile.command_for_button("repair_teleport").type, GameCommand.Type.REPAIR_TELEPORT, "mobile teleport repair maps to shared command")
 
-	for action in ["attack", "dodge", "drink_tea", "sleep", "open_tea_brewing", "tea_brew_select_leaf", "tea_brew_select_vessel", "tea_brew_select_slot", "tea_brew_next_leaf", "tea_brew_previous_leaf", "tea_brew_next_vessel", "tea_brew_previous_vessel", "tea_brew_next_slot", "tea_brew_previous_slot", "brew_tea", "open_meta_codex", "meta_codex_set_tab", "meta_codex_set_filter", "meta_codex_select_detail", "meta_codex_next", "meta_codex_previous", "use_consumable", "cast_ability", "interact", "open_inventory", "open_crafting", "open_facilities", "open_map", "complete_dungeon", "repair_teleport", "advance_biome", "inventory_filter", "inventory_sort", "inventory_select", "inventory_next", "inventory_previous", "equip_inventory_slot", "use_inventory_slot", "facility_rotate", "facility_confirm", "facility_cancel"]:
+	for action in ["attack", "dodge", "drink_tea", "open_tea_brewing", "tea_brew_select_leaf", "tea_brew_select_vessel", "tea_brew_select_slot", "tea_brew_next_leaf", "tea_brew_previous_leaf", "tea_brew_next_vessel", "tea_brew_previous_vessel", "tea_brew_next_slot", "tea_brew_previous_slot", "brew_tea", "open_meta_codex", "meta_codex_set_tab", "meta_codex_set_filter", "meta_codex_select_detail", "meta_codex_next", "meta_codex_previous", "use_consumable", "cast_ability", "interact", "open_inventory", "open_crafting", "open_facilities", "open_map", "complete_dungeon", "repair_teleport", "advance_biome", "inventory_filter", "inventory_sort", "inventory_select", "inventory_next", "inventory_previous", "equip_inventory_slot", "use_inventory_slot", "facility_rotate", "facility_confirm", "facility_cancel"]:
 		_assert_platform_commands_match(asserts, desktop, mobile, action)
 
 	asserts.equal(desktop.command_for_action("inventory_use_selected", Vector2i.LEFT, 2).type, GameCommand.Type.USE_INVENTORY_SLOT, "desktop inventory use alias is preserved")

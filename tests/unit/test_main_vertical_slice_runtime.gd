@@ -136,7 +136,7 @@ func run(asserts) -> void:
 	main.player.resources.reduce_kokoro(20)
 	main.player.resources.apply_damage(10)
 	asserts.true_value(_place_sleep_facility_and_move_to_interaction(main), "slice installs a valid sleep facility and stands on its interaction tile")
-	asserts.true_value(main.submit_desktop_action_command("sleep"), "slice sleeps through Main")
+	asserts.true_value(main.submit_player_interaction(), "slice sleeps through the shared nearby-object interaction route")
 	asserts.equal(main.time_state.phase, TimeState.DAY, "sleep returns time to morning")
 	asserts.equal(main.player.resources.kokoro, main.player.resources.kokoro_max, "sleep restores 心")
 

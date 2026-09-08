@@ -42,6 +42,7 @@ func build(world_source, run_state = null, player_cell := Vector2i.ZERO, options
 		"ok": true,
 		"schema_version": SNAPSHOT_SCHEMA_VERSION,
 		"data_version": data_version,
+		"seed": int(run_state.get("seed", 0) if run_state is Dictionary else run_state.seed) if run_state != null else int(world.get("seed", 0)),
 		"read_only": true,
 		"bounds": {"width": width, "height": height},
 		"player": {"position": _position_dictionary(player_cell), "marker_type": MARKER_PLAYER},

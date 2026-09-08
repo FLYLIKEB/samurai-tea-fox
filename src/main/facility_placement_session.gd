@@ -180,6 +180,26 @@ func record_placed_facility(run_state: RunState, generated_world: Dictionary, pl
 			return
 	run_state.placed_facilities.append(record)
 
+func pickup_placed_facility(owner_id: String, facility_item_id: String, inventory, world_data, run_state: RunState) -> Dictionary:
+	if inventory == null or world_data == null or run_state == null:
+		return {"ok": false, "reason": "facility_pickup_unavailable"}
+	var record_index := -1
+	for index in range(run_state.placed_facilities.size()):
+		var record = run_state.placed_facilities[index]
+		if typeof(record) == TYPE_DICTIONARY and String(record.get("owner_id", "")) == owner_id and String(record.get("facility_item_id", "")) == facility_item_id:
+			record_index = index
+			break
+	if record_index < 0 or world_data.get_reservation(owner_id).is_empty():
+		return {"ok": false, "reason": "facility_not_found"}
+	var added: Dictionary = inventory.add_item(facility_item_id, 1)
+	if not added.ok:
+		return added
+	if not world_data.release_footprint(owner_id):
+		inventory.remove_item(facility_item_id, 1)
+		return {"ok": false, "reason": "facility_release_failed"}
+	run_state.placed_facilities.remove_at(record_index)
+	return {"ok": true, "owner_id": owner_id, "facility_item_id": facility_item_id}
+
 func available_facility_item_ids(crafting_service, facility_placement_service, world_data, run_state: RunState, generated_world: Dictionary, player_cell: Vector2i) -> Array:
 	var ids: Array = []
 	if crafting_service == null:

@@ -8,7 +8,12 @@ const FacilityPlacementSession = preload("res://src/main/facility_placement_sess
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const RunState = preload("res://src/save/run_state.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
+const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 const RuinLootService = preload("res://src/world/interactions/ruin_loot_service.gd")
+
+const FATHER_LETTER_ITEM_ID := "father_letter"
+const FATHER_LETTER_RECORD_ID := "starting_home_father_letter"
+const PORTABLE_BRAZIER_ITEM_ID := "portable_brazier"
 
 class Ports:
 	var is_in_dungeon_map: Callable
@@ -64,6 +69,10 @@ func _init(session: FacilityPlacementSession, ports: Ports) -> void:
 	_ports = ports
 
 func handle_landmark_interaction(target_id: String) -> bool:
+	if target_id.begins_with("%s@" % PORTABLE_BRAZIER_ITEM_ID):
+		return _pickup_portable_brazier(target_id)
+	if target_id == WorldGenerator.LARGE_HOUSE_ID:
+		return _handle_starting_home_interaction()
 	if bool(_call_value(_ports.is_in_dungeon_map, false)):
 		if target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE):
 			return _handle_dungeon_teleport_exit()
@@ -94,6 +103,55 @@ func handle_landmark_interaction(target_id: String) -> bool:
 	if target_id.begins_with("%s_" % WorldData.LANDMARK_TELEPORT_ZONE):
 		return _handle_teleport_landmark()
 	return false
+
+func _pickup_portable_brazier(owner_id: String) -> bool:
+	var result := _session.pickup_placed_facility(
+		owner_id,
+		PORTABLE_BRAZIER_ITEM_ID,
+		_call_value(_ports.get_inventory),
+		_call_value(_ports.get_world_data),
+		_call_value(_ports.get_run_state)
+	)
+	var hud = _call_value(_ports.get_game_hud)
+	if not result.ok:
+		if hud != null:
+			hud.show_command_feedback("인벤토리에 빈칸이 필요합니다" if String(result.get("reason", "")) == "inventory_full" else "휴대 화로를 회수할 수 없습니다")
+		return false
+	_call_void(_ports.sync_runtime_world_render)
+	_call_void(_ports.sync_run_runtime_state)
+	_call_dictionary(_ports.save_current_run)
+	_call_void(_ports.configure_game_hud)
+	if hud != null:
+		hud.show_command_feedback("휴대 화로를 챙겼습니다")
+	return true
+
+func _handle_starting_home_interaction() -> bool:
+	var run_state = _call_value(_ports.get_run_state)
+	var inventory = _call_value(_ports.get_inventory)
+	var hud = _call_value(_ports.get_game_hud)
+	if run_state == null or inventory == null:
+		return false
+	if run_state.discovered_records.has(FATHER_LETTER_RECORD_ID):
+		if hud != null:
+			hud.show_command_feedback("아버지의 편지는 이미 챙겼습니다")
+		return true
+	var added: Dictionary = inventory.add_item(FATHER_LETTER_ITEM_ID, 1)
+	if not added.ok:
+		if hud != null:
+			hud.show_command_feedback("인벤토리에 빈칸이 필요합니다")
+		return false
+	run_state.discovered_records.append(FATHER_LETTER_RECORD_ID)
+	_call_void(_ports.sync_run_runtime_state)
+	_call_dictionary(_ports.save_current_run)
+	if hud != null:
+		hud.show_status_event({
+			"type": "item_acquired",
+			"ok": true,
+			"item_id": FATHER_LETTER_ITEM_ID,
+			"quantity": 1,
+			"event_id": FATHER_LETTER_RECORD_ID
+		})
+	return true
 
 func travel_to_biome(biome_id: String, travel_mode: String = "teleport") -> bool:
 	var run_state = _call_value(_ports.get_run_state)

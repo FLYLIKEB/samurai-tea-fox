@@ -54,17 +54,17 @@ const EQUIPMENT_SLOT_SHORT_LABELS := {
 }
 const RESOURCE_DETAIL_PANEL_SIZE := Vector2(172, 62)
 const ENEMY_PANEL_SIZE := Vector2(136, 46)
-const MAP_PANEL_SIZE := Vector2(126, 56)
-const MAP_PANEL_TIME_HEIGHT := 80.0
-const QUICKSLOT_PANEL_SIZE := Vector2(188, 28)
+const MAP_PANEL_SIZE := Vector2(104, 48)
+const MAP_PANEL_TIME_HEIGHT := 70.0
+const QUICKSLOT_PANEL_SIZE := Vector2(172, 26)
 const DPAD_BOARD_SIZE := Vector2(96, 96)
-const ACTION_BUTTON_SIZE := Vector2(58, 26)
-const ACTION_MENU_BUTTON_SIZE := Vector2(24, 20)
+const ACTION_BUTTON_SIZE := Vector2(48, 48)
 const SECONDARY_ACTION_ICON_BUTTON_SIZE := Vector2(20, 20)
 const SHORTCUT_BUTTON_SIZE := Vector2(44, 44)
-const SHORTCUT_PANEL_SIZE := Vector2(140, 92)
-const ACTION_PANEL_SIZE := Vector2(132, 108)
-const ACTION_MENU_PANEL_SIZE := Vector2(132, 120)
+const ACTION_PANEL_SIZE := Vector2(132, 126)
+const ACTION_MENU_PANEL_SIZE := Vector2(148, 100)
+const BOTTOM_NAV_PANEL_SIZE := Vector2(326, 50)
+const SETTINGS_BUTTON_SIZE := Vector2(36, 36)
 const ACTION_PANEL_COLUMNS := 2
 const MENU_PANEL_SIZE := Vector2(560, 280)
 const MENU_CONTENT_SIZE := Vector2(544, 228)
@@ -539,8 +539,8 @@ func _build() -> void:
 	status_rows.add_theme_constant_override("separation", 2)
 	status_body.add_child(status_rows)
 	_labels.hp = _add_resource_icon_row(status_rows, "hp", ICON_HP, "체력", Color(0.86, 0.28, 0.16, 1.0))
-	_labels.ki = _add_resource_icon_row(status_rows, "ki", ICON_KI, "차기", Color(0.82, 0.53, 0.19, 1.0))
-	_labels.kokoro = _add_resource_icon_row(status_rows, "kokoro", ICON_KOKORO, "정신", Color(0.48, 0.40, 0.56, 1.0))
+	_labels.ki = _add_resource_icon_row(status_rows, "ki", ICON_KI, "기운", Color(0.82, 0.53, 0.19, 1.0))
+	_labels.kokoro = _add_resource_icon_row(status_rows, "kokoro", ICON_KOKORO, "心", Color(0.48, 0.40, 0.56, 1.0))
 	status_rows.add_child(_build_equipment_strip())
 	_build_resource_detail_panel(root)
 
@@ -556,6 +556,7 @@ func _build() -> void:
 	_labels.map_title = _add_icon_row(map_rows, ICON_MAP, "초록 평원")
 	_build_time_dial_row(map_rows)
 	_labels.map_stats = _label("타일 0 · 사물 0", 11)
+	_labels.map_stats.visible = false
 	map_rows.add_child(_labels.map_stats)
 	_minimap_grid = GridContainer.new()
 	_minimap_grid.name = "MinimapGrid"
@@ -614,18 +615,40 @@ func _build() -> void:
 	_panels.action = action_panel
 	_build_actions(action_panel)
 
-	var shortcut_panel := _unstyled_panel(SHORTCUT_PANEL_SIZE)
-	shortcut_panel.name = "ShortcutPanel"
-	root.add_child(shortcut_panel)
-	_panels.shortcuts = shortcut_panel
-	_build_shortcuts(shortcut_panel)
-
 	var action_menu_panel := _panel(ACTION_MENU_PANEL_SIZE)
 	action_menu_panel.name = "ActionMenuPanel"
 	action_menu_panel.visible = false
 	root.add_child(action_menu_panel)
 	_panels.action_menu = action_menu_panel
 	_build_action_menu(action_menu_panel)
+	_build_settings_shortcuts(_action_menu_grid)
+
+	var settings_button := Button.new()
+	settings_button.name = "SettingsButton"
+	settings_button.custom_minimum_size = SETTINGS_BUTTON_SIZE
+	settings_button.text = "설정"
+	settings_button.tooltip_text = "수면·시설"
+	settings_button.focus_mode = Control.FOCUS_NONE
+	settings_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	settings_button.add_theme_font_size_override("font_size", 9)
+	settings_button.pressed.connect(_toggle_action_menu)
+	root.add_child(settings_button)
+	_panels.settings = settings_button
+
+	var bottom_nav := _panel(BOTTOM_NAV_PANEL_SIZE)
+	bottom_nav.name = "BottomNavPanel"
+	root.add_child(bottom_nav)
+	_panels.bottom_nav = bottom_nav
+	var bottom_nav_row := HBoxContainer.new()
+	bottom_nav_row.name = "BottomNavRow"
+	bottom_nav_row.add_theme_constant_override("separation", 2)
+	_ignore_mouse(bottom_nav_row)
+	bottom_nav.add_child(bottom_nav_row)
+	_add_bottom_nav_item(bottom_nav_row, "TeaBrewingNavButton", ICON_TEA_WARE, "다구", "open_tea_brewing")
+	_add_bottom_nav_item(bottom_nav_row, "InventoryNavButton", ICON_BAG, "가방", "open_inventory")
+	_add_bottom_nav_item(bottom_nav_row, "TeaNavButton", ICON_TEA, "차", "drink_tea")
+	_add_bottom_nav_item(bottom_nav_row, "CodexNavButton", ICON_SCROLL, "도감", "open_meta_codex")
+	_add_bottom_nav_item(bottom_nav_row, "CraftingNavButton", ICON_CRAFTING_SHORTCUT, "제작", "open_crafting")
 
 	var menu_panel := _menu_panel(MENU_PANEL_SIZE)
 	menu_panel.name = "MenuPanel"
@@ -676,8 +699,8 @@ func _update() -> void:
 		return
 	var model := runtime_read_model()
 	_set_label("hp", "체력")
-	_set_label("ki", "차기")
-	_set_label("kokoro", "정신")
+	_set_label("ki", "기운")
+	_set_label("kokoro", "心")
 	_update_resource_icons("hp_icons", model.hp, model.hp_max)
 	_update_resource_icons("ki_icons", model.ki, model.ki_max)
 	_update_resource_icons("kokoro_icons", model.kokoro, model.kokoro_max)
@@ -705,7 +728,7 @@ func _update() -> void:
 		_apply_safe_area_layout()
 	var minimap: Dictionary = model.get("minimap", {})
 	_set_label("map_stats", "발견 %d · 표식 %d" % [int(minimap.get("discovered_count", 0)), int(minimap.get("marker_count", 0))] if bool(minimap.get("ok", false)) else "타일 %d · 사물 %d" % [model.terrain_count, model.object_count])
-	_render_minimap_grid(_minimap_grid, minimap.get("minimap", {}) if bool(minimap.get("ok", false)) else {}, Vector2(6, 6))
+	_render_minimap_grid(_minimap_grid, minimap.get("minimap", {}) if bool(minimap.get("ok", false)) else {}, Vector2(4, 4))
 	_set_label("inventory", "%d / %d" % [model.inventory_used_slots, model.inventory_slot_count])
 	_set_label("tea_slots", "%d / %d" % [model.tea_ready_slots, model.tea_quickslot_count])
 	_set_label("consumable", "준비" if model.consumable_ready else "없음")
@@ -760,13 +783,9 @@ func _build_actions(parent: PanelContainer) -> void:
 	_ignore_mouse(menu_row)
 	menu_row.add_theme_constant_override("separation", 4)
 	action_rows.add_child(menu_row)
-	var spacer := Control.new()
-	_ignore_mouse(spacer)
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	menu_row.add_child(spacer)
 	_secondary_action_bar = GridContainer.new()
 	_secondary_action_bar.name = "SecondaryActionBar"
-	_secondary_action_bar.columns = 3
+	_secondary_action_bar.columns = 5
 	_ignore_mouse(_secondary_action_bar)
 	_secondary_action_bar.add_theme_constant_override("h_separation", 3)
 	_secondary_action_bar.add_theme_constant_override("v_separation", 3)
@@ -806,7 +825,7 @@ func _rebuild_action_buttons() -> void:
 		return
 	if _secondary_action_bar != null:
 		_clear_container_children(_secondary_action_bar)
-		for slot in range(_tea_quickslot_count()):
+		for slot in range(1, _tea_quickslot_count()):
 			_add_icon_action(_secondary_action_bar, "QuickTeaButton" if slot == 0 else "QuickTeaButton%d" % (slot + 1), ICON_TEA, "차 %d 사용" % (slot + 1), "drink_tea", Vector2i.ZERO, slot)
 		_add_icon_action(_secondary_action_bar, "QuickConsumableButton", ICON_CONSUMABLE, "소모품 사용", "use_consumable", Vector2i.ZERO, 0)
 		for slot in range(_balance_integer(BALANCE_ABILITY_SLOTS_ID)):
@@ -814,10 +833,8 @@ func _rebuild_action_buttons() -> void:
 	_clear_container_children(_action_grid)
 	_add_text_action(_action_grid, "AttackButton", ICON_ATTACK, "공격", "attack", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "DodgeButton", ICON_DODGE, "회피", "dodge", Vector2i.ZERO, 0)
+	_add_text_action(_action_grid, "TeaButton", ICON_TEA, "차", "drink_tea", Vector2i.ZERO, 0)
 	_interaction_button = _add_interaction_action(_action_grid)
-	_add_text_action(_action_grid, "InventoryButton", ICON_BAG, "가방", "open_inventory", Vector2i.ZERO, 0)
-	if _action_menu_grid != null:
-		_clear_container_children(_action_menu_grid)
 	var action_panel := _panels.get("action") as Control
 	if action_panel != null:
 		action_panel.custom_minimum_size = ACTION_PANEL_SIZE
@@ -833,21 +850,12 @@ func _toggle_action_menu() -> void:
 	var action_menu_panel := _panels.get("action_menu") as Control
 	if action_menu_panel != null:
 		action_menu_panel.visible = _action_menu_open
+	_apply_safe_area_layout()
 
-func _build_shortcuts(parent: PanelContainer) -> void:
-	var row := GridContainer.new()
-	row.name = "ShortcutRow"
-	row.columns = 3
-	row.add_theme_constant_override("h_separation", 4)
-	row.add_theme_constant_override("v_separation", 4)
-	_ignore_mouse(row)
-	parent.add_child(row)
-	_add_shortcut_button(row, "CraftingShortcutButton", ICON_CRAFTING_SHORTCUT, "제작", "open_crafting")
-	_add_shortcut_button(row, "MapShortcutButton", ICON_MAP_SHORTCUT, "지도", "open_map")
-	_add_shortcut_button(row, "SleepShortcutButton", ICON_MOON, "잠자기", "sleep")
-	_add_shortcut_button(row, "TeaBrewingShortcutButton", ICON_TEA, "차 우리기", "open_tea_brewing")
-	_add_shortcut_button(row, "MetaCodexShortcutButton", ICON_BAG, "도감", "open_meta_codex")
-	_add_shortcut_button(row, "FacilitiesShortcutButton", ICON_MAP, "시설", "open_facilities")
+func _build_settings_shortcuts(parent: GridContainer) -> void:
+	parent.name = "ShortcutGrid"
+	parent.columns = 1
+	_add_shortcut_button(parent, "FacilitiesShortcutButton", ICON_MAP, "시설", "open_facilities")
 
 func _add_shortcut_button(parent: Container, name: String, icon_path: String, tooltip: String, button_id: String) -> void:
 	var button := Button.new()
@@ -864,8 +872,60 @@ func _add_shortcut_button(parent: Container, name: String, icon_path: String, to
 	button.add_theme_stylebox_override("normal", _circle_button_style(Color(0.10, 0.08, 0.06, 0.94)))
 	button.add_theme_stylebox_override("hover", _circle_button_style(Color(0.26, 0.18, 0.08, 0.98)))
 	button.add_theme_stylebox_override("pressed", _circle_button_style(Color(0.77, 0.54, 0.25, 1.0)))
+	button.pressed.connect(func():
+		_action_menu_open = false
+		var panel := _panels.get("action_menu") as Control
+		if panel != null:
+			panel.visible = false
+		press_mobile_button(button_id, Vector2i.ZERO, 0)
+	)
+	parent.add_child(button)
+
+func _add_nav_button(parent: Container, name: String, icon_path: String, text: String, button_id: String, size: Vector2) -> void:
+	var button := Button.new()
+	button.name = name
+	button.custom_minimum_size = size
+	button.text = text
+	button.icon = _load_texture(icon_path)
+	button.expand_icon = true
+	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	button.add_theme_constant_override("icon_max_width", 14)
+	button.add_theme_constant_override("h_separation", 2)
+	button.add_theme_font_size_override("font_size", 8)
+	button.tooltip_text = text
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.pressed.connect(func(): press_mobile_button(button_id, Vector2i.ZERO, 0))
 	parent.add_child(button)
+
+func _add_bottom_nav_item(parent: Container, name: String, icon_path: String, text: String, button_id: String) -> void:
+	var button := Button.new()
+	button.name = name
+	button.custom_minimum_size = Vector2(60, 38)
+	button.text = ""
+	button.tooltip_text = text
+	button.focus_mode = Control.FOCUS_NONE
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.pressed.connect(func(): press_mobile_button(button_id, Vector2i.ZERO, 0))
+	parent.add_child(button)
+	var icon := TextureRect.new()
+	icon.name = "Icon"
+	icon.texture = _load_texture(icon_path)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	icon.position = Vector2(-9, 2)
+	icon.size = Vector2(18, 18)
+	_ignore_mouse(icon)
+	button.add_child(icon)
+	var label := _label(text, 8)
+	label.name = "Label"
+	label.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	label.offset_top = -14
+	label.offset_bottom = -2
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_ignore_mouse(label)
+	button.add_child(label)
 
 func _add_direction_button(parent: Control, name: String, rect: Rect2, direction: Vector2i, tooltip: String) -> void:
 	var button := Button.new()
@@ -906,20 +966,22 @@ func _add_text_action(parent: Container, name: String, icon_path: String, text: 
 	button.icon = _load_texture(icon_path)
 	button.expand_icon = true
 	button.add_theme_constant_override("icon_max_width", 16)
+	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	button.tooltip_text = text
 	button.focus_mode = Control.FOCUS_NONE
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.add_theme_font_size_override("font_size", 10)
-	button.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.08, 0.06, 0.82), true))
-	button.add_theme_stylebox_override("hover", _button_style(Color(0.16, 0.12, 0.08, 0.92), true))
-	button.add_theme_stylebox_override("pressed", _button_style(Color(0.77, 0.54, 0.25, 0.96), true))
+	button.add_theme_stylebox_override("normal", _circle_button_style(Color(0.08, 0.07, 0.055, 0.96)))
+	button.add_theme_stylebox_override("hover", _circle_button_style(Color(0.20, 0.15, 0.08, 0.98)))
+	button.add_theme_stylebox_override("pressed", _circle_button_style(Color(0.77, 0.54, 0.25, 1.0)))
 	button.pressed.connect(func(): press_mobile_button(button_id, direction, slot))
 	parent.add_child(button)
 
 func _add_interaction_action(parent: Container) -> Button:
 	var button := Button.new()
 	button.name = "InteractionButton"
-	button.custom_minimum_size = Vector2(42, 42)
+	button.custom_minimum_size = ACTION_BUTTON_SIZE
 	button.text = "상호\n작용"
 	button.tooltip_text = "가까운 유적·텔레포트와 상호작용"
 	button.focus_mode = Control.FOCUS_NONE
@@ -935,7 +997,7 @@ func _add_interaction_action(parent: Container) -> Button:
 func _circle_button_style(color: Color) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = color
-	style.border_color = Color(0.72, 0.84, 0.62, 0.9)
+	style.border_color = PixelUiTheme.BORDER_COLOR
 	style.set_border_width_all(2)
 	style.corner_radius_top_left = 24
 	style.corner_radius_top_right = 24
@@ -1033,7 +1095,7 @@ func _placement_command_button(text: String, command_type: int) -> Button:
 	return button
 
 func _set_gameplay_hud_visible(visible: bool) -> void:
-	for panel_id in ["status", "map", "enemy", "quickslot", "dpad", "action", "shortcuts", "action_menu", "menu"]:
+	for panel_id in ["status", "map", "enemy", "quickslot", "dpad", "action", "settings", "bottom_nav", "action_menu", "menu"]:
 		var panel := _panels.get(panel_id) as Control
 		if panel != null:
 			panel.visible = visible and (
@@ -1753,6 +1815,7 @@ func _map_rows() -> Array:
 	if not bool(model.get("ok", false)):
 		rows.append(_label("지도 read model 없음", 11))
 		return rows
+	rows.append(_section_label("시드: %d" % int(model.get("seed", 0))))
 	rows.append(_section_label("전체 지도 · 접근 가능한 지역을 선택하세요"))
 	rows.append(_biome_map_selector())
 	var selected := _biome_definition(selected_id)
@@ -2201,6 +2264,7 @@ func _item_icon_reference(item_id: String, kind: String, definition: Dictionary)
 func _apply_safe_area_layout() -> void:
 	var margin := _safe_margin()
 	var viewport_size := get_viewport().get_visible_rect().size if get_viewport() != null else Vector2(640, 360)
+	var wide_landscape := viewport_size.x >= 600.0 and viewport_size.x > viewport_size.y and not narrative_dialogue_visible()
 	var top_limit := viewport_size.x - margin.z
 	if _narrative_presenter != null:
 		_narrative_presenter.apply_layout(viewport_size, margin)
@@ -2243,10 +2307,10 @@ func _apply_safe_area_layout() -> void:
 	_place_panel(_panels.menu, Control.PRESET_CENTER, Vector2.ZERO)
 	_place_panel(_panels.dpad, Control.PRESET_BOTTOM_LEFT, Vector2(margin.x, -margin.w))
 	_place_panel(_panels.action, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w))
+	_place_panel(_panels.settings, Control.PRESET_TOP_RIGHT, Vector2(-margin.z, map_rect.end.y + HUD_EDGE_GAP))
+	_place_panel(_panels.bottom_nav, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w))
+	_panels.bottom_nav.visible = wide_landscape
 	var action_rect := _panel_rect(_panels.action)
-	_place_panel(_panels.shortcuts, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z - action_rect.size.x - HUD_EDGE_GAP, -margin.w))
-	if _panel_rect(_panels.shortcuts).intersects(_panel_rect(_panels.dpad)):
-		_place_panel(_panels.shortcuts, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w - action_rect.size.y - HUD_EDGE_GAP))
 	_resolve_enemy_bottom_overlap(top_stack_bottom)
 	_resize_action_menu_panel(viewport_size, margin, top_stack_bottom)
 	_place_action_menu_panel(viewport_size, margin, top_stack_bottom)
@@ -2322,13 +2386,10 @@ func _resolve_enemy_bottom_overlap(top_stack_bottom: float) -> void:
 	var bottom_controls: Array[Rect2] = []
 	var dpad_rect := _panel_rect(_panels.dpad)
 	var action_rect := _panel_rect(_panels.action)
-	var shortcuts_rect := _panel_rect(_panels.shortcuts)
 	if dpad_rect.size != Vector2.ZERO:
 		bottom_controls.append(dpad_rect)
 	if action_rect.size != Vector2.ZERO:
 		bottom_controls.append(action_rect)
-	if shortcuts_rect.size != Vector2.ZERO:
-		bottom_controls.append(shortcuts_rect)
 	for control_rect in bottom_controls:
 		if not enemy_rect.intersects(control_rect):
 			continue
@@ -2532,7 +2593,7 @@ func _on_resource_row_gui_input(event: InputEvent, id: String, row: Control) -> 
 func _update_resource_detail(model: Dictionary) -> void:
 	if _resource_detail_label == null or _resource_detail_id.is_empty():
 		return
-	_resource_detail_label.text = "자원 상세\n체력 %d / %d\n차기 %d / %d\n정신 %d / %d" % [
+	_resource_detail_label.text = "자원 상세\n체력 %d / %d\n기운 %d / %d\n心 %d / %d" % [
 		int(model.hp), int(model.hp_max),
 		int(model.ki), int(model.ki_max),
 		int(model.kokoro), int(model.kokoro_max)

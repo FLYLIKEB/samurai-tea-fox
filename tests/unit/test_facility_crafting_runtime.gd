@@ -7,12 +7,14 @@ const InventoryModel = preload("res://src/inventory/inventory_model.gd")
 const Main = preload("res://src/main/main.gd")
 const RunState = preload("res://src/save/run_state.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
+const FacilityPlacementPreview = preload("res://src/presentation/facility_placement_preview.gd")
 
 class TestPlayer:
 	extends Node2D
 
 func run(asserts) -> void:
 	_assert_player_facility_metadata_uses_content_image_map(asserts)
+	_assert_preview_matches_runtime_sprite_footprint(asserts)
 	var runtime := Main.new()
 	var player := TestPlayer.new()
 	var world := WorldData.new(7, 7, "grass", true)
@@ -110,6 +112,14 @@ func run(asserts) -> void:
 	runtime.world_visuals = null
 	player.free()
 	runtime.free()
+
+func _assert_preview_matches_runtime_sprite_footprint(asserts) -> void:
+	var preview := FacilityPlacementPreview.new()
+	var texture := ImageTexture.create_from_image(Image.create(64, 64, false, Image.FORMAT_RGBA8))
+	preview.configure(Vector2i(3, 2), Vector2i.ONE, 32.0, true, texture, 0)
+	asserts.equal(preview.footprint, Vector2i(2, 2), "placement preview expands to the runtime sprite tile footprint")
+	asserts.equal(preview.sprite.position, Vector2(128, 96), "placement preview centers the runtime sprite over the selected footprint")
+	preview.free()
 
 func _assert_player_facility_metadata_uses_content_image_map(asserts) -> void:
 	var runtime := Main.new()

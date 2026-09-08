@@ -350,6 +350,7 @@ func _map_read_model(options := {}, source_world_data = null, source_run_state =
 
 func _read_state_for_selected_biome(biome_id: String) -> Dictionary:
 	var state := {
+		"seed": int(_object_property(run_state, "seed", 0)) if run_state != null else 0,
 		"current_biome_id": biome_id,
 		"completed_dungeon_ids": [],
 		"teleport_states": {},

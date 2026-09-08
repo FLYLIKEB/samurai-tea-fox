@@ -8,7 +8,6 @@ const BUTTON_IDS := [
 	"attack",
 	"dodge",
 	"drink_tea",
-	"sleep",
 	"open_tea_brewing",
 	"tea_brew_select_leaf",
 	"tea_brew_select_vessel",

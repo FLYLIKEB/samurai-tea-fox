@@ -29,6 +29,9 @@ func _assert_sleep_interaction_tile_uses_facility_definition(asserts) -> void:
 	asserts.true_value(placement.configure(_item_definitions()).ok, "sleep facility placement configures")
 	var world := WorldData.new(7, 7, "grass", true)
 	asserts.true_value(placement.place_facility("portable_brazier", world, Vector2i(3, 3)).ok, "sleep facility installs")
+	var reservation: Dictionary = world.to_dictionary().get("reservations", [])[0]
+	asserts.equal(reservation.metadata.get("facility_name"), "휴대 화로", "placed facility exposes its display name to shared presentation")
+	asserts.equal(reservation.metadata.get("facility_capabilities"), ["sleep"], "placed facility exposes reusable interaction capabilities")
 
 	var front := placement.facility_interaction_at(world, Vector2i(3, 4), "sleep")
 	asserts.true_value(front.ok, "sleep facility accepts its defined south-front tile")

@@ -12,6 +12,7 @@ func run(asserts) -> void:
 	_assert_base_underlay_survives_path_layer(asserts)
 	_assert_tree_footprints_overlay_base_terrain(asserts)
 	_assert_multicell_footprints_keep_original_texture(asserts)
+	_assert_sleep_facility_uses_common_interaction_prompt(asserts)
 	_assert_dungeon_landmark_uses_multicell_house_and_label(asserts)
 	_assert_special_objects_have_role_colored_outlines(asserts)
 
@@ -221,6 +222,19 @@ func _assert_multicell_footprints_keep_original_texture(asserts) -> void:
 			asserts.equal(sprite.region_enabled, false, "multi-cell footprint is not cropped into a 32x32 atlas region")
 	asserts.true_value("asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png" in result.asset_report.used_asset_ids, "renderer asset report resolves manifest ID footprint references")
 	root.queue_free()
+
+func _assert_sleep_facility_uses_common_interaction_prompt(asserts) -> void:
+	var renderer := WorldSceneRenderer.new()
+	var root := Node2D.new()
+	renderer._add_facility_interaction_prompt(root, Vector2i(2, 3), 32, {
+		"facility_name": "휴대 화로",
+		"facility_capabilities": ["sleep"]
+	})
+	var prompt := root.get_node_or_null("InteractionPrompt") as PanelContainer
+	asserts.true_value(prompt != null, "sleep facility renders the shared proximity interaction prompt")
+	if prompt != null:
+		asserts.equal((prompt.get_child(0) as Label).text, "휴대 화로\n[E] 수면", "sleep prompt names the object and E action")
+	root.free()
 
 func _assert_special_objects_have_role_colored_outlines(asserts) -> void:
 	var renderer := WorldSceneRenderer.new()

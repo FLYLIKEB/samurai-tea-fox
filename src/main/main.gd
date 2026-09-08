@@ -353,6 +353,9 @@ func _pointer_enemy_clicked(world_position: Vector2) -> bool:
 func _try_landmark_interaction_from_input() -> bool:
 	return _world_interaction_coordinator.try_landmark_interaction_from_input(self)
 
+func _try_facility_interaction_from_input() -> bool:
+	return _world_interaction_coordinator.try_facility_interaction_from_input(self)
+
 func _activate_dungeon_enemy(cell: Vector2i) -> void:
 	_world_interaction_coordinator.activate_dungeon_enemy(self, cell)
 
@@ -693,7 +696,7 @@ func load_or_create_run_state() -> Dictionary:
 		_start_mode,
 		save_store,
 		catalog,
-		DEFAULT_RUN_SEED
+		randi()
 	)
 	if result.ok:
 		run_state = result.run_state

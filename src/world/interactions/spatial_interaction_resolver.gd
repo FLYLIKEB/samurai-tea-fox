@@ -74,6 +74,13 @@ func player_can_interact_with_target(world_data, in_dungeon_map: bool, player_ce
 	return false
 
 func target_footprint_cells(world_data, target_id: String, fallback_cell: Vector2i) -> Array:
+	if world_data != null and world_data.has_method("get_reservation"):
+		var reservation: Dictionary = world_data.get_reservation(target_id)
+		var cells: Array = []
+		for raw_cell in reservation.get("cells", []):
+			cells.append(_vector_from_dictionary(raw_cell))
+		if not cells.is_empty():
+			return cells
 	return [fallback_cell]
 
 func acquisition_target_near_cell(world_data, in_dungeon_map: bool, origin_cell: Vector2i, forward: Vector2i, is_available_acquisition_target: Callable) -> Dictionary:
@@ -201,7 +208,9 @@ func landmark_target_near_world_position(
 	return {}
 
 func is_landmark_target(in_dungeon_map: bool, target_id: String) -> bool:
-	return (in_dungeon_map and target_id == "dungeon_entry") \
+	return target_id == WorldGenerator.LARGE_HOUSE_ID \
+			or target_id.begins_with("portable_brazier@") \
+			or (in_dungeon_map and target_id == "dungeon_entry") \
 			or is_core_dungeon_target(target_id) \
 			or target_id.begins_with("%s_" % WorldData.LANDMARK_BOSS_ANCHOR) \
 			or target_id.begins_with("%s_" % WorldData.LANDMARK_RUIN) \

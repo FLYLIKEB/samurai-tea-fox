@@ -397,13 +397,14 @@ func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:
 	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/DodgeButton") != null, "HUD shows dodge as a primary mobile action")
 	var interaction_button := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/InteractionButton") as Button
 	asserts.true_value(interaction_button != null, "HUD shows interaction as a primary mobile action")
-	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/InventoryButton") != null, "HUD shows inventory as a primary mobile action")
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/TeaButton") != null, "HUD shows tea as a primary mobile action")
+	asserts.true_value(hud.get_node_or_null("Root/BottomNavPanel/BottomNavRow/InventoryNavButton") != null, "HUD keeps inventory in the bottom nav")
 	asserts.true_value(hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ActionMenuGrid/CraftingButton") == null, "HUD removes crafting from the secondary action drawer")
 	asserts.true_value(hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ActionMenuGrid/MapButton") == null, "HUD removes map from the secondary action drawer")
-	var crafting_shortcut := hud.get_node_or_null("Root/ShortcutPanel/ShortcutRow/CraftingShortcutButton") as Button
-	var map_shortcut := hud.get_node_or_null("Root/ShortcutPanel/ShortcutRow/MapShortcutButton") as Button
-	asserts.true_value(crafting_shortcut != null, "HUD keeps crafting visible as a dedicated shortcut")
-	asserts.true_value(map_shortcut != null, "HUD keeps map visible as a dedicated shortcut")
+	var crafting_shortcut := hud.get_node_or_null("Root/BottomNavPanel/BottomNavRow/CraftingNavButton") as Button
+	var map_shortcut := hud.get_node_or_null("Root/MapPanel") as Control
+	asserts.true_value(crafting_shortcut != null, "HUD keeps crafting in the bottom nav")
+	asserts.true_value(map_shortcut != null and map_shortcut.visible, "HUD restores the original map panel")
 	var interaction_commands: Array = []
 	hud.mobile_command_issued.connect(func(command): interaction_commands.append(command))
 	if interaction_button != null:
@@ -411,7 +412,7 @@ func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:
 	asserts.equal(interaction_commands.size(), 1, "interaction button emits exactly one shared command")
 	if not interaction_commands.is_empty():
 		asserts.equal(interaction_commands[0].type, GameCommand.Type.INTERACT, "interaction button emits the shared INTERACT command")
-	var quick_tea := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickTeaButton") as Button
+	var quick_tea := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickTeaButton2") as Button
 	var quick_consumable := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickConsumableButton") as Button
 	var quick_ability := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickAbilityButton") as Button
 	var quick_tea_3 := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickTeaButton3") as Button
@@ -427,8 +428,8 @@ func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:
 		asserts.equal(quick_consumable.text, "", "consumable secondary quick action does not render explanatory text")
 	if quick_ability != null:
 		asserts.equal(quick_ability.text, "", "ability secondary quick action does not render explanatory text")
-	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/ActionMenuButton") == null, "HUD no longer hides actions behind a hamburger button")
-	asserts.equal((hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ActionMenuGrid") as GridContainer).get_child_count(), 0, "secondary action drawer no longer owns gameplay actions")
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/ActionMenuButton") == null, "HUD does not duplicate the settings button")
+	asserts.equal((hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ShortcutGrid") as GridContainer).get_child_count(), 1, "settings drawer owns only facilities")
 	asserts.equal(read_model.time_phase, "night", "HUD reads current time phase")
 	asserts.equal(read_model.time_progress_percent, 25, "HUD calculates time progress from the time read model")
 	asserts.true_value(hud.get_node_or_null("Root/StatusPanel/StatusBody/PlayerPortrait") != null, "HUD renders the mockup-style player portrait block")
@@ -451,7 +452,7 @@ func _assert_resource_details_open_without_emitting_movement(asserts) -> void:
 	click.pressed = true
 	health_row.gui_input.emit(click)
 	asserts.true_value(detail_panel.visible, "clicking a resource opens its detail panel")
-	asserts.true_value(_tree_has_text(detail_panel, "자원 상세\n체력 82 / 100\n차기 36 / 60\n정신 7 / 10"), "resource detail shows all exact values together")
+	asserts.true_value(_tree_has_text(detail_panel, "자원 상세\n체력 82 / 100\n기운 36 / 60\n心 7 / 10"), "resource detail shows all exact values together")
 	asserts.true_value(detail_panel.position.y + detail_panel.size.y <= enemy_panel.position.y, "open resource detail does not overlap enemy information")
 	asserts.equal(received_commands.size(), 0, "resource detail click emits no gameplay command")
 	ki_row.gui_input.emit(click)
@@ -543,7 +544,7 @@ func _assert_mobile_controls_emit_shared_commands(asserts) -> void:
 	asserts.true_value(action_panel != null, "HUD keeps the action command surface")
 	if action_panel != null:
 		asserts.false_value(_panel_uses_dark_background(action_panel), "action controls omit the outer dark panel background")
-		asserts.equal(action_panel.custom_minimum_size, Vector2(132, 108), "action controls fit all visible quick actions with mobile touch targets")
+		asserts.equal(action_panel.custom_minimum_size, Vector2(132, 126), "action controls use a readable two-by-two primary cluster")
 	var received: Array = []
 	hud.mobile_command_issued.connect(func(command): received.append(command))
 	asserts.true_value(hud.press_mobile_button("move", Vector2i.LEFT), "HUD accepts mobile movement control")
@@ -559,10 +560,10 @@ func _assert_mobile_controls_emit_shared_commands(asserts) -> void:
 	asserts.true_value(hud.press_mobile_button("open_crafting"), "HUD accepts crafting command control")
 	asserts.true_value(hud.press_mobile_button("open_facilities"), "HUD accepts facilities command control")
 	asserts.true_value(hud.press_mobile_button("open_map"), "HUD accepts map command control")
-	asserts.true_value(hud.press_mobile_button("sleep"), "HUD accepts sleep command control")
+	asserts.false_value(hud.press_mobile_button("sleep"), "HUD leaves sleep to nearby facility interaction")
 	asserts.true_value(hud.press_mobile_button("complete_dungeon"), "HUD accepts dungeon command control")
 	asserts.false_value(hud.press_mobile_button("repair_teleport"), "HUD removes the fixed teleport repair control")
-	asserts.equal(received.size(), 15, "HUD emits exactly one command per valid mobile control")
+	asserts.equal(received.size(), 14, "HUD emits exactly one command per valid mobile control")
 	asserts.equal(received[0].type, GameCommand.Type.MOVE, "movement control emits shared move command")
 	asserts.equal(received[1].type, GameCommand.Type.ATTACK, "attack control emits shared attack command")
 	asserts.equal(received[2].type, GameCommand.Type.DODGE, "dodge control emits shared dodge command")
@@ -577,8 +578,7 @@ func _assert_mobile_controls_emit_shared_commands(asserts) -> void:
 	asserts.equal(received[10].type, GameCommand.Type.OPEN_CRAFTING, "crafting control emits shared crafting menu command")
 	asserts.equal(received[11].type, GameCommand.Type.OPEN_FACILITIES, "facilities control emits shared facilities menu command")
 	asserts.equal(received[12].type, GameCommand.Type.OPEN_MAP, "map control emits shared map menu command")
-	asserts.equal(received[13].type, GameCommand.Type.SLEEP, "sleep control emits shared sleep command")
-	asserts.equal(received[14].type, GameCommand.Type.COMPLETE_DUNGEON, "dungeon control emits shared dungeon command")
+	asserts.equal(received[13].type, GameCommand.Type.COMPLETE_DUNGEON, "dungeon control emits shared dungeon command")
 	var untouched_hud := _configured_hud()
 	asserts.equal(untouched_hud.read_model_provider.read_model().hp, 82, "HUD button emission does not mutate player resources")
 	untouched_hud.free()

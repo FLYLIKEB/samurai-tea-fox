@@ -12,6 +12,7 @@ class AcquisitionProbe:
 
 func run(asserts) -> void:
 	_assert_starting_home_is_not_a_dungeon_target(asserts)
+	_assert_starting_home_uses_reserved_footprint(asserts)
 	_assert_world_position_hits_match_main_centers(asserts)
 	_assert_acquisition_lookup_prefers_forward_cell(asserts)
 	_assert_dungeon_lookup_prefers_forward_cell(asserts)
@@ -22,6 +23,14 @@ func _assert_starting_home_is_not_a_dungeon_target(asserts) -> void:
 	asserts.false_value(resolver.is_core_dungeon_target(WorldGenerator.LARGE_HOUSE_ID), "starting home is never treated as a dungeon target")
 	asserts.false_value(resolver.is_core_dungeon_target("large_house_fence_n"), "starting-home fences are never treated as dungeon targets")
 	asserts.true_value(resolver.is_core_dungeon_target("core_dungeon_0"), "core dungeon landmark remains a dungeon target")
+	asserts.true_value(resolver.is_landmark_target(false, "portable_brazier@3,3"), "portable brazier interaction routes to pickup")
+
+func _assert_starting_home_uses_reserved_footprint(asserts) -> void:
+	var resolver := SpatialInteractionResolver.new()
+	var world := WorldData.new(6, 6, "ground", true)
+	asserts.true_value(world.reserve_entity(WorldGenerator.LARGE_HOUSE_ID, Vector2i(2, 2), Vector2i(2, 2), false).ok, "starting home fixture reserves its footprint")
+	asserts.equal(resolver.target_footprint_cells(world, WorldGenerator.LARGE_HOUSE_ID, Vector2i.ZERO), [Vector2i(2, 2), Vector2i(3, 2), Vector2i(2, 3), Vector2i(3, 3)], "starting home interaction uses all reserved cells")
+	asserts.true_value(resolver.is_landmark_target(false, WorldGenerator.LARGE_HOUSE_ID), "starting home routes through landmark interaction")
 
 func _assert_world_position_hits_match_main_centers(asserts) -> void:
 	var resolver := SpatialInteractionResolver.new()

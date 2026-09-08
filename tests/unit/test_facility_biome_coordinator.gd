@@ -56,6 +56,7 @@ func run(asserts) -> void:
 	_assert_connected_biome_requires_repaired_current_gate(asserts)
 	_assert_craft_command_syncs_saves_and_reports_event(asserts)
 	_assert_abandoned_house_interaction_grants_and_persists_loot(asserts)
+	_assert_starting_home_grants_father_letter_once(asserts)
 
 func _assert_connected_biome_requires_repaired_current_gate(asserts) -> void:
 	_reset_state()
@@ -91,6 +92,20 @@ func _assert_abandoned_house_interaction_grants_and_persists_loot(asserts) -> vo
 	asserts.equal(calls, ["save"], "successful ruin loot saves the current run")
 	asserts.false_value(coordinator.handle_landmark_interaction("abandoned_house_2"), "searched abandoned house rejects a duplicate interaction")
 	asserts.true_value(hud.feedback.back().begins_with("이미 수색한 폐가"), "duplicate abandoned house interaction explains the consumed state")
+
+func _assert_starting_home_grants_father_letter_once(asserts) -> void:
+	_reset_state()
+	var catalog := DataCatalog.new()
+	asserts.true_value(catalog.load_from_directory("res://data/generated").ok, "starting home interaction loads generated catalog")
+	var inventory_result: Dictionary = InventoryModel.from_catalog(catalog)
+	asserts.true_value(inventory_result.ok, "starting home interaction creates an inventory")
+	var coordinator := _coordinator(catalog, inventory_result.inventory)
+	asserts.true_value(coordinator.handle_landmark_interaction("large_fenced_house"), "starting home E interaction grants the father letter")
+	asserts.equal(inventory_result.inventory.get_total_quantity("father_letter"), 1, "starting home grants one father letter")
+	asserts.true_value(run_state.discovered_records.has("starting_home_father_letter"), "starting home records the one-time letter acquisition")
+	asserts.equal(calls, ["sync", "save"], "father letter acquisition syncs and saves the run")
+	asserts.true_value(coordinator.handle_landmark_interaction("large_fenced_house"), "repeated starting home interaction is handled")
+	asserts.equal(inventory_result.inventory.get_total_quantity("father_letter"), 1, "father letter cannot be acquired twice in one run")
 
 func _coordinator(next_catalog = null, next_inventory = null) -> FacilityBiomeCoordinator:
 	var ports := FacilityBiomeCoordinator.Ports.new()

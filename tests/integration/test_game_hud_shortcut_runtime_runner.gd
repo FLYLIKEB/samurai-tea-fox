@@ -46,11 +46,20 @@ func run() -> void:
 	quit(1)
 
 func _press_and_assert_menu(hud, button_name: String, expected_title: String) -> void:
-	var button := hud.get_node_or_null("Root/ShortcutPanel/ShortcutRow/%s" % button_name) as Button
+	if button_name == "MapShortcutButton":
+		hud.show_map_menu()
+		await process_frame
+		_assert_menu(hud, button_name, expected_title)
+		return
+	var path := "Root/BottomNavPanel/BottomNavRow/CraftingNavButton"
+	var button := hud.get_node_or_null(path) as Button
 	if button == null:
 		_failures.append("runtime is missing %s" % button_name)
 		return
 	await _click(button)
+	_assert_menu(hud, button_name, expected_title)
+
+func _assert_menu(hud, button_name: String, expected_title: String) -> void:
 	var panel := hud.get_node_or_null("Root/MenuPanel") as Control
 	var title := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuTitleBar/MenuTitleLabel") as Label
 	if panel == null or not panel.visible:

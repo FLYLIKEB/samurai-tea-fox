@@ -25,7 +25,7 @@ func _assert_read_model_filter_sort_and_capacity(asserts) -> void:
 	var runtime: InventoryCommandRuntime = fixture[0]
 	var model: Dictionary = runtime.read_model()
 	asserts.equal(model.capacity.total, 24, "read model exposes total slot capacity")
-	asserts.equal(model.capacity.used, 6, "read model exposes used slots")
+	asserts.equal(model.capacity.used, 4, "read model exposes used slots (bandage, sword, kettle, stacked tea)")
 	asserts.true_value(model.available_filters.has("소모품"), "read model exposes kind filters")
 	asserts.true_value(model.available_filters.has("무기"), "read model exposes equipment filters")
 	asserts.true_value(model.slots[0].has("stack_label"), "read model exposes stack labels")
@@ -39,7 +39,7 @@ func _assert_read_model_filter_sort_and_capacity(asserts) -> void:
 
 	asserts.true_value(runtime.handle_command(GameCommand.new(GameCommand.Type.INVENTORY_SET_FILTER, Vector2i.ZERO, -1, {"kind": "all"})).ok, "all filter restores every slot")
 	asserts.true_value(runtime.handle_command(GameCommand.new(GameCommand.Type.INVENTORY_SORT)).ok, "sort command succeeds")
-	asserts.equal(runtime.read_model().capacity.used, 6, "sort preserves occupied slot count")
+	asserts.equal(runtime.read_model().capacity.used, 4, "sort preserves occupied slot count")
 
 func _assert_common_commands_select_use_and_equip(asserts) -> void:
 	var fixture := _fixture_runtime()
@@ -123,7 +123,7 @@ func _assert_hud_inventory_menu_uses_command_read_model(asserts) -> void:
 	var hud := GameHud.new()
 	hud.configure(FakePlayer.new(), {"biome_id": "common_region"}, {"counts": {}}, {"inventory": fixture[1], "inventory_command_runtime": runtime, "catalog": FakeHudCatalog.new()})
 	asserts.true_value(hud.show_inventory_menu(), "HUD opens command-backed inventory menu")
-	asserts.true_value(_tree_has_text(hud, "차 & 도구 (인벤토리) · 6/24"), "HUD shows capacity from inventory command read model")
+	asserts.true_value(_tree_has_text(hud, "차 & 도구 (인벤토리) · 4/24"), "HUD shows capacity from inventory command read model")
 	asserts.true_value(_tree_has_text(hud, "이전"), "HUD exposes previous navigation without dragging")
 	asserts.true_value(_tree_has_text(hud, "다음"), "HUD exposes next navigation without dragging")
 	asserts.true_value(_tree_has_text(hud, "정렬"), "HUD exposes sort command without dragging")

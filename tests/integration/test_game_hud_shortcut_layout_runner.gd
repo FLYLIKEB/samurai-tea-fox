@@ -28,7 +28,11 @@ func _check_viewport(viewport_size: Vector2i) -> void:
 	await process_frame
 	hud._apply_safe_area_layout()
 	await process_frame
-	var shortcut := hud.get_node_or_null("Root/ShortcutPanel") as Control
+	var toggle := hud.get_node_or_null("Root/SettingsButton") as Button
+	if toggle != null:
+		toggle.pressed.emit()
+		await process_frame
+	var shortcut := hud.get_node_or_null("Root/ActionMenuPanel") as Control
 	if shortcut == null:
 		_failures.append("%s missing shortcut panel" % viewport_size)
 	else:
@@ -40,5 +44,20 @@ func _check_viewport(viewport_size: Vector2i) -> void:
 			var other := hud.get_node_or_null(path) as Control
 			if other != null and other.visible and shortcut_rect.intersects(other.get_global_rect()):
 				_failures.append("%s shortcut overlaps %s" % [viewport_size, path])
+	var wide_landscape := viewport_size.x >= 600 and viewport_size.x > viewport_size.y
+	for path in ["Root/SettingsButton", "Root/BottomNavPanel"]:
+		var panel := hud.get_node_or_null(path) as Control
+		if panel == null:
+			_failures.append("%s missing %s" % [viewport_size, path])
+			continue
+		if path != "Root/SettingsButton" and panel.visible != wide_landscape:
+			_failures.append("%s unexpected visibility for %s" % [viewport_size, path])
+		if panel.visible and not Rect2(Vector2.ZERO, Vector2(viewport_size)).encloses(panel.get_global_rect()):
+			_failures.append("%s %s outside viewport" % [viewport_size, path])
+	if wide_landscape:
+		var bottom_nav := hud.get_node("Root/BottomNavPanel") as Control
+		for path in ["Root/DPadPanel", "Root/ActionPanel"]:
+			if bottom_nav.get_global_rect().intersects((hud.get_node(path) as Control).get_global_rect()):
+				_failures.append("%s bottom nav overlaps %s" % [viewport_size, path])
 	viewport.queue_free()
 	await process_frame

@@ -61,7 +61,7 @@ func _assert_layout_for_viewport(viewport_name: String, viewport_size: Vector2i)
 	_assert_visible_rect_inside(viewport_name, hud, "Root/EnemyPanel", viewport_size)
 	_assert_visible_rect_inside(viewport_name, hud, "Root/DPadPanel", viewport_size)
 	_assert_visible_rect_inside(viewport_name, hud, "Root/ActionPanel", viewport_size)
-	_assert_visible_rect_inside(viewport_name, hud, "Root/ShortcutPanel", viewport_size)
+	_assert_visible_rect_inside(viewport_name, hud, "Root/ActionMenuPanel", viewport_size)
 	_assert_no_overlap(viewport_name, hud, "Root/StatusPanel", "Root/QuickSlotPanel")
 	_assert_no_overlap(viewport_name, hud, "Root/QuickSlotPanel", "Root/MapPanel")
 	_assert_no_overlap(viewport_name, hud, "Root/StatusPanel", "Root/MapPanel")
@@ -70,15 +70,20 @@ func _assert_layout_for_viewport(viewport_name: String, viewport_size: Vector2i)
 	_assert_no_overlap(viewport_name, hud, "Root/EnemyPanel", "Root/MapPanel")
 	_assert_no_overlap(viewport_name, hud, "Root/EnemyPanel", "Root/DPadPanel")
 	_assert_no_overlap(viewport_name, hud, "Root/EnemyPanel", "Root/ActionPanel")
-	_assert_no_overlap(viewport_name, hud, "Root/EnemyPanel", "Root/ShortcutPanel")
+	_assert_no_overlap(viewport_name, hud, "Root/EnemyPanel", "Root/ActionMenuPanel")
 	_assert_no_overlap(viewport_name, hud, "Root/DPadPanel", "Root/QuickSlotPanel")
 	_assert_no_overlap(viewport_name, hud, "Root/DPadPanel", "Root/ActionPanel")
-	_assert_no_overlap(viewport_name, hud, "Root/ShortcutPanel", "Root/MapPanel")
-	_assert_no_overlap(viewport_name, hud, "Root/ShortcutPanel", "Root/QuickSlotPanel")
-	_assert_no_overlap(viewport_name, hud, "Root/ShortcutPanel", "Root/ActionPanel")
-	_assert_no_overlap(viewport_name, hud, "Root/ShortcutPanel", "Root/DPadPanel")
-	if hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/ActionMenuButton") != null:
-		_failures.append("%s still hides actions behind a menu button" % viewport_name)
+	var action_menu_button := hud.get_node_or_null("Root/SettingsButton") as Button
+	if action_menu_button == null:
+		_failures.append("%s missing compact utility menu button" % viewport_name)
+	else:
+		action_menu_button.pressed.emit()
+		await process_frame
+		hud._apply_safe_area_layout()
+		await process_frame
+		_assert_visible_rect_inside(viewport_name, hud, "Root/ActionMenuPanel", viewport_size)
+		_assert_no_overlap(viewport_name, hud, "Root/ActionMenuPanel", "Root/ActionPanel")
+		_assert_no_overlap(viewport_name, hud, "Root/ActionMenuPanel", "Root/DPadPanel")
 	hud.show_crafting_menu()
 	await process_frame
 	hud._apply_safe_area_layout()
@@ -161,6 +166,7 @@ func _assert_no_overlap(viewport_name: String, root_node: Node, first_path: Stri
 		return
 	if _rect(first).intersects(_rect(second)):
 		_failures.append("%s overlap: %s %s with %s %s" % [viewport_name, first_path, _rect(first), second_path, _rect(second)])
+
 
 func _rect(node: Control) -> Rect2:
 	return node.get_global_rect()

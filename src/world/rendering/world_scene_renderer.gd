@@ -277,6 +277,7 @@ func _render_footprint_cells(parent: Node2D, cells: Array, tile_size: int, owner
 	var rendered := 0
 	var seen_owners := {}
 	var owner_rotations := {}
+	var owner_interactions := {}
 	for cell in cells:
 		var source_id := String(cell.get("source_id", ""))
 		if source_id.is_empty():
@@ -293,6 +294,10 @@ func _render_footprint_cells(parent: Node2D, cells: Array, tile_size: int, owner
 				continue
 			seen_owners[key] = position
 			owner_rotations[owner_id] = float(cell.get("rotation_degrees", 0.0))
+			owner_interactions[owner_id] = {
+				"facility_name": String(cell.get("facility_name", "")),
+				"facility_capabilities": cell.get("facility_capabilities", []).duplicate()
+			}
 			continue
 		if _render_original_sprite(parent, _resource_path(source_id), position, tile_size, outline_color):
 			rendered += 1
@@ -302,7 +307,15 @@ func _render_footprint_cells(parent: Node2D, cells: Array, tile_size: int, owner
 			continue
 		if _render_original_sprite(parent, _resource_path(parts[1]), seen_owners[key], tile_size, outline_color, float(owner_rotations.get(parts[0], 0.0))):
 			rendered += 1
+			_add_facility_interaction_prompt(parent, seen_owners[key], tile_size, owner_interactions.get(parts[0], {}))
 	return rendered
+
+func _add_facility_interaction_prompt(parent: Node2D, position: Vector2i, tile_size: int, interaction: Dictionary) -> void:
+	var capabilities: Array = interaction.get("facility_capabilities", [])
+	if "sleep" not in capabilities:
+		return
+	var title := String(interaction.get("facility_name", "화로"))
+	_add_interaction_prompt(parent, position, tile_size, title, "[E] 수면")
 
 func _render_original_sprite(parent: Node2D, path: String, position: Vector2i, tile_size: int, outline_color := Color.TRANSPARENT, rotation_degrees := 0.0) -> bool:
 	if path.is_empty():

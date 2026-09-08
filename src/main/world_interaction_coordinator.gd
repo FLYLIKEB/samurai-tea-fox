@@ -81,6 +81,10 @@ func pointer_enemy_clicked(main, world_position: Vector2) -> bool:
 func try_landmark_interaction_from_input(main) -> bool:
 	if main.player == null:
 		return false
+	var player_cell: Vector2i = main.world_cell_from_world_position(main.player.global_position)
+	for home_cell in target_footprint_cells(main, WorldGenerator.LARGE_HOUSE_ID, Vector2i(-1, -1)):
+		if cells_are_adjacent(main, player_cell, home_cell):
+			return main.submit_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": WorldGenerator.LARGE_HOUSE_ID}))
 	var target: Dictionary = landmark_target_near_world_position(main, main.player.global_position, main._runtime_tile_size() * 2.5)
 	if target.is_empty():
 		return false
@@ -196,6 +200,8 @@ func submit_pointer_movement(main, world_position: Vector2) -> bool:
 	return true
 
 func submit_player_interaction(main, direction := Vector2i.ZERO) -> bool:
+	if try_facility_interaction_from_input(main):
+		return true
 	var origin_cell := Vector2i.ZERO
 	if main.player != null:
 		origin_cell = main.world_cell_from_world_position(main.player.global_position)
@@ -216,6 +222,12 @@ func submit_player_interaction(main, direction := Vector2i.ZERO) -> bool:
 			return main.submit_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": String(nearby_landmark.target_id)}))
 	main._play_sfx_event(SfxEventRouter.EVENT_INTERACT_FAIL, {"direction": direction}, "interact_empty")
 	return false
+
+func try_facility_interaction_from_input(main) -> bool:
+	var runtime = main._player_runtime()
+	if runtime == null or not bool(runtime.sleep_facility_interaction_at_player().get("ok", false)):
+		return false
+	return main.submit_action_command(GameCommand.new(GameCommand.Type.SLEEP))
 
 func landmark_target_near_world_position(main, world_position: Vector2, max_distance := -1.0) -> Dictionary:
 	return main._spatial_resolver.landmark_target_near_world_position(main.world_data, world_position, main._runtime_tile_size(), main._runtime_world_origin(), max_distance)

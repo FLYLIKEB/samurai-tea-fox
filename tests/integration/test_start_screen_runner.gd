@@ -77,6 +77,8 @@ func run() -> void:
 		failures.append("gameplay scene initializes its player after the transition")
 	if gameplay_scene.generated_world.is_empty():
 		failures.append("gameplay scene completes its existing world initialization")
+	if gameplay_scene.run_state.seed == gameplay_scene.DEFAULT_RUN_SEED:
+		failures.append("new start replaces the deterministic fixture seed with a fresh run seed")
 	if not gameplay_scene.game_hud.narrative_dialogue_visible():
 		failures.append("new start opens the prologue dialogue even when an older completed run existed")
 	if gameplay_scene._active_narrative_event_id != "story_pro_01":
@@ -87,8 +89,38 @@ func run() -> void:
 	if int(gameplay_scene.run_state.narrative_event_counts.get("story_pro_01", 0)) != 0:
 		failures.append("new start replaces the old completed run state before the prologue")
 	_assert_full_prologue_sequence(gameplay_scene)
+	await _assert_starting_home_e_grants_father_letter(gameplay_scene)
 
 	finish()
+
+func _assert_starting_home_e_grants_father_letter(gameplay_scene) -> void:
+	var reservation: Dictionary = gameplay_scene.world_data.get_reservation("large_fenced_house")
+	var interaction_cell := Vector2i(-1, -1)
+	for raw_cell in reservation.get("cells", []):
+		var home_cell := Vector2i(int(raw_cell.get("x", 0)), int(raw_cell.get("y", 0)))
+		for offset in [Vector2i.DOWN, Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP]:
+			var candidate: Vector2i = home_cell + offset
+			if gameplay_scene.world_data.contains(candidate) and gameplay_scene.world_data.is_walkable(candidate):
+				interaction_cell = candidate
+				break
+		if interaction_cell.x >= 0:
+			break
+	if interaction_cell.x < 0:
+		failures.append("starting home exposes a walkable E interaction cell")
+		return
+	gameplay_scene.player.global_position = gameplay_scene.world_position_for_cell_center(interaction_cell)
+	Input.action_press("attack")
+	await process_frame
+	Input.action_release("attack")
+	await process_frame
+	if gameplay_scene.inventory.get_total_quantity("father_letter") != 1:
+		failures.append("E at the starting home grants one father letter")
+	Input.action_press("attack")
+	await process_frame
+	Input.action_release("attack")
+	await process_frame
+	if gameplay_scene.inventory.get_total_quantity("father_letter") != 1:
+		failures.append("repeated E at the starting home does not duplicate the father letter")
 
 func _assert_full_prologue_sequence(gameplay_scene) -> void:
 	var steps := [
