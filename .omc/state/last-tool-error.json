@@ -1,7 +1,0 @@
-{
-  "tool_name": "Read",
-  "tool_input_preview": "{\"file_path\":\"/Users/jwp/Developer/samurai-tea-fox/CLAUDE.md\"}",
-  "error": "File does not exist. Note: your current working directory is /Users/jwp/Developer/samurai-tea-fox.",
-  "timestamp": "2026-09-08T05:05:54.125Z",
-  "retry_count": 2
-}

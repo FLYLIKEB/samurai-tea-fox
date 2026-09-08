@@ -29,6 +29,7 @@ exports/
 
 # Local GJC/Codex/OMX runtime state
 .gjc/
+.omc/
 .omx/
 
 # Python tooling caches
