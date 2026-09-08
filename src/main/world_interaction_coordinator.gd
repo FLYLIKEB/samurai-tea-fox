@@ -158,7 +158,7 @@ func queue_pointer_landmark(main, target_id: String, target_cell: Vector2i) -> b
 			return main.submit_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": target_id}))
 		return main.submit_interaction_at_world_cell(target_cell)
 	var approach_cell: Vector2i = nearest_walkable_adjacent_cell_for_target(main, target_id, target_cell, player_cell)
-	if approach_cell == target_cell:
+	if approach_cell == target_cell and (main.world_data == null or not main.world_data.is_walkable(target_cell)):
 		return false
 	begin_pointer_move_route(main, player_cell, approach_cell, target_id, target_cell)
 	return main._has_pointer_move_target
@@ -438,6 +438,8 @@ func clear_pointer_movement(main) -> void:
 	main._pointer_route_controller.clear()
 
 func complete_pending_pointer_interaction_from_pointer_route(main, target_id: String, target_cell: Vector2i) -> void:
+	if target_id.is_empty():
+		target_id = interaction_target_id_for_cell(main, target_cell)
 	if target_id.is_empty() or (not is_available_acquisition_target(main, target_id) and not is_landmark_target(main, target_id)):
 		main._dungeon_debug("이동 완료 후 대상 무효: target=%s" % target_id)
 		return

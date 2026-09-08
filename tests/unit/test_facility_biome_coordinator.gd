@@ -7,6 +7,7 @@ const GameCommand = preload("res://src/core/commands/game_command.gd")
 const RunState = preload("res://src/save/run_state.gd")
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
 const InventoryModel = preload("res://src/inventory/inventory_model.gd")
+const RuinLootService = preload("res://src/world/interactions/ruin_loot_service.gd")
 
 class ProgressionStub:
 	extends RefCounted
@@ -88,7 +89,8 @@ func _assert_abandoned_house_interaction_grants_and_persists_loot(asserts) -> vo
 	asserts.true_value(inventory_result.ok, "ruin interaction creates an inventory")
 	var coordinator := _coordinator(catalog, inventory_result.inventory)
 	asserts.true_value(coordinator.handle_landmark_interaction("abandoned_house_2"), "E landmark interaction searches the abandoned house")
-	asserts.equal(run_state.world_interactions.abandoned_house_2.state, "looted", "abandoned house interaction persists the loot state")
+	var interaction_key := RuinLootService.state_key("common_region", "abandoned_house_2")
+	asserts.equal(run_state.world_interactions[interaction_key].state, "looted", "abandoned house interaction persists the loot state")
 	asserts.equal(calls, ["save"], "successful ruin loot saves the current run")
 	asserts.false_value(coordinator.handle_landmark_interaction("abandoned_house_2"), "searched abandoned house rejects a duplicate interaction")
 	asserts.true_value(hud.feedback.back().begins_with("이미 수색한 폐가"), "duplicate abandoned house interaction explains the consumed state")

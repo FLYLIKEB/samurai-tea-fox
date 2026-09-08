@@ -13,7 +13,8 @@ func loot(target_id: String, world_seed: int, biome_id: String, catalog, invento
 		return _fail("invalid_abandoned_house_target")
 	if catalog == null or inventory == null or run_state == null:
 		return _fail("missing_runtime")
-	if not run_state.world_interactions.get(target_id, {}).is_empty():
+	var interaction_key := state_key(biome_id, target_id)
+	if not run_state.world_interactions.get(interaction_key, {}).is_empty():
 		return _fail("already_looted")
 	var category := _category_for(target_id)
 	var candidates := _candidates_for(category, biome_id, catalog, inventory)
@@ -24,7 +25,7 @@ func loot(target_id: String, world_seed: int, biome_id: String, catalog, invento
 	var add_result: Dictionary = inventory.add_item(item_id, 1)
 	if not add_result.ok:
 		return add_result
-	run_state.world_interactions[target_id] = {
+	run_state.world_interactions[interaction_key] = {
 		"target_id": target_id,
 		"biome_id": biome_id,
 		"state": "looted",
@@ -32,6 +33,9 @@ func loot(target_id: String, world_seed: int, biome_id: String, catalog, invento
 		"quantity": 1
 	}
 	return {"ok": true, "target_id": target_id, "item_id": item_id, "item_name": String(item.get("name", item_id)), "quantity": 1, "category": category}
+
+static func state_key(biome_id: String, target_id: String) -> String:
+	return "%s:%s" % [biome_id, target_id]
 
 func _category_for(target_id: String) -> String:
 	var suffix := target_id.trim_prefix("%s_" % WorldData.LANDMARK_ABANDONED_HOUSE)

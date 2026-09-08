@@ -17,20 +17,23 @@ func _assert_each_ruin_category_is_lootable_once(asserts, catalog) -> void:
 	for index in range(3):
 		var target_id := "abandoned_house_%d" % index
 		var result: Dictionary = service.loot(target_id, 11037, "common_region", catalog, fixture.inventory, fixture.state)
+		var interaction_key := RuinLootService.state_key("common_region", target_id)
 		asserts.true_value(result.ok, "%s grants a loot reward" % target_id)
 		asserts.equal(String(result.category), ["weapon", "armor", "tea"][index], "%s rotates the available reward categories" % target_id)
-		asserts.equal(fixture.state.world_interactions[target_id].state, "looted", "%s persists its consumed state in run storage" % target_id)
+		asserts.equal(fixture.state.world_interactions[interaction_key].state, "looted", "%s persists its consumed state in run storage" % target_id)
 		asserts.equal(fixture.inventory.get_total_quantity(String(result.item_id)), 1, "%s grants the recorded item" % target_id)
 		var duplicate: Dictionary = service.loot(target_id, 11037, "common_region", catalog, fixture.inventory, fixture.state)
 		asserts.false_value(duplicate.ok, "%s cannot be searched twice" % target_id)
 		asserts.equal(String(duplicate.reason), "already_looted", "%s reports its persisted consumed state" % target_id)
+		var other_biome: Dictionary = service.loot(target_id, 11037, "mountain_region", catalog, fixture.inventory, fixture.state)
+		asserts.true_value(other_biome.ok, "%s remains searchable in another biome" % target_id)
 
 func _assert_inventory_failure_does_not_consume_ruin(asserts, catalog) -> void:
 	var fixture := _fixture(catalog)
 	asserts.true_value(fixture.inventory.load_snapshot({"schema_version": 1, "data_version": catalog.data_version, "slot_count": 1, "next_instance_id": 1, "slots": [{"item_id": "short_travel_sword", "quantity": 1, "instance_id": "instance_1", "metadata": {}}]}).ok, "capacity fixture fills the only inventory slot")
 	var result: Dictionary = RuinLootService.new().loot("abandoned_house_0", 11037, "common_region", catalog, fixture.inventory, fixture.state)
 	asserts.false_value(result.ok, "full inventory rejects the ruin reward")
-	asserts.false_value(fixture.state.world_interactions.has("abandoned_house_0"), "failed reward does not consume the abandoned house")
+	asserts.false_value(fixture.state.world_interactions.has(RuinLootService.state_key("common_region", "abandoned_house_0")), "failed reward does not consume the abandoned house")
 
 func _fixture(catalog) -> Dictionary:
 	var inventory_result: Dictionary = InventoryModel.from_catalog(catalog)
