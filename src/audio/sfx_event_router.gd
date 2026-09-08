@@ -10,6 +10,8 @@ const EVENT_UI_SELECT := "ui_select"
 const EVENT_UI_MENU_OPEN := "ui_menu_open"
 const EVENT_UI_MENU_CLOSE := "ui_menu_close"
 const EVENT_UI_FAIL := "ui_fail"
+const EVENT_TOAST_SUCCESS := "toast_success"
+const EVENT_TOAST_INFO := "toast_info"
 const EVENT_GATHER_WOOD := "gather_wood"
 const EVENT_GATHER_STONE := "gather_stone"
 const EVENT_ITEM_PICKUP := "item_pickup"
@@ -26,6 +28,8 @@ const EVENTS := {
 	EVENT_UI_MENU_OPEN: {"stream_path": DEFAULT_STREAM_PATH, "volume_db": -17.0, "pitch_scale": 1.0, "cooldown_msec": 80, "frequency_hz": 620.0, "duration_sec": 0.07, "wave": "triangle"},
 	EVENT_UI_MENU_CLOSE: {"stream_path": DEFAULT_STREAM_PATH, "volume_db": -17.0, "pitch_scale": 0.82, "cooldown_msec": 80, "frequency_hz": 520.0, "duration_sec": 0.06, "wave": "triangle"},
 	EVENT_UI_FAIL: {"stream_path": DEFAULT_STREAM_PATH, "volume_db": -16.0, "pitch_scale": 0.65, "cooldown_msec": 120, "frequency_hz": 220.0, "duration_sec": 0.08, "wave": "square"},
+	EVENT_TOAST_SUCCESS: {"stream_path": DEFAULT_STREAM_PATH, "volume_db": -14.0, "pitch_scale": 1.15, "cooldown_msec": 80, "frequency_hz": 820.0, "duration_sec": 0.08, "wave": "triangle"},
+	EVENT_TOAST_INFO: {"stream_path": DEFAULT_STREAM_PATH, "volume_db": -16.0, "pitch_scale": 0.9, "cooldown_msec": 80, "frequency_hz": 520.0, "duration_sec": 0.06, "wave": "sine"},
 	EVENT_GATHER_WOOD: {"stream_path": DEFAULT_STREAM_PATH, "volume_db": -11.0, "pitch_scale": 0.78, "cooldown_msec": 110, "frequency_hz": 150.0, "duration_sec": 0.09, "wave": "noise"},
 	EVENT_GATHER_STONE: {"stream_path": DEFAULT_STREAM_PATH, "volume_db": -10.0, "pitch_scale": 0.55, "cooldown_msec": 130, "frequency_hz": 120.0, "duration_sec": 0.075, "wave": "square"},
 	EVENT_ITEM_PICKUP: {"stream_path": DEFAULT_STREAM_PATH, "volume_db": -14.0, "pitch_scale": 1.45, "cooldown_msec": 80, "frequency_hz": 1040.0, "duration_sec": 0.055, "wave": "sine"},
@@ -72,6 +76,15 @@ static func event_ids() -> Array:
 	var ids := EVENTS.keys()
 	ids.sort()
 	return ids
+
+static func event_id_for_toast_kind(kind: String) -> String:
+	match kind:
+		"success":
+			return EVENT_TOAST_SUCCESS
+		"failure", "error":
+			return EVENT_UI_FAIL
+		_:
+			return EVENT_TOAST_INFO
 
 static func event_id_for_acquisition(result: Dictionary) -> String:
 	var kind := String(result.get("kind", ""))
