@@ -38,7 +38,12 @@ func _assert_map_read_model_respects_discovery_and_markers(asserts) -> void:
 	asserts.equal(model.discovered_count, 9, "map shows only discovered cells plus requested player reveal")
 	asserts.equal(model.fog_count, 39, "map reports fog for undiscovered cells")
 	asserts.equal(_marker_type(model.markers, "core_dungeon_0"), MapReadModelBuilder.MARKER_DUNGEON, "required dungeon is a known marker")
+	asserts.equal(_marker_field(model.markers, "core_dungeon_0", "display_name"), "핵심 던전", "dungeon marker exposes a Korean display name")
+	asserts.true_value(String(_marker_field(model.markers, "core_dungeon_0", "description")).contains("공략"), "dungeon marker explains its purpose")
 	asserts.equal(_marker_type(model.markers, "teleport_0"), MapReadModelBuilder.MARKER_TELEPORT, "required teleport is a known marker")
+	asserts.equal(_marker_field(model.markers, "teleport_0", "display_name"), "텔레포트", "teleport marker hides its internal ID behind a Korean name")
+	asserts.equal(_marker_field(model.markers, "ruin_0", "display_name"), "이동 유적", "travel ruin has a distinct Korean name")
+	asserts.equal(_marker_field(model.markers, "abandoned_house_0", "display_name"), "버려진 집", "lootable ruin has a friendly Korean name")
 	asserts.false_value(_marker_discovered(model.markers, "teleport_0"), "required teleport marker can be known before its tile is discovered")
 	asserts.equal(_marker_type(model.markers, "player"), MapReadModelBuilder.MARKER_PLAYER, "player marker is present")
 	asserts.false_value(_cell_visible(model.cells, Vector2i(7, 5)), "undiscovered far cell is not exposed as terrain")
@@ -108,7 +113,10 @@ func _assert_commands_and_hud_open_full_map(asserts) -> void:
 		asserts.true_value(_color_rect_count(map_grid) > 0, "full map grid renders terrain as color cells")
 		asserts.true_value(_button_count(map_grid) > 0, "full map grid renders known markers as buttons")
 		asserts.true_value(_marker_button_exists(map_grid, "teleport_0"), "full map grid includes the teleport marker button")
-	asserts.true_value(_tree_has_text(hud, "텔레포트 · teleport_0"), "full map menu displays teleport marker")
+	asserts.true_value(_tree_has_text(hud, "텔레포트  (1,4)"), "full map menu displays a Korean marker name without its internal ID")
+	asserts.true_value(_tree_has_text(hud, "이동 유적"), "full map menu names the travel ruin")
+	asserts.true_value(_tree_has_text(hud, "버려진 집"), "full map menu names the searchable abandoned house")
+	asserts.false_value(_tree_has_text(hud, "teleport_0"), "full map menu does not expose the internal marker ID")
 	var teleport_button := _marker_button(map_grid, "teleport_0") if map_grid != null else null
 	asserts.true_value(teleport_button != null, "teleport marker is clickable")
 	asserts.false_value(_tree_has_text(hud, "종류: 텔레포트"), "teleport marker detail is absent before click")
@@ -116,6 +124,7 @@ func _assert_commands_and_hud_open_full_map(asserts) -> void:
 		teleport_button.pressed.emit()
 		asserts.true_value(_tree_has_text(hud, "지도 정보"), "teleport marker click opens marker detail title")
 		asserts.true_value(_tree_has_text(hud, "종류: 텔레포트"), "teleport marker detail shows marker type")
+		asserts.true_value(_tree_has_text(hud, "수리하면 연결된 다음 지역으로 이동할 수 있습니다."), "teleport marker detail explains its purpose")
 		asserts.true_value(_tree_has_text(hud, "좌표: (1, 4)"), "teleport marker detail shows coordinates")
 		asserts.true_value(_tree_has_text(hud, "상태: 확인됨"), "teleport marker detail shows full-map discovery status")
 		asserts.true_value(_tree_has_text(hud, "지도 돌아가기"), "teleport marker detail has a map back action")
@@ -236,12 +245,17 @@ func _world() -> WorldData:
 	world.add_required_landmark(WorldData.LANDMARK_ENTRY, "entry_0", Vector2i(0, 0))
 	world.add_required_landmark(WorldData.LANDMARK_CORE_DUNGEON, "core_dungeon_0", Vector2i(6, 4), {"dungeon_id": "forest_core"})
 	world.add_required_landmark(WorldData.LANDMARK_TELEPORT_ZONE, "teleport_0", Vector2i(1, 4), {"teleport_id": "teleport_common"})
+	world.add_required_landmark(WorldData.LANDMARK_RUIN, "ruin_0", Vector2i(3, 3))
+	world.add_required_landmark(WorldData.LANDMARK_ABANDONED_HOUSE, "abandoned_house_0", Vector2i(4, 3))
 	return world
 
 func _marker_type(markers: Array, id: String) -> String:
+	return String(_marker_field(markers, id, "marker_type"))
+
+func _marker_field(markers: Array, id: String, field: String):
 	for marker in markers:
 		if String(marker.get("id", "")) == id:
-			return String(marker.get("marker_type", ""))
+			return marker.get(field, "")
 	return ""
 
 func _marker_discovered(markers: Array, id: String) -> bool:
@@ -283,7 +297,7 @@ func _marker_button_exists(node: Node, id: String) -> bool:
 	return _marker_button(node, id) != null
 
 func _marker_button(node: Node, id: String) -> Button:
-	if node is Button and (node as Button).tooltip_text == id:
+	if node is Button and node.name == "MapMarker_%s" % id:
 		return node as Button
 	for child in node.get_children():
 		var found := _marker_button(child, id)

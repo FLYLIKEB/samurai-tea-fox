@@ -135,7 +135,7 @@ func _visible_cells(world: Dictionary, discovery: Dictionary, minimap_only: bool
 	return cells
 
 func _markers(world: Dictionary, discovery: Dictionary, player_cell: Vector2i) -> Array:
-	var markers := [{"id": "player", "marker_type": MARKER_PLAYER, "position": _position_dictionary(player_cell), "known": true}]
+	var markers := [_marker("player", MARKER_PLAYER, "", player_cell, true, true)]
 	var landmark_values: Array = _array_value(world.get("required_landmarks", []))
 	if landmark_values.is_empty():
 		landmark_values = _array_value(world.get("landmarks", []))
@@ -144,19 +144,51 @@ func _markers(world: Dictionary, discovery: Dictionary, player_cell: Vector2i) -
 		var position := _vector_from_dictionary(landmark.get("position", {}))
 		if not bool(landmark.get("required", false)) and not discovery.has(_cell_key(position)):
 			continue
-		markers.append({
-			"id": String(landmark.get("id", "")),
-			"marker_type": _marker_type_for_landmark(String(landmark.get("type", landmark.get("kind", "")))),
-			"landmark_type": String(landmark.get("type", landmark.get("kind", ""))),
-			"position": _position_dictionary(position),
-			"known": true,
-			"discovered": discovery.has(_cell_key(position)),
-			"metadata": _dictionary_value(landmark.get("metadata", {}))
-		})
+		var landmark_type := String(landmark.get("type", landmark.get("kind", "")))
+		var marker := _marker(
+			String(landmark.get("id", "")),
+			_marker_type_for_landmark(landmark_type),
+			landmark_type,
+			position,
+			true,
+			discovery.has(_cell_key(position))
+		)
+		marker["metadata"] = _dictionary_value(landmark.get("metadata", {}))
+		markers.append(marker)
 	markers.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
 		return String(left.id) < String(right.id)
 	)
 	return markers
+
+func _marker(id: String, marker_type: String, landmark_type: String, position: Vector2i, known: bool, discovered: bool) -> Dictionary:
+	var presentation := _marker_presentation(landmark_type)
+	return {
+		"id": id,
+		"marker_type": marker_type,
+		"landmark_type": landmark_type,
+		"display_name": presentation.name,
+		"description": presentation.description,
+		"position": _position_dictionary(position),
+		"known": known,
+		"discovered": discovered
+	}
+
+func _marker_presentation(landmark_type: String) -> Dictionary:
+	match landmark_type:
+		WorldData.LANDMARK_ENTRY:
+			return {"name": "시작 지점", "description": "이 지역에 처음 도착한 장소입니다."}
+		WorldData.LANDMARK_CORE_DUNGEON:
+			return {"name": "핵심 던전", "description": "지역 진행을 위해 공략해야 하는 던전입니다."}
+		WorldData.LANDMARK_RUIN:
+			return {"name": "이동 유적", "description": "수리하면 다른 지역의 수리된 유적으로 이동할 수 있습니다."}
+		WorldData.LANDMARK_ABANDONED_HOUSE:
+			return {"name": "버려진 집", "description": "가까이에서 조사하면 한 번 보상을 얻을 수 있습니다."}
+		WorldData.LANDMARK_TELEPORT_ZONE:
+			return {"name": "텔레포트", "description": "수리하면 연결된 다음 지역으로 이동할 수 있습니다."}
+		WorldData.LANDMARK_BOSS_ANCHOR:
+			return {"name": "보스 위치", "description": "핵심 던전의 보스가 있는 위치입니다."}
+		_:
+			return {"name": "지도 표식" if landmark_type.is_empty() else "중요 지점", "description": "지도에 표시된 중요한 장소입니다."}
 
 func _minimap(world: Dictionary, discovery: Dictionary, player_cell: Vector2i, max_width: int, max_height: int) -> Dictionary:
 	var bounds: Dictionary = world.get("bounds", {})

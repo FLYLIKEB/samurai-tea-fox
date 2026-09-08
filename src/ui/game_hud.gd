@@ -1762,13 +1762,14 @@ func _map_rows() -> Array:
 func _map_marker_button(marker: Dictionary) -> Button:
 	var position: Dictionary = marker.get("position", {})
 	var button := Button.new()
-	button.text = "%s · %s  (%d,%d)%s" % [
-		_marker_label(String(marker.get("marker_type", ""))),
-		String(marker.get("id", "")),
+	button.name = "MapMarker_%s" % String(marker.get("id", "unknown"))
+	button.text = "%s  (%d,%d)%s" % [
+		String(marker.get("display_name", _marker_label(String(marker.get("marker_type", ""))))),
 		int(position.get("x", 0)),
 		int(position.get("y", 0)),
 		"" if bool(marker.get("discovered", true)) else " · 미발견"
 	]
+	button.tooltip_text = String(marker.get("description", "상세 정보를 봅니다."))
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.custom_minimum_size = Vector2(270, 28)
 	button.pressed.connect(func(): _show_map_marker_info(marker))
@@ -1778,8 +1779,9 @@ func _show_map_marker_info(marker: Dictionary) -> void:
 	var position: Dictionary = marker.get("position", {})
 	var marker_type := String(marker.get("marker_type", ""))
 	var status := "확인됨" if bool(marker.get("discovered", true)) else "미발견"
-	var info := "%s\n종류: %s\n좌표: (%d, %d)\n상태: %s" % [
-		String(marker.get("id", "중요 오브젝트")),
+	var info := "%s\n%s\n종류: %s\n좌표: (%d, %d)\n상태: %s" % [
+		String(marker.get("display_name", "중요 지점")),
+		String(marker.get("description", "지도에 표시된 중요한 장소입니다.")),
 		_marker_label(marker_type),
 		int(position.get("x", 0)),
 		int(position.get("y", 0)),
@@ -1975,7 +1977,11 @@ func _render_minimap_grid(grid: GridContainer, minimap: Dictionary, cell_size: V
 				var marker_button := Button.new()
 				marker_button.text = _marker_glyph(String(marker_by_position.get(key, "")))
 				marker_button.custom_minimum_size = cell_size
-				marker_button.tooltip_text = String(marker_data_by_position[key].get("id", "중요 오브젝트"))
+				marker_button.name = "MapMarker_%s" % String(marker_data_by_position[key].get("id", "unknown"))
+				marker_button.tooltip_text = "%s: %s" % [
+					String(marker_data_by_position[key].get("display_name", "중요 지점")),
+					String(marker_data_by_position[key].get("description", "상세 정보를 봅니다."))
+				]
 				var marker: Dictionary = marker_data_by_position[key]
 				marker_button.pressed.connect(func(): _show_map_marker_info(marker))
 				tile = marker_button

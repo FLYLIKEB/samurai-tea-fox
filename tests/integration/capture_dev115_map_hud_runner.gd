@@ -120,7 +120,7 @@ func _color_rect_count(node: Node) -> int:
 	return count
 
 func _marker_button(node: Node, id: String) -> Button:
-	if node is Button and (node as Button).tooltip_text == id:
+	if node is Button and node.name == "MapMarker_%s" % id:
 		return node as Button
 	for child in node.get_children():
 		var found := _marker_button(child, id)
