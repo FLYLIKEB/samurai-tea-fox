@@ -88,33 +88,33 @@ func _init(ports: Ports, fresh_run_seed: int) -> void:
 
 func ready(main) -> void:
 	main._create_loading_overlay()
-	main._set_loading_status("게임 데이터 불러오는 중…")
+	main._set_loading_status("5% · 게임 데이터 불러오는 중…")
 	await main.get_tree().process_frame
 	main._configure_audio_feedback()
 	main._consume_start_mode()
-	main._set_loading_status("입력 장치 연결 중…")
+	main._set_loading_status("15% · 입력 장치 연결 중…")
 	await main.get_tree().process_frame
 	main.catalog = DataCatalog.new()
-	main._set_loading_status("콘텐츠 카탈로그 준비 중…")
+	main._set_loading_status("25% · 콘텐츠 카탈로그 준비 중…")
 	await main.get_tree().process_frame
 	var result: Dictionary = main.catalog.load_from_directory("res://data/generated")
 	if not result.ok:
 		main.push_error(result.error)
 		return
-	main._set_loading_status("저장 데이터 확인 중…")
+	main._set_loading_status("40% · 저장 데이터 확인 중…")
 	await main.get_tree().process_frame
 	var loaded_run: Dictionary = main.load_or_create_run_state()
 	if not loaded_run.ok:
 		main.push_error(loaded_run.error)
 		return
-	main._set_loading_status("게임 시스템 준비 중…")
+	main._set_loading_status("55% · 게임 시스템 준비 중…")
 	await main.get_tree().process_frame
 	var runtime_result: Dictionary = main._configure_run_services(main.catalog)
 	if not runtime_result.ok:
 		main.push_error(runtime_result.error)
 		return
 	var cheat_result: Dictionary = main._apply_cheat_start_inventory()
-	main._set_loading_status("플레이어와 전투 준비 중…")
+	main._set_loading_status("70% · 플레이어와 전투 준비 중…")
 	await main.get_tree().process_frame
 	if not cheat_result.ok:
 		main.push_error(cheat_result.error)
@@ -128,15 +128,15 @@ func ready(main) -> void:
 	main.run_state.data_version = main.catalog.data_version
 	if main.run_state.seed == 0:
 		main.run_state.seed = randi()
-	main._set_loading_status("%s 월드 생성 중…" % main._loading_biome_label())
+	main._set_loading_status("80%% · %s 월드 생성 중…" % main._loading_biome_label())
 	await main.get_tree().process_frame
-	main._set_loading_status("%s 바이옴 지형·오브젝트 배치 중…" % main._loading_biome_label())
+	main._set_loading_status("85%% · %s 바이옴 지형·오브젝트 배치 중…" % main._loading_biome_label())
 	await main.get_tree().process_frame
 	var world_result: Dictionary = main._configure_world_for_current_run()
 	if not world_result.ok:
 		main.push_error(world_result.error)
 		return
-	main._set_loading_status("카메라와 HUD 준비 중…")
+	main._set_loading_status("95% · 카메라와 HUD 준비 중…")
 	await main.get_tree().process_frame
 	if bool(cheat_result.get("applied", false)):
 		main._normalize_cheat_progression_state()
@@ -145,6 +145,8 @@ func ready(main) -> void:
 			main.push_error(save_result.error)
 			return
 	main._maybe_show_run_start_event()
+	main._set_loading_status("100% · 완료")
+	await main.get_tree().process_frame
 	main._clear_loading_overlay()
 
 func configure_combat_lifecycle(main) -> Dictionary:

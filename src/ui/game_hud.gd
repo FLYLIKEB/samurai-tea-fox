@@ -131,8 +131,6 @@ signal mobile_command_issued(command)
 
 signal movement_button_changed(direction: Vector2i)
 
-signal status_toast_presented(kind: String, event_key: String)
-
 var asset_catalog := AssetCatalog.new()
 var _asset_catalog_ready := false
 var _content_image_map_ready := false
@@ -321,14 +319,13 @@ func show_command_feedback(message: String) -> void:
 	if not _open_menu_id.is_empty():
 		_refresh_open_menu()
 
-func show_status_toast(message: String, kind := "info") -> void:
-	_enqueue_status_toast({"message": message, "kind": kind, "event_key": "message:%s" % message})
+func show_status_toast(message: String) -> void:
+	_enqueue_status_toast({"message": message, "event_key": "message:%s" % message})
 
 func show_status_event(event: Dictionary) -> bool:
 	var model := _status_toast_model(event)
 	if model.is_empty():
 		return false
-	model["kind"] = String(event.get("kind", "success"))
 	return _enqueue_status_toast(model)
 
 func status_toast_debug_snapshot() -> Dictionary:
@@ -456,7 +453,6 @@ func _apply_status_toast_model(model: Dictionary) -> void:
 	_toast_label.visible = true
 	_toast_panel.visible = true
 	_toast_remaining = STATUS_TOAST_DURATION
-	status_toast_presented.emit(String(model.get("kind", "info")), String(model.get("event_key", "")))
 
 func _process(delta: float) -> void:
 	if _toast_label != null and _toast_remaining > 0.0:
@@ -1501,8 +1497,6 @@ func _crafting_rows() -> Array:
 		var category_id := String(category)
 		filters.add_child(_crafting_filter_button(_crafting_filter_label(category_id), category_id))
 	rows.append(filters)
-	rows.append(_crafting_detail_row(model.get("detail", {})))
-	rows.append(_section_label("제작법 목록"))
 	var model_rows: Array = model.get("rows", [])
 	# Keep the full recipe list visible; the menu is scrollable and hiding
 	# craftable entries behind an implicit six-item page made facilities appear
@@ -1517,6 +1511,7 @@ func _crafting_rows() -> Array:
 	for index in range(page_start, model_rows.size()):
 		recipe_strip.add_child(_crafting_row(model_rows[index]))
 	rows.append(recipe_strip)
+	rows.append(_crafting_detail_row(model.get("detail", {})))
 	return rows
 
 func _crafting_row(row_model: Dictionary) -> Control:
@@ -1543,16 +1538,18 @@ func _crafting_row(row_model: Dictionary) -> Control:
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	summary.add_child(label)
 	card.add_child(summary)
+	var actions := HBoxContainer.new()
+	_ignore_mouse(actions)
+	actions.add_theme_constant_override("separation", 3)
 	var select_button := Button.new()
-	select_button.text = "선택됨" if bool(row_model.get("selected", false)) else "상세"
+	select_button.text = "보기"
 	select_button.icon = _load_texture(ICON_SCROLL)
 	select_button.expand_icon = true
 	select_button.add_theme_constant_override("icon_max_width", 14)
-	select_button.custom_minimum_size = Vector2(92, 30)
+	select_button.custom_minimum_size = Vector2(44, 24)
 	select_button.focus_mode = Control.FOCUS_ALL
 	select_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	select_button.tooltip_text = "상세"
-	select_button.disabled = bool(row_model.get("selected", false))
 	select_button.add_theme_stylebox_override("normal", _button_style(Color(0.08, 0.065, 0.05, 0.92)))
 	select_button.add_theme_stylebox_override("hover", _button_style(Color(0.13, 0.10, 0.07, 0.96)))
 	select_button.add_theme_stylebox_override("pressed", _button_style(Color(0.23, 0.17, 0.09, 0.98)))
@@ -1561,7 +1558,25 @@ func _crafting_row(row_model: Dictionary) -> Control:
 		_selected_recipe_id = recipe_id
 		_refresh_open_menu()
 	)
-	card.add_child(select_button)
+	actions.add_child(select_button)
+	var button := Button.new()
+	button.text = "제작"
+	button.icon = _load_texture(ICON_WORKBENCH)
+	button.expand_icon = true
+	button.add_theme_constant_override("icon_max_width", 14)
+	button.disabled = not bool(row_model.get("craftable", false))
+	button.focus_mode = Control.FOCUS_ALL
+	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	button.tooltip_text = "제작"
+	button.custom_minimum_size = Vector2(44, 24)
+	button.add_theme_stylebox_override("normal", _button_style(Color(0.08, 0.065, 0.05, 0.92)))
+	button.add_theme_stylebox_override("hover", _button_style(Color(0.13, 0.10, 0.07, 0.96)))
+	button.add_theme_stylebox_override("pressed", _button_style(Color(0.23, 0.17, 0.09, 0.98)))
+	button.pressed.connect(func():
+		mobile_command_issued.emit(GameCommand.new(GameCommand.Type.CRAFT_RECIPE, Vector2i.ZERO, 0, {"recipe_id": recipe_id}))
+	)
+	actions.add_child(button)
+	card.add_child(actions)
 	var frame := _card_frame(card, bool(row_model.get("selected", false)))
 	frame.add_theme_stylebox_override("panel", _crafting_card_style(row_model))
 	return frame
@@ -1642,7 +1657,7 @@ func _crafting_detail_row(detail: Dictionary) -> Control:
 		rows.add_child(_wrapped_label(description, 10))
 	var facts := GridContainer.new()
 	facts.name = "CraftingFacts"
-	facts.columns = 1 if compact else 3
+	facts.columns = 1 if compact else 2
 	_ignore_mouse(facts)
 	facts.add_theme_constant_override("h_separation", 5)
 	facts.add_theme_constant_override("v_separation", 5)
@@ -1652,22 +1667,6 @@ func _crafting_detail_row(detail: Dictionary) -> Control:
 	if not unlock_biome_name.is_empty():
 		facts.add_child(_crafting_fact_card("해금 조건", unlock_biome_name))
 	rows.add_child(facts)
-	var craft_button := Button.new()
-	craft_button.name = "CraftSelectedRecipeButton"
-	craft_button.text = "제작"
-	craft_button.icon = _load_texture(ICON_WORKBENCH)
-	craft_button.expand_icon = true
-	craft_button.add_theme_constant_override("icon_max_width", 18)
-	craft_button.custom_minimum_size = Vector2(160, 34)
-	craft_button.disabled = not bool(detail.get("craftable", false))
-	craft_button.focus_mode = Control.FOCUS_ALL
-	craft_button.mouse_filter = Control.MOUSE_FILTER_STOP
-	craft_button.tooltip_text = String(detail.get("reason_label", "제작"))
-	var recipe_id := String(detail.get("recipe_id", ""))
-	craft_button.pressed.connect(func():
-		mobile_command_issued.emit(GameCommand.new(GameCommand.Type.CRAFT_RECIPE, Vector2i.ZERO, 0, {"recipe_id": recipe_id}))
-	)
-	rows.add_child(craft_button)
 	return card
 
 func _crafting_fact_card(title: String, text: String) -> PanelContainer:

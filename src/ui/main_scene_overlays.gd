@@ -4,9 +4,13 @@ extends RefCounted
 const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
 const LOADING_BACKDROP_PATH := "res://assets/backgrounds/prologue/first_run_father_muchau_teahouse.png"
 
+class LoadingSpinner extends Label:
+	func _process(delta: float) -> void:
+		rotation += TAU * delta
+
 static func create_loading(scene_root: Node) -> Label:
 	if scene_root.get_node_or_null("LoadingOverlay") != null:
-		return scene_root.get_node_or_null("LoadingOverlay/LoadingStatusPanel/LoadingStatus") as Label
+		return scene_root.get_node_or_null("LoadingOverlay/LoadingStatusPanel/LoadingStatusRow/LoadingStatus") as Label
 	var layer := CanvasLayer.new()
 	layer.name = "LoadingOverlay"
 	layer.layer = 200
@@ -34,14 +38,28 @@ static func create_loading(scene_root: Node) -> Label:
 	panel.theme = PixelUiTheme.create()
 	panel.add_theme_stylebox_override("panel", PixelUiTheme.panel_style())
 	layer.add_child(panel)
+	var row := HBoxContainer.new()
+	row.name = "LoadingStatusRow"
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(row)
+	var spinner := LoadingSpinner.new()
+	spinner.name = "LoadingSpinner"
+	spinner.text = "↻"
+	spinner.custom_minimum_size = Vector2(28.0, 28.0)
+	spinner.pivot_offset = Vector2(14.0, 14.0)
+	spinner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	spinner.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	spinner.add_theme_font_size_override("font_size", 20)
+	spinner.modulate = Color(1.0, 0.82, 0.45, 1.0)
+	row.add_child(spinner)
 	var label := Label.new()
 	label.name = "LoadingStatus"
-	label.text = "준비 중…"
+	label.text = "0% · 준비 중…"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 14)
-	label.custom_minimum_size = Vector2(360.0, 28.0)
+	label.custom_minimum_size = Vector2(326.0, 28.0)
 	label.modulate = Color(1.0, 0.91, 0.68, 1.0)
-	panel.add_child(label)
+	row.add_child(label)
 	return label
 
 static func _loading_backdrop_texture() -> Texture2D:

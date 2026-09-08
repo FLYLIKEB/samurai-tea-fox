@@ -350,10 +350,10 @@ func on_dungeon_enemy_defeated(main, _event: Dictionary, enemy, owner_id: String
 				"event_id": owner_id
 			})
 		else:
-			main.game_hud.show_status_toast("적을 처치했다!", "success")
+			main.game_hud.show_status_toast("적을 처치했다!")
 		if dungeon_cleared:
 			main.game_hud.show_status_event({"type": "dungeon_floor_changed", "ok": true, "event_id": "dungeon_cleared"})
-			main.game_hud.show_status_toast("던전 클리어! 유적으로 돌아가세요.", "success")
+			main.game_hud.show_status_toast("던전 클리어! 유적으로 돌아가세요.")
 	main._save_progress_after_turn()
 
 func restore_dungeon_map_from_runtime(main) -> void:
