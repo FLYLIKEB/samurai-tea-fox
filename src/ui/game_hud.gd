@@ -1749,29 +1749,43 @@ func _map_rows() -> Array:
 		rows.append(_label("이 지역은 아직 잠겨 있습니다. 해금 후 상세 지도가 표시됩니다.", 10))
 		return rows
 	var bounds: Dictionary = model.bounds
-	rows.append(_label("지도 %dx%d · 발견 %d · 안개 %d" % [int(bounds.width), int(bounds.height), int(model.discovered_count), int(model.fog_count)], 11))
-	rows.append(_label("플레이어 (%d,%d)" % [int(model.player.position.x), int(model.player.position.y)], 11))
-	rows.append(_label("현재 던전: %s" % ("클리어" if _dungeon_cleared_for_current_biome() else "미클리어"), 11))
+	rows.append(_label("%dx%d · 발견 %d · 안개 %d · 던전 %s" % [
+		int(bounds.width),
+		int(bounds.height),
+		int(model.discovered_count),
+		int(model.fog_count),
+		"완료" if _dungeon_cleared_for_current_biome() else "미완료"
+	], 10))
 	rows.append(_map_color_grid(model.minimap, Vector2(8, 8)))
 	var markers: Array = model.markers
-	rows.append(_label("중요 오브젝트", 11))
-	for marker in markers:
-		rows.append(_map_marker_button(marker))
+	rows.append(_label("표식 %d개 · 선택하면 위치와 설명을 볼 수 있습니다" % markers.size(), 10))
+	rows.append(_map_marker_grid(markers))
 	return rows
 
-func _map_marker_button(marker: Dictionary) -> Button:
-	var position: Dictionary = marker.get("position", {})
+func _map_marker_grid(markers: Array) -> GridContainer:
+	var grid := GridContainer.new()
+	grid.name = "MapMarkerGrid"
+	grid.columns = 2 if _inventory_uses_compact_layout() else 3
+	grid.add_theme_constant_override("h_separation", 4)
+	grid.add_theme_constant_override("v_separation", 4)
+	var totals := {}
+	for marker in markers:
+		var name := String(marker.get("display_name", _marker_label(String(marker.get("marker_type", "")))))
+		totals[name] = int(totals.get(name, 0)) + 1
+	var seen := {}
+	for marker in markers:
+		var name := String(marker.get("display_name", _marker_label(String(marker.get("marker_type", "")))))
+		seen[name] = int(seen.get(name, 0)) + 1
+		grid.add_child(_map_marker_button(marker, "%s %d" % [name, seen[name]] if int(totals[name]) > 1 else name))
+	return grid
+
+func _map_marker_button(marker: Dictionary, display_name := "") -> Button:
 	var button := Button.new()
 	button.name = "MapMarker_%s" % String(marker.get("id", "unknown"))
-	button.text = "%s  (%d,%d)%s" % [
-		String(marker.get("display_name", _marker_label(String(marker.get("marker_type", ""))))),
-		int(position.get("x", 0)),
-		int(position.get("y", 0)),
-		"" if bool(marker.get("discovered", true)) else " · 미발견"
-	]
+	button.text = "%s%s" % [display_name, " ?" if not bool(marker.get("discovered", true)) else ""]
 	button.tooltip_text = String(marker.get("description", "상세 정보를 봅니다."))
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.custom_minimum_size = Vector2(270, 28)
+	button.custom_minimum_size = Vector2(104, 26)
 	button.pressed.connect(func(): _show_map_marker_info(marker))
 	return button
 

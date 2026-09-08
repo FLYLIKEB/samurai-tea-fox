@@ -105,20 +105,26 @@ func _assert_commands_and_hud_open_full_map(asserts) -> void:
 	hud.configure(player, {"biome_id": "common_region"}, {"counts": {}}, {"map_read_model_builder": builder, "world_data": _world(), "run_state": state, "catalog": FakeCatalog.new()})
 	asserts.true_value(hud.press_mobile_button("open_map"), "HUD emits open map command")
 	asserts.true_value(hud.show_map_menu(), "HUD opens full map menu")
-	asserts.true_value(_tree_has_text(hud, "지도 8x6"), "full map menu displays map bounds")
+	asserts.true_value(_tree_has_text(hud, "8x6 · 발견"), "full map menu keeps map status in one compact line")
 	var map_grid := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/MapColorGrid") as GridContainer
+	var marker_grid := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/MapMarkerGrid") as GridContainer
 	asserts.true_value(map_grid != null, "full map menu renders map cells as a color grid")
+	asserts.true_value(marker_grid != null and marker_grid.columns == 3, "map markers use a dense three-column grid when room is available")
 	if map_grid != null:
 		asserts.equal(map_grid.get_child_count(), 8 * 6, "full map color grid is clipped to the world bounds")
 		asserts.true_value(_color_rect_count(map_grid) > 0, "full map grid renders terrain as color cells")
 		asserts.true_value(_button_count(map_grid) > 0, "full map grid renders known markers as buttons")
 		asserts.true_value(_marker_button_exists(map_grid, "teleport_0"), "full map grid includes the teleport marker button")
-	asserts.true_value(_tree_has_text(hud, "텔레포트  (1,4)"), "full map menu displays a Korean marker name without its internal ID")
+	asserts.true_value(_tree_has_text(hud, "표식 6개"), "full map menu summarizes the compact marker list")
 	asserts.true_value(_tree_has_text(hud, "이동 유적"), "full map menu names the travel ruin")
 	asserts.true_value(_tree_has_text(hud, "버려진 집"), "full map menu names the searchable abandoned house")
 	asserts.false_value(_tree_has_text(hud, "teleport_0"), "full map menu does not expose the internal marker ID")
 	var teleport_button := _marker_button(map_grid, "teleport_0") if map_grid != null else null
 	asserts.true_value(teleport_button != null, "teleport marker is clickable")
+	asserts.equal(teleport_button.text, "T", "map grid keeps its compact teleport glyph")
+	var teleport_list_button := _marker_button(marker_grid, "teleport_0") if marker_grid != null else null
+	asserts.true_value(teleport_list_button != null, "compact marker grid includes teleport details")
+	asserts.equal(teleport_list_button.text, "텔레포트", "compact marker button omits coordinates until selected")
 	asserts.false_value(_tree_has_text(hud, "종류: 텔레포트"), "teleport marker detail is absent before click")
 	if teleport_button != null:
 		teleport_button.pressed.emit()
