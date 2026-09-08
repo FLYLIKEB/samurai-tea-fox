@@ -178,6 +178,8 @@ func is_handcraft(recipe_id: String) -> bool:
 func is_facility_item(item_id: String) -> bool:
 	if item_id.is_empty():
 		return false
+	if not _duplicate_array(item_definitions.get(item_id, {}).get("facility_capabilities", [])).is_empty():
+		return true
 	for recipe in recipe_definitions.values():
 		for facility_item_id in recipe.get("facility_item_ids", []):
 			if String(facility_item_id) == item_id:
