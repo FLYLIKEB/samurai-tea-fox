@@ -141,27 +141,51 @@
   },
   "hotPaths": [
     {
-      "path": "README.md",
-      "accessCount": 18,
-      "lastAccessed": 1788793855602,
+      "path": "src/ui/narrative_dialogue_presenter.gd",
+      "accessCount": 31,
+      "lastAccessed": 1788842574178,
       "type": "file"
     },
     {
-      "path": "src/ui/game_hud.gd",
-      "accessCount": 17,
-      "lastAccessed": 1788793712225,
+      "path": "src/ui/dialogue_text_effect.gd",
+      "accessCount": 27,
+      "lastAccessed": 1788842908024,
       "type": "file"
     },
     {
       "path": "AGENTS.md",
-      "accessCount": 16,
-      "lastAccessed": 1788793855270,
+      "accessCount": 25,
+      "lastAccessed": 1788843848121,
       "type": "file"
     },
     {
-      "path": "src/ui/narrative_dialogue_presenter.gd",
-      "accessCount": 12,
-      "lastAccessed": 1788793810039,
+      "path": "README.md",
+      "accessCount": 21,
+      "lastAccessed": 1788794103526,
+      "type": "file"
+    },
+    {
+      "path": "src/ui/game_hud.gd",
+      "accessCount": 21,
+      "lastAccessed": 1788843751674,
+      "type": "file"
+    },
+    {
+      "path": "src/world/generation/world_generator.gd",
+      "accessCount": 15,
+      "lastAccessed": 1788843424270,
+      "type": "file"
+    },
+    {
+      "path": "src/main/main.gd",
+      "accessCount": 14,
+      "lastAccessed": 1788843826588,
+      "type": "file"
+    },
+    {
+      "path": "DESIGN.md",
+      "accessCount": 13,
+      "lastAccessed": 1788843848463,
       "type": "file"
     },
     {
@@ -177,33 +201,27 @@
       "type": "file"
     },
     {
-      "path": "DESIGN.md",
-      "accessCount": 10,
-      "lastAccessed": 1788793855943,
-      "type": "file"
-    },
-    {
-      "path": "src/ui/dialogue_text_effect.gd",
-      "accessCount": 6,
-      "lastAccessed": 1788793827642,
-      "type": "file"
-    },
-    {
-      "path": "src/world/generation/world_generator.gd",
-      "accessCount": 6,
-      "lastAccessed": 1788793864269,
-      "type": "file"
-    },
-    {
       "path": "src/world/rendering/world_presentation.gd",
-      "accessCount": 4,
-      "lastAccessed": 1788793518800,
+      "accessCount": 5,
+      "lastAccessed": 1788842455401,
       "type": "file"
     },
     {
-      "path": "src/main/main.gd",
-      "accessCount": 2,
-      "lastAccessed": 1788792786845,
+      "path": "src/main/run_bootstrap_coordinator.gd",
+      "accessCount": 5,
+      "lastAccessed": 1788843300309,
+      "type": "file"
+    },
+    {
+      "path": "src/main/player_runtime_coordinator.gd",
+      "accessCount": 4,
+      "lastAccessed": 1788843779261,
+      "type": "file"
+    },
+    {
+      "path": "tools/generate_dialogue_sound.py",
+      "accessCount": 3,
+      "lastAccessed": 1788793922947,
       "type": "file"
     },
     {
@@ -225,21 +243,15 @@
       "type": "file"
     },
     {
-      "path": "tools/generate_dialogue_sound.py",
+      "path": "src/world/data/world_data.gd",
       "accessCount": 2,
-      "lastAccessed": 1788793823504,
-      "type": "file"
-    },
-    {
-      "path": "src/main/run_bootstrap_coordinator.gd",
-      "accessCount": 2,
-      "lastAccessed": 1788793856159,
+      "lastAccessed": 1788842858534,
       "type": "file"
     },
     {
       "path": "src/world/rendering/world_scene_renderer.gd",
-      "accessCount": 1,
-      "lastAccessed": 1788792736647,
+      "accessCount": 2,
+      "lastAccessed": 1788842887855,
       "type": "file"
     },
     {
@@ -294,6 +306,60 @@
       "path": "docs/main-composition.md",
       "accessCount": 1,
       "lastAccessed": 1788793864591,
+      "type": "file"
+    },
+    {
+      "path": "project.godot",
+      "accessCount": 1,
+      "lastAccessed": 1788793893777,
+      "type": "file"
+    },
+    {
+      "path": "assets/sounds/ui/dialogue_text_reveal.mp3.import",
+      "accessCount": 1,
+      "lastAccessed": 1788794239457,
+      "type": "file"
+    },
+    {
+      "path": "src/core/data/asset_catalog.gd",
+      "accessCount": 1,
+      "lastAccessed": 1788842439348,
+      "type": "file"
+    },
+    {
+      "path": "assets/asset-manifest.json",
+      "accessCount": 1,
+      "lastAccessed": 1788842452006,
+      "type": "file"
+    },
+    {
+      "path": "src/player/player_controller.gd",
+      "accessCount": 1,
+      "lastAccessed": 1788842804354,
+      "type": "file"
+    },
+    {
+      "path": "src/core/commands/action_command_factory.gd",
+      "accessCount": 1,
+      "lastAccessed": 1788842878221,
+      "type": "file"
+    },
+    {
+      "path": "src/time/time_state.gd",
+      "accessCount": 1,
+      "lastAccessed": 1788842878684,
+      "type": "file"
+    },
+    {
+      "path": "tests/unit/test_starting_home_island.gd",
+      "accessCount": 1,
+      "lastAccessed": 1788842900687,
+      "type": "file"
+    },
+    {
+      "path": "src/ui/sleep_transition_presenter.gd",
+      "accessCount": 1,
+      "lastAccessed": 1788843759657,
       "type": "file"
     }
   ],

@@ -16,6 +16,7 @@ const RunServiceFactory = preload("res://src/main/run_service_factory.gd")
 const RunStateSnapshotCoordinator = preload("res://src/save/run_state_snapshot_coordinator.gd")
 
 const WorldPresentation = preload("res://src/world/rendering/world_presentation.gd")
+const SleepTransitionPresenter = preload("res://src/ui/sleep_transition_presenter.gd")
 
 const CheatStartConfigurator = preload("res://src/main/cheat_start_configurator.gd")
 const AcquisitionDefinitionBuilder = preload("res://src/world/interactions/acquisition_definition_builder.gd")
@@ -88,6 +89,7 @@ var acquisition_service
 var repair_interaction_service
 var dungeon_runtime
 var run_lifecycle_service
+var sleep_transition_presenter
 var run_runtime_state_binder := RunRuntimeStateBinder.new()
 var run_state_snapshot_coordinator := RunStateSnapshotCoordinator.new()
 var dungeon_definition_resolver := DungeonDefinitionResolver.new()
@@ -244,6 +246,8 @@ var _player_item_actions := PlayerItemActions.new(
 )
 
 func _ready() -> void:
+	sleep_transition_presenter = SleepTransitionPresenter.new()
+	add_child(sleep_transition_presenter)
 	await _run_bootstrap().ready(self)
 
 func _create_loading_overlay() -> void:
@@ -560,6 +564,7 @@ func _player_runtime_ports() -> PlayerRuntimeCoordinator.Ports:
 	ports.get_run_runtime_state_binder = func(): return run_runtime_state_binder
 	ports.get_acquisition_service = func(): return acquisition_service
 	ports.get_in_dungeon_map = func(): return _in_dungeon_map
+	ports.get_sleep_transition_presenter = func(): return sleep_transition_presenter
 	ports.world_cell_from_world_position = Callable(self, "world_cell_from_world_position")
 	ports.save_current_run = Callable(self, "save_current_run")
 	ports.configure_game_hud = Callable(self, "_configure_game_hud")

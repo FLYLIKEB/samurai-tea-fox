@@ -27,6 +27,7 @@ class Ports:
 	var get_run_runtime_state_binder: Callable
 	var get_acquisition_service: Callable
 	var get_in_dungeon_map: Callable
+	var get_sleep_transition_presenter: Callable
 	var world_cell_from_world_position: Callable
 	var save_current_run: Callable
 	var configure_game_hud: Callable
@@ -109,6 +110,11 @@ func handle_sleep_command() -> bool:
 		if game_hud != null:
 			game_hud.show_command_feedback(sleep_facility_failure_message(String(facility_result.get("reason", "sleep_facility_unavailable"))))
 		return false
+
+	var sleep_presenter = _call_value(_ports.get_sleep_transition_presenter)
+	if sleep_presenter != null:
+		sleep_presenter.play_sleep_transition()
+
 	var result: Dictionary = time_state.sleep_until_morning(player.resources)
 	if game_hud != null:
 		game_hud.show_command_feedback("수면 완료: HP +%d / 心 +%d" % [

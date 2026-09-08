@@ -24,6 +24,18 @@ const PORTRAIT_BY_CHARACTER := {
 const PAIRED_RIGHT_PORTRAIT_BY_SPEAKER := {
 	"CHR-5": PORTRAIT_SEN_RIKYU
 }
+const DEFAULT_VOICE_PITCH := 1.0
+const VOICE_PITCH_BY_CHARACTER := {
+	"CHR-1": 0.65,	# 아버지 - 가장 낮고 묵직한 톤
+	"CHR-2": 0.5,	# 황무지 다이묘 - 극저음 위압적 톤
+	"CHR-3": 1.35,	# 후루타 오리베 - 극고음 날카로운 톤
+	"CHR-4": 0.75,	# 설산 수도승 - 낮은 중저음
+	"CHR-5": 1.0,	# 센노 리큐 - 중립적 톤
+	"CHR-6": 1.5,	# 요괴 다도 마스터 - 극고음 신비로운 톤
+	"CHR-7": 0.7,	# 산악 도공 - 낮은 투박한 톤
+	"CHR-8": 1.4,	# 무차우 - 극고음 밝은 톤
+	"CHR-9": 1.15,	# 방랑 차상인 - 높은 중고음
+}
 const PAIRED_PRESENTATION_KINDS := [
 	"father_farewell_then_border_cup",
 	"father_dream",
@@ -110,8 +122,9 @@ func show_read_model(read_model: Dictionary) -> bool:
 	background.visible = not uses_placeholder and _uses_background(read_model)
 	background.texture = _load_texture(String(_presentation_metadata(read_model).get("background_asset_id", BACKGROUND_FIRST_RUN_PROLOGUE))) if background.visible else null
 	_configure_portraits(read_model)
-	_set_label("speaker", _speaker_label(String(read_model.get("speaker_id", ""))))
-	_start_text_reveal(String(read_model.get("text", "")))
+	var speaker_id := String(read_model.get("speaker_id", ""))
+	_set_label("speaker", _speaker_label(speaker_id))
+	_start_text_reveal(String(read_model.get("text", "")), speaker_id)
 	_clear_options()
 	for option in _array_value(read_model.get("options", [])):
 		if typeof(option) == TYPE_DICTIONARY:
@@ -383,10 +396,13 @@ func _create_dialogue_text_label() -> DialogueTextEffect:
 	label.custom_minimum_size = Vector2(528, 38)
 	return label
 
-func _start_text_reveal(dialogue_text: String) -> void:
+func _start_text_reveal(dialogue_text: String, speaker_id: String) -> void:
 	var text_label := _labels.get("text") as DialogueTextEffect
 	if text_label != null:
-		text_label.start_reveal(dialogue_text)
+		text_label.start_reveal(dialogue_text, _voice_pitch_for_speaker(speaker_id))
+
+func _voice_pitch_for_speaker(speaker_id: String) -> float:
+	return float(VOICE_PITCH_BY_CHARACTER.get(speaker_id, DEFAULT_VOICE_PITCH))
 
 func _stop_text_reveal() -> void:
 	var text_label := _labels.get("text") as DialogueTextEffect

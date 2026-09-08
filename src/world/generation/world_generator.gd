@@ -314,18 +314,27 @@ func _strip_presentation_sources(value):
 	return value
 
 func _place_starting_home_island(world_data: WorldData, entry_position: Vector2i, profile: Dictionary) -> Dictionary:
-	var island_min := entry_position + Vector2i(-3, -5)
-	var island_max := entry_position + Vector2i(1, 1)
-	var moat_min := island_min - Vector2i(2, 2)
-	var moat_max := island_max + Vector2i(2, 2)
-	for y in range(moat_min.y, moat_max.y + 1):
-		for x in range(moat_min.x, moat_max.x + 1):
+	var clearing_min := entry_position + Vector2i(-3, -5)
+	var clearing_max := entry_position + Vector2i(0, 1)
+	for y in range(clearing_min.y, clearing_max.y + 1):
+		for x in range(clearing_min.x, clearing_max.x + 1):
 			var position := Vector2i(x, y)
 			if not world_data.contains(position):
 				return {"ok": false}
 			_clear_generated_tree_obstacle(world_data, position)
-			if x < island_min.x or x > island_max.x or y < island_min.y or y > island_max.y:
-				world_data.set_terrain(position, String(profile.water_terrain_id), false)
+			world_data.set_terrain(position, String(profile.default_terrain_id), bool(profile.default_walkable))
+	var creek_min := entry_position + Vector2i(1, -4)
+	var creek_max := entry_position + Vector2i(2, 1)
+	var shore_cells := []
+	for y in range(creek_min.y, creek_max.y + 1):
+		for x in range(creek_min.x, creek_max.x + 1):
+			var position := Vector2i(x, y)
+			if not world_data.contains(position):
+				return {"ok": false}
+			_clear_generated_tree_obstacle(world_data, position)
+			world_data.set_terrain(position, String(profile.water_terrain_id), false)
+		_paint_shore_cell(world_data, Vector2i(creek_min.x - 1, y), profile, shore_cells)
+		_paint_shore_cell(world_data, Vector2i(creek_max.x + 1, y), profile, shore_cells)
 	var bridge_result := _reserve_starting_home_bridges(world_data, entry_position, profile)
 	if not bridge_result.ok:
 		return bridge_result
@@ -342,7 +351,7 @@ func _place_starting_home_island(world_data: WorldData, entry_position: Vector2i
 
 func _reserve_starting_home_bridges(world_data: WorldData, entry_position: Vector2i, profile: Dictionary) -> Dictionary:
 	var bridges := [
-		{"id": STARTING_HOME_BRIDGE_IDS[0], "origin": entry_position + Vector2i(1, 0), "size": Vector2i(3, 2), "rotation_degrees": 0.0}
+		{"id": STARTING_HOME_BRIDGE_IDS[0], "origin": entry_position + Vector2i(1, 0), "size": Vector2i(2, 1), "rotation_degrees": 0.0}
 	]
 	var owner_ids: Array = []
 	for bridge in bridges:
@@ -370,10 +379,7 @@ func _reserve_large_house_fence(world_data: WorldData, outer_origin: Vector2i) -
 	var segments := [
 		{"id": "large_house_fence_nw", "origin": outer_origin, "size": Vector2i.ONE, "rotation_degrees": 0.0},
 		{"id": "large_house_fence_ne", "origin": outer_origin + Vector2i(3, 0), "size": Vector2i.ONE, "rotation_degrees": 90.0},
-		{"id": "large_house_fence_sw", "origin": outer_origin + Vector2i(0, 3), "size": Vector2i.ONE, "rotation_degrees": 270.0},
-		{"id": "large_house_fence_se", "origin": outer_origin + Vector2i(3, 3), "size": Vector2i.ONE, "rotation_degrees": 180.0},
 		{"id": "large_house_fence_n", "origin": outer_origin + Vector2i(1, 0), "size": Vector2i(2, 1), "rotation_degrees": 0.0},
-		{"id": "large_house_fence_s", "origin": outer_origin + Vector2i(1, 3), "size": Vector2i(2, 1), "rotation_degrees": 0.0},
 		{"id": "large_house_fence_w", "origin": outer_origin + Vector2i(0, 1), "size": Vector2i(1, 2), "rotation_degrees": 90.0},
 		{"id": "large_house_fence_e", "origin": outer_origin + Vector2i(3, 1), "size": Vector2i(1, 2), "rotation_degrees": 90.0}
 	]
