@@ -564,6 +564,14 @@ func _build() -> void:
 	_minimap_grid.add_theme_constant_override("v_separation", 1)
 	_ignore_mouse(_minimap_grid)
 	map_rows.add_child(_minimap_grid)
+	var map_open_button := Button.new()
+	map_open_button.name = "MapOpenButton"
+	map_open_button.flat = true
+	map_open_button.tooltip_text = "지도 열기"
+	map_open_button.focus_mode = Control.FOCUS_NONE
+	map_open_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	map_open_button.pressed.connect(func(): press_mobile_button("open_map"))
+	map_panel.add_child(map_open_button)
 
 	var enemy_panel := _panel(ENEMY_PANEL_SIZE)
 	enemy_panel.name = "EnemyPanel"
