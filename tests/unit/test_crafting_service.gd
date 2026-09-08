@@ -71,6 +71,14 @@ func _assert_generated_catalog_configures_crafting(asserts) -> void:
 		var unlocked_context := {"current_biome_id": "common_region", "unlocked_biome_ids": ["common_region"]}
 		var repair_unlocked := service.craft("wooden_workbench", inventory, unlocked_context)
 		asserts.true_value(repair_unlocked.ok, "generated catalog recipe executes after repair unlock")
+		asserts.true_value(inventory.add_item("wood", 2).ok, "initial biome sleep facility materials can be stocked")
+		var brazier := service.craft("portable_brazier", inventory, {
+			"unlocked_biome_ids": ["common_region"],
+			"available_facility_item_ids": ["wooden_workbench"]
+		})
+		asserts.true_value(brazier.ok, "portable brazier crafts in the initial biome with two wood")
+		asserts.equal(inventory.get_total_quantity("wood"), 0, "portable brazier consumes exactly two wood")
+		asserts.equal(inventory.get_total_quantity("portable_brazier"), 1, "portable brazier craft grants the sleep facility")
 		asserts.true_value(inventory.add_item("cloth", 2).ok, "generated cloth can be stocked")
 		asserts.true_value(service.craft("bandage", inventory, unlocked_context).ok, "generated bandage recipe executes")
 		asserts.equal(inventory.get_total_quantity("bandage"), 1, "cloth-to-bandage crafting grants bandage")
@@ -322,9 +330,9 @@ func _assert_generated_catalog_extended_recipe_definitions(asserts, service: Cra
 		},
 		"portable_brazier": {
 			"result_item_id": "portable_brazier",
-			"materials": [{"item_id": "charcoal", "quantity": 2}, {"item_id": "item_28", "quantity": 4}],
-			"facility_item_ids": ["wooden_workbench"],
-			"unlock_biome_id": "wasteland"
+			"materials": [{"item_id": "wood", "quantity": 2}],
+			"facility_item_ids": [],
+			"unlock_biome_id": "common_region"
 		},
 		"repair_hammer": {
 			"result_item_id": "repair_hammer",

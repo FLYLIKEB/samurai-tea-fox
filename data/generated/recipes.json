@@ -1,5 +1,5 @@
 {
-  "content_hash": "fde375a7b465924150036129801ae6e461e795ad6f7ca38d5d0f69ccdabdd363",
+  "content_hash": "d397d04853c2ac6b6898f3c4e6c70525cb98107da2ba2f3b1573aff59253239e",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -153,20 +153,23 @@
     {
       "category": "도구",
       "craft_seconds": 5,
-      "facility": "목재 작업대",
-      "facility_item_ids": [
-        "wooden_workbench"
-      ],
+      "facility": "손제작",
       "id": "portable_brazier",
-      "materials_note": "철 조각 4 + 숯 2",
+      "materials": [
+        {
+          "item_id": "wood",
+          "quantity": 2
+        }
+      ],
+      "materials_note": "목재 2",
       "name": "휴대 화로 제작",
       "notion_id": "3cd37369-9e66-81b9-bbb9-c9d7964bbc52",
       "result_item_id": "portable_brazier",
       "result_quantity": 1,
       "status": "확정",
-      "unlock_biome": "황무지",
-      "unlock_biome_id": "wasteland",
-      "unlock_condition": "황무지 핵심 던전 클리어 후 현재 런에서 휴대 탐험 도구 제작 해금"
+      "unlock_biome": "일반",
+      "unlock_biome_id": "common_region",
+      "unlock_condition": "일반 지역 진입 시 현재 런에서 휴대 화로 제작 해금"
     },
     {
       "category": "도구",
