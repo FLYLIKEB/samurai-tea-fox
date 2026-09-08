@@ -1862,9 +1862,10 @@ func _teleport_travel_rows() -> Array:
 func _biome_map_selector() -> Control:
 	var strip := GridContainer.new()
 	strip.name = "BiomeMapSelector"
-	strip.columns = 2
+	var definitions := _ordered_biome_definitions()
+	strip.columns = maxi(1, ceili(definitions.size() / 2.0))
 	strip.add_theme_constant_override("separation", 4)
-	for definition in _ordered_biome_definitions():
+	for definition in definitions:
 		var biome_id := String(definition.get("id", ""))
 		var button := Button.new()
 		button.name = "BiomeMap_%s" % biome_id
