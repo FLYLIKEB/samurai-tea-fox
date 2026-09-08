@@ -94,6 +94,21 @@ func _assert_layout_for_viewport(viewport_name: String, viewport_size: Vector2i)
 			_failures.append("%s missing action menu scroll" % viewport_name)
 		elif scroll.custom_minimum_size.y > _rect(hud.get_node("Root/ActionMenuPanel")).size.y:
 			_failures.append("%s action menu scroll exceeds panel height" % viewport_name)
+	hud.show_crafting_menu()
+	await process_frame
+	hud._apply_safe_area_layout()
+	await process_frame
+	_assert_visible_rect_inside(viewport_name, hud, "Root/MenuPanel", viewport_size)
+	_assert_horizontal_inside_node(viewport_name, hud, "Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingFilterBar", "Root/MenuPanel")
+	_assert_horizontal_inside_node(viewport_name, hud, "Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip", "Root/MenuPanel")
+	_assert_horizontal_inside_node(viewport_name, hud, "Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingDetailCard", "Root/MenuPanel")
+	var crafting_filters := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingFilterBar") as GridContainer
+	var crafting_facts := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingDetailCard/Rows/CraftingFacts") as GridContainer
+	var compact := viewport_size.x <= 480
+	if crafting_filters != null and crafting_filters.columns != (3 if compact else 7):
+		_failures.append("%s crafting filters use %d columns" % [viewport_name, crafting_filters.columns])
+	if crafting_facts != null and crafting_facts.columns != (1 if compact else 2):
+		_failures.append("%s crafting facts use %d columns" % [viewport_name, crafting_facts.columns])
 	hud.show_narrative_dialogue({
 		"event_id": "repeat_dialogue_check",
 		"node_id": "portrait_layout",
@@ -137,6 +152,17 @@ func _assert_rect_inside_node(viewport_name: String, root_node: Node, child_path
 		or child_rect.end.y > parent_rect.end.y + 0.01
 	):
 		_failures.append("%s %s outside %s: %s within %s" % [viewport_name, child_path, parent_path, child_rect, parent_rect])
+
+func _assert_horizontal_inside_node(viewport_name: String, root_node: Node, child_path: String, parent_path: String) -> void:
+	var child := root_node.get_node_or_null(child_path) as Control
+	var parent := root_node.get_node_or_null(parent_path) as Control
+	if child == null or parent == null:
+		_failures.append("%s missing %s or %s" % [viewport_name, child_path, parent_path])
+		return
+	var child_rect := _rect(child)
+	var parent_rect := _rect(parent)
+	if child_rect.position.x < parent_rect.position.x - 0.01 or child_rect.end.x > parent_rect.end.x + 0.01:
+		_failures.append("%s %s horizontally outside %s: %s within %s" % [viewport_name, child_path, parent_path, child_rect, parent_rect])
 
 func _assert_no_overlap(viewport_name: String, root_node: Node, first_path: String, second_path: String) -> void:
 	var first := root_node.get_node_or_null(first_path) as Control

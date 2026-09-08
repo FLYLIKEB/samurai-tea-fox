@@ -1487,10 +1487,12 @@ func _crafting_rows() -> Array:
 		int(counts.get("craftable", 0)),
 		_crafting_filter_label(_crafting_filter)
 	]))
-	var filters := HBoxContainer.new()
+	var filters := GridContainer.new()
 	filters.name = "CraftingFilterBar"
+	filters.columns = 3 if _inventory_uses_compact_layout() else 7
 	_ignore_mouse(filters)
-	filters.add_theme_constant_override("separation", 4)
+	filters.add_theme_constant_override("h_separation", 4)
+	filters.add_theme_constant_override("v_separation", 4)
 	for category in model.get("categories", []):
 		var category_id := String(category)
 		filters.add_child(_crafting_filter_button(_crafting_filter_label(category_id), category_id))
@@ -1639,7 +1641,10 @@ func _crafting_detail_row(detail: Dictionary) -> Control:
 			String(facility.get("name", facility.get("item_id", ""))),
 			"" if bool(facility.get("available", false)) else "(필요)"
 		])
+	var compact := _inventory_uses_compact_layout()
 	var card := _detail_card("제작 상세")
+	card.name = "CraftingDetailCard"
+	card.custom_minimum_size = Vector2(220, 42) if compact else Vector2(520, 42)
 	var rows := card.get_node("Rows") as VBoxContainer
 	rows.add_child(_icon_text_row(_crafting_result_icon_reference(detail), "결과 %s x%d" % [
 		String(result.get("name", result.get("item_id", ""))),
@@ -1648,13 +1653,33 @@ func _crafting_detail_row(detail: Dictionary) -> Control:
 	rows.add_child(_label("상태 %s" % String(detail.get("reason_label", "")), 10))
 	var description := String(result.get("description", "")).strip_edges()
 	if not description.is_empty():
+		rows.add_child(_section_label("설명"))
 		rows.add_child(_wrapped_label(description, 10))
-	if not materials.is_empty():
-		rows.add_child(_label("재료 %s" % ", ".join(materials), 10))
-	rows.add_child(_label("시설 %s" % ("손제작" if facilities.is_empty() else ", ".join(facilities)), 10))
+	var facts := GridContainer.new()
+	facts.name = "CraftingFacts"
+	facts.columns = 1 if compact else 2
+	_ignore_mouse(facts)
+	facts.add_theme_constant_override("h_separation", 5)
+	facts.add_theme_constant_override("v_separation", 5)
+	facts.add_child(_crafting_fact_card("필요 재료", "없음" if materials.is_empty() else "\n".join(materials)))
+	facts.add_child(_crafting_fact_card("제작 방식", "손제작" if facilities.is_empty() else "\n".join(facilities)))
 	var unlock_biome_name := String(detail.get("unlock_biome_name", "")).strip_edges()
 	if not unlock_biome_name.is_empty():
-		rows.add_child(_label("해금 %s" % unlock_biome_name, 10))
+		facts.add_child(_crafting_fact_card("해금 조건", unlock_biome_name))
+	rows.add_child(facts)
+	return card
+
+func _crafting_fact_card(title: String, text: String) -> PanelContainer:
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(104, 42)
+	_ignore_mouse(card)
+	card.add_theme_stylebox_override("panel", _button_style(Color(0.08, 0.065, 0.05, 0.92)))
+	var rows := VBoxContainer.new()
+	_ignore_mouse(rows)
+	rows.add_theme_constant_override("separation", 1)
+	card.add_child(rows)
+	rows.add_child(_label(title, 9))
+	rows.add_child(_wrapped_label(text, 10))
 	return card
 
 func _crafting_page_start(rows: Array, selected: String, page_size: int) -> int:
