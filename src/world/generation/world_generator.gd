@@ -966,6 +966,10 @@ func _place_path_edge_fences(world_data: WorldData, rng: DeterministicRng, templ
 				continue
 			if not world_data.is_walkable(fence_position):
 				continue
+			# Bridges are already walkable river crossings; fencing them here
+			# would block the only crossing point the path relies on.
+			if world_data.terrain_id_at(fence_position) == String(profile.bridge_terrain_id):
+				continue
 			# A rotated 1x2 segment is taller than one tile and overlaps on
 			# descending lanes; use the 1x1 corner piece for those side posts.
 			var rotation_degrees := 90.0 if side.x != 0 else 0.0
@@ -1021,6 +1025,8 @@ func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_res
 		var position: Vector2i = candidate_position
 		if path_cell_keys.has(_key(position)):
 			continue
+		if world_data.terrain_id_at(position) == TERRAIN_BRIDGE:
+			continue
 		if not world_data.is_walkable(position) or not reachable_cells.has(_key(position)):
 			continue
 		var access_position := _reachable_access_position(position, reachable_cells, cardinal_offsets)
@@ -1031,6 +1037,8 @@ func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_res
 		attempt += 1
 		var position := Vector2i(rng.next_range(2, MAP_WIDTH - 3), rng.next_range(2, MAP_HEIGHT - 3))
 		if path_cell_keys.has(_key(position)):
+			continue
+		if world_data.terrain_id_at(position) == TERRAIN_BRIDGE:
 			continue
 		if not world_data.is_walkable(position) or not reachable_cells.has(_key(position)):
 			continue
