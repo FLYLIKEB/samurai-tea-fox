@@ -913,6 +913,9 @@ func _on_acquisition_changed(snapshot: Dictionary) -> void:
 func _on_acquisition_completed(result: Dictionary) -> void:
 	_world_interaction_coordinator.acquisition_completed(self, result)
 
+func _on_acquisition_failed(error: Dictionary) -> void:
+	_world_interaction_coordinator.acquisition_failed(self, error)
+
 func _on_combat_drop_requested(event: Dictionary, source = null) -> void:
 	_world_interaction_coordinator.combat_drop_requested(self, event, source)
 

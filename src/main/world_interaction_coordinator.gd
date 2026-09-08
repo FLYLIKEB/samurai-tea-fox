@@ -274,6 +274,7 @@ func configure_acquisition_for_generated_world(main) -> Dictionary:
 	main.generated_world["renderer_input"] = restored_renderer_input
 	main.acquisition_service.changed.connect(main._on_acquisition_changed)
 	main.acquisition_service.acquisition_completed.connect(main._on_acquisition_completed)
+	main.acquisition_service.operation_failed.connect(main._on_acquisition_failed)
 	main._on_acquisition_changed(main.acquisition_service.to_snapshot())
 	return {"ok": true}
 
@@ -347,6 +348,12 @@ func acquisition_completed(main, result: Dictionary) -> void:
 			"quantity": int(result.get("quantity", 0)),
 			"event_id": String(result.get("pickup_id", result.get("node_id", result.get("id", result.get("target_id", "")))))
 		})
+
+func acquisition_failed(main, error: Dictionary) -> void:
+	if String(error.get("reason", "")) != "inventory_full":
+		return
+	if main.game_hud != null:
+		main.game_hud.show_status_toast("인벤토리가 가득 찼습니다.")
 
 func combat_drop_requested(main, event: Dictionary, source = null) -> void:
 	if main.acquisition_service == null:
