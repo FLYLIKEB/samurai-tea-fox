@@ -34,12 +34,12 @@ static func create_loading(scene_root: Node) -> Label:
 	spinner.name = "LoadingSpinner"
 	spinner.text = "↻"
 	spinner.set_anchors_preset(Control.PRESET_CENTER)
-	spinner.position = Vector2(-14.0, -14.0)
-	spinner.size = Vector2(28.0, 28.0)
-	spinner.pivot_offset = Vector2(14.0, 14.0)
+	spinner.position = Vector2(-24.0, -24.0)
+	spinner.size = Vector2(48.0, 48.0)
+	spinner.pivot_offset = Vector2(24.0, 24.0)
 	spinner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	spinner.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	spinner.add_theme_font_size_override("font_size", 20)
+	spinner.add_theme_font_size_override("font_size", 36)
 	spinner.modulate = Color(1.0, 0.82, 0.45, 1.0)
 	layer.add_child(spinner)
 	var panel := PanelContainer.new()

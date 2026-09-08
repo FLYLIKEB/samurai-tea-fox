@@ -20,6 +20,7 @@ func run(asserts) -> void:
 	asserts.true_value(spinner != null and spinner.text == "↻", "loading overlay shows a rotating spinner")
 	asserts.equal(spinner.anchor_left, 0.5, "loading spinner is centered horizontally")
 	asserts.equal(spinner.anchor_top, 0.5, "loading spinner is centered vertically")
+	asserts.equal(spinner.size, Vector2(48.0, 48.0), "loading spinner is large enough to read at screen center")
 	var initial_rotation := spinner.rotation
 	spinner._process(0.25)
 	asserts.true_value(spinner.rotation > initial_rotation, "loading spinner rotates while the overlay is visible")
