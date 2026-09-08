@@ -132,7 +132,7 @@ func ready(main) -> void:
 	await main.get_tree().process_frame
 	main._set_loading_status("85%% · %s 바이옴 지형·오브젝트 배치 중…" % main._loading_biome_label())
 	await main.get_tree().process_frame
-	var world_result: Dictionary = main._configure_world_for_current_run()
+	var world_result: Dictionary = await _configure_world_for_current_run_while_loading(main)
 	if not world_result.ok:
 		main.push_error(world_result.error)
 		return
@@ -148,6 +148,86 @@ func ready(main) -> void:
 	main._set_loading_status("100% · 완료")
 	await main.get_tree().process_frame
 	main._clear_loading_overlay()
+
+func _configure_world_for_current_run_while_loading(main) -> Dictionary:
+	var catalog = _call_object(_ports.get_catalog)
+	var run_state: RunState = _call_object(_ports.get_run_state)
+	var progression_result := BiomeProgressionState.from_catalog(catalog, run_state)
+	if not progression_result.ok:
+		return progression_result
+	_call_void(_ports.set_biome_progression_state, [progression_result.progression_state])
+	var dungeon_runtime_result := _call_dictionary(_ports.ensure_playable_dungeon_runtime)
+	if not dungeon_runtime_result.ok:
+		return dungeon_runtime_result
+	var projection: Dictionary = progression_result.progression_state.to_projection()
+	var current_biome_id := String(projection.get("current_biome_id", ""))
+	var current_biome: Dictionary = catalog.find_by_id("biomes", current_biome_id)
+	if current_biome.is_empty():
+		return {"ok": false, "reason": "missing_current_biome", "error": "No current biome data loaded for %s." % current_biome_id}
+	_call_void(_ports.prepare_runtime_state_aliases_for_biome, [current_biome_id])
+	var thread := Thread.new()
+	var thread_error := thread.start(_generate_world_bundle.bind(
+		run_state.seed,
+		catalog.data_version,
+		current_biome,
+		catalog.get_definitions("biomes"),
+		catalog.get_definitions("balance"),
+		catalog.get_definitions("items"),
+		_world_generation_options(projection),
+		projection
+	))
+	if thread_error != OK:
+		return {"ok": false, "reason": "world_generation_thread_failed", "error": "Failed to start world generation thread."}
+	var displayed_percent := 85
+	while thread.is_alive():
+		displayed_percent = mini(displayed_percent + 1, 94)
+		main._set_loading_status("%d%% · %s 바이옴 생성 중…" % [displayed_percent, main._loading_biome_label()])
+		await main.get_tree().process_frame
+	var bundle: Dictionary = thread.wait_to_finish()
+	var generated_world: Dictionary = bundle.get("current", {})
+	if not generated_world.get("ok", false):
+		return {"ok": false, "reason": "world_generation_failed", "error": String(generated_world.get("failure_reason", "World generation failed."))}
+	_call_void(_ports.set_generated_world, [generated_world])
+	_call_void(_ports.set_biome_map_previews, [bundle.get("previews", {})])
+	return _finish_world_configuration()
+
+func _generate_world_bundle(seed: int, data_version: String, current_biome: Dictionary, biomes: Array, balance: Array, items: Array, options: Dictionary, projection: Dictionary) -> Dictionary:
+	var generator := WorldGenerator.new()
+	var current := generator.generate(seed, data_version, current_biome, balance, items, options)
+	if not current.get("ok", false):
+		return {"current": current, "previews": {}}
+	current["renderer_input"] = WorldRendererProjection.new().project(current["world_data"], projection)
+	var previews := {}
+	for biome_definition in biomes:
+		var preview_id := String(biome_definition.get("id", ""))
+		if preview_id.is_empty() or preview_id == String(current_biome.get("id", "")):
+			continue
+		var preview := generator.generate(seed, data_version, biome_definition, balance, items, options)
+		if bool(preview.get("ok", false)):
+			preview["renderer_input"] = WorldRendererProjection.new().project(preview["world_data"], projection)
+			previews[preview_id] = preview
+	return {"current": current, "previews": previews}
+
+func _finish_world_configuration() -> Dictionary:
+	var combat_pool_result := configure_overworld_combat_from_spawn_pool()
+	if not combat_pool_result.ok:
+		return combat_pool_result
+	var acquisition_result := _call_dictionary(_ports.configure_acquisition_for_generated_world)
+	if not acquisition_result.ok:
+		return acquisition_result
+	if bool(_call_value(_ports.ensure_saved_world_has_teleport_landmark, false)):
+		var migration_save := save_current_run(_ports.current_run_state_snapshot)
+		if not migration_save.ok:
+			_call_void(_ports.push_error, [String(migration_save.get("error", "Failed to save teleport landmark migration."))])
+	var drop_connection := _call_dictionary(_ports.connect_acquisition_combat_source, [_call_object(_ports.get_combat_dummy)])
+	if not drop_connection.ok:
+		return drop_connection
+	_call_void(_ports.render_generated_world, [_call_dictionary(_ports.get_generated_world)])
+	if bool(_call_value(_ports.dungeon_runtime_is_active, false)):
+		_call_void(_ports.restore_dungeon_map_from_runtime)
+	_call_void(_ports.record_current_map_discovery)
+	_call_void(_ports.configure_game_hud)
+	return {"ok": true}
 
 func configure_combat_lifecycle(main) -> Dictionary:
 	var player_combat_result: Dictionary = main.player.configure_combat(main.catalog)
@@ -215,25 +295,7 @@ func configure_world_for_current_run() -> Dictionary:
 	generated_world["renderer_input"] = WorldRendererProjection.new().project(generated_world["world_data"], projection)
 	_call_void(_ports.set_generated_world, [generated_world])
 	_call_void(_ports.set_biome_map_previews, [_biome_map_previews(generator, current_biome_id, projection)])
-	var combat_pool_result := configure_overworld_combat_from_spawn_pool()
-	if not combat_pool_result.ok:
-		return combat_pool_result
-	var acquisition_result := _call_dictionary(_ports.configure_acquisition_for_generated_world)
-	if not acquisition_result.ok:
-		return acquisition_result
-	if bool(_call_value(_ports.ensure_saved_world_has_teleport_landmark, false)):
-		var migration_save := save_current_run(_ports.current_run_state_snapshot)
-		if not migration_save.ok:
-			_call_void(_ports.push_error, [String(migration_save.get("error", "Failed to save teleport landmark migration."))])
-	var drop_connection := _call_dictionary(_ports.connect_acquisition_combat_source, [_call_object(_ports.get_combat_dummy)])
-	if not drop_connection.ok:
-		return drop_connection
-	_call_void(_ports.render_generated_world, [_call_dictionary(_ports.get_generated_world)])
-	if bool(_call_value(_ports.dungeon_runtime_is_active, false)):
-		_call_void(_ports.restore_dungeon_map_from_runtime)
-	_call_void(_ports.record_current_map_discovery)
-	_call_void(_ports.configure_game_hud)
-	return {"ok": true}
+	return _finish_world_configuration()
 
 func configure_overworld_combat_from_spawn_pool() -> Dictionary:
 	var combat_dummy = _call_object(_ports.get_combat_dummy)
