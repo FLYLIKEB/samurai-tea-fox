@@ -25,6 +25,7 @@ func run(asserts) -> void:
 	if not generated.ok:
 		return
 	var entry_position := _entry_position(generated.world_data)
+	var core_dungeon_position := _core_dungeon_position(generated.world_data)
 	var home: Dictionary = generated.get("large_house", {})
 	asserts.equal(home.get("entry_position", {}), {"x": entry_position.x, "y": entry_position.y}, "starting home records the fox entry position")
 	asserts.equal(home.get("footprint_size", {}), {"x": 2, "y": 2}, "fox home uses the supplied 2x2 house sprite")
@@ -42,6 +43,7 @@ func run(asserts) -> void:
 	asserts.false_value(world.is_walkable(entry_position + Vector2i(0, -6)), "north side becomes river immediately outside the compact home ground")
 	asserts.false_value(world.is_walkable(entry_position + Vector2i(0, 2)), "south side becomes river immediately outside the compact home ground")
 	asserts.true_value(ConnectivityValidator.new().validate_world_data(generated.world_data).valid, "starting island bridges preserve required landmark connectivity")
+	asserts.true_value(entry_position.distance_to(core_dungeon_position) >= 36, "core dungeon stays at least 36 tiles away from the starting entry")
 	var projection := WorldRendererProjection.new().project(generated.world_data)
 	var entity_sources := _entity_sources(projection)
 	for owner_id in WorldGenerator.STARTING_HOME_BRIDGE_IDS:
@@ -50,6 +52,13 @@ func run(asserts) -> void:
 func _entry_position(world_data: Dictionary) -> Vector2i:
 	for landmark in world_data.get("required_landmarks", []):
 		if String(landmark.get("kind", "")) == WorldData.LANDMARK_ENTRY:
+			var position: Dictionary = landmark.get("position", {})
+			return Vector2i(int(position.get("x", 0)), int(position.get("y", 0)))
+	return Vector2i(-1, -1)
+
+func _core_dungeon_position(world_data: Dictionary) -> Vector2i:
+	for landmark in world_data.get("required_landmarks", []):
+		if String(landmark.get("kind", "")) == WorldData.LANDMARK_CORE_DUNGEON:
 			var position: Dictionary = landmark.get("position", {})
 			return Vector2i(int(position.get("x", 0)), int(position.get("y", 0)))
 	return Vector2i(-1, -1)

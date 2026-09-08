@@ -442,6 +442,7 @@ func _assert_core_dungeon_contract(asserts, world: Dictionary, biome_id: String,
 	var boss_anchors := []
 	var occupied_positions := _occupied_world_positions(world.world_data)
 	var reachable := ConnectivityValidator.new().reachable_cell_keys_from_entry(world.world_data)
+	var entry_position := _entry_position(world.world_data)
 	for landmark in world.world_data.required_landmarks:
 		var kind := String(landmark.get("kind", ""))
 		if kind == WorldData.LANDMARK_CORE_DUNGEON:
@@ -458,7 +459,14 @@ func _assert_core_dungeon_contract(asserts, world: Dictionary, biome_id: String,
 		asserts.true_value(reachable.has(_key(position)), "%s landmark is reachable from entry" % landmark.id)
 		asserts.false_value(occupied_positions.has(_key(position)), "%s landmark is not occupied by an entity/facility" % landmark.id)
 	if not core_dungeons.is_empty() and not boss_anchors.is_empty():
+		asserts.true_value(_manhattan_distance(core_dungeons[0].position, entry_position) >= 36, "%s core dungeon stays at least 36 tiles from the starting entry" % biome_id)
 		asserts.equal(_manhattan_distance(core_dungeons[0].position, boss_anchors[0].position), 1, "%s boss anchor is adjacent to dungeon entrance" % biome_id)
+
+func _entry_position(world_data: Dictionary) -> Dictionary:
+	for landmark in world_data.get("required_landmarks", []):
+		if String(landmark.get("kind", "")) == WorldData.LANDMARK_ENTRY:
+			return landmark.get("position", {})
+	return {}
 
 func _assert_large_fenced_house(asserts, world: Dictionary) -> void:
 	var house: Dictionary = world.get("large_house", {})

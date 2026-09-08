@@ -829,7 +829,9 @@ func _place_required_landmarks(world_data: WorldData, rng: DeterministicRng, cor
 		))
 
 	for index in range(core_dungeon_count):
-		var dungeon_position := Vector2i(rng.next_range(MAP_WIDTH - 6, MAP_WIDTH - 3), rng.next_range(6, MAP_HEIGHT - 7))
+		# The core dungeon belongs at the far end of the overworld, not beside
+		# the starting-home entry island.
+		var dungeon_position := Vector2i(rng.next_range(MAP_WIDTH - 4, MAP_WIDTH - 2), rng.next_range(6, MAP_HEIGHT - 7))
 		var dungeon_landmark := _add_landmark(
 			world_data,
 			WorldData.LANDMARK_CORE_DUNGEON,
