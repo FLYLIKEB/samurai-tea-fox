@@ -9,6 +9,13 @@ metadata:
 
 이 프로젝트의 Notion 문서를 읽을 때 사용한다. 목적은 모든 문서를 한꺼번에 읽지 않고, 현재 작업에 필요한 정본만 읽어 충돌과 컨텍스트 낭비를 줄이는 것이다.
 
+## 로컬 snapshot 우선
+
+- 콘텐츠·밸런스 값은 먼저 `data/generated/*.json`에서 확인한다.
+- 최신 snapshot이 필요하면 Notion MCP로 각 DB를 반복 조회하지 말고 `NOTION_ACCESS_TOKEN=... tools/sync_notion.sh`를 한 번 실행한다.
+- 기획 의도, 기술 정본, 현재 백로그, export 대상이 아닌 `🎨 아트 에셋` DB만 필요한 범위에서 Notion으로 읽는다.
+- 로컬 snapshot의 `data_version`, `profile`, `source`, `content_hash`를 확인하고 오래된 데이터인지 구분한다.
+
 ## 기본 읽기 순서
 
 1. `무차우: 한 잔의 도 — 게임 컨셉 바이블`

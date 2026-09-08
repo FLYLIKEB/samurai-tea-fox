@@ -18,11 +18,10 @@ Notion은 편집 정본이며 Godot 런타임은 Notion API를 호출하지 않�
 Notion integration token을 환경변수로 제공하고 15개 런타임 정본 DB를 한 번에 snapshot으로 만든다. `art_assets`는 별도 제작 파이프라인용 계약이므로 런타임 `sync`에서는 제외한다.
 
 ```bash
-NOTION_ACCESS_TOKEN=... python3 -m tools.notion_export sync \
-  --output data/generated \
-  --data-version notion-YYYY-MM-DD \
-  --profile confirmed-test
+NOTION_ACCESS_TOKEN=... tools/sync_notion.sh
 ```
+
+스크립트는 동기화 직후 생성 snapshot의 schema, version, relation을 검증한다. 기획 문서, AI 구현 백로그, `🎨 아트 에셋` DB는 동기화 대상이 아니므로 필요한 경우에만 Notion에서 직접 확인한다.
 
 동기화는 page ID override를 우선하고, 기존 데이터 이관 중에는 데이터셋별 이름 override를 사용한다. 처음 확인된 page ID는 `runtime_id_map.json`에 기록되어 이후 제목 변경과 무관하게 같은 런타임 ID를 유지한다. 새 행은 Notion `UNIQUE_ID`를 `{dataset_prefix}_{number}` 형식으로 변환한다.
 
