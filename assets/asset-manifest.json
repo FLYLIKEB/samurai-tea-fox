@@ -12242,16 +12242,16 @@
       "name": "수면 모닥불 시설 꺼짐",
       "status": "완료",
       "kind": "object_sprite",
-      "path": "res://assets/sprites/facilities/sleep/campfire_sleep_facility_off_64x64.png",
-      "width": 64,
-      "height": 64,
+      "path": "res://assets/sprites/facilities/sleep/campfire_sleep_facility_off_32x32.png",
+      "width": 32,
+      "height": 32,
       "direction_count": 1,
       "frame_count": 1,
       "frame_grid": {
         "columns": 1,
         "rows": 1,
-        "frame_width": 64,
-        "frame_height": 64
+        "frame_width": 32,
+        "frame_height": 32
       },
       "alpha_required": true,
       "texture_filter": "nearest",
@@ -12261,24 +12261,24 @@
       "content_id": "portable_brazier",
       "facility_item_id": "portable_brazier",
       "facility_state": "off",
-      "source_sha256": "sha256:07bd4406771317a3a786c1166922136bdbbc1264708c289aebb228b096facdae",
-      "rgba_sha256": "sha256:be29addaf8fab9ada46be599efc68d73dea5bc68a656337b5d1650ea128e878f"
+      "source_sha256": "sha256:f5116a88c35c10ecaf100afccb07ea72c602bfa639c7b23ab49c3c1042a2a00e",
+      "rgba_sha256": "sha256:2d070fcb11492f99800d6d35b40404cc66c0df69d7351175a0f4d58876b29252"
     },
     {
       "id": "campfire_sleep_facility_on",
       "name": "수면 모닥불 시설 점화",
       "status": "완료",
       "kind": "object_sprite",
-      "path": "res://assets/sprites/facilities/sleep/campfire_sleep_facility_on_64x64.png",
-      "width": 64,
-      "height": 64,
+      "path": "res://assets/sprites/facilities/sleep/campfire_sleep_facility_on_32x32.png",
+      "width": 32,
+      "height": 32,
       "direction_count": 1,
       "frame_count": 1,
       "frame_grid": {
         "columns": 1,
         "rows": 1,
-        "frame_width": 64,
-        "frame_height": 64
+        "frame_width": 32,
+        "frame_height": 32
       },
       "alpha_required": true,
       "texture_filter": "nearest",
@@ -12289,8 +12289,8 @@
       "facility_item_id": "portable_brazier",
       "facility_interaction_id": "sleep",
       "facility_state": "lit",
-      "source_sha256": "sha256:b323b9118bdc5d9f0767f8b4f0c6fd5533c748d2acbbb5f718c7c693eb9256e2",
-      "rgba_sha256": "sha256:79159a4513b2422f50bfee7c84cad40ff535a365b7b79cb9319cfd297a453579"
+      "source_sha256": "sha256:fbc58685a328b119303c6d9a9257f0f515f6cbef07c8ffed773374f3ff626af2",
+      "rgba_sha256": "sha256:c1255ccd546baa0564b24d379d45051cdbe21f55c6d6d1a33f0041f0072b653f"
     },
     {
       "id": "sleep_available_indicator",

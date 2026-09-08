@@ -28,16 +28,16 @@
         "dataset": "facility_interactions",
         "dedicated_asset_missing": false,
         "exception_reason": "",
-        "height": 64,
+        "height": 32,
         "kind": "sleep_facility_state",
         "name": "휴대 화로 꺼짐 상태",
-        "path": "res://assets/sprites/facilities/sleep/campfire_sleep_facility_off_64x64.png",
+        "path": "res://assets/sprites/facilities/sleep/campfire_sleep_facility_off_32x32.png",
         "resolution": "dedicated_facility_sprite",
-        "rgba_sha256": "sha256:be29addaf8fab9ada46be599efc68d73dea5bc68a656337b5d1650ea128e878f",
+        "rgba_sha256": "sha256:2d070fcb11492f99800d6d35b40404cc66c0df69d7351175a0f4d58876b29252",
         "runtime_approved": true,
-        "source_sha256": "sha256:07bd4406771317a3a786c1166922136bdbbc1264708c289aebb228b096facdae",
+        "source_sha256": "sha256:f5116a88c35c10ecaf100afccb07ea72c602bfa639c7b23ab49c3c1042a2a00e",
         "status": "초안",
-        "width": 64
+        "width": 32
       },
       {
         "art_review_required": true,
@@ -47,16 +47,16 @@
         "dataset": "facility_interactions",
         "dedicated_asset_missing": false,
         "exception_reason": "",
-        "height": 64,
+        "height": 32,
         "kind": "sleep_facility_state",
         "name": "휴대 화로 점화 상태",
-        "path": "res://assets/sprites/facilities/sleep/campfire_sleep_facility_on_64x64.png",
+        "path": "res://assets/sprites/facilities/sleep/campfire_sleep_facility_on_32x32.png",
         "resolution": "dedicated_facility_state_sprite",
-        "rgba_sha256": "sha256:79159a4513b2422f50bfee7c84cad40ff535a365b7b79cb9319cfd297a453579",
+        "rgba_sha256": "sha256:c1255ccd546baa0564b24d379d45051cdbe21f55c6d6d1a33f0041f0072b653f",
         "runtime_approved": true,
-        "source_sha256": "sha256:b323b9118bdc5d9f0767f8b4f0c6fd5533c748d2acbbb5f718c7c693eb9256e2",
+        "source_sha256": "sha256:fbc58685a328b119303c6d9a9257f0f515f6cbef07c8ffed773374f3ff626af2",
         "status": "초안",
-        "width": 64
+        "width": 32
       },
       {
         "art_review_required": true,
@@ -562,16 +562,16 @@
         "dataset": "items",
         "dedicated_asset_missing": false,
         "exception_reason": "",
-        "height": 64,
+        "height": 32,
         "kind": "도구",
         "name": "휴대 화로",
-        "path": "res://assets/sprites/facilities/sleep/campfire_sleep_facility_off_64x64.png",
+        "path": "res://assets/sprites/facilities/sleep/campfire_sleep_facility_off_32x32.png",
         "resolution": "dedicated_facility_sprite",
-        "rgba_sha256": "sha256:be29addaf8fab9ada46be599efc68d73dea5bc68a656337b5d1650ea128e878f",
+        "rgba_sha256": "sha256:2d070fcb11492f99800d6d35b40404cc66c0df69d7351175a0f4d58876b29252",
         "runtime_approved": true,
-        "source_sha256": "sha256:07bd4406771317a3a786c1166922136bdbbc1264708c289aebb228b096facdae",
+        "source_sha256": "sha256:f5116a88c35c10ecaf100afccb07ea72c602bfa639c7b23ab49c3c1042a2a00e",
         "status": "초안",
-        "width": 64
+        "width": 32
       },
       {
         "art_review_required": true,
@@ -1243,8 +1243,8 @@
     ]
   },
   "content_hashes": {
-    "asset_manifest": "sha256:26b44f79ce69b1cbaf8b65c126fd79cff7ef01c01c7dbe9632ba080930db6e7d",
-    "items": "25bf32df5634f7d6e6b414d33988684b69e181d8baae0d1040b26a241ac7646f",
+    "asset_manifest": "sha256:1ec77ae04673bb52714425746364c9620c948a12bb1bcd8e5bf6ad4c02f3853b",
+    "items": "df3e25d5856278cc36e1145b34496b4ef96773729d35189a18fb1e9024065460",
     "monsters": "b44646c65fca8a73ef29d0e908991986c7eb3387626b4bdb5f506919b1e28e9f"
   },
   "data_version": "notion-2026-09-04",

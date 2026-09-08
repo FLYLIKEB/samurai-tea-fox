@@ -108,7 +108,7 @@ func run(asserts) -> void:
 	)
 	asserts.equal(
 		catalog.path_for("campfire_sleep_facility_off"),
-		"res://assets/sprites/facilities/sleep/campfire_sleep_facility_off_64x64.png",
+		"res://assets/sprites/facilities/sleep/campfire_sleep_facility_off_32x32.png",
 		"sleep facility off sprite resolves to the promoted runtime path"
 	)
 	asserts.equal(

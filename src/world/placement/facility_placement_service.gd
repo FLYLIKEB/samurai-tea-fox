@@ -167,9 +167,9 @@ func facility_interaction_at(world_data, position: Vector2i, capability_id: Stri
 		if not interaction_result.ok:
 			continue
 		var interaction_cell: Vector2i = interaction_result.cell
-		if interaction_cell != position:
+		if interaction_cell != position and not _position_is_adjacent_to_reservation(position, reservation):
 			continue
-		if not world_data.is_walkable(interaction_cell):
+		if not world_data.is_walkable(position):
 			saw_matching_blocked_tile = true
 			continue
 		return {
@@ -179,13 +179,20 @@ func facility_interaction_at(world_data, position: Vector2i, capability_id: Stri
 			"owner_id": String(reservation.get("owner_id", "")),
 			"origin": reservation.get("origin", {}).duplicate(true),
 			"footprint_size": reservation.get("size", {}).duplicate(true),
-			"interaction_cell": _position_dictionary(interaction_cell)
+			"interaction_cell": _position_dictionary(position)
 		}
 	if saw_matching_blocked_tile:
 		return {"ok": false, "reason": "interaction_tile_blocked", "position": _position_dictionary(position)}
 	if saw_capable_facility:
 		return {"ok": false, "reason": "facility_interaction_out_of_position", "position": _position_dictionary(position), "capability_id": requested_capability_id}
 	return {"ok": false, "reason": "missing_facility_capability", "position": _position_dictionary(position), "capability_id": requested_capability_id}
+
+static func _position_is_adjacent_to_reservation(position: Vector2i, reservation: Dictionary) -> bool:
+	for cell_value in reservation.get("cells", []):
+		var cell := _vector_from_value(cell_value)
+		if maxi(absi(position.x - cell.x), absi(position.y - cell.y)) == 1:
+			return true
+	return false
 
 func facility_for(facility_item_id: String) -> Dictionary:
 	return _duplicate_dictionary(facility_definitions.get(facility_item_id, {}))

@@ -50,8 +50,9 @@ class ContentImageAuditTests(unittest.TestCase):
         )
         self.assertEqual(
             items["portable_brazier"]["path"],
-            "res://assets/sprites/facilities/sleep/campfire_sleep_facility_off_64x64.png",
+            "res://assets/sprites/facilities/sleep/campfire_sleep_facility_off_32x32.png",
         )
+        self.assertEqual((items["portable_brazier"]["width"], items["portable_brazier"]["height"]), (32, 32))
         self.assertEqual(
             items["traveler_quilted_clothes"]["asset_id"],
             "item_traveler_quilted_clothes_icon",
@@ -74,6 +75,7 @@ class ContentImageAuditTests(unittest.TestCase):
         interactions = {entry["content_id"]: entry for entry in payload["content"]["facility_interactions"]}
         self.assertEqual(interactions["portable_brazier:sleep_facility_off"]["asset_id"], "campfire_sleep_facility_off")
         self.assertEqual(interactions["portable_brazier:sleep_lit"]["asset_id"], "campfire_sleep_facility_on")
+        self.assertEqual((interactions["portable_brazier:sleep_lit"]["width"], interactions["portable_brazier:sleep_lit"]["height"]), (32, 32))
         self.assertEqual(interactions["portable_brazier:sleep_available_indicator"]["asset_id"], "sleep_available_indicator")
 
     def test_written_map_is_current(self):

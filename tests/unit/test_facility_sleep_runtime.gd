@@ -14,9 +14,15 @@ class TestPlayer:
 
 	var resources
 
+class TestSaveStore:
+	extends RefCounted
+
+	func save_run(_state) -> Dictionary:
+		return {"ok": true}
+
 func run(asserts) -> void:
 	_assert_sleep_interaction_tile_uses_facility_definition(asserts)
-	_assert_sleep_command_requires_front_interaction_tile(asserts)
+	_assert_sleep_command_accepts_adjacent_tiles(asserts)
 
 func _assert_sleep_interaction_tile_uses_facility_definition(asserts) -> void:
 	var placement := FacilityPlacementService.new()
@@ -28,13 +34,13 @@ func _assert_sleep_interaction_tile_uses_facility_definition(asserts) -> void:
 	asserts.true_value(front.ok, "sleep facility accepts its defined south-front tile")
 	asserts.equal(front.facility_item_id, "portable_brazier", "sleep interaction reports the facility item id")
 	asserts.equal(front.interaction_cell, {"x": 3, "y": 4}, "sleep interaction reports the exact interaction cell")
-	asserts.false_value(placement.facility_interaction_at(world, Vector2i(4, 3), "sleep").ok, "sleep facility rejects side tiles")
-	asserts.false_value(placement.facility_interaction_at(world, Vector2i(3, 2), "sleep").ok, "sleep facility rejects back tiles")
+	asserts.true_value(placement.facility_interaction_at(world, Vector2i(4, 3), "sleep").ok, "sleep facility accepts side tiles")
+	asserts.true_value(placement.facility_interaction_at(world, Vector2i(3, 2), "sleep").ok, "sleep facility accepts back tiles")
 
 	var rotated_world := WorldData.new(7, 7, "grass", true)
 	asserts.true_value(placement.place_facility("portable_brazier", rotated_world, Vector2i(3, 3), {"rotation_quarter_turns": 1}).ok, "rotated sleep facility installs")
 	asserts.true_value(placement.facility_interaction_at(rotated_world, Vector2i(2, 3), "sleep").ok, "rotation turns the front interaction tile with the facility")
-	asserts.false_value(placement.facility_interaction_at(rotated_world, Vector2i(3, 4), "sleep").ok, "rotated facility no longer accepts the unrotated front tile")
+	asserts.true_value(placement.facility_interaction_at(rotated_world, Vector2i(3, 4), "sleep").ok, "rotated facility still accepts another adjacent tile")
 
 	var workbench_world := WorldData.new(7, 7, "grass", true)
 	asserts.true_value(placement.place_facility("wooden_workbench", workbench_world, Vector2i(3, 3)).ok, "non-sleep facility installs")
@@ -47,21 +53,24 @@ func _assert_sleep_interaction_tile_uses_facility_definition(asserts) -> void:
 	asserts.false_value(blocked.ok, "blocked front tile rejects sleep interaction")
 	asserts.equal(blocked.reason, "interaction_tile_blocked", "blocked front tile reports a stable reason")
 
-func _assert_sleep_command_requires_front_interaction_tile(asserts) -> void:
+func _assert_sleep_command_accepts_adjacent_tiles(asserts) -> void:
 	_assert_sleep_command_rejects_cell(asserts, {}, Vector2i(3, 4), "sleep command rejects no facility")
 	_assert_sleep_command_rejects_cell(asserts, {"facility_item_id": "wooden_workbench", "origin": Vector2i(3, 3)}, Vector2i(3, 4), "sleep command rejects non-sleep facility")
-	_assert_sleep_command_rejects_cell(asserts, {"facility_item_id": "portable_brazier", "origin": Vector2i(3, 3)}, Vector2i(4, 3), "sleep command rejects side tile")
-	_assert_sleep_command_rejects_cell(asserts, {"facility_item_id": "portable_brazier", "origin": Vector2i(3, 3)}, Vector2i(3, 2), "sleep command rejects back tile")
 	_assert_sleep_command_rejects_cell(asserts, {"facility_item_id": "portable_brazier", "origin": Vector2i(3, 3)}, Vector2i(6, 6), "sleep command rejects distant tile")
 	_assert_sleep_command_rejects_cell(asserts, {"facility_item_id": "portable_brazier", "origin": Vector2i(3, 3), "block_front": true}, Vector2i(3, 4), "sleep command rejects blocked front tile")
+	_assert_sleep_command_accepts_cell(asserts, Vector2i(4, 3), "sleep command accepts side tile")
+	_assert_sleep_command_accepts_cell(asserts, Vector2i(3, 2), "sleep command accepts back tile")
 
+	_assert_sleep_command_accepts_cell(asserts, Vector2i(3, 4), "sleep command accepts defined front tile")
+
+func _assert_sleep_command_accepts_cell(asserts, player_cell: Vector2i, message: String) -> void:
 	var runtime := _runtime_with_world()
-	asserts.true_value(runtime.facility_placement_service.place_facility("portable_brazier", runtime.world_data, Vector2i(3, 3)).ok, "valid sleep fixture installs")
-	runtime.player.global_position = runtime.world_position_for_cell_center(Vector2i(3, 4))
+	asserts.true_value(runtime.facility_placement_service.place_facility("portable_brazier", runtime.world_data, Vector2i(3, 3)).ok, "%s fixture installs" % message)
+	runtime.player.global_position = runtime.world_position_for_cell_center(player_cell)
 	var phase_changes := []
 	runtime.time_state.phase_changed.connect(func(previous, current): phase_changes.append({"previous": previous, "current": current}))
 	var accepted := runtime.submit_action_command(GameCommand.new(GameCommand.Type.SLEEP))
-	asserts.true_value(accepted, "sleep command accepts the defined front tile")
+	asserts.true_value(accepted, message)
 	asserts.equal(String(runtime.time_state.phase), "day", "sleep command advances time to morning")
 	asserts.equal(runtime.time_state.phase_elapsed_seconds, 0.0, "sleep command resets phase elapsed time")
 	asserts.equal(runtime.player.resources.kokoro, runtime.player.resources.kokoro_max, "sleep command restores kokoro")
@@ -100,6 +109,7 @@ func _runtime_with_world() -> Main:
 	player.resources.apply_damage(50)
 	player.resources.reduce_kokoro(40)
 	runtime.player = player
+	runtime.save_store = TestSaveStore.new()
 	runtime.time_state = TimeState.new(_test_time_config())
 	runtime.time_state.phase = TimeState.NIGHT
 	runtime.time_state.phase_elapsed_seconds = 5.0
