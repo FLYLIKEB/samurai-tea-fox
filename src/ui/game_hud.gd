@@ -61,8 +61,8 @@ const ACTION_BUTTON_SIZE := Vector2(58, 26)
 const ACTION_MENU_BUTTON_SIZE := Vector2(24, 20)
 const SECONDARY_ACTION_ICON_BUTTON_SIZE := Vector2(20, 20)
 const SHORTCUT_BUTTON_SIZE := Vector2(44, 44)
-const SHORTCUT_PANEL_SIZE := Vector2(140, 44)
-const ACTION_PANEL_SIZE := Vector2(132, 100)
+const SHORTCUT_PANEL_SIZE := Vector2(140, 92)
+const ACTION_PANEL_SIZE := Vector2(132, 108)
 const ACTION_MENU_PANEL_SIZE := Vector2(132, 120)
 const ACTION_PANEL_COLUMNS := 2
 const MENU_PANEL_SIZE := Vector2(560, 280)
@@ -155,7 +155,7 @@ var _theme: Theme
 var _time_refresh_elapsed := 0.0
 var _action_menu_open := false
 var _action_grid: GridContainer
-var _secondary_action_bar: HBoxContainer
+var _secondary_action_bar: GridContainer
 var _action_menu_grid: GridContainer
 var _interaction_button: Button
 var _menu_content: VBoxContainer
@@ -753,23 +753,13 @@ func _build_actions(parent: PanelContainer) -> void:
 	_ignore_mouse(spacer)
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	menu_row.add_child(spacer)
-	_secondary_action_bar = HBoxContainer.new()
+	_secondary_action_bar = GridContainer.new()
 	_secondary_action_bar.name = "SecondaryActionBar"
+	_secondary_action_bar.columns = 3
 	_ignore_mouse(_secondary_action_bar)
-	_secondary_action_bar.add_theme_constant_override("separation", 3)
+	_secondary_action_bar.add_theme_constant_override("h_separation", 3)
+	_secondary_action_bar.add_theme_constant_override("v_separation", 3)
 	menu_row.add_child(_secondary_action_bar)
-	var menu_button := Button.new()
-	menu_button.name = "ActionMenuButton"
-	menu_button.text = "☰"
-	menu_button.tooltip_text = "보조 행동"
-	menu_button.custom_minimum_size = ACTION_MENU_BUTTON_SIZE
-	menu_button.focus_mode = Control.FOCUS_NONE
-	menu_button.mouse_filter = Control.MOUSE_FILTER_STOP
-	menu_button.add_theme_font_size_override("font_size", 12)
-	menu_button.add_theme_stylebox_override("normal", _button_style(Color(0.10, 0.08, 0.06, 0.80), true))
-	menu_button.add_theme_stylebox_override("hover", _button_style(Color(0.16, 0.12, 0.08, 0.92), true))
-	menu_button.pressed.connect(func(): _toggle_action_menu())
-	menu_row.add_child(menu_button)
 	_action_grid = GridContainer.new()
 	_action_grid.name = "ActionGrid"
 	_ignore_mouse(_action_grid)
@@ -805,11 +795,11 @@ func _rebuild_action_buttons() -> void:
 		return
 	if _secondary_action_bar != null:
 		_clear_container_children(_secondary_action_bar)
-		if _tea_quickslot_count() > 0:
-			_add_icon_action(_secondary_action_bar, "QuickTeaButton", ICON_TEA, "차 사용", "drink_tea", Vector2i.ZERO, 0)
+		for slot in range(_tea_quickslot_count()):
+			_add_icon_action(_secondary_action_bar, "QuickTeaButton" if slot == 0 else "QuickTeaButton%d" % (slot + 1), ICON_TEA, "차 %d 사용" % (slot + 1), "drink_tea", Vector2i.ZERO, slot)
 		_add_icon_action(_secondary_action_bar, "QuickConsumableButton", ICON_CONSUMABLE, "소모품 사용", "use_consumable", Vector2i.ZERO, 0)
-		if _balance_integer(BALANCE_ABILITY_SLOTS_ID) > 0:
-			_add_icon_action(_secondary_action_bar, "QuickAbilityButton", ICON_ABILITY, "요술 사용", "cast_ability", Vector2i.ZERO, 0)
+		for slot in range(_balance_integer(BALANCE_ABILITY_SLOTS_ID)):
+			_add_icon_action(_secondary_action_bar, "QuickAbilityButton" if slot == 0 else "QuickAbilityButton%d" % (slot + 1), ICON_ABILITY, "요술 %d 사용" % (slot + 1), "cast_ability", Vector2i.ZERO, slot)
 	_clear_container_children(_action_grid)
 	_add_text_action(_action_grid, "AttackButton", ICON_ATTACK, "공격", "attack", Vector2i.ZERO, 0)
 	_add_text_action(_action_grid, "DodgeButton", ICON_DODGE, "회피", "dodge", Vector2i.ZERO, 0)
@@ -817,14 +807,6 @@ func _rebuild_action_buttons() -> void:
 	_add_text_action(_action_grid, "InventoryButton", ICON_BAG, "가방", "open_inventory", Vector2i.ZERO, 0)
 	if _action_menu_grid != null:
 		_clear_container_children(_action_menu_grid)
-		for slot in range(_tea_quickslot_count()):
-			_add_text_action(_action_menu_grid, "TeaButton%d" % (slot + 1), ICON_TEA, "차%d" % (slot + 1), "drink_tea", Vector2i.ZERO, slot)
-		_add_text_action(_action_menu_grid, "ConsumableButton", ICON_CONSUMABLE, "소모", "use_consumable", Vector2i.ZERO, 0)
-		for slot in range(_balance_integer(BALANCE_ABILITY_SLOTS_ID)):
-			_add_text_action(_action_menu_grid, "AbilityButton%d" % (slot + 1), ICON_ABILITY, "요술%d" % (slot + 1), "cast_ability", Vector2i.ZERO, slot)
-		_add_text_action(_action_menu_grid, "TeaBrewingButton", ICON_TEA, "우리기", "open_tea_brewing", Vector2i.ZERO, 0)
-		_add_text_action(_action_menu_grid, "MetaCodexButton", ICON_BAG, "도감", "open_meta_codex", Vector2i.ZERO, 0)
-		_add_text_action(_action_menu_grid, "FacilitiesButton", ICON_MAP, "시설", "open_facilities", Vector2i.ZERO, 0)
 	var action_panel := _panels.get("action") as Control
 	if action_panel != null:
 		action_panel.custom_minimum_size = ACTION_PANEL_SIZE
@@ -842,15 +824,19 @@ func _toggle_action_menu() -> void:
 		action_menu_panel.visible = _action_menu_open
 
 func _build_shortcuts(parent: PanelContainer) -> void:
-	var row := HBoxContainer.new()
+	var row := GridContainer.new()
 	row.name = "ShortcutRow"
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	row.add_theme_constant_override("separation", 4)
+	row.columns = 3
+	row.add_theme_constant_override("h_separation", 4)
+	row.add_theme_constant_override("v_separation", 4)
 	_ignore_mouse(row)
 	parent.add_child(row)
 	_add_shortcut_button(row, "CraftingShortcutButton", ICON_CRAFTING_SHORTCUT, "제작", "open_crafting")
 	_add_shortcut_button(row, "MapShortcutButton", ICON_MAP_SHORTCUT, "지도", "open_map")
 	_add_shortcut_button(row, "SleepShortcutButton", ICON_MOON, "잠자기", "sleep")
+	_add_shortcut_button(row, "TeaBrewingShortcutButton", ICON_TEA, "차 우리기", "open_tea_brewing")
+	_add_shortcut_button(row, "MetaCodexShortcutButton", ICON_BAG, "도감", "open_meta_codex")
+	_add_shortcut_button(row, "FacilitiesShortcutButton", ICON_MAP, "시설", "open_facilities")
 
 func _add_shortcut_button(parent: Container, name: String, icon_path: String, tooltip: String, button_id: String) -> void:
 	var button := Button.new()

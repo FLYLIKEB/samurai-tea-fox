@@ -164,13 +164,11 @@ func run() -> void:
 			_assert_hud_layout_fits_viewport([status_panel, map_panel, enemy_panel, quickslot_panel, action_panel])
 			_assert_hud_layout_keeps_center_play_area_clear([status_panel, map_panel, enemy_panel, quickslot_panel, dpad_panel, action_panel])
 			var visible_action_buttons := _button_count(action_panel)
-			if visible_action_buttons != 8:
-				failures.append("runtime HUD shows four primary actions, three icon-only secondary actions, and one hamburger menu button: %d buttons" % visible_action_buttons)
+			if visible_action_buttons != 10:
+				failures.append("runtime HUD shows four primary actions and six visible quick actions: %d buttons" % visible_action_buttons)
 			var action_menu_panel := hud.get_node_or_null("Root/ActionMenuPanel") as Control
-			if action_menu_panel == null:
-				failures.append("runtime HUD owns a secondary hamburger action drawer")
-			elif action_menu_panel.visible:
-				failures.append("runtime HUD keeps the secondary action drawer hidden by default")
+			if action_menu_panel != null and action_menu_panel.visible:
+				failures.append("runtime HUD keeps the empty secondary action drawer hidden")
 			var time_label := hud.get("_labels").get("time_phase") as Label
 			if time_label == null or not time_label.get_parent().get_parent().visible:
 				failures.append("runtime HUD shows the canonical runtime time state")

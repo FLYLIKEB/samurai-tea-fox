@@ -77,23 +77,8 @@ func _assert_layout_for_viewport(viewport_name: String, viewport_size: Vector2i)
 	_assert_no_overlap(viewport_name, hud, "Root/ShortcutPanel", "Root/QuickSlotPanel")
 	_assert_no_overlap(viewport_name, hud, "Root/ShortcutPanel", "Root/ActionPanel")
 	_assert_no_overlap(viewport_name, hud, "Root/ShortcutPanel", "Root/DPadPanel")
-	var menu_button := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/ActionMenuButton") as Button
-	if menu_button == null:
-		_failures.append("%s missing action menu button" % viewport_name)
-	else:
-		menu_button.pressed.emit()
-		await process_frame
-		hud._apply_safe_area_layout()
-		await process_frame
-		_assert_visible_rect_inside(viewport_name, hud, "Root/ActionMenuPanel", viewport_size)
-		_assert_no_overlap(viewport_name, hud, "Root/ActionMenuPanel", "Root/MapPanel")
-		_assert_no_overlap(viewport_name, hud, "Root/ActionMenuPanel", "Root/ActionPanel")
-		_assert_no_overlap(viewport_name, hud, "Root/ActionMenuPanel", "Root/QuickSlotPanel")
-		var scroll := hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll") as Control
-		if scroll == null:
-			_failures.append("%s missing action menu scroll" % viewport_name)
-		elif scroll.custom_minimum_size.y > _rect(hud.get_node("Root/ActionMenuPanel")).size.y:
-			_failures.append("%s action menu scroll exceeds panel height" % viewport_name)
+	if hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/ActionMenuButton") != null:
+		_failures.append("%s still hides actions behind a menu button" % viewport_name)
 	hud.show_crafting_menu()
 	await process_frame
 	hud._apply_safe_area_layout()

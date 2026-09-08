@@ -413,24 +413,21 @@ func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:
 	var quick_tea := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickTeaButton") as Button
 	var quick_consumable := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickConsumableButton") as Button
 	var quick_ability := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickAbilityButton") as Button
+	var quick_tea_3 := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickTeaButton3") as Button
+	var quick_ability_2 := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/SecondaryActionBar/QuickAbilityButton2") as Button
 	asserts.true_value(quick_tea != null, "HUD shows tea as an icon-only secondary quick action")
 	asserts.true_value(quick_consumable != null, "HUD shows consumable as an icon-only secondary quick action")
 	asserts.true_value(quick_ability != null, "HUD shows ability as an icon-only secondary quick action")
+	asserts.true_value(quick_tea_3 != null, "HUD exposes every runtime tea quickslot")
+	asserts.true_value(quick_ability_2 != null, "HUD exposes every equipped ability slot")
 	if quick_tea != null:
 		asserts.equal(quick_tea.text, "", "tea secondary quick action does not render explanatory text")
 	if quick_consumable != null:
 		asserts.equal(quick_consumable.text, "", "consumable secondary quick action does not render explanatory text")
 	if quick_ability != null:
 		asserts.equal(quick_ability.text, "", "ability secondary quick action does not render explanatory text")
-	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/ActionMenuButton") != null, "HUD opens secondary actions from a hamburger-style button")
-	asserts.true_value(hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ActionMenuGrid/TeaButton3") != null, "HUD creates tea controls from the runtime quickslot count in the secondary action drawer")
-	asserts.true_value(hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ActionMenuGrid/AbilityButton2") != null, "HUD creates ability controls from the balance slot count in the secondary action drawer")
-	asserts.false_value((hud.get_node_or_null("Root/ActionMenuPanel") as Control).visible, "HUD keeps secondary actions hidden until the hamburger button is pressed")
-	var hamburger := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/ActionMenuButton") as Button
-	if hamburger != null:
-		hamburger.pressed.emit()
-	asserts.true_value((hud.get_node_or_null("Root/ActionMenuPanel") as Control).visible, "HUD shows the secondary action drawer after pressing the hamburger button")
-	asserts.equal((hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll") as Control).mouse_filter, Control.MOUSE_FILTER_STOP, "secondary action scroll consumes touch input instead of moving the player")
+	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/ActionMenuButton") == null, "HUD no longer hides actions behind a hamburger button")
+	asserts.equal((hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ActionMenuGrid") as GridContainer).get_child_count(), 0, "secondary action drawer no longer owns gameplay actions")
 	asserts.equal(read_model.time_phase, "night", "HUD reads current time phase")
 	asserts.equal(read_model.time_progress_percent, 25, "HUD calculates time progress from the time read model")
 	asserts.true_value(hud.get_node_or_null("Root/StatusPanel/StatusBody/PlayerPortrait") != null, "HUD renders the mockup-style player portrait block")
@@ -545,7 +542,7 @@ func _assert_mobile_controls_emit_shared_commands(asserts) -> void:
 	asserts.true_value(action_panel != null, "HUD keeps the action command surface")
 	if action_panel != null:
 		asserts.false_value(_panel_uses_dark_background(action_panel), "action controls omit the outer dark panel background")
-		asserts.equal(action_panel.custom_minimum_size, Vector2(132, 100), "action controls provide compact mobile touch targets with interaction available")
+		asserts.equal(action_panel.custom_minimum_size, Vector2(132, 108), "action controls fit all visible quick actions with mobile touch targets")
 	var received: Array = []
 	hud.mobile_command_issued.connect(func(command): received.append(command))
 	asserts.true_value(hud.press_mobile_button("move", Vector2i.LEFT), "HUD accepts mobile movement control")
