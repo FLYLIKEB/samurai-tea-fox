@@ -27,7 +27,7 @@ func confirmed_generated_resource_definitions(resource_nodes: Array) -> Array:
 		if resource_id.is_empty() or seen.has(resource_id) or inventory == null or not inventory.has_definition(resource_id):
 			continue
 		var item: Dictionary = catalog.find_by_id("items", resource_id)
-		if String(item.get("status", "")) != "확정" or not is_generated_resource_item_type(String(item.get("type", ""))):
+		if String(item.get("status", "")) != "확정" or (not bool(node.get("ground_pickup", false)) and not is_generated_resource_item_type(String(item.get("type", "")))):
 			continue
 		definitions.append({"id": resource_id, "item_id": resource_id, "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT, "material_tag": String(node.get("material_tag", "")), "required_tool_item_id": required_tool_for_resource_node(resource_id, node)})
 		seen[resource_id] = true

@@ -1052,6 +1052,14 @@ func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_res
 		if access_position == Vector2i(-1, -1):
 			continue
 		_try_place_resource_node(world_data, position, access_position, resource_ids, item_definitions, biome_rule_id, nodes)
+	if _item_is_available_in_biome("bandage", biome_rule_id, item_definitions):
+		for _pickup_attempt in range(32):
+			var position := Vector2i(rng.next_range(2, MAP_WIDTH - 3), rng.next_range(2, MAP_HEIGHT - 3))
+			if path_cell_keys.has(_key(position)) or not world_data.is_walkable(position) or not reachable_cells.has(_key(position)):
+				continue
+			var access_position := _reachable_access_position(position, reachable_cells, cardinal_offsets)
+			if access_position != Vector2i(-1, -1) and _try_place_resource_node(world_data, position, access_position, ["bandage"], item_definitions, biome_rule_id, nodes, true):
+				break
 	return nodes
 
 func _template_path_key_set(templates: Array) -> Dictionary:
@@ -1060,11 +1068,13 @@ func _template_path_key_set(templates: Array) -> Dictionary:
 		path_keys[_key(position)] = true
 	return path_keys
 
-func _try_place_resource_node(world_data: WorldData, position: Vector2i, access_position: Vector2i, resource_ids: Array, item_definitions: Array, biome_rule_id: String, nodes: Array) -> bool:
+func _try_place_resource_node(world_data: WorldData, position: Vector2i, access_position: Vector2i, resource_ids: Array, item_definitions: Array, biome_rule_id: String, nodes: Array, ground_pickup := false) -> bool:
 	var owner_id := "resource_%d" % nodes.size()
 	var resource_id: String = String(resource_ids[nodes.size() % resource_ids.size()])
 	var node_kind := _node_kind_for_resource_context(resource_id, biome_rule_id, item_definitions)
 	var metadata := {"resource_id": resource_id, "biome_rule_id": biome_rule_id}
+	if ground_pickup:
+		metadata["ground_pickup"] = true
 	if not node_kind.is_empty():
 		metadata["node_kind"] = node_kind
 	var reserved := world_data.reserve_entity(owner_id, position, Vector2i.ONE, true, metadata)
@@ -1091,10 +1101,16 @@ func _try_place_resource_node(world_data: WorldData, position: Vector2i, access_
 		"placement_was_entry_reachable": true,
 		"interactable": true
 	}
+	if ground_pickup:
+		node["ground_pickup"] = true
 	if not node_kind.is_empty():
 		node["node_kind"] = node_kind
 	nodes.append(node)
 	return true
+
+func _item_is_available_in_biome(item_id: String, biome_id: String, item_definitions: Array) -> bool:
+	var item := _item_definition_by_id(item_definitions, item_id)
+	return String(item.get("status", "")) == "확정" and biome_id in item.get("biome_ids", [])
 
 func _node_kind_for_resource_context(resource_id: String, biome_rule_id: String, item_definitions: Array) -> String:
 	var item := _item_definition_by_id(item_definitions, resource_id)

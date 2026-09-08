@@ -80,6 +80,8 @@ const FACILITY_SOURCE_BY_BIOME_FACILITY := {
 }
 
 const RESOURCE_SOURCE_BY_BIOME_RESOURCE := {
+	"common_region|bandage": "item_cloth_bandage_icon",
+	"wasteland|bandage": "item_cloth_bandage_icon",
 	"common_region|stone": "small_rock_resource",
 	"mountain_region|stone": "asset_assets_tiles_terrain_mountain_mountain_rock_01_32x32_png",
 	"wasteland|item_28": "asset_assets_sprites_objects_mining_iron_ore_32x32_png",
