@@ -61,7 +61,7 @@ const ACTION_BUTTON_SIZE := Vector2(58, 26)
 const ACTION_MENU_BUTTON_SIZE := Vector2(24, 20)
 const SECONDARY_ACTION_ICON_BUTTON_SIZE := Vector2(20, 20)
 const SHORTCUT_BUTTON_SIZE := Vector2(44, 44)
-const SHORTCUT_PANEL_SIZE := Vector2(92, 44)
+const SHORTCUT_PANEL_SIZE := Vector2(140, 44)
 const ACTION_PANEL_SIZE := Vector2(132, 100)
 const ACTION_MENU_PANEL_SIZE := Vector2(132, 120)
 const ACTION_PANEL_COLUMNS := 2
@@ -851,6 +851,7 @@ func _build_shortcuts(parent: PanelContainer) -> void:
 	parent.add_child(row)
 	_add_shortcut_button(row, "CraftingShortcutButton", ICON_CRAFTING_SHORTCUT, "제작", "open_crafting")
 	_add_shortcut_button(row, "MapShortcutButton", ICON_MAP_SHORTCUT, "지도", "open_map")
+	_add_shortcut_button(row, "SleepShortcutButton", ICON_MOON, "잠자기", "sleep")
 
 func _add_shortcut_button(parent: Container, name: String, icon_path: String, tooltip: String, button_id: String) -> void:
 	var button := Button.new()
@@ -2229,6 +2230,8 @@ func _apply_safe_area_layout() -> void:
 	_place_panel(_panels.action, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w))
 	var action_rect := _panel_rect(_panels.action)
 	_place_panel(_panels.shortcuts, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z - action_rect.size.x - HUD_EDGE_GAP, -margin.w))
+	if _panel_rect(_panels.shortcuts).intersects(_panel_rect(_panels.dpad)):
+		_place_panel(_panels.shortcuts, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w - action_rect.size.y - HUD_EDGE_GAP))
 	_resolve_enemy_bottom_overlap(top_stack_bottom)
 	_resize_action_menu_panel(viewport_size, margin, top_stack_bottom)
 	_place_action_menu_panel(viewport_size, margin, top_stack_bottom)
