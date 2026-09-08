@@ -107,7 +107,7 @@ func _assert_layout_for_viewport(viewport_name: String, viewport_size: Vector2i)
 	var compact := viewport_size.x <= 480
 	if crafting_filters != null and crafting_filters.columns != (3 if compact else 7):
 		_failures.append("%s crafting filters use %d columns" % [viewport_name, crafting_filters.columns])
-	if crafting_facts != null and crafting_facts.columns != (1 if compact else 2):
+	if crafting_facts != null and crafting_facts.columns != (1 if compact else 3):
 		_failures.append("%s crafting facts use %d columns" % [viewport_name, crafting_facts.columns])
 	hud.show_narrative_dialogue({
 		"event_id": "repeat_dialogue_check",

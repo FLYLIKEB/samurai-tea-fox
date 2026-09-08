@@ -634,12 +634,13 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	asserts.true_value(crafting_filter_bar != null and crafting_filter_bar.columns == 7, "crafting filters stay on one row when room is available")
 	var crafting_grid := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip") as GridContainer
 	asserts.true_value(crafting_grid != null and crafting_grid.columns == 3, "crafting menu renders a mobile-friendly three-column grid")
+	var crafting_detail := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingDetailCard") as Control
+	asserts.true_value(crafting_detail != null and crafting_detail.get_index() < crafting_grid.get_index(), "selected recipe detail appears before the recipe catalog")
 	asserts.true_value(_tree_has_text(hud, "결과 목재 작업대 x1"), "crafting menu shows selected recipe result without an internal ID")
 	asserts.true_value(_tree_has_text(hud, "상태 제작 가능"), "crafting menu shows selected recipe status on its own row")
-	var crafting_detail := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingDetailCard") as Control
 	var crafting_facts := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingDetailCard/Rows/CraftingFacts") as GridContainer
 	asserts.true_value(crafting_detail != null, "crafting detail uses a stable scannable card")
-	asserts.true_value(crafting_facts != null and crafting_facts.columns == 2, "crafting facts use two columns when room is available")
+	asserts.true_value(crafting_facts != null and crafting_facts.columns == 3, "crafting facts use three columns when room is available")
 	asserts.true_value(_tree_has_text(hud, "기초 제작을 여는 배치형 시설."), "crafting menu shows the crafted item's role description")
 	var description_label := _find_label(hud, "기초 제작을 여는 배치형 시설.")
 	asserts.equal(description_label.autowrap_mode, TextServer.AUTOWRAP_WORD_SMART, "crafting item descriptions wrap at the detail card width")
@@ -653,7 +654,9 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	asserts.true_value(_tree_has_textured_item_icon(crafting_grid), "crafting recipe cards include state/result icons")
 	asserts.true_value(_panel_uses_dark_background(crafting_detail), "crafting detail card uses the shared dark inner background")
 	asserts.true_value(_crafting_recipe_cards_have_distinct_state_styles(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip")), "crafting cards visibly separate craftable and missing-material states")
-	var craft_button := _first_enabled_button_with_text(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent"), "제작")
+	var craft_button := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingDetailCard/Rows/CraftSelectedRecipeButton") as Button
+	asserts.true_value(craft_button != null and craft_button.custom_minimum_size.y >= 34, "selected recipe exposes one prominent touch-sized craft action")
+	asserts.false_value(_tree_has_text(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip"), "제작"), "recipe cards avoid duplicated craft actions")
 	if craft_button != null:
 		craft_button.pressed.emit()
 	asserts.equal(received.size(), 1, "crafting button emits one command")
