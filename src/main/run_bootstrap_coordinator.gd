@@ -127,7 +127,7 @@ func ready(main) -> void:
 		main.run_state = RunState.new()
 	main.run_state.data_version = main.catalog.data_version
 	if main.run_state.seed == 0:
-		main.run_state.seed = main.DEFAULT_RUN_SEED
+		main.run_state.seed = randi()
 	main._set_loading_status("%s 월드 생성 중…" % main._loading_biome_label())
 	await main.get_tree().process_frame
 	main._set_loading_status("%s 바이옴 지형·오브젝트 배치 중…" % main._loading_biome_label())
