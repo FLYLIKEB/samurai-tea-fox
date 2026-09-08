@@ -825,7 +825,6 @@ func _rebuild_action_buttons() -> void:
 		_add_text_action(_action_menu_grid, "TeaBrewingButton", ICON_TEA, "우리기", "open_tea_brewing", Vector2i.ZERO, 0)
 		_add_text_action(_action_menu_grid, "MetaCodexButton", ICON_BAG, "도감", "open_meta_codex", Vector2i.ZERO, 0)
 		_add_text_action(_action_menu_grid, "FacilitiesButton", ICON_MAP, "시설", "open_facilities", Vector2i.ZERO, 0)
-		_add_text_action(_action_menu_grid, "SleepButton", ICON_TEA, "수면", "sleep", Vector2i.ZERO, 0)
 	var action_panel := _panels.get("action") as Control
 	if action_panel != null:
 		action_panel.custom_minimum_size = ACTION_PANEL_SIZE

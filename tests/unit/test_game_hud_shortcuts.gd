@@ -14,6 +14,7 @@ func run(asserts) -> void:
 	asserts.true_value(sleep != null, "sleep is always available outside the secondary drawer")
 	asserts.true_value(hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ActionMenuGrid/CraftingButton") == null, "crafting is not duplicated in the secondary drawer")
 	asserts.true_value(hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ActionMenuGrid/MapButton") == null, "map is not duplicated in the secondary drawer")
+	asserts.true_value(hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ActionMenuGrid/SleepButton") == null, "sleep is not duplicated in the secondary drawer")
 	var commands: Array = []
 	hud.mobile_command_issued.connect(func(command): commands.append(command))
 	for button in [crafting, map, sleep]:
