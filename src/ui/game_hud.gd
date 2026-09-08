@@ -131,6 +131,8 @@ signal mobile_command_issued(command)
 
 signal movement_button_changed(direction: Vector2i)
 
+signal status_toast_presented(kind: String, event_key: String)
+
 var asset_catalog := AssetCatalog.new()
 var _asset_catalog_ready := false
 var _content_image_map_ready := false
@@ -319,13 +321,14 @@ func show_command_feedback(message: String) -> void:
 	if not _open_menu_id.is_empty():
 		_refresh_open_menu()
 
-func show_status_toast(message: String) -> void:
-	_enqueue_status_toast({"message": message, "event_key": "message:%s" % message})
+func show_status_toast(message: String, kind := "info") -> void:
+	_enqueue_status_toast({"message": message, "kind": kind, "event_key": "message:%s" % message})
 
 func show_status_event(event: Dictionary) -> bool:
 	var model := _status_toast_model(event)
 	if model.is_empty():
 		return false
+	model["kind"] = String(event.get("kind", "success"))
 	return _enqueue_status_toast(model)
 
 func status_toast_debug_snapshot() -> Dictionary:
@@ -453,6 +456,7 @@ func _apply_status_toast_model(model: Dictionary) -> void:
 	_toast_label.visible = true
 	_toast_panel.visible = true
 	_toast_remaining = STATUS_TOAST_DURATION
+	status_toast_presented.emit(String(model.get("kind", "info")), String(model.get("event_key", "")))
 
 func _process(delta: float) -> void:
 	if _toast_label != null and _toast_remaining > 0.0:
