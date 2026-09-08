@@ -285,8 +285,23 @@ func _assert_dungeon_entry_rebinds_map_and_movement_context(asserts, catalog: Da
 	asserts.false_value(player.submit_command(GameCommand.new(GameCommand.Type.MOVE, Vector2i.UP)), "dungeon navigation blocks the dungeon wall above entry")
 	asserts.true_value(main.submit_pointer_movement(main.world_position_for_cell_center(Vector2i(1, 1))), "pointer movement accepts a dungeon walkable cell")
 	asserts.false_value(main.submit_pointer_movement(main.world_position_for_cell_center(Vector2i(0, 0))), "pointer movement rejects a dungeon wall cell")
-	var saved_dungeon_cell := _first_free_dungeon_cell(main)
-	asserts.true_value(saved_dungeon_cell != Vector2i(1, 1), "dungeon context fixture finds a non-entry walkable save cell")
+	var persisted_resource := {}
+	var saved_dungeon_cell := Vector2i.ZERO
+	for resource in main._dungeon_resources:
+		var resource_cell := main._vector_from_dictionary(resource.get("position", {}))
+		for offset in [Vector2i.UP, Vector2i.LEFT, Vector2i.RIGHT, Vector2i.DOWN]:
+			var approach_cell: Vector2i = resource_cell + offset
+			if main.world_data.is_walkable(approach_cell) and absi(approach_cell.x - 1) + absi(approach_cell.y - 1) > 2:
+				persisted_resource = resource
+				saved_dungeon_cell = approach_cell
+				break
+		if not persisted_resource.is_empty():
+			break
+	asserts.false_value(persisted_resource.is_empty(), "dungeon context fixture finds a resource cell with a walkable approach")
+	if persisted_resource.is_empty():
+		_free_combat_runtime(main, player, overworld_dummy)
+		return
+	asserts.true_value(main.inventory.add_item("stone_pickaxe", 1).ok, "dungeon context fixture stocks a pickaxe before save")
 	main.player.global_position = main.world_position_for_cell_center(saved_dungeon_cell)
 	asserts.true_value(main.save_current_run().ok, "active dungeon context saves through explicit test store")
 	var loaded: Dictionary = main.save_store.load_run()
@@ -310,6 +325,15 @@ func _assert_dungeon_entry_rebinds_map_and_movement_context(asserts, catalog: Da
 		asserts.equal(resumed_model.bounds, {"width": 12, "height": 9}, "resumed active dungeon map uses dungeon bounds")
 		asserts.equal(resumed._vector_from_dictionary(resumed_model.player.position), saved_dungeon_cell, "resumed active dungeon map uses saved dungeon player cell")
 		asserts.true_value(resumed_player.configured_world_data == resumed.world_data, "resumed player navigation is bound to dungeon WorldData")
+		var persisted_resource_id := String(persisted_resource.id)
+		var persisted_resource_cell := resumed._vector_from_dictionary(persisted_resource.position)
+		asserts.true_value(not resumed.acquisition_service.gatherable_for(persisted_resource_id).is_empty(), "resumed dungeon re-registers saved resource nodes")
+		resumed._dungeon_resources = [persisted_resource]
+		var item_id := String(persisted_resource.resource_id)
+		var item_before: int = resumed.inventory.get_total_quantity(item_id)
+		asserts.true_value(resumed._try_dungeon_interaction_from_input(), "E mines a resource after resuming an active dungeon")
+		asserts.equal(resumed.inventory.get_total_quantity(item_id), item_before + 1, "resumed E mining grants the saved resource")
+		asserts.true_value(resumed.world_data.is_walkable(persisted_resource_cell), "resumed E mining removes the resource movement blocker")
 		_free_combat_runtime(resumed, resumed_player, resumed_dummy)
 	main._return_from_dungeon_map()
 	asserts.false_value(main._in_dungeon_map, "dungeon context fixture returns to overworld")

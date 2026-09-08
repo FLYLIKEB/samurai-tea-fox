@@ -365,7 +365,50 @@ func restore_dungeon_map_from_runtime(main) -> void:
 	if definition.is_empty():
 		return
 	definition["biome_id"] = String(main.run_state.current_biome_id)
+	main._dungeon_resources = _dungeon_resources_from_snapshot(projection.get("acquisitions", {}), saved_world)
 	main._enter_dungeon_map(WorldData.from_dictionary(saved_world), definition)
+
+func _dungeon_resources_from_snapshot(acquisitions, saved_world: Dictionary) -> Array:
+	var resources := []
+	var resource_ids := {}
+	var reservations_by_owner_id := {}
+	for reservation in saved_world.get("reservations", []):
+		if reservation is Dictionary:
+			reservations_by_owner_id[String(reservation.get("owner_id", ""))] = reservation
+	if acquisitions is Dictionary:
+		for saved_node in acquisitions.get("gatherables", []):
+			if not saved_node is Dictionary:
+				continue
+			var node_id := String(saved_node.get("node_id", ""))
+			if not _is_dungeon_resource_id(node_id) or not saved_node.get("position", null) is Dictionary:
+				continue
+			resources.append(_dungeon_resource_snapshot(node_id, saved_node, reservations_by_owner_id.get(node_id, {})))
+			resource_ids[node_id] = true
+	for reservation in saved_world.get("reservations", []):
+		if not reservation is Dictionary:
+			continue
+		var node_id := String(reservation.get("owner_id", ""))
+		if resource_ids.has(node_id) or not _is_dungeon_resource_id(node_id) or not reservation.get("origin", null) is Dictionary:
+			continue
+		resources.append(_dungeon_resource_snapshot(node_id, reservation))
+		resource_ids[node_id] = true
+	return resources
+
+func _dungeon_resource_snapshot(node_id: String, source: Dictionary, reservation := {}) -> Dictionary:
+	var item_id := String(source.get("item_id", ""))
+	if item_id.is_empty():
+		item_id = "stone" if node_id.begins_with("dungeon_stone_") else "iron_ore"
+	var metadata: Dictionary = reservation.get("metadata", source.get("metadata", {}))
+	return {
+		"id": node_id,
+		"resource_id": item_id,
+		"position": source.get("position", source.get("origin", {})).duplicate(true),
+		"source_id": String(metadata.get("source_id", "")),
+		"material_tag": "stone"
+	}
+
+func _is_dungeon_resource_id(target_id: String) -> bool:
+	return target_id.begins_with("dungeon_iron_ore_") or target_id.begins_with("dungeon_stone_")
 
 func return_from_dungeon_map(main) -> void:
 	if not main._in_dungeon_map:
