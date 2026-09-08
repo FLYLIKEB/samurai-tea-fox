@@ -19,7 +19,7 @@ static func owner_sprite_sources(world: Dictionary) -> Dictionary:
 		WorldData.LANDMARK_RUIN: "asset_assets_sprites_objects_structures_ruined_wall_1x2_64x32_png",
 		WorldData.LANDMARK_ABANDONED_HOUSE: "asset_assets_sprites_objects_structures_small_wood_house_2x2_64x64_png",
 		WorldData.LANDMARK_TELEPORT_ZONE: "asset_assets_tiles_sheets_biome_atlases_biome_tile_map_light_object_biome_map_atlas_crop_1261_363_32x32_resize_32x32_png",
-		"wood": "asset_assets_sprites_items_old_wood_32x32_png",
+		"wood": "item_old_wood_icon",
 		"stone": "small_rock_resource",
 		"clay": "mud_patch_resource"
 	}
