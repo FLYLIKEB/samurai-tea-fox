@@ -88,7 +88,7 @@ func run() -> void:
 		failures.append("new start presents the canonical Notion prologue text")
 	if int(gameplay_scene.run_state.narrative_event_counts.get("story_pro_01", 0)) != 0:
 		failures.append("new start replaces the old completed run state before the prologue")
-	_assert_full_prologue_sequence(gameplay_scene)
+	await _assert_full_prologue_sequence(gameplay_scene)
 	await _assert_starting_home_e_grants_father_letter(gameplay_scene)
 
 	finish()
@@ -150,6 +150,12 @@ func _assert_full_prologue_sequence(gameplay_scene) -> void:
 			return
 	if gameplay_scene.game_hud.narrative_dialogue_visible():
 		failures.append("new start closes the dialogue only after PRO-08")
+	var fade_rect := gameplay_scene.sleep_transition_presenter.get_node_or_null("FadeRect") as ColorRect
+	if fade_rect == null or fade_rect.modulate.a < 0.99:
+		failures.append("new start reveals gameplay from a black fade after the prologue")
+	await create_timer(1.0).timeout
+	if fade_rect != null and fade_rect.modulate.a > 0.01:
+		failures.append("prologue fade finishes by revealing the gameplay world")
 
 func _assert_prologue_backdrop(gameplay_scene, event_id: String, node_id: String) -> void:
 	var presenter := gameplay_scene.game_hud.get_node_or_null("Root/NarrativeOverlay") as Control

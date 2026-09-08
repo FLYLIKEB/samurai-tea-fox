@@ -9,17 +9,31 @@ var _sleep_label: Label
 var _tween: Tween
 
 func _ready() -> void:
+	layer = 100
 	_setup_fade_rect()
 	_setup_sleep_label()
 	print_debug("💤 SleepTransitionPresenter ready")
 
 func _setup_fade_rect() -> void:
 	_fade_rect = ColorRect.new()
+	_fade_rect.name = "FadeRect"
 	_fade_rect.color = Color.BLACK
 	_fade_rect.modulate.a = 0.0
 	_fade_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_fade_rect)
+
+func play_fade_from_black() -> void:
+	if _tween:
+		_tween.kill()
+	_fade_rect.modulate.a = 1.0
+	_fade_rect.mouse_filter = Control.MOUSE_FILTER_STOP
+	_tween = create_tween()
+	_tween.tween_property(_fade_rect, "modulate:a", 0.0, FADE_DURATION)
+	_tween.tween_callback(func():
+		_fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_tween = null
+	)
 
 func _setup_sleep_label() -> void:
 	_sleep_label = Label.new()

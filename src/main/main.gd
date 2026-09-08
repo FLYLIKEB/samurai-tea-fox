@@ -262,6 +262,13 @@ func _clear_loading_overlay() -> void:
 	if overlay != null:
 		overlay.queue_free()
 
+func _play_prologue_fade_in() -> void:
+	if not _force_first_run_prologue:
+		return
+	_force_first_run_prologue = false
+	if sleep_transition_presenter != null:
+		sleep_transition_presenter.play_fade_from_black()
+
 func _loading_biome_label() -> String:
 	if catalog != null and run_state != null and catalog.has_method("find_by_id"):
 		var definition: Dictionary = catalog.find_by_id("biomes", String(run_state.current_biome_id))
@@ -447,6 +454,7 @@ func _hud_presentation_ports() -> HudPresentationCoordinator.Ports:
 	ports.get_narrative_runtime = func(): return narrative_runtime
 	ports.get_run_start_event_selector = func(): return run_start_event_selector
 	ports.get_force_first_run_prologue = func(): return _force_first_run_prologue
+	ports.play_prologue_fade_in = Callable(self, "_play_prologue_fade_in")
 	ports.dungeon_precombat_dialogue_is_active = Callable(self, "_dungeon_precombat_dialogue_is_active")
 	ports.get_dungeon_runtime = func(): return dungeon_runtime
 	ports.dungeon_boss_cell = Callable(self, "_dungeon_boss_cell")

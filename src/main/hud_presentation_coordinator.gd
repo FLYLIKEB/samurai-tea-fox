@@ -48,6 +48,7 @@ class Ports:
 	var get_narrative_runtime: Callable
 	var get_run_start_event_selector: Callable
 	var get_force_first_run_prologue: Callable
+	var play_prologue_fade_in: Callable
 	var dungeon_precombat_dialogue_is_active: Callable
 	var get_dungeon_runtime: Callable
 	var dungeon_boss_cell: Callable
@@ -229,6 +230,8 @@ func handle_narrative_option_command(command) -> bool:
 		narrative_session.reset()
 		if game_hud != null and game_hud.has_method("hide_narrative_dialogue"):
 			game_hud.hide_narrative_dialogue()
+		if _call_bool(_ports.get_force_first_run_prologue):
+			_call_void(_ports.play_prologue_fade_in)
 	else:
 		var read_model: Dictionary = result.get("read_model", {})
 		narrative_session.active_event_id = String(read_model.get("event_id", event_id))

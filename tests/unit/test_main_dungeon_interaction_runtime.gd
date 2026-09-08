@@ -72,6 +72,7 @@ class GridProbePlayer:
 		return Vector2i(int(floor(local_position.x / tile_size)), int(floor(local_position.y / tile_size)))
 
 func run(asserts) -> void:
+	_assert_depleted_dungeon_resources_are_not_restored(asserts)
 	_cleanup()
 	var catalog := DataCatalog.new()
 	asserts.true_value(catalog.load_from_directory("res://data/generated").ok, "dungeon input catalog loads")
@@ -80,6 +81,16 @@ func run(asserts) -> void:
 	_assert_dungeon_combatants_do_not_cross_world_boundary(asserts, catalog)
 	_assert_dungeon_entry_rebinds_map_and_movement_context(asserts, catalog)
 	_assert_boss_precombat_dialogue_blocks_combat_until_completion(asserts, catalog)
+
+func _assert_depleted_dungeon_resources_are_not_restored(asserts) -> void:
+	var coordinator := preload("res://src/main/dungeon_scene_coordinator.gd").new()
+	var resources: Array = coordinator._dungeon_resources_from_snapshot({"gatherables": [
+		{"node_id": "dungeon_stone_0", "item_id": "stone", "position": {"x": 2, "y": 2}, "depleted": true},
+		{"node_id": "dungeon_iron_ore_1", "item_id": "iron_ore", "position": {"x": 3, "y": 2}, "depleted": false}
+	]}, {"reservations": []})
+	asserts.equal(resources.size(), 1, "dungeon restore omits depleted resource visuals")
+	if resources.size() == 1:
+		asserts.equal(resources[0].id, "dungeon_iron_ore_1", "dungeon restore keeps only collectible resources")
 	_cleanup()
 
 func _assert_core_dungeon_accepts_e_before_attack(asserts, catalog: DataCatalog) -> void:

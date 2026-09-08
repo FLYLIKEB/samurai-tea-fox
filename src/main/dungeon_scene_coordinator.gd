@@ -379,6 +379,8 @@ func _dungeon_resources_from_snapshot(acquisitions, saved_world: Dictionary) -> 
 		for saved_node in acquisitions.get("gatherables", []):
 			if not saved_node is Dictionary:
 				continue
+			if bool(saved_node.get("depleted", false)):
+				continue
 			var node_id := String(saved_node.get("node_id", ""))
 			if not _is_dungeon_resource_id(node_id) or not saved_node.get("position", null) is Dictionary:
 				continue

@@ -165,6 +165,9 @@ func run(asserts) -> void:
 	main._on_dungeon_enemy_defeated({}, boss, Main.DUNGEON_BOSS_OWNER_ID)
 	asserts.true_value(main._handle_landmark_interaction("dungeon_entry"), "slice returns from the cleared dungeon through the entry")
 	asserts.false_value(main._in_dungeon_map, "dungeon completion returns to the overworld map")
+	asserts.true_value(bool(main.acquisition_service.gatherable_for(String(first_resource.id)).get("depleted", false)), "dungeon return preserves the depleted resource state")
+	asserts.true_value(main.world_data.get_reservation(String(first_resource.id)).is_empty(), "dungeon return does not restore the depleted resource collision")
+	asserts.false_value(_renderer_contains_owner(main.generated_world.get("renderer_input", {}), String(first_resource.id)), "dungeon return does not redraw the depleted resource")
 	asserts.equal(main.run_state.completed_dungeon_ids, ["common_region"], "dungeon completion updates biome progression")
 	asserts.equal(main.run_state.teleport_states.common_region, BiomeProgressionState.TELEPORT_REPAIRABLE, "dungeon completion makes teleport repairable")
 	asserts.true_value(main.submit_desktop_action_command("repair_teleport"), "slice repairs the common teleport through Main")
@@ -239,6 +242,13 @@ func _place_sleep_facility_and_move_to_interaction(main: Main) -> bool:
 			var cell := Vector2i(x, y)
 			if main.facility_placement_service.facility_interaction_at(main.world_data, cell, "sleep").ok:
 				main.player.global_position = main.world_position_for_cell_center(cell)
+				return true
+	return false
+
+func _renderer_contains_owner(renderer_input: Dictionary, owner_id: String) -> bool:
+	for layer in renderer_input.get("layers", []):
+		for cell in layer.get("cells", []):
+			if String(cell.get("owner_id", "")) == owner_id:
 				return true
 	return false
 
