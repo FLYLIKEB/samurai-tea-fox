@@ -28,6 +28,7 @@ signal turn_finished(result: Dictionary)
 
 @export var monster_id := "road_bandit"
 @export var sprite_asset_id := ""
+@export var character_id := ""
 @export var automatic_attacks := true
 @export_range(1.0, 128.0, 1.0) var attack_range_pixels := RuntimeConstants.float_value("combat.attack_range_pixels")
 
@@ -283,6 +284,13 @@ func _apply_sprite() -> void:
 	if not manifest_result.ok:
 		push_warning("Combat dummy sprite manifest failed: %s" % manifest_result.get("error", "unknown error"))
 		return
+	if not character_id.is_empty():
+		var character_result := walk_animator.configure_for_character(sprite, asset_catalog, character_id)
+		if bool(character_result.get("ok", false)):
+			_walk_animator_ready = true
+			_resolved_sprite_asset_id = walk_animator.current_asset_id()
+			_hide_placeholder_shapes()
+			return
 	var resolved_sprite_asset_id := _resolve_sprite_asset_id(asset_catalog)
 	if resolved_sprite_asset_id.is_empty():
 		push_warning("Combat dummy sprite missing: %s (monster=%s)" % [sprite_asset_id, monster_id])

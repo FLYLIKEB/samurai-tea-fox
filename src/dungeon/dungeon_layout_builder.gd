@@ -27,10 +27,13 @@ const ENEMY_SPECS := [
 	{"id": BOSS_OWNER_ID, "cell": Vector2i(10, 7)}
 ]
 
-func build(definition: Dictionary, node_kind_resolver := Callable()) -> Dictionary:
+func build(definition: Dictionary, node_kind_resolver := Callable(), generation_seed := 0) -> Dictionary:
 	var layout := WorldData.new(WIDTH, HEIGHT, TERRAIN_SOURCE_ID, true)
 	layout.add_required_landmark(WorldData.LANDMARK_ENTRY, "dungeon_entry", ENTRY_CELL, {"dungeon_id": String(definition.get("id", ""))})
-	_apply_terrain(layout)
+	var layout_seed := int(generation_seed)
+	if layout_seed != 0:
+		layout_seed ^= String(definition.get("id", "dungeon")).hash()
+	_apply_terrain(layout, layout_seed)
 	var resources := _reserve_resources(layout, node_kind_resolver)
 	_reserve_enemies(layout)
 	return {
@@ -53,23 +56,27 @@ func atlas_coords_for_cell(cell: Vector2i, bounds: Vector2i, blocked := false) -
 	var variant_index := absi(cell.x * 31 + cell.y * 17 + cell.x * cell.y * 7) % atlas_coords.size()
 	return atlas_coords[variant_index]
 
-func cell_is_blocked(cell: Vector2i) -> bool:
+func cell_is_blocked(cell: Vector2i, generation_seed := 0) -> bool:
 	if cell.x == 0 or cell.y == 0 or cell.x == WIDTH - 1 or cell.y == HEIGHT - 1:
 		return cell != ENTRY_CELL
 	if cell in _enemy_cells():
 		return false
-	if cell.x in [3, 6, 9] and cell.y in [2, 3, 5, 6]:
+	var base_blocked := (cell.x in [3, 6, 9] and cell.y in [2, 3, 5, 6]) \
+		or (cell.y == 4 and cell.x in [4, 5, 7, 8])
+	if base_blocked:
 		return true
-	if cell.y == 4 and cell.x in [4, 5, 7, 8]:
-		return true
+	if generation_seed != 0:
+		if cell.x < 4 or cell.y == HEIGHT - 2:
+			return false
+		return posmod(int(generation_seed) + cell.x * 31 + cell.y * 17 + cell.x * cell.y * 7, 11) < 3
 	return false
 
-func _apply_terrain(layout: WorldData) -> void:
+func _apply_terrain(layout: WorldData, generation_seed: int) -> void:
 	var bounds := Vector2i(layout.width, layout.height)
 	for y in range(layout.height):
 		for x in range(layout.width):
 			var cell := Vector2i(x, y)
-			var blocked := cell_is_blocked(cell)
+			var blocked := cell_is_blocked(cell, generation_seed)
 			layout.set_terrain(cell, WALL_TERRAIN_ID if blocked else FLOOR_TERRAIN_ID, not blocked, atlas_coords_for_cell(cell, bounds, blocked))
 
 func _reserve_resources(layout: WorldData, node_kind_resolver: Callable) -> Array:

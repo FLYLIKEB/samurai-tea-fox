@@ -19,8 +19,9 @@ func ensure_current_dungeon_entered(main) -> Dictionary:
 		main._dungeon_debug("현재 바이옴 던전 정의 없음: biome=%s" % (main.run_state.current_biome_id if main.run_state != null else "nil"))
 		return {"ok": false, "reason": "missing_current_dungeon", "error": "No dungeon definition exists for the current biome."}
 	var biome_id := String(main.run_state.current_biome_id)
-	var layout_result: Dictionary = main.dungeon_layout_builder.build(definition, func(item_id: String, action: String) -> String:
-		return main._acquisition_definitions().node_kind_for_resource_action(item_id, action))
+	var node_kind_resolver := func(item_id: String, action: String) -> String:
+		return main._acquisition_definitions().node_kind_for_resource_action(item_id, action)
+	var layout_result: Dictionary = main.dungeon_layout_builder.build(definition, node_kind_resolver, main.run_state.seed)
 	var layout: WorldData = layout_result.layout
 	main._dungeon_resources = layout_result.resources
 	var enter_result: Dictionary = main.dungeon_runtime.enter_dungeon(
@@ -227,11 +228,13 @@ func spawn_dungeon_combatants(main, allow_default_spawn := false) -> void:
 	if main._overworld_combat_dummy == null or not main._overworld_combat_dummy.has_method("configure_combat"):
 		return
 	var regular_monster_ids: Array = main._dungeon_regular_monster_ids(3)
+	var dungeon_definition: Dictionary = main._current_biome_dungeon_definition()
+	var boss_character_id := boss_asset_character_id(main.catalog, dungeon_definition)
 	var specs := [
 		{"id": "dungeon_enemy_0", "cell": Vector2i(7, 2), "monster_id": regular_monster_ids[0], "sprite_id": main._monster_sprite_asset_id(String(regular_monster_ids[0]))},
 		{"id": "dungeon_enemy_1", "cell": Vector2i(9, 5), "monster_id": regular_monster_ids[1], "sprite_id": main._monster_sprite_asset_id(String(regular_monster_ids[1]))},
 		{"id": "dungeon_enemy_2", "cell": Vector2i(5, 7), "monster_id": regular_monster_ids[2], "sprite_id": main._monster_sprite_asset_id(String(regular_monster_ids[2]))},
-		{"id": main.DUNGEON_BOSS_OWNER_ID, "cell": Vector2i(10, 7), "monster_id": "road_bandit", "sprite_id": "asset_assets_sprites_characters_bosses_chr_6_yokai_tea_master_yokai_tea_master_front_32x32_png", "boss": true}
+		{"id": main.DUNGEON_BOSS_OWNER_ID, "cell": Vector2i(10, 7), "monster_id": "road_bandit", "character_id": boss_character_id, "boss": true}
 	]
 	var saved_states: Dictionary = main.run_state.dungeon_runtime_state.get("enemy_states", {}) if main.run_state != null else {}
 	for index in range(specs.size()):
@@ -248,7 +251,8 @@ func spawn_dungeon_combatants(main, allow_default_spawn := false) -> void:
 		main.add_child(enemy)
 		enemy.name = String(spec.id)
 		enemy.monster_id = String(spec.monster_id)
-		enemy.sprite_asset_id = String(spec.sprite_id)
+		enemy.sprite_asset_id = String(spec.get("sprite_id", ""))
+		enemy.character_id = String(spec.get("character_id", ""))
 		enemy.collision_layer = 2
 		enemy.collision_mask = 1
 		enemy.visible = true
@@ -283,6 +287,12 @@ func monster_sprite_asset_id(main, monster_id: String) -> String:
 	if not sprite_id.is_empty():
 		return sprite_id
 	return "monster_%s_front_idle" % monster_id
+
+func boss_asset_character_id(catalog, dungeon_definition: Dictionary) -> String:
+	if catalog == null:
+		return ""
+	var character: Dictionary = catalog.find_by_id("characters", String(dungeon_definition.get("boss_id", "")))
+	return String(character.get("character_id", ""))
 
 func clear_dungeon_combatants(main, restore_overworld := true) -> void:
 	var result: Dictionary = main.dungeon_combatant_session.clear_dungeon_combatants(restore_overworld)
