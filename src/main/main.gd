@@ -646,6 +646,7 @@ func _run_bootstrap_ports() -> RunBootstrapCoordinator.Ports:
 	ports.current_meta_state_snapshot = Callable(self, "_current_meta_state_snapshot")
 	ports.on_tea_drink_completed = Callable(self, "_on_tea_drink_completed")
 	ports.get_run_lifecycle_service = func(): return run_lifecycle_service
+	ports.get_ending_route_runtime = func(): return ending_route_runtime
 	ports.get_inventory = func(): return inventory
 	ports.activate_run_state = Callable(self, "_activate_run_state")
 	ports.show_the_end_and_return_to_start = Callable(self, "_show_the_end_and_return_to_start")
