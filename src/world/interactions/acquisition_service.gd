@@ -291,7 +291,7 @@ func _deliver_grant(grant: Dictionary, position: Vector2i, source: Dictionary) -
 	if grant.policy == POLICY_DIRECT:
 		var direct_result: Dictionary = inventory.add_item(grant.item_id, grant.quantity)
 		if direct_result.ok:
-			return {"ok": true, "delivery": POLICY_DIRECT, "item_id": grant.item_id, "quantity": grant.quantity}
+			return {"ok": true, "delivery": POLICY_DIRECT, "item_id": grant.item_id, "quantity": grant.quantity, "position": _position_dictionary(position)}
 		if String(direct_result.get("reason", "")) != "inventory_full":
 			return direct_result
 	return _spawn_pickup(grant.item_id, grant.quantity, position, source)
@@ -309,7 +309,7 @@ func _spawn_pickup(item_id: String, quantity: int, preferred_position: Vector2i,
 		"position": _position_dictionary(position_result.position),
 		"source": source.duplicate(true)
 	}
-	return {"ok": true, "delivery": POLICY_PICKUP, "pickup_id": pickup_id, "item_id": item_id, "quantity": quantity}
+	return {"ok": true, "delivery": POLICY_PICKUP, "pickup_id": pickup_id, "item_id": item_id, "quantity": quantity, "position": _position_dictionary(position_result.position)}
 
 func _reserve_pickup_position(pickup_id: String, preferred: Vector2i, item_id: String, quantity: int) -> Dictionary:
 	for candidate in _pickup_position_candidates(preferred):
