@@ -4,13 +4,13 @@
 
 ## 요약
 
-- 런타임 대상 행: 64개
-- 아이템·다구: 40개
+- 런타임 대상 행: 65개
+- 아이템·다구: 41개
 - 몬스터·요괴: 21개
 - 시설 상호작용: 3개
 - 파일 경로 무결성 누락/깨짐: 0개
-- 전용 에셋 미해결: 1개
-- 사람 아트 검수 필요: 43개
+- 전용 에셋 미해결: 2개
+- 사람 아트 검수 필요: 44개
 - 런타임 승인 매핑: 63개
 
 `missing_or_broken`/`path_integrity_missing_or_broken`은 현재 연결된 manifest asset ID와 PNG 파일 경로의 무결성 지표다. 전용 에셋 완료 지표가 아니며, 미검수 아이템 매핑은 `runtime_approved=false`로 런타임 조회에서 제외한다.
@@ -32,6 +32,7 @@
 | `cloth` | 천 조각 | 재료 | dedicated_item_icon | True | False | `item_cloth_scraps_icon` | `res://assets/sprites/items/cloth_scraps_32x32.png` |  |
 | `conifer_wood` | 침엽수 목재 | 재료 | dedicated_item_icon | True | False | `item_conifer_wood_icon` | `res://assets/sprites/items/conifer_wood_32x32.png` |  |
 | `copper_ore` | 구리광석 | 재료 | dedicated_item_icon | True | False | `item_copper_ore_icon` | `res://assets/sprites/items/copper_ore_32x32.png` |  |
+| `father_letter` | 아버지의 편지 | 중요 아이템 | kind_fallback_exception | False | True | `asset_assets_ui_icons_atlas_bag_png` | `res://assets/ui/icons/atlas/bag.png` | No item-specific exported image field exists; use the type fallback until art review creates a dedicated row. |
 | `humble_clay_bowl` | 소박한 흙사발 | 다구 | dedicated_item_icon | True | False | `item_humble_clay_bowl_icon` | `res://assets/sprites/items/humble_clay_bowl_32x32.png` |  |
 | `incense_sticks` | 선향 | 향 | dedicated_item_icon | True | False | `item_incense_sticks_icon` | `res://assets/sprites/items/incense_sticks_32x32.png` |  |
 | `insulated_tea_bottle` | 보온 차병 | 다구 | dedicated_item_icon | True | False | `item_insulated_tea_bottle_icon` | `res://assets/sprites/items/insulated_tea_bottle_32x32.png` |  |
