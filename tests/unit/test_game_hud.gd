@@ -590,7 +590,9 @@ func _assert_dodge_control_does_not_use_baked_dash_asset(asserts) -> void:
 	var root := hud.get_node_or_null("Root")
 	asserts.true_value(root != null, "HUD root is built")
 	asserts.false_value(_tree_uses_texture(root, "dash_button.png"), "HUD does not use baked dash text asset")
-	asserts.true_value(_tree_has_text(root, "회피"), "HUD renders official dodge term as font text")
+	var dodge_button := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/DodgeButton") as Button
+	asserts.true_value(dodge_button != null, "HUD renders the dodge action button")
+	asserts.equal(dodge_button.tooltip_text if dodge_button != null else "", "회피", "HUD keeps the official dodge term in its accessible tooltip")
 	hud.free()
 
 func _assert_fast_menus_show_runtime_read_models(asserts) -> void:

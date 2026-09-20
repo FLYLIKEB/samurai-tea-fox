@@ -1,7 +1,7 @@
 extends SceneTree
 
 const GameHud = preload("res://src/ui/game_hud.gd")
-const VIEWPORTS := [Vector2i(1280, 720), Vector2i(480, 270), Vector2i(360, 640)]
+const VIEWPORTS := [Vector2i(1280, 720), Vector2i(640, 360), Vector2i(480, 270), Vector2i(360, 640)]
 
 var _failures: Array[String] = []
 

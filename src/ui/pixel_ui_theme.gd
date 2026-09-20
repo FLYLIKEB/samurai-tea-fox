@@ -9,6 +9,11 @@ const CARD_TEXTURE := "res://assets/ui/generated/card_frame_hanji.png"
 const CARD_SELECTED_TEXTURE := "res://assets/ui/generated/card_frame_selected.png"
 const BUTTON_TEXTURE := "res://assets/ui/generated/button_frame_hanji.png"
 const BUTTON_SELECTED_TEXTURE := "res://assets/ui/generated/button_frame_selected.png"
+const HUD_STATUS_TEXTURE := "res://assets/ui/generated/hud_status_frame.png"
+const HUD_RESOURCES_TEXTURE := "res://assets/ui/generated/hud_resources_frame.png"
+const HUD_MINIMAP_TEXTURE := "res://assets/ui/generated/hud_minimap_frame.png"
+const HUD_BOTTOM_NAV_TEXTURE := "res://assets/ui/generated/hud_bottom_nav_frame.png"
+const HUD_ACTION_TEXTURE := "res://assets/ui/generated/hud_action_button.png"
 
 static func create() -> Theme:
 	var theme := Theme.new()
@@ -84,6 +89,23 @@ static func parchment_card_style(selected := false) -> StyleBoxTexture:
 
 static func parchment_button_style(selected := false) -> StyleBoxTexture:
 	return _texture_style(BUTTON_SELECTED_TEXTURE if selected else BUTTON_TEXTURE, Vector4(10, 7, 10, 7), Vector4(4, 3, 4, 3))
+
+static func hud_status_style() -> StyleBoxTexture:
+	return _texture_style(HUD_STATUS_TEXTURE, Vector4.ZERO, Vector4(24, 12, 8, 8))
+
+static func hud_resources_style() -> StyleBoxTexture:
+	return _texture_style(HUD_RESOURCES_TEXTURE, Vector4.ZERO, Vector4(9, 7, 12, 7))
+
+static func hud_minimap_style() -> StyleBoxTexture:
+	return _texture_style(HUD_MINIMAP_TEXTURE, Vector4.ZERO, Vector4(13, 19, 16, 10))
+
+static func hud_bottom_nav_style() -> StyleBoxTexture:
+	return _texture_style(HUD_BOTTOM_NAV_TEXTURE, Vector4.ZERO, Vector4(6, 8, 6, 7))
+
+static func hud_action_style(modulate := Color.WHITE) -> StyleBoxTexture:
+	var style := _texture_style(HUD_ACTION_TEXTURE, Vector4.ZERO, Vector4(4, 4, 4, 4))
+	style.modulate_color = modulate
+	return style
 
 static func _texture_style(path: String, texture_margins: Vector4, content_margins: Vector4) -> StyleBoxTexture:
 	var style := StyleBoxTexture.new()
