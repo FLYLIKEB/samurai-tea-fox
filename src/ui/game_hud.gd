@@ -69,7 +69,7 @@ const ACTION_PANEL_COLUMNS := 2
 const MENU_PANEL_SIZE := Vector2(560, 280)
 const MENU_CONTENT_SIZE := Vector2(544, 228)
 const MENU_VIEWPORT_RATIO := Vector2(0.88, 0.78)
-const MENU_PANEL_PADDING := Vector2(16, 52)
+const MENU_PANEL_PADDING := Vector2(48, 98)
 const TIME_DIAL_SIZE := Vector2(28, 28)
 const STATUS_TOAST_DURATION := 0.9
 const STATUS_TOAST_MAX_VISIBLE_QUEUE := 4
@@ -2834,28 +2834,16 @@ func _dpad_feedback_style(color: Color) -> StyleBoxFlat:
 	style.set_corner_radius_all(4)
 	return style
 
-func _menu_card_style(selected := false) -> StyleBoxFlat:
-	var style := _button_style(Color(0.78, 0.68, 0.50, 0.98))
-	style.border_color = Color(0.38, 0.23, 0.11, 1.0)
-	if selected:
-		style.bg_color = Color(0.67, 0.76, 0.50, 1.0)
-		style.border_color = Color(0.18, 0.34, 0.17, 1.0)
-	return style
+func _menu_card_style(selected := false) -> StyleBoxTexture:
+	return PixelUiTheme.parchment_card_style(selected)
 
-func _crafting_card_style(row_model: Dictionary) -> StyleBoxFlat:
+func _crafting_card_style(row_model: Dictionary) -> StyleBoxTexture:
 	var selected := bool(row_model.get("selected", false))
 	var style := _menu_card_style(selected)
 	if bool(row_model.get("craftable", false)):
-		style.bg_color = Color(0.70, 0.79, 0.54, 1.0)
-		style.border_color = Color(0.22, 0.42, 0.20, 1.0)
+		style = _menu_card_style(true)
 	elif String(row_model.get("reason", "")) == "missing_materials":
-		style.bg_color = Color(0.76, 0.61, 0.48, 1.0)
-		style.border_color = Color(0.55, 0.20, 0.13, 1.0)
-	if selected:
-		style.border_width_left = 3
-		style.border_width_top = 3
-		style.border_width_right = 3
-		style.border_width_bottom = 3
+		style.modulate_color = Color(0.88, 0.62, 0.54, 1.0)
 	return style
 
 func _parchment_style() -> StyleBoxFlat:

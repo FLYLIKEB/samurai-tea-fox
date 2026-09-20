@@ -887,10 +887,8 @@ func _panel_uses_dark_background(panel: Control) -> bool:
 func _panel_uses_parchment_background(panel: Control) -> bool:
 	if panel == null:
 		return false
-	var style := panel.get_theme_stylebox("panel") as StyleBoxFlat
-	if style == null:
-		return false
-	return style.bg_color.r > 0.60 and style.bg_color.g > 0.50 and style.bg_color.b > 0.35 and style.bg_color.a >= 0.80
+	var style := panel.get_theme_stylebox("panel") as StyleBoxTexture
+	return style != null and style.texture != null and String(style.texture.resource_path).contains("_hanji.png")
 
 func _button_has_icon(node: Node) -> bool:
 	return node is Button and (node as Button).icon != null
@@ -918,16 +916,16 @@ func _tree_has_textured_item_icon(node: Node) -> bool:
 func _crafting_recipe_cards_have_distinct_state_styles(node: Node) -> bool:
 	if node == null:
 		return false
-	var border_colors := {}
+	var style_keys := {}
 	for child in node.get_children():
 		var button := child as Button
 		if button == null:
 			continue
-		var style := button.get_theme_stylebox("normal") as StyleBoxFlat
+		var style := button.get_theme_stylebox("normal") as StyleBoxTexture
 		if style == null:
 			continue
-		border_colors["%.3f,%.3f,%.3f" % [style.border_color.r, style.border_color.g, style.border_color.b]] = true
-	return border_colors.size() >= 2
+		style_keys["%s:%.2f,%.2f,%.2f" % [style.texture.resource_path, style.modulate_color.r, style.modulate_color.g, style.modulate_color.b]] = true
+	return style_keys.size() >= 2
 
 func _tree_has_text(node: Node, text: String) -> bool:
 	if node is Label and (node as Label).text == text:
