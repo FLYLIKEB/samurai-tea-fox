@@ -30,6 +30,7 @@ const ICON_CHECK := "asset_assets_ui_icons_atlas_quest_check_1_png"
 const ICON_WOOD := "asset_assets_sprites_objects_village_props_firewood_pile_1x2_64x32_png"
 const ICON_STONE := "asset_assets_sprites_objects_crafting_mortar_pestle_stone_32x32_png"
 const ICON_WORKBENCH := "asset_assets_sprites_objects_crafting_workbench_32x32_png"
+const ICON_TEA_TABLE := "res://assets/sprites/objects/crafting/tea_table_2x2_64x64.png"
 const BUTTON_DPAD := "asset_assets_ui_controls_dpad_png"
 const PORTRAIT_PLAYER := "portrait_chr_8_muchau"
 
@@ -1120,6 +1121,7 @@ func _show_menu(title: String, rows: Array) -> void:
 		for row in rows:
 			_menu_content.add_child(row)
 	panel.visible = true
+	panel.move_to_front()
 	_apply_safe_area_layout()
 
 func _refresh_open_menu() -> void:
@@ -1349,97 +1351,139 @@ func _tea_brewing_rows() -> Array:
 	if model.is_empty():
 		rows.append(_label("차 우리기 read model 없음", 11))
 		return rows
-	rows.append(_label("찻잎 %d · 다구 %d · 휴대칸 %d · 장소 %s" % [
-		_array_value(model.get("leaves", [])).size(),
-		_array_value(model.get("vessels", [])).size(),
-		_array_value(model.get("quickslots", [])).size(),
-		"가능" if bool(model.get("has_brewing_location", false)) else "제한"
-	], 11))
-	rows.append(_tea_brewing_toolbar())
-	rows.append(_label("찻잎", 11))
 	var leaves := _array_value(model.get("leaves", []))
-	var leaf_page := _tea_brewing_page_start(leaves, "id", String(model.get("selected_leaf_id", "")), 4)
-	for leaf in leaves.slice(leaf_page, leaf_page + 4):
-		rows.append(_tea_brewing_option_row(
-			"▶ %s x%d" % [String(leaf.get("name", "")), int(leaf.get("quantity", 0))] if bool(leaf.get("selected", false)) else "%s x%d" % [String(leaf.get("name", "")), int(leaf.get("quantity", 0))],
-			GameCommand.new(GameCommand.Type.TEA_BREW_SELECT_LEAF, Vector2i.ZERO, -1, {"tea_id": String(leaf.get("id", ""))})
-		))
-	if leaves.size() > 4:
-		rows.append(_label("찻잎 %d-%d / %d" % [leaf_page + 1, mini(leaves.size(), leaf_page + 4), leaves.size()], 10))
-	rows.append(_label("다구", 11))
 	var vessels := _array_value(model.get("vessels", []))
-	var vessel_page := _tea_brewing_page_start(vessels, "selection_key", String(model.get("selected_vessel_key", "")), 4)
-	for vessel in vessels.slice(vessel_page, vessel_page + 4):
-		var source_label := "장착" if String(vessel.get("source", "")) == "equipped" else "보유"
-		rows.append(_tea_brewing_option_row(
-			"▶ %s · %s" % [String(vessel.get("name", "")), source_label] if bool(vessel.get("selected", false)) else "%s · %s" % [String(vessel.get("name", "")), source_label],
-			GameCommand.new(GameCommand.Type.TEA_BREW_SELECT_VESSEL, Vector2i.ZERO, -1, {"vessel_key": String(vessel.get("selection_key", ""))})
-		))
-	if vessels.size() > 4:
-		rows.append(_label("다구 %d-%d / %d" % [vessel_page + 1, mini(vessels.size(), vessel_page + 4), vessels.size()], 10))
-	rows.append(_label("휴대칸", 11))
-	for slot in _array_value(model.get("quickslots", [])):
-		rows.append(_tea_brewing_option_row(
-			"▶ %s" % String(slot.get("label", "")) if bool(slot.get("selected", false)) else String(slot.get("label", "")),
-			GameCommand.new(GameCommand.Type.TEA_BREW_SELECT_SLOT, Vector2i.ZERO, int(slot.get("slot_index", -1)), {"slot_index": int(slot.get("slot_index", -1))})
-		))
+	var slots := _array_value(model.get("quickslots", []))
 	var preview: Dictionary = model.get("preview", {})
-	rows.append(_label(_tea_brewing_preview_label(preview), 11))
-	var brew_button := _tea_brewing_command_button("우리기", GameCommand.new(GameCommand.Type.BREW_TEA))
+	var leaf := _tea_brewing_selected_row(leaves, "id", String(model.get("selected_leaf_id", "")))
+	var vessel := _tea_brewing_selected_row(vessels, "selection_key", String(model.get("selected_vessel_key", "")))
+	var slot := _tea_brewing_selected_row(slots, "slot_index", int(model.get("selected_slot_index", -1)))
+
+	var location := _icon_text_row(ICON_TEA_TABLE, "찻상 준비됨" if bool(model.get("has_brewing_location", false)) else "이 차를 우리려면 찻상이 필요합니다", 10)
+	location.name = "TeaBrewingLocation"
+	rows.append(location)
+
+	var stage: BoxContainer = HBoxContainer.new()
+	if _inventory_uses_compact_layout():
+		stage = VBoxContainer.new()
+	stage.name = "TeaBrewingStage"
+	stage.alignment = BoxContainer.ALIGNMENT_CENTER
+	stage.add_theme_constant_override("separation", 8)
+	_ignore_mouse(stage)
+	stage.add_child(_tea_brewing_selector_card("찻잎", ICON_KOKORO, _tea_brewing_leaf_label(leaf), "leaf", not leaves.is_empty()))
+	stage.add_child(_tea_brewing_stage_mark("+"))
+	stage.add_child(_tea_brewing_selector_card("다구", _tea_brewing_vessel_icon(vessel), _tea_brewing_vessel_label(vessel), "vessel", not vessels.is_empty()))
+	stage.add_child(_tea_brewing_stage_mark("↓" if stage is VBoxContainer else "→"))
+	stage.add_child(_tea_brewing_selector_card("찻잔", ICON_TEA, _tea_brewing_slot_label(slot), "slot", not slots.is_empty()))
+	rows.append(stage)
+
+	var finish := HBoxContainer.new()
+	finish.name = "TeaBrewingFinish"
+	finish.add_theme_constant_override("separation", 8)
+	_ignore_mouse(finish)
+	var preview_label := _wrapped_label(_tea_brewing_preview_label(preview), 10)
+	preview_label.name = "TeaBrewingPreview"
+	preview_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	preview_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	finish.add_child(preview_label)
+	var brew_button := _tea_brewing_command_button("차 우리기", GameCommand.new(GameCommand.Type.BREW_TEA))
+	brew_button.name = "BrewTeaButton"
+	brew_button.icon = _load_texture(ICON_TEA)
+	brew_button.expand_icon = true
+	brew_button.add_theme_constant_override("icon_max_width", 24)
+	brew_button.custom_minimum_size = Vector2(132, 38)
+	brew_button.add_theme_stylebox_override("normal", _button_style(Color(0.16, 0.27, 0.14, 0.96)))
+	brew_button.add_theme_stylebox_override("hover", _button_style(Color(0.24, 0.40, 0.18, 0.98)))
+	brew_button.add_theme_stylebox_override("pressed", _button_style(Color(0.38, 0.52, 0.20, 1.0)))
 	brew_button.disabled = not bool(model.get("can_brew", false))
-	rows.append(brew_button)
+	finish.add_child(brew_button)
+	rows.append(finish)
 	return rows
 
-func _tea_brewing_toolbar() -> HBoxContainer:
-	var toolbar := HBoxContainer.new()
-	_ignore_mouse(toolbar)
-	toolbar.add_theme_constant_override("separation", 4)
-	toolbar.add_child(_tea_brewing_command_button("찻잎‹", GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.LEFT, -1, {"target": "leaf"})))
-	toolbar.add_child(_tea_brewing_command_button("찻잎›", GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.RIGHT, -1, {"target": "leaf"})))
-	toolbar.add_child(_tea_brewing_command_button("다구‹", GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.LEFT, -1, {"target": "vessel"})))
-	toolbar.add_child(_tea_brewing_command_button("다구›", GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.RIGHT, -1, {"target": "vessel"})))
-	toolbar.add_child(_tea_brewing_command_button("칸›", GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.RIGHT, -1, {"target": "slot"})))
-	return toolbar
+func _tea_brewing_selector_card(title: String, icon_reference: String, text: String, target: String, enabled: bool) -> PanelContainer:
+	var content := VBoxContainer.new()
+	content.custom_minimum_size = Vector2(132, 112)
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	content.add_theme_constant_override("separation", 2)
+	_ignore_mouse(content)
+	var title_label := _label(title, 10)
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(title_label)
+	var icon := _item_icon_rect(icon_reference, Vector2(48, 48))
+	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	content.add_child(icon)
+	var name_label := _wrapped_label(text, 9)
+	name_label.custom_minimum_size = Vector2(124, 24)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	content.add_child(name_label)
+	var controls := HBoxContainer.new()
+	controls.alignment = BoxContainer.ALIGNMENT_CENTER
+	controls.add_theme_constant_override("separation", 4)
+	_ignore_mouse(controls)
+	var previous := _tea_brewing_command_button("‹", GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.LEFT, -1, {"target": target}))
+	previous.name = "%sPreviousButton" % target.capitalize()
+	previous.disabled = not enabled
+	controls.add_child(previous)
+	var next := _tea_brewing_command_button("›", GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.RIGHT, -1, {"target": target}))
+	next.name = "%sNextButton" % target.capitalize()
+	next.disabled = not enabled
+	controls.add_child(next)
+	content.add_child(controls)
+	var card := _card_frame(content, enabled)
+	card.name = "%sCard" % title
+	return card
 
-func _tea_brewing_option_row(text: String, command: GameCommand) -> HBoxContainer:
-	var row := HBoxContainer.new()
-	_ignore_mouse(row)
-	row.add_theme_constant_override("separation", 4)
-	var label := _label(text, 10)
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(label)
-	row.add_child(_tea_brewing_command_button("선택", command))
-	return row
+func _tea_brewing_stage_mark(text: String) -> Label:
+	var label := _label(text, 18)
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_color_override("font_color", Color(0.84, 0.65, 0.36, 1.0))
+	return label
+
+func _tea_brewing_selected_row(rows: Array, key: String, selected) -> Dictionary:
+	for row in rows:
+		if row.get(key) == selected:
+			return row
+	return rows[0] if not rows.is_empty() else {}
+
+func _tea_brewing_vessel_icon(vessel: Dictionary) -> String:
+	return _item_icon_reference(String(vessel.get("id", "")), "다구", vessel) if not vessel.is_empty() else ICON_TEA_WARE
+
+func _tea_brewing_leaf_label(leaf: Dictionary) -> String:
+	return "%s  ×%d" % [String(leaf.get("name", "")), int(leaf.get("quantity", 0))] if not leaf.is_empty() else "찻잎을 고르세요"
+
+func _tea_brewing_vessel_label(vessel: Dictionary) -> String:
+	return String(vessel.get("name", "")) if not vessel.is_empty() else "다구를 고르세요"
+
+func _tea_brewing_slot_label(slot: Dictionary) -> String:
+	return String(slot.get("label", "")) if not slot.is_empty() else "빈 찻잔이 없습니다"
 
 func _tea_brewing_command_button(text: String, command: GameCommand) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(40, 24)
+	button.custom_minimum_size = Vector2(42, 22)
 	button.focus_mode = Control.FOCUS_ALL
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.pressed.connect(func(): mobile_command_issued.emit(command))
 	return button
 
-func _tea_brewing_page_start(rows: Array, key: String, selected: String, page_size: int) -> int:
-	if rows.size() <= page_size:
-		return 0
-	var selected_position := -1
-	for index in range(rows.size()):
-		if String(rows[index].get(key, "")) == selected:
-			selected_position = index
-			break
-	if selected_position < 0:
-		return 0
-	return clampi(selected_position - 1, 0, rows.size() - page_size)
-
 func _tea_brewing_preview_label(preview: Dictionary) -> String:
 	if not bool(preview.get("ok", false)):
-		return "미리보기 불가: %s" % String(preview.get("reason", "unknown"))
+		match String(preview.get("reason", "")):
+			"missing_tea_leaf":
+				return "찻잎을 골라 주세요"
+			"unknown_vessel", "missing_vessel":
+				return "다구를 골라 주세요"
+			"missing_brewing_location":
+				return "찻상이 있는 곳에서 우릴 수 있습니다"
+			"quickslot_occupied":
+				return "다른 찻잔을 골라 주세요"
+			_:
+				return "찻잎과 다구를 골라 주세요"
 	var prepared: Dictionary = preview.get("prepared_tea", {})
 	var slot_status := "빈 칸" if not bool(preview.get("target_slot_occupied", false)) else "차 있음"
-	return "미리보기 %s + %s · 기운 +%d · %d회 · %.1fs · %s" % [
+	return "%s\n기운 +%d  ·  %d잔  ·  %.1f초  ·  %s" % [
 		String(prepared.get("tea_name", prepared.get("tea_id", ""))),
-		String(prepared.get("vessel_name", prepared.get("vessel_id", ""))),
 		int(prepared.get("ki_recovery", 0)),
 		int(prepared.get("remaining_uses", 0)),
 		float(prepared.get("drink_seconds", 0.0)),

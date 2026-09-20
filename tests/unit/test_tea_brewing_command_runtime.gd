@@ -107,7 +107,12 @@ func _assert_command_adapters_and_hud_route_brewing(asserts) -> void:
 	asserts.true_value(hud.show_tea_brewing_menu(), "HUD opens brewing menu")
 	asserts.equal(hud.active_menu_id(), "tea_brewing", "HUD exposes active brewing menu for gated keyboard commands")
 	asserts.true_value(_tree_has_text(hud, "차 우리기"), "HUD renders brewing menu title")
-	asserts.true_value(_tree_has_text(hud, "미리보기"), "HUD renders combination preview")
+	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/TeaBrewingStage") != null, "HUD renders the visual tea ceremony stage")
+	asserts.true_value(_tree_has_text(hud, "찻잎"), "HUD renders the leaf step")
+	asserts.true_value(_tree_has_text(hud, "다구"), "HUD renders the vessel step")
+	asserts.true_value(_tree_has_text(hud, "찻잔"), "HUD renders the cup step")
+	var preview_label := hud.find_child("TeaBrewingPreview", true, false) as Label
+	asserts.true_value(preview_label != null and not preview_label.text.is_empty(), "HUD renders the prepared tea preview")
 	asserts.equal(received[0].type, GameCommand.Type.OPEN_TEA_BREWING, "HUD emits shared brewing command")
 	hud.free()
 
