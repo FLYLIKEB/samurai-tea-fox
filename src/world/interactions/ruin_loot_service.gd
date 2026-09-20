@@ -6,7 +6,12 @@ const WorldData = preload("res://src/world/data/world_data.gd")
 const CATEGORY_WEAPON := "weapon"
 const CATEGORY_ARMOR := "armor"
 const CATEGORY_TEA := "tea"
+const CATEGORY_MATERIAL := "material"
 const CATEGORIES := [CATEGORY_WEAPON, CATEGORY_ARMOR, CATEGORY_TEA]
+const STARTER_CLOTH_BIOME_ID := "common_region"
+const STARTER_CLOTH_TARGET_ID := "abandoned_house_0"
+const STARTER_CLOTH_ITEM_ID := "cloth"
+const STARTER_CLOTH_QUANTITY := 2
 
 func loot(target_id: String, world_seed: int, biome_id: String, catalog, inventory, run_state) -> Dictionary:
 	if not target_id.begins_with("%s_" % WorldData.LANDMARK_ABANDONED_HOUSE):
@@ -16,13 +21,21 @@ func loot(target_id: String, world_seed: int, biome_id: String, catalog, invento
 	var interaction_key := state_key(biome_id, target_id)
 	if not run_state.world_interactions.get(interaction_key, {}).is_empty():
 		return _fail("already_looted")
-	var category := _category_for(target_id)
-	var candidates := _candidates_for(category, biome_id, catalog, inventory)
-	if candidates.is_empty():
-		return _fail("missing_reward_candidates")
-	var item: Dictionary = candidates[_roll(world_seed, target_id) % candidates.size()]
+	var grants_starter_cloth := biome_id == STARTER_CLOTH_BIOME_ID and target_id == STARTER_CLOTH_TARGET_ID
+	var category := CATEGORY_MATERIAL if grants_starter_cloth else _category_for(target_id)
+	var item: Dictionary
+	if grants_starter_cloth:
+		item = catalog.find_by_id("items", STARTER_CLOTH_ITEM_ID)
+	else:
+		var candidates := _candidates_for(category, biome_id, catalog, inventory)
+		if candidates.is_empty():
+			return _fail("missing_reward_candidates")
+		item = candidates[_roll(world_seed, target_id) % candidates.size()]
 	var item_id := String(item.get("id", ""))
-	var add_result: Dictionary = inventory.add_item(item_id, 1)
+	var quantity := STARTER_CLOTH_QUANTITY if grants_starter_cloth else 1
+	if item_id.is_empty() or not inventory.has_definition(item_id):
+		return _fail("missing_reward_candidates")
+	var add_result: Dictionary = inventory.add_item(item_id, quantity)
 	if not add_result.ok:
 		return add_result
 	run_state.world_interactions[interaction_key] = {
@@ -30,9 +43,9 @@ func loot(target_id: String, world_seed: int, biome_id: String, catalog, invento
 		"biome_id": biome_id,
 		"state": "looted",
 		"item_id": item_id,
-		"quantity": 1
+		"quantity": quantity
 	}
-	return {"ok": true, "target_id": target_id, "item_id": item_id, "item_name": String(item.get("name", item_id)), "quantity": 1, "category": category}
+	return {"ok": true, "target_id": target_id, "item_id": item_id, "item_name": String(item.get("name", item_id)), "quantity": quantity, "category": category}
 
 static func state_key(biome_id: String, target_id: String) -> String:
 	return "%s:%s" % [biome_id, target_id]
