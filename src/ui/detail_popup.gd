@@ -2,7 +2,7 @@ extends ColorRect
 
 signal dismissed
 
-func setup(title: String, content: Control, popup_size: Vector2, panel_style: StyleBox) -> void:
+func setup(title: String, content: Control, popup_size: Vector2, panel_style: StyleBox, popup_theme: Theme = null) -> void:
 	name = "DetailPopup"
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	color = Color(0.02, 0.015, 0.01, 0.72)
@@ -17,6 +17,8 @@ func setup(title: String, content: Control, popup_size: Vector2, panel_style: St
 	panel.custom_minimum_size = popup_size
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.add_theme_stylebox_override("panel", panel_style)
+	if popup_theme != null:
+		panel.theme = popup_theme
 	center.add_child(panel)
 	var rows := VBoxContainer.new()
 	rows.name = "PopupRows"

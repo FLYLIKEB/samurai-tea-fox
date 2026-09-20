@@ -603,25 +603,26 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 		asserts.equal(int(round(menu_panel.custom_minimum_size.y)), 280, "fast menu expands to a near-full logical viewport height")
 		asserts.equal(int(round(menu_panel.anchor_left * 100.0)), 50, "fast menu anchors from the horizontal center")
 		asserts.equal(int(round(menu_panel.anchor_top * 100.0)), 50, "fast menu anchors from the vertical center")
-		asserts.true_value(_panel_uses_dark_background(menu_panel), "fast menu uses the shared dark HUD panel background")
+		asserts.true_value(_panel_uses_parchment_background(menu_panel), "fast menu uses the shared parchment background")
 	asserts.equal((hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll") as Control).mouse_filter, Control.MOUSE_FILTER_STOP, "menu scroll consumes touch input instead of moving the player")
 	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuTitleBar/CloseMenuButton") is Button, "fast menu exposes a stable close command button for layout checks")
-	asserts.true_value(_tree_has_text(hud, "차 & 도구 (인벤토리) · 3/14 · all"), "inventory menu renders the mockup-style inventory header")
+	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySummary") != null, "inventory menu renders the icon-first capacity summary")
+	asserts.true_value(_tree_has_text(hud, "3 / 14칸"), "inventory menu renders capacity in Korean")
 	var inventory_toolbar := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryToolbar") as GridContainer
 	asserts.true_value(inventory_toolbar != null, "inventory toolbar uses a wrapping grid container")
 	if inventory_toolbar != null:
 		asserts.equal(inventory_toolbar.columns, 7, "inventory toolbar keeps all controls on one row at the default logical viewport")
 	asserts.true_value(_tree_has_icon_button_with_text(inventory_toolbar, "정렬"), "inventory toolbar uses icon-backed touch commands")
-	var inventory_grid := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip") as GridContainer
+	var inventory_grid := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryShelf/InventorySlotStrip") as GridContainer
 	asserts.true_value(inventory_grid != null and inventory_grid.columns == 4, "inventory menu renders a mobile-friendly four-column grid")
-	var inventory_card := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip/InventorySlotCard0") as Button
+	var inventory_card := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryShelf/InventorySlotStrip/InventorySlotCard0") as Button
 	asserts.true_value(inventory_card != null, "inventory menu renders slot cards")
 	asserts.true_value(_button_has_icon(inventory_card), "inventory slot cards render item images")
 	if inventory_card != null:
-		asserts.equal(inventory_card.custom_minimum_size, Vector2(66, 60), "inventory slot cards keep a stable mobile touch size")
-	asserts.true_value(_tree_has_text(hud, "wood\n* 10"), "inventory menu groups duplicate item slots into one total")
-	asserts.false_value(_tree_has_text(hud, "wood\n* 7"), "inventory menu does not render duplicate item stacks as separate cards")
-	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/DetailCard") == null, "inventory keeps details out of the scrolling item list")
+		asserts.equal(inventory_card.custom_minimum_size, Vector2(78, 70), "inventory slot cards keep the enlarged visual touch size")
+	asserts.true_value(_tree_has_text(hud, "wood\n× 10"), "inventory menu groups duplicate item slots into one total")
+	asserts.false_value(_tree_has_text(hud, "wood\n× 7"), "inventory menu does not render duplicate item stacks as separate cards")
+	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryShelf/InventoryPreview") != null, "inventory keeps a visual selected-item preview beside the item grid")
 	if inventory_card != null:
 		inventory_card.pressed.emit()
 	var inventory_popup := hud.get_node_or_null("Root/DetailPopup")
@@ -650,7 +651,8 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	var crafting_detail := crafting_popup.get_node_or_null("PopupCenter/PopupPanel/PopupRows/PopupScroll/CraftingDetailCard") as Control if crafting_popup != null else null
 	var crafting_facts := crafting_detail.get_node_or_null("Rows/CraftingFacts") as GridContainer if crafting_detail != null else null
 	asserts.true_value(crafting_popup != null and crafting_popup.get_script() == DetailPopup, "crafting opens the shared detail popup")
-	asserts.true_value(_tree_has_text(crafting_popup, "결과 목재 작업대 x1"), "crafting popup shows selected recipe result without an internal ID")
+	asserts.true_value(_tree_has_text(crafting_popup, "목재 작업대 ×1"), "crafting popup shows selected recipe result without an internal ID")
+	asserts.true_value(crafting_detail.get_node_or_null("Rows/CraftingFlow") != null, "crafting popup renders materials-to-result flow")
 	asserts.true_value(_tree_has_text(crafting_popup, "상태 제작 가능"), "crafting popup shows selected recipe status")
 	asserts.true_value(crafting_facts != null and crafting_facts.columns == 3, "crafting facts use three columns when room is available")
 	asserts.true_value(_tree_has_text(crafting_popup, "기초 제작을 여는 배치형 시설."), "crafting popup shows the crafted item's role description")
@@ -661,7 +663,7 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	asserts.true_value(_tree_has_text(crafting_popup, "일반 지역"), "crafting popup shows the Korean unlock biome name")
 	asserts.true_value(_tree_has_textured_item_icon(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip")), "crafting recipe cards render result item images")
 	asserts.true_value(_tree_has_textured_item_icon(crafting_grid), "crafting recipe cards include state/result icons")
-	asserts.true_value(_panel_uses_dark_background(crafting_detail), "crafting popup detail uses the shared dark inner background")
+	asserts.true_value(_panel_uses_parchment_background(crafting_detail), "crafting popup detail uses the shared parchment card background")
 	asserts.true_value(_crafting_recipe_cards_have_distinct_state_styles(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip")), "crafting cards visibly separate craftable and missing-material states")
 	var craft_button := crafting_detail.get_node_or_null("Rows/CraftSelectedRecipeButton") as Button if crafting_detail != null else null
 	asserts.true_value(craft_button != null and craft_button.custom_minimum_size.y >= 34, "selected recipe exposes one prominent touch-sized craft action")
@@ -881,6 +883,14 @@ func _panel_uses_dark_background(panel: Control) -> bool:
 	if style == null:
 		return false
 	return style.bg_color.r < 0.12 and style.bg_color.g < 0.12 and style.bg_color.b < 0.12 and style.bg_color.a >= 0.80
+
+func _panel_uses_parchment_background(panel: Control) -> bool:
+	if panel == null:
+		return false
+	var style := panel.get_theme_stylebox("panel") as StyleBoxFlat
+	if style == null:
+		return false
+	return style.bg_color.r > 0.60 and style.bg_color.g > 0.50 and style.bg_color.b > 0.35 and style.bg_color.a >= 0.80
 
 func _button_has_icon(node: Node) -> bool:
 	return node is Button and (node as Button).icon != null

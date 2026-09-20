@@ -94,8 +94,8 @@ func _assert_inventory_leaf_menu(case_name: String, hud: GameHud, viewport_size:
 	_assert_visible_rect_inside(case_name, hud, "Root/MenuPanel/MenuRows/MenuTitleBar/CloseMenuButton", viewport_size)
 	_assert_visible_rect_inside(case_name, hud, "Root/MenuPanel/MenuRows/MenuScroll", viewport_size)
 	_assert_visible_rect_inside(case_name, hud, "Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryToolbar", viewport_size)
-	_assert_visible_horizontal_inside(case_name, hud, "Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip", viewport_size)
-	for text in ["인벤토리", "차 & 도구", "전체", "찻잎", "소모품", "서호용정"]:
+	_assert_visible_horizontal_inside(case_name, hud, "Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryShelf", viewport_size)
+	for text in ["인벤토리", "전체", "찻잎", "소모품", "서호용정"]:
 		var node := _find_text_control(hud, text)
 		if node == null:
 			_failures.append("%s missing text %s" % [case_name, text])
@@ -120,14 +120,21 @@ func _assert_inventory_leaf_menu(case_name: String, hud: GameHud, viewport_size:
 			_failures.append("%s tea leaf filter did not emit inventory filter command" % case_name)
 
 func _assert_selected_action_accessible(case_name: String, hud: GameHud, viewport_size: Vector2i) -> void:
-	var scroll := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll") as ScrollContainer
-	if scroll != null:
-		scroll.scroll_vertical = 100000
-		await process_frame
-	var use_button := _find_button_with_text(hud, "사용")
+	var selected_card := _find_button_containing_text(hud, "붕대")
+	if selected_card == null:
+		_failures.append("%s selected consumable card is missing" % case_name)
+		return
+	selected_card.pressed.emit()
+	await process_frame
+	var popup := hud.get_node_or_null("Root/DetailPopup")
+	var use_button := _find_button_with_text(popup, "사용") if popup != null else null
 	if use_button == null:
 		_failures.append("%s selected consumable use action is missing" % case_name)
 		return
+	var popup_scroll := hud.get_node_or_null("Root/DetailPopup/PopupCenter/PopupPanel/PopupRows/PopupScroll") as ScrollContainer
+	if popup_scroll != null:
+		popup_scroll.ensure_control_visible(use_button)
+		await process_frame
 	_assert_control_rect_inside(case_name, "selected consumable use action", use_button, viewport_size)
 	var commands: Array = []
 	hud.mobile_command_issued.connect(func(command): commands.append(command), CONNECT_ONE_SHOT)
@@ -135,6 +142,15 @@ func _assert_selected_action_accessible(case_name: String, hud: GameHud, viewpor
 	await process_frame
 	if commands.is_empty() or commands[0].type != GameCommand.Type.USE_INVENTORY_SLOT:
 		_failures.append("%s selected consumable action did not emit use-slot command" % case_name)
+
+func _find_button_containing_text(node: Node, text: String) -> Button:
+	if node is Button and (node as Button).text.contains(text):
+		return node as Button
+	for child in node.get_children():
+		var found := _find_button_containing_text(child, text)
+		if found != null:
+			return found
+	return null
 
 func _assert_visible_rect_inside(case_name: String, root_node: Node, path: String, viewport_size: Vector2i) -> void:
 	var node := root_node.get_node_or_null(path) as Control

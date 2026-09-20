@@ -3,9 +3,9 @@
 ## 정본
 
 - 상태: Active
-- 갱신일: 2026-09-03
+- 갱신일: 2026-09-20
 - 제품 화면: Godot 4.x 모바일·데스크톱 게임 HUD, 메뉴, 대화 화면
-- 검토 근거: `AGENTS.md`, `docs/architecture.md`, `assets/style/art-style-tokens.json`, `src/ui/game_hud.gd`, `src/ui/pixel_ui_theme.gd`
+- 검토 근거: `AGENTS.md`, `docs/architecture.md`, `assets/style/art-style-tokens.json`, `src/ui/game_hud.gd`, `src/ui/pixel_ui_theme.gd`, `.omx/artifacts/visual-ralph/ui-redesign/`
 - 상위 정본: Notion `09. 아트디렉션·맵·UI`와 `🎨 아트 에셋` DB
 
 ## 브랜드
@@ -47,7 +47,9 @@
 
 - 색상과 이미지 제작 방향은 `assets/style/art-style-tokens.json`만 정본으로 사용한다.
 - 글꼴은 `Galmuri11`과 nearest filtering을 사용한다.
-- 패널은 짙은 먹색 바탕, 흙빛 테두리, 작은 여백을 유지한다.
+- 상시 HUD는 짙은 먹색 바탕과 흙빛 테두리를 유지한다. 일시 메뉴는 한지 바탕, 먹색 글자, 목재색 테두리로 월드와 구분한다.
+- 가방·도감·제작·지도·다구 화면은 긴 설명보다 큰 픽셀 아이콘, 카드, 짧은 상태 문구를 우선한다.
+- 상세 정보는 화면 전체를 다시 덮지 않고 같은 한지 스타일의 짧은 팝업으로 표시한다.
 - 시간 시계는 12개 분절 원호와 중앙 해·달 표식을 사용한다. 낮은 기운 황금 계열, 해질녘은 여우 적갈색 계열, 밤은 흐린 강물·밤 남색 계열로 구분한다.
 - 움직임은 상태 전달에 필요할 때만 짧게 사용하며 지속적인 장식 애니메이션은 피한다.
 
@@ -55,6 +57,8 @@
 
 - `PixelUiTheme`: 공통 글꼴, 버튼, 패널 스타일을 소유한다.
 - `GameHud`: 런타임 read model을 관찰하고 HUD와 명령 표면을 렌더링한다.
+- 일시 메뉴 표면: 한지 패널과 카드형 선택지를 공유하되 메뉴별 read model과 command는 기존 경계를 유지한다.
+- 상세 팝업: 아이템·제작법·지도 표식의 설명과 행동을 한 화면 안에 짧게 표시한다.
 - 시간 시계: 시간대 아이콘, 12분절 진행 원호, 시간대 이름, 진행률을 함께 표시한다. 게임 시간 계산은 소유하지 않는다.
 - 자원 아이콘 행: `HP / 기운 / 心`의 현재 비율을 작은 반복 아이콘으로 표시한다.
 

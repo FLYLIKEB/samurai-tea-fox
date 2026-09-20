@@ -1147,7 +1147,12 @@ func _inventory_rows() -> Array:
 	var rows: Array = []
 	var model := _inventory_read_model()
 	if not model.is_empty():
-		rows.append(_section_label("차 & 도구 (인벤토리) · %d/%d · %s" % [int(model.capacity.used), int(model.capacity.total), String(model.filter_kind)]))
+		var summary := HBoxContainer.new()
+		summary.name = "InventorySummary"
+		summary.add_theme_constant_override("separation", 8)
+		summary.add_child(_icon_text_row(ICON_BAG, "%d / %d칸" % [int(model.capacity.used), int(model.capacity.total)], 11))
+		summary.add_child(_icon_text_row(_inventory_kind_icon_reference(String(model.filter_kind)), _inventory_filter_label(String(model.filter_kind)), 11))
+		rows.append(summary)
 		var toolbar := GridContainer.new()
 		toolbar.name = "InventoryToolbar"
 		toolbar.columns = 3 if _inventory_uses_compact_layout() else 7
@@ -1165,6 +1170,9 @@ func _inventory_rows() -> Array:
 		var visible_rows: Array = _inventory_display_rows(model.slots, int(model.get("selected_slot_index", -1)))
 		var page_start := _inventory_page_start(visible_rows, int(model.get("selected_slot_index", -1)), 8)
 		var page_end := mini(visible_rows.size(), page_start + 8)
+		var shelf: BoxContainer = VBoxContainer.new() if _inventory_uses_compact_layout() else HBoxContainer.new()
+		shelf.name = "InventoryShelf"
+		shelf.add_theme_constant_override("separation", 8)
 		var slot_strip := GridContainer.new()
 		slot_strip.name = "InventorySlotStrip"
 		slot_strip.columns = 3 if _inventory_uses_compact_layout() else 4
@@ -1174,7 +1182,13 @@ func _inventory_rows() -> Array:
 		for row_index in range(page_start, page_end):
 			var row: Dictionary = visible_rows[row_index]
 			slot_strip.add_child(_inventory_slot_card(row))
-		rows.append(slot_strip)
+		shelf.add_child(slot_strip)
+		var selected_row := _selected_inventory_row(visible_rows, int(model.get("selected_slot_index", -1)))
+		var preview := _inventory_detail_card(selected_row)
+		preview.name = "InventoryPreview"
+		preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		shelf.add_child(preview)
+		rows.append(shelf)
 		if visible_rows.size() > 8:
 			rows.append(_label("%d-%d / %d" % [page_start + 1, page_end, visible_rows.size()], 11))
 		_append_prepared_tea_rows(rows)
@@ -1201,18 +1215,18 @@ func _append_prepared_tea_rows(rows: Array) -> void:
 
 func _inventory_slot_card(row: Dictionary) -> Button:
 	var button := _inventory_command_button(
-		"빈칸" if bool(row.get("empty", false)) else "%s\n* %d" % [String(row.get("name", row.get("item_id", ""))), int(row.get("quantity", 0))],
+		"빈칸" if bool(row.get("empty", false)) else "%s\n× %d" % [String(row.get("name", row.get("item_id", ""))), int(row.get("quantity", 0))],
 		GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, int(row.slot_index), {"slot_index": int(row.slot_index)})
 	)
 	button.name = "InventorySlotCard%d" % int(row.get("slot_index", -1))
-	button.custom_minimum_size = Vector2(58, 56) if _inventory_uses_compact_layout() else Vector2(66, 60)
+	button.custom_minimum_size = Vector2(64, 62) if _inventory_uses_compact_layout() else Vector2(78, 70)
 	button.icon = _load_texture(_inventory_item_icon_reference(row))
 	button.expand_icon = true
-	button.add_theme_constant_override("icon_max_width", 24 if _inventory_uses_compact_layout() else 28)
+	button.add_theme_constant_override("icon_max_width", 28 if _inventory_uses_compact_layout() else 34)
 	button.add_theme_font_size_override("font_size", 9)
 	button.add_theme_stylebox_override("normal", _menu_card_style(false))
 	button.add_theme_stylebox_override("hover", _menu_card_style(true))
-	button.add_theme_stylebox_override("pressed", _button_style(Color(0.16, 0.12, 0.08, 0.96)))
+	button.add_theme_stylebox_override("pressed", _menu_card_style(true))
 	if bool(row.get("selected", false)):
 		button.add_theme_stylebox_override("normal", _menu_card_style(true))
 	button.disabled = bool(row.get("empty", false))
@@ -1237,7 +1251,7 @@ func _inventory_display_rows(slot_rows: Array, selected_slot_index: int) -> Arra
 			var group: Dictionary = row.duplicate(true)
 			group["slot_indexes"] = [int(row.get("slot_index", -1))]
 			group["quantity"] = int(row.get("quantity", 0))
-			group["stack_label"] = "%d total" % int(group.quantity)
+			group["stack_label"] = "합계 %d개" % int(group.quantity)
 			group["selected"] = int(row.get("slot_index", -1)) == selected_slot_index
 			group_indexes[item_id] = display_rows.size()
 			display_rows.append(group)
@@ -1245,7 +1259,7 @@ func _inventory_display_rows(slot_rows: Array, selected_slot_index: int) -> Arra
 		var group_index := int(group_indexes[item_id])
 		var existing: Dictionary = display_rows[group_index]
 		existing["quantity"] = int(existing.get("quantity", 0)) + int(row.get("quantity", 0))
-		existing["stack_label"] = "%d total" % int(existing.quantity)
+		existing["stack_label"] = "합계 %d개" % int(existing.quantity)
 		existing["slot_indexes"].append(int(row.get("slot_index", -1)))
 		if int(row.get("slot_index", -1)) == selected_slot_index:
 			existing["slot_index"] = selected_slot_index
@@ -1269,7 +1283,7 @@ func _inventory_detail_card(row: Dictionary) -> Control:
 	var rows := card.get_node("Rows") as VBoxContainer
 	if not row.is_empty() and not bool(row.get("empty", false)):
 		rows.add_child(_icon_text_row(_inventory_item_icon_reference(row), String(row.get("name", row.get("item_id", ""))), 11))
-		rows.add_child(_label("%s · * %d · %s" % [
+		rows.add_child(_label("%s · × %d · %s" % [
 			String(row.get("kind", "")),
 			int(row.get("quantity", 0)),
 			String(row.get("stack_label", ""))
@@ -1307,9 +1321,6 @@ func _inventory_command_button(text: String, command: GameCommand, icon_referenc
 		button.icon = _load_texture(icon_reference)
 		button.expand_icon = true
 		button.add_theme_constant_override("icon_max_width", 18)
-	button.add_theme_stylebox_override("normal", _button_style(Color(0.08, 0.065, 0.05, 0.92)))
-	button.add_theme_stylebox_override("hover", _button_style(Color(0.13, 0.10, 0.07, 0.96)))
-	button.add_theme_stylebox_override("pressed", _button_style(Color(0.23, 0.17, 0.09, 0.98)))
 	button.pressed.connect(func(): mobile_command_issued.emit(command))
 	return button
 
@@ -1496,9 +1507,8 @@ func _meta_codex_rows() -> Array:
 	if model.is_empty():
 		rows.append(_label("도감 read model 없음", 11))
 		return rows
-	rows.append(_label("탭 %s · 필터 %s · 발견 %d · 엔딩 %d" % [
-		String(model.get("selected_tab", "")),
-		String(model.get("filter_mode", "")),
+	rows.append(_icon_text_row(_meta_tab_icon(String(model.get("selected_tab", ""))), "%s · 발견 %d · 엔딩 %d" % [
+		_meta_tab_label(String(model.get("selected_tab", ""))),
 		int(_dictionary_value(model.get("counts", {})).get("discovered_records", 0)),
 		int(_dictionary_value(model.get("counts", {})).get("endings", 0))
 	], 11))
@@ -1520,26 +1530,38 @@ func _meta_codex_rows() -> Array:
 	var model_rows := _array_value(model.get("rows", []))
 	var detail := _dictionary_value(model.get("detail", {}))
 	var page_start := _meta_codex_page_start(model_rows, String(detail.get("id", "")), 5)
+	var journal: BoxContainer = VBoxContainer.new() if _inventory_uses_compact_layout() else HBoxContainer.new()
+	journal.name = "CodexJournal"
+	journal.add_theme_constant_override("separation", 6)
+	var entries := GridContainer.new()
+	entries.name = "CodexEntryGrid"
+	entries.columns = 1 if _inventory_uses_compact_layout() else 2
+	entries.add_theme_constant_override("h_separation", 4)
+	entries.add_theme_constant_override("v_separation", 4)
 	for index in range(page_start, mini(model_rows.size(), page_start + 5)):
 		var row: Dictionary = model_rows[index]
-		rows.append(_meta_codex_option_row(
-			"▶ %s · %s" % [String(row.get("name", "")), String(row.get("summary", ""))] if bool(row.get("selected", false)) else "%s · %s" % [String(row.get("name", "")), String(row.get("summary", ""))],
-			GameCommand.new(GameCommand.Type.META_CODEX_SELECT_DETAIL, Vector2i.ZERO, -1, {"id": String(row.get("id", ""))})
-		))
+		entries.add_child(_meta_codex_option_card(row, String(model.get("selected_tab", "")), GameCommand.new(GameCommand.Type.META_CODEX_SELECT_DETAIL, Vector2i.ZERO, -1, {"id": String(row.get("id", ""))})))
+	journal.add_child(entries)
+	var detail_card := _detail_card("기록 상세")
+	detail_card.name = "CodexDetailCard"
+	detail_card.custom_minimum_size = Vector2(166, 90)
+	var detail_rows := detail_card.get_node("Rows") as VBoxContainer
+	detail_rows.add_child(_wrapped_label(_meta_detail_text(detail), 10))
+	journal.add_child(detail_card)
+	rows.append(journal)
 	if model_rows.size() > 5:
 		rows.append(_label("항목 %d-%d / %d" % [page_start + 1, mini(model_rows.size(), page_start + 5), model_rows.size()], 10))
-	rows.append(_label("상세: %s" % _meta_detail_text(detail), 10))
 	return rows
 
-func _meta_codex_option_row(text: String, command: GameCommand) -> HBoxContainer:
-	var row := HBoxContainer.new()
-	_ignore_mouse(row)
-	row.add_theme_constant_override("separation", 4)
-	var label := _label(text, 10)
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(label)
-	row.add_child(_meta_codex_command_button("보기", command))
-	return row
+func _meta_codex_option_card(row: Dictionary, tab: String, command: GameCommand) -> Button:
+	var button := _meta_codex_command_button("%s\n%s" % [String(row.get("name", "")), String(row.get("summary", ""))], command)
+	button.custom_minimum_size = Vector2(136, 54)
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.icon = _load_texture(_meta_tab_icon(tab))
+	button.expand_icon = true
+	button.add_theme_constant_override("icon_max_width", 28)
+	button.add_theme_stylebox_override("normal", _menu_card_style(bool(row.get("selected", false))))
+	return button
 
 func _meta_codex_command_button(text: String, command: GameCommand) -> Button:
 	var button := Button.new()
@@ -1597,6 +1619,19 @@ func _meta_tab_label(tab: String) -> String:
 		_:
 			return tab
 
+func _meta_tab_icon(tab: String) -> String:
+	match tab:
+		"teas":
+			return ICON_TEA
+		"tea_ware":
+			return ICON_TEA_WARE
+		"yokai":
+			return ICON_KOKORO
+		"memories":
+			return ICON_SCROLL
+		_:
+			return ICON_SCROLL
+
 func _crafting_rows() -> Array:
 	var rows: Array = []
 	var model := _crafting_read_model(_crafting_filter, _selected_recipe_id)
@@ -1644,7 +1679,7 @@ func _crafting_row(row_model: Dictionary) -> Control:
 	var card := VBoxContainer.new()
 	card.name = "CraftingRecipeContent"
 	_ignore_mouse(card)
-	card.custom_minimum_size = Vector2(104, 70)
+	card.custom_minimum_size = Vector2(112, 82)
 	card.add_theme_constant_override("separation", 3)
 	var summary := VBoxContainer.new()
 	summary.name = "CraftingRecipeSummary"
@@ -1653,7 +1688,7 @@ func _crafting_row(row_model: Dictionary) -> Control:
 	var icon_row := HBoxContainer.new()
 	_ignore_mouse(icon_row)
 	icon_row.add_theme_constant_override("separation", 4)
-	icon_row.add_child(_item_icon_rect(_crafting_result_icon_reference(row_model), Vector2(26, 26)))
+	icon_row.add_child(_item_icon_rect(_crafting_result_icon_reference(row_model), Vector2(34, 34)))
 	icon_row.add_child(_item_icon_rect(_crafting_state_icon_reference(row_model), Vector2(16, 16)))
 	summary.add_child(icon_row)
 	var result := _dictionary_value(row_model.get("result", {}))
@@ -1673,7 +1708,7 @@ func _crafting_row(row_model: Dictionary) -> Control:
 	button.tooltip_text = "%s 상세" % String(result.get("name", row_model.get("name", recipe_id)))
 	button.add_theme_stylebox_override("normal", _crafting_card_style(row_model))
 	button.add_theme_stylebox_override("hover", _menu_card_style(true))
-	button.add_theme_stylebox_override("pressed", _button_style(Color(0.23, 0.17, 0.09, 0.98)))
+	button.add_theme_stylebox_override("pressed", _menu_card_style(true))
 	button.pressed.connect(func():
 		_show_crafting_detail_popup(recipe_id)
 	)
@@ -1691,9 +1726,6 @@ func _crafting_filter_button(text: String, category: String) -> Button:
 	button.focus_mode = Control.FOCUS_ALL
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.tooltip_text = text
-	button.add_theme_stylebox_override("normal", _button_style(Color(0.08, 0.065, 0.05, 0.92)))
-	button.add_theme_stylebox_override("hover", _button_style(Color(0.13, 0.10, 0.07, 0.96)))
-	button.add_theme_stylebox_override("pressed", _button_style(Color(0.23, 0.17, 0.09, 0.98)))
 	button.pressed.connect(func():
 		_crafting_filter = category
 		_selected_recipe_id = ""
@@ -1745,10 +1777,20 @@ func _crafting_detail_row(detail: Dictionary) -> Control:
 	card.name = "CraftingDetailCard"
 	card.custom_minimum_size = Vector2(220, 42) if compact else Vector2(520, 42)
 	var rows := card.get_node("Rows") as VBoxContainer
-	rows.add_child(_icon_text_row(_crafting_result_icon_reference(detail), "결과 %s x%d" % [
+	var flow := HBoxContainer.new()
+	flow.name = "CraftingFlow"
+	flow.alignment = BoxContainer.ALIGNMENT_CENTER
+	flow.add_theme_constant_override("separation", 6)
+	for material in detail.get("materials", []):
+		var material_card := _card_frame(_icon_text_row(_inventory_item_icon_reference(material), "%s\n%d/%d" % [String(material.get("name", material.get("item_id", ""))), int(material.get("available", 0)), int(material.get("required", 0))], 9))
+		material_card.custom_minimum_size = Vector2(82, 44)
+		flow.add_child(material_card)
+	flow.add_child(_label("→", 18))
+	flow.add_child(_card_frame(_icon_text_row(_crafting_result_icon_reference(detail), "%s ×%d" % [
 		String(result.get("name", result.get("item_id", ""))),
 		int(result.get("quantity", 1))
-	], 11))
+	], 11), true))
+	rows.add_child(flow)
 	rows.add_child(_label("상태 %s" % String(detail.get("reason_label", "")), 10))
 	var description := String(result.get("description", "")).strip_edges()
 	if not description.is_empty():
@@ -1788,7 +1830,7 @@ func _crafting_fact_card(title: String, text: String) -> PanelContainer:
 	var card := PanelContainer.new()
 	card.custom_minimum_size = Vector2(104, 42)
 	_ignore_mouse(card)
-	card.add_theme_stylebox_override("panel", _button_style(Color(0.08, 0.065, 0.05, 0.92)))
+	card.add_theme_stylebox_override("panel", _menu_card_style(false))
 	var rows := VBoxContainer.new()
 	_ignore_mouse(rows)
 	rows.add_theme_constant_override("separation", 1)
@@ -1808,7 +1850,7 @@ func _show_detail_popup(title: String, content: Control) -> void:
 	var viewport_size := get_viewport().get_visible_rect().size if get_viewport() != null else Vector2(640, 360)
 	var popup_size := Vector2(minf(420.0, viewport_size.x - 48.0), minf(240.0, viewport_size.y - 48.0))
 	_detail_popup = DetailPopup.new()
-	_detail_popup.setup(title, content, popup_size, _panel_style())
+	_detail_popup.setup(title, content, popup_size, PixelUiTheme.parchment_panel_style(), PixelUiTheme.create_parchment())
 	_detail_popup.dismissed.connect(func(): _detail_popup = null)
 	get_node("Root").add_child(_detail_popup)
 	_detail_popup.move_to_front()
@@ -1879,8 +1921,7 @@ func _map_rows() -> Array:
 	if not bool(model.get("ok", false)):
 		rows.append(_label("지도 read model 없음", 11))
 		return rows
-	rows.append(_section_label("시드: %d" % int(model.get("seed", 0))))
-	rows.append(_section_label("전체 지도 · 접근 가능한 지역을 선택하세요"))
+	rows.append(_icon_text_row(ICON_SCROLL, "전체 지도 · 접근 가능한 지역", 11))
 	rows.append(_biome_map_selector())
 	var selected := _biome_definition(selected_id)
 	rows.append(_label("현재 보기: %s%s" % [String(selected.get("name", selected_id)), " · 현재 위치" if selected_id == current_biome_id else ""], 12))
@@ -1888,14 +1929,21 @@ func _map_rows() -> Array:
 		rows.append(_label("이 지역은 아직 잠겨 있습니다. 해금 후 상세 지도가 표시됩니다.", 10))
 		return rows
 	var bounds: Dictionary = model.bounds
-	rows.append(_label("%dx%d · 발견 %d · 안개 %d · 던전 %s" % [
+	rows.append(_label("%s · %dx%d · 발견 %d · 안개 %d · 던전 %s" % [
+		"씨앗 %d" % int(model.get("seed", 0)),
 		int(bounds.width),
 		int(bounds.height),
 		int(model.discovered_count),
 		int(model.fog_count),
 		"완료" if _dungeon_cleared_for_current_biome() else "미완료"
 	], 10))
-	rows.append(_map_color_grid(model.minimap, Vector2(8, 8)))
+	var map_canvas := CenterContainer.new()
+	map_canvas.name = "MapCanvas"
+	map_canvas.custom_minimum_size = Vector2(300, 150) if _inventory_uses_compact_layout() else Vector2(500, 160)
+	map_canvas.add_child(_map_color_grid(model.minimap, Vector2(12, 12)))
+	var map_frame := _card_frame(map_canvas)
+	map_frame.name = "MapFrame"
+	rows.append(map_frame)
 	var markers: Array = model.markers
 	rows.append(_label("표식 %d개 · 선택하면 위치와 설명을 볼 수 있습니다" % markers.size(), 10))
 	rows.append(_map_marker_grid(markers))
@@ -1932,15 +1980,17 @@ func _show_map_marker_info(marker: Dictionary) -> void:
 	var position: Dictionary = marker.get("position", {})
 	var marker_type := String(marker.get("marker_type", ""))
 	var status := "확인됨" if bool(marker.get("discovered", true)) else "미발견"
-	var info := "%s\n%s\n종류: %s\n좌표: (%d, %d)\n상태: %s" % [
-		String(marker.get("display_name", "중요 지점")),
+	var info := "%s\n종류: %s\n좌표: (%d, %d)\n상태: %s" % [
 		String(marker.get("description", "지도에 표시된 중요한 장소입니다.")),
 		_marker_label(marker_type),
 		int(position.get("x", 0)),
 		int(position.get("y", 0)),
 		status
 	]
-	_show_menu("지도 정보", [_label(info, 12), _map_back_button()])
+	var card := _detail_card("위치 정보")
+	var rows := card.get_node("Rows") as VBoxContainer
+	rows.add_child(_wrapped_label(info, 11))
+	_show_detail_popup(String(marker.get("display_name", "중요 지점")), card)
 
 func _map_back_button() -> Button:
 	var button := Button.new()
@@ -2530,10 +2580,12 @@ func _unstyled_panel(size: Vector2) -> PanelContainer:
 	return _styled_panel(size, StyleBoxEmpty.new())
 
 func _dialogue_panel(size: Vector2) -> PanelContainer:
-	return _menu_panel(size)
+	return _styled_panel(size, _panel_style())
 
 func _menu_panel(size: Vector2) -> PanelContainer:
-	return _styled_panel(size, _panel_style())
+	var panel := _styled_panel(size, PixelUiTheme.parchment_panel_style())
+	panel.theme = PixelUiTheme.create_parchment()
+	return panel
 
 func _styled_panel(size: Vector2, style: StyleBox) -> PanelContainer:
 	var panel := PanelContainer.new()
@@ -2674,7 +2726,6 @@ func _label(text: String, font_size := 12) -> Label:
 	_ignore_mouse(label)
 	label.text = text
 	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", Color(0.93, 0.83, 0.63, 1.0))
 	return label
 
 func _build_time_dial_row(parent: Container) -> void:
@@ -2700,9 +2751,7 @@ func _build_time_dial_row(parent: Container) -> void:
 	labels.add_child(_labels.time_progress)
 
 func _section_label(text: String) -> Label:
-	var label := _wrapped_label(text, 11)
-	label.add_theme_color_override("font_color", Color(0.93, 0.83, 0.63, 1.0))
-	return label
+	return _wrapped_label(text, 11)
 
 func _wrapped_label(text: String, font_size := 12) -> Label:
 	var label := _label(text, font_size)
@@ -2786,21 +2835,22 @@ func _dpad_feedback_style(color: Color) -> StyleBoxFlat:
 	return style
 
 func _menu_card_style(selected := false) -> StyleBoxFlat:
-	var style := _button_style(Color(0.07, 0.06, 0.045, 0.92))
+	var style := _button_style(Color(0.78, 0.68, 0.50, 0.98))
+	style.border_color = Color(0.38, 0.23, 0.11, 1.0)
 	if selected:
-		style.bg_color = Color(0.10, 0.08, 0.055, 0.96)
-		style.border_color = Color(0.92, 0.68, 0.32, 1.0)
+		style.bg_color = Color(0.67, 0.76, 0.50, 1.0)
+		style.border_color = Color(0.18, 0.34, 0.17, 1.0)
 	return style
 
 func _crafting_card_style(row_model: Dictionary) -> StyleBoxFlat:
 	var selected := bool(row_model.get("selected", false))
 	var style := _menu_card_style(selected)
 	if bool(row_model.get("craftable", false)):
-		style.bg_color = Color(0.045, 0.095, 0.055, 0.94)
-		style.border_color = Color(0.45, 0.86, 0.36, 1.0)
+		style.bg_color = Color(0.70, 0.79, 0.54, 1.0)
+		style.border_color = Color(0.22, 0.42, 0.20, 1.0)
 	elif String(row_model.get("reason", "")) == "missing_materials":
-		style.bg_color = Color(0.11, 0.045, 0.04, 0.94)
-		style.border_color = Color(0.86, 0.34, 0.25, 1.0)
+		style.bg_color = Color(0.76, 0.61, 0.48, 1.0)
+		style.border_color = Color(0.55, 0.20, 0.13, 1.0)
 	if selected:
 		style.border_width_left = 3
 		style.border_width_top = 3

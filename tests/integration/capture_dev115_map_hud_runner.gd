@@ -77,7 +77,7 @@ func _capture_map(capture_name: String, viewport_size: Vector2i) -> Dictionary:
 	await process_frame
 	await process_frame
 	var menu := hud.get_node_or_null("Root/MenuPanel") as Control
-	var grid := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/MapColorGrid") as GridContainer
+	var grid := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/MapFrame/MapCanvas/MapColorGrid") as GridContainer
 	if menu == null or not menu.visible:
 		viewport.queue_free()
 		return {"ok": false, "error": "%s missing visible map menu" % capture_name}
