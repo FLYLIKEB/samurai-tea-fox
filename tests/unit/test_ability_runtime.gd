@@ -284,13 +284,26 @@ func _assert_invalid_ability_data_and_effect_type_are_rejected(asserts) -> void:
 	asserts.false_value(fractional_result.ok, "fractional ability damage is rejected")
 
 	var runtime := AbilityRuntime.new({"unknown": AbilityDefinition.new(_ability("unknown", "미지원", 1, 1, 1.0, 1))}, 1)
-	asserts.true_value(runtime.equip(0, "unknown", {"tail_count": 1}).ok, "unknown effect type can be equipped as data")
+	var candidates: Dictionary = runtime.ability_candidates({"tail_count": 1})
+	asserts.equal(candidates.ability_ids, [], "unsupported effect type is excluded from playable candidates")
+	var unsupported_equip: Dictionary = runtime.equip(0, "unknown", {"tail_count": 1})
+	asserts.false_value(unsupported_equip.ok, "unsupported effect type cannot be newly equipped")
+	asserts.equal(unsupported_equip.reason, "unsupported_effect_type", "unsupported equip reason matches cast capability")
+	asserts.equal(runtime.equipped_ability_id(0), "", "rejected equip does not mutate the slot")
+	runtime.equip_slots[0] = "unknown"
+	var restored_resources := PlayerResources.new(100, 100, 100, 30)
+	var restored_tea := TeaEffectQuery.new()
 	var unsupported := runtime.cast(0, {
-		"resources": PlayerResources.new(100, 100, 100, 30),
-		"tail_count": 1
+		"resources": restored_resources,
+		"tail_count": 1,
+		"tea_effect_query": restored_tea
 	})
-	asserts.false_value(unsupported.ok, "unsupported effect type fails before spending ki")
+	asserts.false_value(unsupported.ok, "restored unsupported effect type fails before spending ki")
 	asserts.equal(unsupported.reason, "unsupported_effect_type", "unsupported effect type reason is explicit")
+	asserts.equal(runtime.equipped_ability_id(0), "unknown", "unsupported restored ID remains visible for repair")
+	asserts.equal(restored_resources.ki, 100, "unsupported restored ability does not spend ki")
+	asserts.false_value(runtime.cooldown_remaining.has("unknown"), "unsupported restored ability does not start cooldown")
+	asserts.equal(restored_tea.consume_calls, 0, "unsupported restored ability does not consume the tea modifier")
 
 func _test_runtime() -> AbilityRuntime:
 	var result: Dictionary = AbilityRuntime.from_catalog(FakeCatalog.new({
