@@ -1603,6 +1603,22 @@ class NotionExportPipelineTests(unittest.TestCase):
             "asset_assets_sprites_objects_mining_iron_ore_32x32_png",
         )
 
+    def test_dev_136_generated_biomes_include_copper_and_rare_wood(self):
+        snapshot = json.loads((ROOT / "data/generated/biomes.json").read_text(encoding="utf-8"))
+        self.pipeline._validate_snapshot("biomes", snapshot)
+        biomes = {item["id"]: item for item in snapshot["items"] if item.get("type") == "바이옴"}
+
+        self.assertIn("copper_ore", biomes["mountain_region"]["generation_resource_item_ids"])
+        self.assertEqual(
+            biomes["mountain_region"]["generation_resource_source_by_id"]["copper_ore"],
+            "asset_assets_sprites_objects_mining_copper_ore_32x32_png",
+        )
+        self.assertIn("rare_wood", biomes["rainforest"]["generation_resource_item_ids"])
+        self.assertEqual(
+            biomes["rainforest"]["generation_resource_source_by_id"]["rare_wood"],
+            "asset_assets_sprites_objects_village_props_firewood_pile_1x2_64x32_png",
+        )
+
     def test_dev_10_generated_recipes_have_stable_unlock_biome_ids(self):
         generated = ROOT / "data/generated"
         self.pipeline.validate_directory(generated)

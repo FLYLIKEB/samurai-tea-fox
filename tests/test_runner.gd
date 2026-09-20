@@ -82,6 +82,7 @@ const TESTS := [
 	preload("res://tests/unit/test_ruin_loot_service.gd"),
 	preload("res://tests/unit/test_repair_target_world_generation.gd"),
 	preload("res://tests/unit/test_dev76_mining_stone_runtime.gd"),
+	preload("res://tests/unit/test_dev_136_resource_acquisition.gd"),
 	preload("res://tests/unit/test_main_vertical_slice_runtime.gd"),
 	preload("res://tests/unit/test_main_acquisition_runtime.gd"),
 	preload("res://tests/unit/test_main_drop_runtime.gd"),
