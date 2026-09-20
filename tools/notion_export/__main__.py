@@ -42,9 +42,12 @@ def main() -> int:
             print(f"Exported {len(written)} deterministic snapshots to {args.output}")
         elif args.command == "validate":
             result = pipeline.validate_directory(args.directory)
+            coverage = result["drop_coverage"]
             print(
                 f"Validated snapshots: version={result['data_version']} "
-                f"profile={result['profile']} datasets={len(result['datasets'])}"
+                f"profile={result['profile']} datasets={len(result['datasets'])} "
+                f"drops={coverage['covered_monsters']}/{coverage['active_monsters']} "
+                f"candidates={coverage['drop_candidates']}"
             )
         else:
             token = os.environ.get(args.token_env, "")

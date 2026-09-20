@@ -288,6 +288,24 @@ class NotionExportPipelineTests(unittest.TestCase):
         with self.assertRaisesRegex(ExportValidationError, "drop_1.*quantity range"):
             self.pipeline.build_snapshots(reversed_quantity, "confirmed-test")
 
+        zero_chance = copy.deepcopy(capture)
+        zero_chance["datasets"]["drops"]["items"][0]["chance"] = 0
+        with self.assertRaisesRegex(ExportValidationError, "drop_1.*greater than zero"):
+            self.pipeline.build_snapshots(zero_chance, "confirmed-test")
+
+        missing_coverage = copy.deepcopy(capture)
+        missing_coverage["datasets"]["drops"]["items"] = []
+        with self.assertRaisesRegex(ExportValidationError, "monster_9.*no drop candidate"):
+            self.pipeline.build_snapshots(missing_coverage, "confirmed-test")
+
+        draft_without_drop = copy.deepcopy(capture)
+        draft_without_drop["datasets"]["monsters"]["items"].append({
+            "id": "draft_monster",
+            "name": "초안 몬스터",
+            "status": "초안",
+        })
+        self.pipeline.build_snapshots(draft_without_drop, "confirmed-test")
+
     def test_missing_required_field_fails_with_dataset_and_item_context(self):
         invalid = copy.deepcopy(self.capture)
         wood = next(item for item in invalid["datasets"]["items"]["items"] if item["id"] == "wood")

@@ -122,8 +122,13 @@ class ExportPipeline:
 
         if not snapshots:
             raise ExportValidationError(f"{directory}: no export snapshots found")
-        self._validate_relations(snapshots)
-        return {"data_version": data_version, "profile": profile, "datasets": sorted(snapshots)}
+        drop_coverage = self._validate_relations(snapshots)
+        return {
+            "data_version": data_version,
+            "profile": profile,
+            "datasets": sorted(snapshots),
+            "drop_coverage": drop_coverage,
+        }
 
     def _validate_capture_header(self, capture: dict[str, Any], profile: str) -> None:
         if not isinstance(capture, dict):
@@ -558,11 +563,11 @@ class ExportPipeline:
             not isinstance(chance, (int, float))
             or isinstance(chance, bool)
             or not math.isfinite(float(chance))
-            or float(chance) < 0.0
+            or float(chance) <= 0.0
             or float(chance) > 1.0
         ):
             raise ExportValidationError(
-                f"drops item {drop_id}: chance must be between zero and one"
+                f"drops item {drop_id}: chance must be greater than zero and at most one"
             )
 
     def _validate_choice_contract(self, row: dict[str, Any]) -> None:
@@ -812,7 +817,7 @@ class ExportPipeline:
             snapshot["profile"],
         )
 
-    def _validate_relations(self, snapshots: dict[str, dict[str, Any]]) -> None:
+    def _validate_relations(self, snapshots: dict[str, dict[str, Any]]) -> dict[str, int]:
         ids_by_dataset = {
             name: {item["id"] for item in snapshot["items"]}
             for name, snapshot in snapshots.items()
@@ -853,6 +858,35 @@ class ExportPipeline:
                 "monsters" in ids_by_dataset,
             )
             self._validate_boss_tea_references(snapshots["bosses"]["items"], ids_by_dataset)
+        return self._validate_drop_coverage(snapshots)
+
+    def _validate_drop_coverage(self, snapshots: dict[str, dict[str, Any]]) -> dict[str, int]:
+        if "monsters" not in snapshots or "drops" not in snapshots:
+            return {"active_monsters": 0, "covered_monsters": 0, "drop_candidates": 0}
+        active_monster_ids = {
+            monster["id"]
+            for monster in snapshots["monsters"]["items"]
+            if monster.get("status") in {"확정", "테스트"}
+        }
+        covered_monster_ids = {
+            drop["monster_id"]
+            for drop in snapshots["drops"]["items"]
+            if drop.get("monster_id") in active_monster_ids
+        }
+        missing = sorted(active_monster_ids - covered_monster_ids)
+        if missing:
+            raise ExportValidationError(
+                f"drops coverage: active monster {missing[0]} has no drop candidate"
+            )
+        return {
+            "active_monsters": len(active_monster_ids),
+            "covered_monsters": len(covered_monster_ids),
+            "drop_candidates": sum(
+                1
+                for drop in snapshots["drops"]["items"]
+                if drop.get("monster_id") in active_monster_ids
+            ),
+        }
 
     def _validate_boss_nested_summons(
         self,
