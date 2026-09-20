@@ -67,7 +67,6 @@ func _init(ports: Ports) -> void:
 	_ports = ports
 
 func render_generated_world(world: Dictionary) -> void:
-	WorldPresentation.hide_prototype_visuals(_call_object(_ports.get_scene_root))
 	var world_data = _call_object(_ports.get_world_data)
 	if not _call_bool(_ports.is_in_dungeon_map) and world_data != null:
 		var migrated := _call_bool(_ports.ensure_saved_world_has_teleport_landmark)

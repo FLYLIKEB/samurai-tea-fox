@@ -72,9 +72,9 @@ func run() -> void:
 		if landmarks == null or landmarks.get_child_count() == 0:
 			failures.append("required landmarks are rendered with object sprites")
 
-	var ground := main.get_node_or_null("Ground") as Polygon2D
-	if ground != null and ground.visible:
-		failures.append("prototype polygon ground is hidden after runtime sprite render")
+	for prototype_node in ["Ground", "Path", "ArenaWalls", "TopWall", "BottomWall", "LeftWall", "RightWall", "Pillar", "LowWall"]:
+		if main.get_node_or_null(prototype_node) != null:
+			failures.append("prototype world node is absent from the generated runtime scene: %s" % prototype_node)
 
 	var player = main.get_node_or_null("Player")
 	var sprite := player.get_node_or_null("Sprite2D") as Sprite2D if player != null else null

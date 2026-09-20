@@ -4,6 +4,7 @@ const WorldData = preload("res://src/world/data/world_data.gd")
 const WorldSceneRenderer = preload("res://src/world/rendering/world_scene_renderer.gd")
 
 func run(asserts) -> void:
+	_assert_main_scene_uses_only_generated_world_root(asserts)
 	_assert_sixteen_adjacency_masks(asserts)
 	_assert_tilemap_layer_uses_adjacency_variants(asserts)
 	_assert_explicit_atlas_coords_override_adjacency(asserts)
@@ -16,6 +17,17 @@ func run(asserts) -> void:
 	_assert_dungeon_landmark_uses_multicell_house_and_label(asserts)
 	_assert_searched_abandoned_house_hides_prompt(asserts)
 	_assert_special_objects_have_role_colored_outlines(asserts)
+
+func _assert_main_scene_uses_only_generated_world_root(asserts) -> void:
+	var main_scene := load("res://src/main/main.tscn") as PackedScene
+	asserts.true_value(main_scene != null, "main scene loads without prototype resources")
+	var main = main_scene.instantiate()
+	asserts.true_value(main.get_node_or_null("WorldVisuals") != null, "main scene keeps the generated world root")
+	asserts.true_value(main.get_node_or_null("Player") != null, "main scene keeps the player")
+	asserts.true_value(main.get_node_or_null("CombatDummy") != null, "main scene keeps the combatant")
+	for prototype_node in ["Ground", "Path", "ArenaWalls", "TopWall", "BottomWall", "LeftWall", "RightWall", "Pillar", "LowWall"]:
+		asserts.equal(main.get_node_or_null(prototype_node), null, "main scene omits prototype node %s" % prototype_node)
+	main.free()
 
 func _assert_sixteen_adjacency_masks(asserts) -> void:
 	var renderer := WorldSceneRenderer.new()
