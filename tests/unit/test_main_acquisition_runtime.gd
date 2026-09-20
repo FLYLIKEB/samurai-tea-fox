@@ -43,6 +43,7 @@ class MovementPlayer:
 func run(asserts) -> void:
 	var catalog := DataCatalog.new()
 	asserts.true_value(catalog.load_from_directory("res://data/generated").ok, "runtime acquisition fixture loads generated definitions")
+	_assert_main_generates_current_biome(asserts, catalog, "common_region")
 	_assert_main_generates_current_biome(asserts, catalog, "mountain_region")
 	_assert_main_generates_current_biome(asserts, catalog, "wasteland")
 	_assert_main_generates_current_biome(asserts, catalog, "snowfield")
@@ -366,6 +367,7 @@ func _assert_main_generates_current_biome(asserts, catalog: DataCatalog, biome_i
 		asserts.equal(runtime.generated_world.get("biome_generation_rule_id", ""), biome_id, "main feeds the current biome definition into WorldGenerator")
 		asserts.true_value(runtime.world_render_result.get("ok", false), "%s runtime render uses generated renderer input" % biome_id)
 		_assert_runtime_templates(asserts, runtime.generated_world)
+		_assert_generated_resource_contracts(asserts, runtime)
 		if biome_id == "wasteland":
 			_assert_wasteland_runtime_sources(asserts, runtime)
 		elif biome_id == "snowfield":
@@ -386,6 +388,21 @@ func _assert_runtime_templates(asserts, world: Dictionary) -> void:
 		WorldGenerator.TEMPLATE_RESOURCE_CLUSTER
 	]:
 		asserts.true_value(template_ids.has(template_id), "runtime world includes common template: %s" % template_id)
+
+func _assert_generated_resource_contracts(asserts, runtime: Main) -> void:
+	var builder = runtime._acquisition_definitions()
+	for node in runtime.generated_world.get("resource_nodes", []):
+		var resource_id := String(node.get("resource_id", ""))
+		var item: Dictionary = runtime.catalog.find_by_id("items", resource_id)
+		if String(item.get("status", "")) != "확정" or (not bool(node.get("ground_pickup", false)) and not builder.is_generated_resource_item_type(String(item.get("type", "")))):
+			continue
+		var gatherable: Dictionary = runtime.acquisition_service.gatherable_for(String(node.get("id", "")))
+		asserts.false_value(gatherable.is_empty(), "%s generated resource registers as gatherable" % resource_id)
+		asserts.equal(
+			String(gatherable.get("required_tool_item_id", "")),
+			builder.required_tool_for_resource_node(resource_id, node),
+			"%s generated resource keeps its exported tool contract" % resource_id
+		)
 
 func _assert_wasteland_runtime_sources(asserts, runtime: Main) -> void:
 	var owner_sources: Dictionary = runtime._owner_sprite_sources(runtime.generated_world)
@@ -503,13 +520,16 @@ func _configured_runtime(catalog, state: RunState, resource_position := Vector2i
 	if not services.ok:
 		return {"main": runtime, "result": services}
 	var world := WorldData.new(3, 1, "grass", true)
-	world.reserve_entity("resource_0", resource_position, Vector2i.ONE, true, {"resource_id": "wood"})
+	world.reserve_entity("resource_0", resource_position, Vector2i.ONE, true, {"resource_id": "wood", "biome_rule_id": "common_region", "node_kind": "tree"})
+	if runtime.inventory.get_total_quantity("stone_axe") == 0:
+		assert(runtime.inventory.add_item("stone_axe", 1).ok)
 	var world_snapshot := world.to_dictionary()
 	runtime.generated_world = {
 		"ok": true,
+		"biome_id": "common_region",
 		"world_data": world_snapshot,
 		"renderer_input": WorldRendererProjection.new().project(world_snapshot),
-		"resource_nodes": [{"id": "resource_0", "resource_id": "wood", "position": {"x": resource_position.x, "y": resource_position.y}}]
+		"resource_nodes": [{"id": "resource_0", "resource_id": "wood", "node_kind": "tree", "position": {"x": resource_position.x, "y": resource_position.y}}]
 	}
 	return {"main": runtime, "result": runtime._configure_acquisition_for_generated_world()}
 

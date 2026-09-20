@@ -250,7 +250,7 @@ func _owner_source_id(owner_id: String, metadata: Dictionary) -> String:
 	if String(metadata.get("terrain_overlay", "")) == "path_fence":
 		return PATH_FENCE_SOURCE_ID
 	var resource_id := String(metadata.get("resource_id", ""))
-	if owner_id.begins_with("resource_") and PICKUP_WOOD_SOURCE_BY_ITEM.has(resource_id):
+	if bool(metadata.get("ground_pickup", false)) and PICKUP_WOOD_SOURCE_BY_ITEM.has(resource_id):
 		return String(PICKUP_WOOD_SOURCE_BY_ITEM[resource_id])
 	var facility_key := "%s|%s" % [String(metadata.get("biome_rule_id", "")), String(metadata.get("facility_id", ""))]
 	if FACILITY_SOURCE_BY_BIOME_FACILITY.has(facility_key):

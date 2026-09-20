@@ -12,7 +12,7 @@ func run(asserts) -> void:
 	}
 	for index in range(expected_sources.size()):
 		var item_id := String(expected_sources.keys()[index])
-		asserts.true_value(world.reserve_entity("resource_%s" % item_id, Vector2i(index, 0), Vector2i.ONE, true, {"resource_id": item_id, "biome_rule_id": "common_region"}).ok, "%s pickup node reserves" % item_id)
+		asserts.true_value(world.reserve_entity("resource_%s" % item_id, Vector2i(index, 0), Vector2i.ONE, true, {"resource_id": item_id, "biome_rule_id": "common_region", "ground_pickup": true}).ok, "%s pickup node reserves" % item_id)
 	asserts.true_value(world.reserve_entity("terrain_tree_wood_3_0", Vector2i(3, 0), Vector2i.ONE, true, {"resource_id": "wood", "terrain_id": "common_forest", "terrain_overlay": "tree"}).ok, "harvestable tree reserves")
 	var sources := _entity_sources(WorldRendererProjection.new().project(world.to_dictionary()))
 	for item_id in expected_sources:
