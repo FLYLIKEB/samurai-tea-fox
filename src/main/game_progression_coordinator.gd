@@ -50,7 +50,13 @@ func complete_sen_rikyu_phase_three(main, ability_id: String) -> Dictionary:
 func ending_read_model(main) -> Dictionary:
 	if main.ending_route_runtime == null:
 		return {"ok": false, "reason": "missing_ending_route_runtime", "error": "Ending route runtime is not configured."}
-	return main.ending_route_runtime.evaluate(ensure_run_state(main))
+	var result: Dictionary = main.ending_route_runtime.evaluate(ensure_run_state(main))
+	if result.ok:
+		result.read_model["run_identity"] = {
+			"lifecycle_epoch": int(main.run_state.lifecycle_epoch),
+			"seed": int(main.run_state.seed)
+		}
+	return result
 
 func record_ending_to_meta(main, meta_state, read_model := {}) -> Dictionary:
 	if main.ending_route_runtime == null:
@@ -64,9 +70,7 @@ func record_ending_to_meta(main, meta_state, read_model := {}) -> Dictionary:
 	return main.ending_route_runtime.record_to_meta(model, meta_state)
 
 func request_new_run_after_credits(main, read_model: Dictionary) -> Dictionary:
-	if main.ending_route_runtime == null:
-		return {"ok": false, "reason": "missing_ending_route_runtime", "error": "Ending route runtime is not configured."}
-	return main.ending_route_runtime.request_new_run_after_credits(read_model)
+	return main._run_bootstrap().complete_ending_new_run(read_model)
 
 func sen_rikyu_phase_two_accepts_command(main, command) -> bool:
 	return main.sen_rikyu_phase_two_runtime != null \

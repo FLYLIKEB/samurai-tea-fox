@@ -7,10 +7,12 @@ const EndingRouteRuntime = preload("res://src/meta/ending_route_runtime.gd")
 const InventoryCommandRuntime = preload("res://src/inventory/inventory_command_runtime.gd")
 const MapReadModelBuilder = preload("res://src/world/map/map_read_model_builder.gd")
 const MemoryTeaCutsceneRuntime = preload("res://src/narrative/memory_tea_cutscene_runtime.gd")
+const MetaState = preload("res://src/save/meta_state.gd")
 const MetaCodexCommandRuntime = preload("res://src/meta/meta_codex_command_runtime.gd")
 const NarrativeRuntime = preload("res://src/narrative/narrative_runtime.gd")
 const RunRuntimeStateBinder = preload("res://src/save/run_runtime_state_binder.gd")
 const RunLifecycleService = preload("res://src/save/run_lifecycle_service.gd")
+const RunEndProcessor = preload("res://src/meta/run_end_processor.gd")
 const RunServiceFactory = preload("res://src/main/run_service_factory.gd")
 const RunStartEventSelector = preload("res://src/narrative/run_start_event_selector.gd")
 const RunState = preload("res://src/save/run_state.gd")
@@ -74,6 +76,7 @@ class Ports:
 	var current_meta_state_snapshot: Callable
 	var on_tea_drink_completed: Callable
 	var get_run_lifecycle_service: Callable
+	var get_ending_route_runtime: Callable
 	var get_inventory: Callable
 	var activate_run_state: Callable
 	var show_the_end_and_return_to_start: Callable
@@ -81,6 +84,7 @@ class Ports:
 
 var _ports: Ports
 var _fresh_run_seed: int
+var _completed_ending_requests := {}
 
 func _init(ports: Ports, fresh_run_seed: int) -> void:
 	_ports = ports
@@ -524,6 +528,84 @@ func replace_confirmed_dead_run() -> Dictionary:
 		"invalidated_lifecycle_epoch": int(confirmed.invalidated_lifecycle_epoch),
 		"lifecycle_epoch": fresh_run.lifecycle_epoch
 	}
+
+func complete_ending_new_run(read_model: Dictionary) -> Dictionary:
+	var ending_runtime = _call_object(_ports.get_ending_route_runtime)
+	var save_store = _call_object(_ports.get_save_store)
+	var run_state: RunState = _call_object(_ports.get_run_state)
+	var catalog = _call_object(_ports.get_catalog)
+	if ending_runtime == null:
+		return {"ok": false, "reason": "missing_ending_route_runtime", "error": "Ending route runtime is not configured."}
+	if save_store == null or run_state == null or catalog == null:
+		return {"ok": false, "reason": "missing_ending_transition_runtime", "error": "Ending transition requires save, run, and catalog runtime."}
+	var request: Dictionary = ending_runtime.request_new_run_after_credits(read_model)
+	if not request.ok:
+		return request
+	var request_key := _ending_request_key(read_model)
+	if _completed_ending_requests.has(request_key):
+		return {"ok": true, "state": "already_completed", "duplicate": true, "event": request.event}
+
+	var meta_state := MetaState.new()
+	if FileAccess.file_exists(save_store.meta_path):
+		var loaded_meta: Dictionary = save_store.load_meta()
+		if not loaded_meta.ok:
+			return loaded_meta
+		meta_state = loaded_meta.meta_state
+	var recorded: Dictionary = ending_runtime.record_to_meta(read_model, meta_state)
+	if not recorded.ok:
+		return recorded
+	if recorded.recorded:
+		var run_end: Dictionary = RunEndProcessor.new().apply_run_end_with_unlocks(
+			meta_state.to_dictionary(),
+			run_state.to_dictionary(),
+			catalog.get_definitions("meta_unlocks")
+		)
+		if not run_end.ok:
+			return run_end
+		meta_state = MetaState.from_dictionary(run_end.meta_state)
+	var meta_save: Dictionary = save_store.save_meta(meta_state)
+	if not meta_save.ok:
+		return meta_save
+
+	var invalidated: Dictionary = save_store.invalidate_run(run_state)
+	if not invalidated.ok:
+		return invalidated
+	if bool(invalidated.get("preserved_newer_run", false)):
+		var preserved_run = invalidated.get("current_run_state")
+		if not preserved_run is RunState:
+			var loaded_run: Dictionary = save_store.load_run()
+			if not loaded_run.ok:
+				return loaded_run
+			preserved_run = loaded_run.run_state
+		var preserved_activation := _call_dictionary(_ports.activate_run_state, [preserved_run])
+		if not preserved_activation.ok:
+			return preserved_activation
+		_completed_ending_requests[request_key] = true
+		return {"ok": true, "state": "preserved_run_activated", "event": request.event, "run_state": preserved_run}
+
+	var fresh_run := RunState.new()
+	fresh_run.data_version = String(catalog.data_version)
+	fresh_run.lifecycle_epoch = int(invalidated.get("invalidated_lifecycle_epoch", 0)) + 1
+	fresh_run.seed = _fresh_run_seed
+	var run_save: Dictionary = save_store.save_run(fresh_run)
+	if not run_save.ok:
+		return run_save
+	var activation := _call_dictionary(_ports.activate_run_state, [fresh_run])
+	if not activation.ok:
+		return activation
+	var lifecycle = _call_object(_ports.get_run_lifecycle_service)
+	if lifecycle != null and lifecycle.has_method("reset_for_new_run"):
+		lifecycle.reset_for_new_run()
+	_completed_ending_requests[request_key] = true
+	return {"ok": true, "state": "fresh_run", "event": request.event, "run_state": fresh_run}
+
+func _ending_request_key(read_model: Dictionary) -> String:
+	var identity: Dictionary = read_model.get("run_identity", {})
+	return "%d:%d|%s" % [
+		int(identity.get("lifecycle_epoch", -1)),
+		int(identity.get("seed", -1)),
+		",".join(read_model.get("ending_ids", []))
+	]
 
 func _biome_map_previews(generator: WorldGenerator, current_biome_id: String, projection: Dictionary) -> Dictionary:
 	var catalog = _call_object(_ports.get_catalog)
