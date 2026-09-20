@@ -332,6 +332,35 @@ func _grid_cell_is_walkable(cell: Vector2i) -> bool:
 		return bool(_grid_world_data.is_walkable(cell))
 	return true
 
+func apply_ability_movement(direction: Vector2, distance_tiles: float) -> Dictionary:
+	var step := Vector2i.ZERO
+	if absf(direction.x) >= absf(direction.y) and not is_zero_approx(direction.x):
+		step.x = int(signf(direction.x))
+	elif not is_zero_approx(direction.y):
+		step.y = int(signf(direction.y))
+	if step == Vector2i.ZERO:
+		return {"ok": false, "reason": "invalid_direction"}
+	var from_cell := _grid_cell_for_position(global_position)
+	var to_cell := from_cell
+	for _index in maxi(int(floor(distance_tiles)), 0):
+		var candidate := to_cell + step
+		if not _grid_cell_is_walkable(candidate):
+			break
+		to_cell = candidate
+	if to_cell == from_cell:
+		grid_step_blocked.emit(from_cell, from_cell + step)
+		return {"ok": false, "reason": "movement_blocked", "from_cell": from_cell, "to_cell": from_cell}
+	_grid_moving = false
+	velocity = Vector2.ZERO
+	movement_state.face(step)
+	global_position = _grid_position_for_cell_center(to_cell)
+	return {
+		"ok": true,
+		"from_cell": from_cell,
+		"to_cell": to_cell,
+		"distance_tiles_moved": maxi(absi(to_cell.x - from_cell.x), absi(to_cell.y - from_cell.y))
+	}
+
 func _cast_ability(slot: int, direction: Vector2i) -> bool:
 	if ability_runtime == null or resources == null:
 		return false
@@ -342,6 +371,7 @@ func _cast_ability(slot: int, direction: Vector2i) -> bool:
 		"tail_query": ability_tail_query,
 		"time_state": ability_time_state,
 		"tea_effect_query": ability_tea_effect_query,
+		"movement_actor": self,
 		"direction": action_direction
 	}
 	var definition_result: Dictionary = ability_runtime.definition_for_slot(slot)

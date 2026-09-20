@@ -11,6 +11,7 @@ const SaveStore = preload("res://src/save/save_store.gd")
 const TimeState = preload("res://src/time/time_state.gd")
 const BiomeProgressionState = preload("res://src/world/biome/biome_progression_state.gd")
 const DungeonInstanceState = preload("res://src/dungeon/dungeon_instance_state.gd")
+const WorldData = preload("res://src/world/data/world_data.gd")
 
 const RUN_PATH := "user://dev17_vertical_slice_run.save.json"
 const META_PATH := "user://dev17_vertical_slice_meta.save.json"
@@ -95,8 +96,38 @@ func run(asserts) -> void:
 			asserts.false_value(bool(repeat_model.read_model.father_physical_actor), "repeat-run father presentation is not a physical Hongguk NPC")
 		asserts.equal(repeat_runtime.main.first_run_prologue_read_model({"run_count": 1}).reason, "not_first_run", "repeat-run meta state rejects first-run prologue")
 	asserts.equal(main.player.ability_runtime.equipped_ability_id(0), "ember", "first-tail playable ability is equipped by default")
+	var generated_world_data = main.world_data
+	main.world_data = WorldData.new(4, 1, "floor", true)
+	main.player.global_position = main.world_position_for_cell_center(Vector2i.ZERO)
+	main.player.configure_grid_navigation(main.world_data, main._runtime_world_origin(), main._runtime_tile_size())
+	asserts.true_value(main.player.equip_ability(1, "water_shadow", main).ok, "slice equips water shadow through the player boundary")
+	asserts.true_value(main.world_data.set_terrain(Vector2i(1, 0), "wall", false), "movement fixture blocks the adjacent terrain cell")
+	var blocked_ki: int = main.player.resources.ki
+	var blocked_elapsed: float = main.time_state.phase_elapsed_seconds
+	asserts.false_value(main.submit_desktop_action_command("cast_ability", Vector2i.RIGHT, 1), "wall-blocked water shadow is rejected through Main input")
+	asserts.equal(main.player.resources.ki, blocked_ki, "blocked movement does not consume ki")
+	asserts.false_value(main.player.ability_runtime.cooldown_remaining.has("water_shadow"), "blocked movement does not start cooldown")
+	asserts.equal(main.time_state.phase_elapsed_seconds, blocked_elapsed, "blocked movement does not consume a turn")
+	asserts.true_value(main.world_data.set_terrain(Vector2i(1, 0), "floor", true), "movement fixture opens the adjacent terrain cell")
+	asserts.true_value(main.world_data.reserve_entity("movement_enemy", Vector2i(2, 0)).ok, "movement fixture reserves an enemy cell")
+	asserts.true_value(main.submit_desktop_action_command("cast_ability", Vector2i.RIGHT, 1), "water shadow moves through Main input")
+	asserts.equal(main.world_cell_from_world_position(main.player.global_position), Vector2i(1, 0), "water shadow stops before an occupied enemy cell")
+	asserts.equal(main.time_state.phase_elapsed_seconds, blocked_elapsed + main._time_seconds_per_turn(), "successful movement consumes exactly one turn")
+	main.snapshot_run_state()
+	asserts.equal(main.run_state.player_cell, {"x": 1, "y": 0}, "run snapshot stores the moved player cell")
+	main.player.ability_runtime.cooldown_remaining.erase("water_shadow")
+	main._in_dungeon_map = true
+	main.world_data = WorldData.new(3, 1, "dungeon_floor", true)
+	main.player.global_position = main.world_position_for_cell_center(Vector2i.ZERO)
+	main.player.configure_grid_navigation(main.world_data, main._runtime_world_origin(), main._runtime_tile_size())
+	asserts.true_value(main.player.submit_command(GameCommand.new(GameCommand.Type.CAST_ABILITY, Vector2i.RIGHT, 1)), "player cast uses the active dungeon navigation binding")
+	asserts.equal(main.world_cell_from_world_position(main.player.global_position), Vector2i(2, 0), "water shadow stops at the dungeon map edge")
+	main._in_dungeon_map = false
+	main.world_data = generated_world_data
+	main.player.configure_grid_navigation(main.world_data, main._runtime_world_origin(), main._runtime_tile_size())
 	main.player.global_position = main.world_position_for_cell_center(Vector2i(1, 1))
 	main.combat_dummy.global_position = main.world_position_for_cell_center(Vector2i(3, 1))
+	main._enemy_turn_queued = false
 
 	var first_resource: Dictionary = main.generated_world.resource_nodes[0]
 	var elapsed_before_invalid_interact: float = main.time_state.phase_elapsed_seconds

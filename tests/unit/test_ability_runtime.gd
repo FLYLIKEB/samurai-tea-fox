@@ -51,6 +51,12 @@ class TeaEffectQuery:
 		modifier_percent = 0.0
 		return consumed
 
+class BlockedMovementActor:
+	extends RefCounted
+
+	func apply_ability_movement(_direction: Vector2, _distance_tiles: float) -> Dictionary:
+		return {"ok": false, "reason": "movement_blocked"}
+
 func run(asserts) -> void:
 	_assert_generated_catalog_loads_ability_runtime(asserts)
 	_assert_equipping_slots_and_tail_query(asserts)
@@ -215,6 +221,23 @@ func _assert_movement_sample_uses_strategy_without_damage(asserts) -> void:
 	asserts.equal(result.distance_tiles, 2.0, "movement distance uses data-driven range")
 	asserts.equal(result.direction, Vector2.LEFT, "movement direction is normalized")
 	asserts.equal(resources.ki, 88, "movement ability consumes data-driven ki cost")
+
+	var blocked_runtime := _test_runtime()
+	var blocked_resources := PlayerResources.new(100, 100, 100, 30)
+	var tea_effects := TeaEffectQuery.new()
+	asserts.true_value(blocked_runtime.equip(1, "water_shadow", {"tail_count": 1}).ok, "blocked movement fixture equips")
+	var blocked: Dictionary = blocked_runtime.cast(1, {
+		"source_id": "player",
+		"resources": blocked_resources,
+		"tail_count": 1,
+		"direction": Vector2.RIGHT,
+		"movement_actor": BlockedMovementActor.new(),
+		"tea_effect_query": tea_effects
+	})
+	asserts.false_value(blocked.ok, "movement strategy reports a blocked grid result")
+	asserts.equal(blocked_resources.ki, 100, "blocked movement rolls back ki")
+	asserts.false_value(blocked_runtime.cooldown_remaining.has("water_shadow"), "blocked movement does not start cooldown")
+	asserts.equal(tea_effects.consume_calls, 0, "blocked movement does not consume the tea modifier")
 
 func _assert_tea_sustain_modifier_reduces_one_successful_ability_cost(asserts) -> void:
 	var runtime := _test_runtime()
