@@ -1,22 +1,22 @@
 {
   "audit": {
-    "art_review_required": 43,
+    "art_review_required": 44,
     "by_resolution": {
       "dedicated_facility_sprite": 2,
       "dedicated_facility_state_sprite": 1,
       "dedicated_interaction_indicator": 1,
       "dedicated_item_icon": 38,
-      "kind_fallback_exception": 1,
+      "kind_fallback_exception": 2,
       "monster_id_convention": 21
     },
-    "dedicated_asset_missing": 1,
+    "dedicated_asset_missing": 2,
     "facility_interactions": 3,
-    "items": 40,
+    "items": 41,
     "missing_or_broken": 0,
     "monsters": 21,
     "path_integrity_missing_or_broken": 0,
     "runtime_approved": 63,
-    "runtime_target_rows": 64
+    "runtime_target_rows": 65
   },
   "content": {
     "facility_interactions": [
@@ -249,6 +249,25 @@
         "source_sha256": "sha256:142c4f3be28c043802d59c1fb2aca83dc5fc6f9488395708d8a390a7372a0768",
         "status": "확정",
         "width": 32
+      },
+      {
+        "art_review_required": true,
+        "asset_id": "asset_assets_ui_icons_atlas_bag_png",
+        "asset_status": "완료",
+        "content_id": "father_letter",
+        "dataset": "items",
+        "dedicated_asset_missing": true,
+        "exception_reason": "No item-specific exported image field exists; use the type fallback until art review creates a dedicated row.",
+        "height": 58,
+        "kind": "중요 아이템",
+        "name": "아버지의 편지",
+        "path": "res://assets/ui/icons/atlas/bag.png",
+        "resolution": "kind_fallback_exception",
+        "rgba_sha256": "sha256:afbe8d6768a38a7c076ae7b0b4837453c897d297a1c083598681fc06da1d310c",
+        "runtime_approved": false,
+        "source_sha256": "sha256:a5867edc862a0fbdc3b030d3cc656851339f89f510d97e4384361351421c4acd",
+        "status": "확정",
+        "width": 53
       },
       {
         "art_review_required": true,
@@ -1244,7 +1263,7 @@
   },
   "content_hashes": {
     "asset_manifest": "sha256:1ec77ae04673bb52714425746364c9620c948a12bb1bcd8e5bf6ad4c02f3853b",
-    "items": "1d005d09eb5aec86567eba40fc976168c755b90e173990069283939f007b7ce0",
+    "items": "71a5e73108bcfce5bd7d9e3c766e09bb4905b41306695b4172c8dea4f1230ebe",
     "monsters": "b44646c65fca8a73ef29d0e908991986c7eb3387626b4bdb5f506919b1e28e9f"
   },
   "data_version": "notion-2026-09-04",
