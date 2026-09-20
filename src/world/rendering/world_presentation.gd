@@ -114,15 +114,5 @@ static func apply_world_interaction_states(renderer_input: Dictionary, run_state
 		var interaction_key := RuinLootService.state_key(String(run_state.current_biome_id), String(landmark.get("id", "")))
 		landmark["interaction_consumed"] = not run_state.world_interactions.get(interaction_key, {}).is_empty()
 
-static func hide_prototype_visuals(scene_root: Node) -> void:
-	for child in scene_root.get_children():
-		if child is Polygon2D:
-			child.visible = false
-		if child is StaticBody2D:
-			child.collision_layer = 0
-			child.collision_mask = 0
-			for descendant in child.find_children("*", "CollisionShape2D", true, false):
-				(descendant as CollisionShape2D).disabled = true
-
 static func _vector_from_dictionary(data: Dictionary) -> Vector2i:
 	return Vector2i(int(data.get("x", 0)), int(data.get("y", 0)))
