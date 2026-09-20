@@ -1,6 +1,7 @@
 extends CanvasLayer
 class_name SleepTransitionPresenter
 
+const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
 const FADE_DURATION := 0.8
 const SLEEP_MESSAGE_DURATION := 2.0
 
@@ -38,8 +39,11 @@ func play_fade_from_black() -> void:
 func _setup_sleep_label() -> void:
 	_sleep_label = Label.new()
 	_sleep_label.text = "잠을 자다..."
+	_sleep_label.theme = PixelUiTheme.create()
 	_sleep_label.add_theme_font_size_override("font_size", 32)
-	_sleep_label.set_anchors_preset(Control.PRESET_CENTER)
+	_sleep_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_sleep_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_sleep_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_sleep_label.modulate.a = 0.0
 	_sleep_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_sleep_label)

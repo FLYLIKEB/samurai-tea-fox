@@ -1283,7 +1283,8 @@ func _inventory_detail_card(row: Dictionary) -> Control:
 	if not row.is_empty():
 		var slot_index := int(row.get("slot_index", -1))
 		if bool(row.get("can_use", false)):
-			actions.add_child(_inventory_command_button("사용", GameCommand.new(GameCommand.Type.USE_INVENTORY_SLOT, Vector2i.ZERO, slot_index, {"slot_index": slot_index}), _inventory_item_icon_reference(row), Vector2(54, 28), "사용"))
+			var action_label := "설치" if bool(row.get("can_install", false)) else "사용"
+			actions.add_child(_inventory_command_button(action_label, GameCommand.new(GameCommand.Type.USE_INVENTORY_SLOT, Vector2i.ZERO, slot_index, {"slot_index": slot_index}), _inventory_item_icon_reference(row), Vector2(54, 28), action_label))
 		if bool(row.get("can_equip", false)):
 			actions.add_child(_inventory_command_button("장착", GameCommand.new(GameCommand.Type.EQUIP_INVENTORY_SLOT, Vector2i.ZERO, slot_index, {"slot_index": slot_index}), _inventory_item_icon_reference(row), Vector2(54, 28), "장착"))
 	rows.add_child(actions)

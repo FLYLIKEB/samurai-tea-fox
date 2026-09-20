@@ -85,12 +85,20 @@ func _assert_attack_world_interaction_suppresses_same_frame_interact() -> void:
 	asserts.equal(landmark_main.trace, ["try_dungeon", "try_landmark"], "landmark fallback runs after dungeon attack path declines")
 	_free_frame_main(landmark_main)
 
+	var facility_main = _frame_main()
+	facility_main.facility_interaction_result = true
+	await _process_frame_with_actions(facility_main, ["attack", "interact"])
+	asserts.equal(facility_main.submitted_actions.size(), 0, "handled facility E interaction suppresses regular attack")
+	asserts.equal(facility_main.trace, ["try_dungeon", "try_landmark", "try_facility"], "facility capability runs after landmark fallback")
+	_free_frame_main(facility_main)
+
 	var attack_main = _frame_main()
 	await _process_frame_with_actions(attack_main, ["attack", "interact"])
 	asserts.equal(_types(attack_main.submitted_actions), [GameCommand.Type.ATTACK, GameCommand.Type.INTERACT], "unhandled attack submits regular attack before same-frame interact")
 	asserts.equal(attack_main.trace, [
 		"try_dungeon",
 		"try_landmark",
+		"try_facility",
 		"action:%d:movement_count=1" % GameCommand.Type.ATTACK,
 		"player_interaction:(0, 0):movement_count=1"
 	], "unhandled attack and interact preserve current frame ordering")

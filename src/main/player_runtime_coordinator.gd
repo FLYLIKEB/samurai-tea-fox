@@ -36,6 +36,7 @@ class Ports:
 	var store_current_biome_runtime_aliases: Callable
 	var available_facility_item_ids: Callable
 	var unlocked_biome_ids: Callable
+	var begin_inventory_facility_placement: Callable
 
 var _ports: Ports
 var _player_item_actions
@@ -204,6 +205,10 @@ func handle_inventory_command(command: GameCommand) -> bool:
 			result = start_result
 		else:
 			started_consumable = true
+	if result.ok and command.type == GameCommand.Type.USE_INVENTORY_SLOT and result.has("facility_placement_intent"):
+		result = _call_dictionary(_ports.begin_inventory_facility_placement, [String(result.facility_placement_intent.get("item_id", ""))])
+		if result.ok:
+			return true
 	var game_hud = _call_value(_ports.get_game_hud)
 	if game_hud != null:
 		game_hud.show_command_feedback(

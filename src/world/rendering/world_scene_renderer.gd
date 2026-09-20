@@ -413,7 +413,7 @@ func _render_landmarks(parent: Node2D, landmarks: Array, tile_size: int, owner_s
 				_add_interaction_prompt(parent, position, tile_size, "던전 입구", "[E] 입장")
 			elif landmark_kind == WorldData.LANDMARK_RUIN:
 				_add_interaction_prompt(parent, position, tile_size, "유적", "[E] 이동")
-			elif landmark_kind == WorldData.LANDMARK_ABANDONED_HOUSE:
+			elif landmark_kind == WorldData.LANDMARK_ABANDONED_HOUSE and not bool(landmark.get("interaction_consumed", false)):
 				_add_interaction_prompt(parent, position, tile_size, "폐가", "[E] 수색")
 			elif landmark_kind == WorldData.LANDMARK_TELEPORT_ZONE and not repaired and String(landmark.get("teleport_state", "")) == "repairable":
 				_add_interaction_prompt(parent, position, tile_size, "텔레포트", "[E] 수리")

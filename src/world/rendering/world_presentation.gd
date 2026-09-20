@@ -3,6 +3,7 @@ extends RefCounted
 
 const RuntimeConstants = preload("res://src/core/config/runtime_constants.gd")
 const WorldData = preload("res://src/world/data/world_data.gd")
+const RuinLootService = preload("res://src/world/interactions/ruin_loot_service.gd")
 
 static func centered_world_origin(renderer_input: Dictionary) -> Vector2:
 	var bounds: Dictionary = renderer_input.get("bounds", {})
@@ -103,6 +104,15 @@ static func apply_teleport_states(renderer_input: Dictionary, run_state) -> void
 		if String(landmark.get("kind", landmark.get("type", ""))) != WorldData.LANDMARK_TELEPORT_ZONE:
 			continue
 		landmark["teleport_state"] = String(run_state.teleport_states.get(current_biome_id, "undiscovered"))
+
+static func apply_world_interaction_states(renderer_input: Dictionary, run_state) -> void:
+	if run_state == null:
+		return
+	for landmark in renderer_input.get("required_landmarks", []):
+		if String(landmark.get("kind", landmark.get("type", ""))) != WorldData.LANDMARK_ABANDONED_HOUSE:
+			continue
+		var interaction_key := RuinLootService.state_key(String(run_state.current_biome_id), String(landmark.get("id", "")))
+		landmark["interaction_consumed"] = not run_state.world_interactions.get(interaction_key, {}).is_empty()
 
 static func hide_prototype_visuals(scene_root: Node) -> void:
 	for child in scene_root.get_children():

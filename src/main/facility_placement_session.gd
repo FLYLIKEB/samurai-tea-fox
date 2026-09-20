@@ -32,6 +32,7 @@ func begin_or_craft_recipe(recipe_id: String, crafting_service, inventory, craft
 	pending_placement = {
 		"recipe_id": recipe_id,
 		"facility_item_id": result_item_id,
+		"source": "craft",
 		"metadata": metadata.duplicate(true)
 	}
 	pending_origin = Vector2i(-1, -1)
@@ -50,6 +51,18 @@ func begin_or_craft_recipe(recipe_id: String, crafting_service, inventory, craft
 		"result_item_id": result_item_id,
 		"initial_origin": _origin_from_result(initial_placement) if bool(initial_placement.get("ok", false)) else Vector2i(-1, -1)
 	}
+
+func begin_inventory_item(facility_item_id: String, facility_placement_service, world_data, player_cell: Vector2i, in_dungeon_map: bool, metadata: Dictionary) -> Dictionary:
+	if in_dungeon_map:
+		return {"ok": false, "reason": "facility_installation_requires_overworld"}
+	if facility_placement_service == null or world_data == null or facility_placement_service.facility_for(facility_item_id).is_empty():
+		return {"ok": false, "reason": "facility_placement_unavailable"}
+	pending_placement = {"facility_item_id": facility_item_id, "source": "inventory", "metadata": metadata.duplicate(true)}
+	pending_origin = Vector2i(-1, -1)
+	pending_result.clear()
+	pending_rotation = 0
+	var initial_placement: Dictionary = facility_placement_service.find_placement_near(facility_item_id, world_data, player_cell, placement_context())
+	return {"ok": true, "placement_pending": true, "result_item_id": facility_item_id, "initial_origin": _origin_from_result(initial_placement) if initial_placement.ok else Vector2i(-1, -1)}
 
 func placement_context() -> Dictionary:
 	return {
@@ -101,9 +114,14 @@ func place_selected(crafting_service, inventory, crafting_context: Dictionary, f
 		return {"ok": false, "reason": "no_pending_facility_placement"}
 	var recipe_id := String(pending_placement.get("recipe_id", ""))
 	var facility_item_id := String(pending_placement.get("facility_item_id", ""))
-	var availability: Dictionary = crafting_service.can_craft(recipe_id, inventory, crafting_context)
-	if not availability.ok:
-		return placement_failed(String(availability.get("reason", "craft_unavailable")))
+	var from_inventory := String(pending_placement.get("source", "craft")) == "inventory"
+	if from_inventory:
+		if inventory.get_total_quantity(facility_item_id) < 1:
+			return placement_failed("insufficient_quantity")
+	else:
+		var availability: Dictionary = crafting_service.can_craft(recipe_id, inventory, crafting_context)
+		if not availability.ok:
+			return placement_failed(String(availability.get("reason", "craft_unavailable")))
 	var context := placement_context()
 	if String(placement_result.get("facility_item_id", "")) != facility_item_id:
 		return placement_failed("invalid_placement_result")
@@ -115,10 +133,13 @@ func place_selected(crafting_service, inventory, crafting_context: Dictionary, f
 	if not placed.ok:
 		return placement_failed(String(placed.get("reason", "invalid_placement")))
 
-	var crafted: Dictionary = crafting_service.craft(recipe_id, inventory, crafting_context, {"store_result": false})
+	var crafted: Dictionary = inventory.remove_item(facility_item_id, 1) if from_inventory else crafting_service.craft(recipe_id, inventory, crafting_context, {"store_result": false})
 	if not crafted.ok:
 		world_data.release_footprint(String(placed.owner_id))
 		return placement_failed(String(crafted.get("reason", "craft_failed")))
+	if from_inventory:
+		crafted["result_item_id"] = facility_item_id
+		crafted["result_quantity"] = 1
 	crafted["installed"] = true
 	crafted["placement"] = placed.duplicate(true)
 	crafted["facility_item_id"] = facility_item_id

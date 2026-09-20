@@ -584,6 +584,7 @@ func _player_runtime_ports() -> PlayerRuntimeCoordinator.Ports:
 	ports.store_current_biome_runtime_aliases = Callable(self, "_store_current_biome_runtime_aliases")
 	ports.available_facility_item_ids = Callable(self, "_available_facility_item_ids")
 	ports.unlocked_biome_ids = Callable(self, "_unlocked_biome_ids")
+	ports.begin_inventory_facility_placement = Callable(self, "_begin_inventory_facility_placement")
 	return ports
 
 func _run_bootstrap() -> RunBootstrapCoordinator:
@@ -1187,6 +1188,9 @@ func _player_facility_metadata(facility_item_id: String) -> Dictionary:
 
 func _handle_inventory_command(command: GameCommand) -> bool:
 	return _player_runtime().handle_inventory_command(command)
+
+func _begin_inventory_facility_placement(facility_item_id: String) -> Dictionary:
+	return _facility_biome_router().begin_inventory_facility_placement(facility_item_id)
 
 func _handle_complete_dungeon_command(command: GameCommand) -> bool:
 	return _dungeon_command_coordinator.handle_complete_dungeon_command(command, dungeon_runtime, run_state, _in_dungeon_map, game_hud)

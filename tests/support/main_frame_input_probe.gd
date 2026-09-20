@@ -4,6 +4,7 @@ var submitted_actions: Array = []
 var trace: Array[String] = []
 var dungeon_interaction_result := false
 var landmark_interaction_result := false
+var facility_interaction_result := false
 
 func _ready() -> void:
 	set_physics_process(false)
@@ -38,3 +39,7 @@ func _try_dungeon_interaction_from_input() -> bool:
 func _try_landmark_interaction_from_input() -> bool:
 	trace.append("try_landmark")
 	return landmark_interaction_result
+
+func _try_facility_interaction_from_input() -> bool:
+	trace.append("try_facility")
+	return facility_interaction_result

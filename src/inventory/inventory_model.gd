@@ -356,6 +356,8 @@ static func _definition_from_item(row: Dictionary) -> Dictionary:
 		"effect_type": _normalized_item_effect_type(row),
 		"requires_instance": bool(INDIVIDUAL_ITEM_TYPES.get(kind, false))
 	}
+	if row.has("facility_capabilities"):
+		definition["facility_capabilities"] = row.get("facility_capabilities", []).duplicate()
 	return {"ok": true, "definition": definition}
 
 static func _definition_from_tea(row: Dictionary) -> Dictionary:

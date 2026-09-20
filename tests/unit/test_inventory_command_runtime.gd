@@ -76,6 +76,8 @@ func _assert_can_use_matches_actual_item_capability(asserts) -> void:
 	var leaf_row := _row_for_item(runtime, "father_spring_pan_fired_tea")
 	var consumable_row := _row_for_item(runtime, "bandage")
 	var equipment_row := _row_for_item(runtime, "short_travel_sword")
+	fixture[1].add_item("portable_brazier", 1)
+	var facility_row := _row_for_item(runtime, "portable_brazier")
 
 	asserts.false_value(leaf_row.is_empty(), "fixture contains a tea leaf row")
 	asserts.false_value(bool(leaf_row.get("can_use", false)), "tea leaves are not direct-use inventory actions")
@@ -84,6 +86,9 @@ func _assert_can_use_matches_actual_item_capability(asserts) -> void:
 	asserts.true_value(_commands(consumable_row).has("use"), "valid consumable exposes use command")
 	asserts.true_value(bool(equipment_row.get("can_use", false)), "equipment keeps inventory use-as-equip capability")
 	asserts.true_value(_commands(equipment_row).has("use"), "equipment exposes use command for equip flow")
+	asserts.true_value(bool(facility_row.get("can_install", false)), "portable facility exposes install capability")
+	var facility_result: Dictionary = runtime.handle_command(GameCommand.new(GameCommand.Type.USE_INVENTORY_SLOT, Vector2i.ZERO, int(facility_row.slot_index), {"slot_index": int(facility_row.slot_index)}))
+	asserts.equal(facility_result.facility_placement_intent.item_id, "portable_brazier", "facility use emits placement intent")
 
 	var before_inventory: Dictionary = inventory.to_snapshot()
 	var before_equipment: Dictionary = equipment.to_snapshot()
@@ -116,9 +121,11 @@ func _assert_hud_inventory_menu_uses_command_read_model(asserts) -> void:
 	var fixture := _fixture_runtime()
 	asserts.equal(fixture.size(), 4, "fixture exposes runtime inventory equipment consumable")
 	var runtime: InventoryCommandRuntime = fixture[0]
+	var selected_slot_index := -1
 	for slot in runtime.read_model().slots:
 		if bool(slot.get("can_equip", false)):
-			runtime.handle_command(GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, int(slot.slot_index), {"slot_index": int(slot.slot_index)}))
+			selected_slot_index = int(slot.slot_index)
+			runtime.handle_command(GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, selected_slot_index, {"slot_index": selected_slot_index}))
 			break
 	var hud := GameHud.new()
 	hud.configure(FakePlayer.new(), {"biome_id": "common_region"}, {"counts": {}}, {"inventory": fixture[1], "inventory_command_runtime": runtime, "catalog": FakeHudCatalog.new()})
@@ -127,13 +134,23 @@ func _assert_hud_inventory_menu_uses_command_read_model(asserts) -> void:
 	asserts.true_value(_tree_has_text(hud, "이전"), "HUD exposes previous navigation without dragging")
 	asserts.true_value(_tree_has_text(hud, "다음"), "HUD exposes next navigation without dragging")
 	asserts.true_value(_tree_has_text(hud, "정렬"), "HUD exposes sort command without dragging")
-	asserts.true_value(_tree_has_text(hud, "사용"), "HUD exposes use command without dragging")
-	asserts.true_value(_tree_has_text(hud, "장착"), "HUD exposes equip command without dragging")
+	var selected_card := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip/InventorySlotCard%d" % selected_slot_index) as Button
+	asserts.true_value(selected_card != null, "HUD exposes the selected item as a touchable card")
+	if selected_card != null:
+		selected_card.pressed.emit()
+	var selected_popup := hud.get_node_or_null("Root/DetailPopup")
+	asserts.true_value(selected_popup != null and _tree_has_text(selected_popup, "사용"), "HUD popup exposes use command without dragging")
+	asserts.true_value(selected_popup != null and _tree_has_text(selected_popup, "장착"), "HUD popup exposes equip command without dragging")
+	hud._dismiss_detail_popup()
 	var tea_ware_row := _row_for_item(runtime, "ash_stained_iron_kettle")
 	runtime.handle_command(GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, int(tea_ware_row.slot_index), {"slot_index": int(tea_ware_row.slot_index)}))
 	hud.show_inventory_menu()
-	asserts.true_value(_tree_has_text(hud, "재 묻은 철솥"), "HUD shows selected tea ware in inventory")
-	asserts.true_value(_tree_has_text(hud, "지워버리려 한 감정의 흔적을 재처럼 남긴 철솥."), "HUD shows the selected item's role description")
+	var tea_ware_card := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip/InventorySlotCard%d" % int(tea_ware_row.slot_index)) as Button
+	asserts.true_value(tea_ware_card != null, "HUD shows selected tea ware in inventory")
+	if tea_ware_card != null:
+		tea_ware_card.pressed.emit()
+	var tea_ware_popup := hud.get_node_or_null("Root/DetailPopup")
+	asserts.true_value(tea_ware_popup != null and _tree_has_text(tea_ware_popup, "지워버리려 한 감정의 흔적을 재처럼 남긴 철솥."), "HUD popup shows the selected item's role description")
 	hud.free()
 
 func _assert_project_input_map_exposes_inventory_keyboard_actions(asserts) -> void:

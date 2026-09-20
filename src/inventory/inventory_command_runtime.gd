@@ -169,6 +169,8 @@ func use_slot(slot_index: int) -> Dictionary:
 		return _fail_and_emit(_fail("not_usable", "Inventory slot cannot be used: %d" % slot_index))
 	if bool(row.can_equip):
 		return equip_slot(slot_index)
+	if bool(row.get("can_install", false)):
+		return {"ok": true, "facility_placement_intent": {"item_id": String(row.item_id)}, "read_model": read_model()}
 	if consumable_service != null and consumable_service.has_method("start_use") and consumable_service.has_definition(String(row.item_id)):
 		var result := {
 			"ok": true,
@@ -203,7 +205,8 @@ func _row_for_slot(index: int, slot: Dictionary) -> Dictionary:
 	var kind := String(definition.get("kind", definition.get("type", "")))
 	var max_stack: int = max(1, int(definition.get("max_stack", slot.get("quantity", 1))))
 	var can_equip := bool(EQUIPPABLE_KINDS.get(kind, false))
-	var can_use := can_equip or _can_use_consumable(kind, item_id)
+	var can_install := not _array_value(definition.get("facility_capabilities", [])).is_empty()
+	var can_use := can_equip or can_install or _can_use_consumable(kind, item_id)
 	return {
 		"slot_index": index,
 		"empty": false,
@@ -218,6 +221,7 @@ func _row_for_slot(index: int, slot: Dictionary) -> Dictionary:
 		"stack_label": "%d/%d" % [int(slot.get("quantity", 0)), max_stack],
 		"metadata": _dictionary_value(slot.get("metadata", {})),
 		"can_equip": can_equip,
+		"can_install": can_install,
 		"can_use": can_use,
 		"label": "%02d %s x%d (%d/%d)" % [index + 1, String(definition.get("name", item_id)), int(slot.get("quantity", 0)), int(slot.get("quantity", 0)), max_stack],
 		"commands": _commands_for_slot(index, can_equip, can_use)
@@ -238,6 +242,9 @@ func _can_use_consumable(kind: String, item_id: String) -> bool:
 		and consumable_service != null \
 		and consumable_service.has_method("has_definition") \
 		and consumable_service.has_definition(item_id)
+
+static func _array_value(value) -> Array:
+	return value if typeof(value) == TYPE_ARRAY else []
 
 func _equipment_read_model() -> Dictionary:
 	var result := {}

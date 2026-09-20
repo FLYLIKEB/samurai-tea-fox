@@ -12,6 +12,7 @@ func run(asserts) -> void:
 	_assert_player_required_for_facility_placement(asserts)
 	_assert_available_and_restore_use_current_arguments(asserts)
 	_assert_portable_facility_can_be_picked_up(asserts)
+	_assert_inventory_facility_installs_and_consumes_on_confirm(asserts)
 
 func _assert_pending_lifecycle_preserves_materials_until_confirm(asserts) -> void:
 	var fixture := _facility_fixture(asserts)
@@ -111,6 +112,17 @@ func _assert_portable_facility_can_be_picked_up(asserts) -> void:
 	asserts.equal(fixture.inventory.get_total_quantity("portable_brazier"), 1, "pickup returns the portable brazier item")
 	asserts.true_value(fixture.world.get_reservation(owner_id).is_empty(), "pickup releases the world footprint")
 	asserts.equal(run_state.placed_facilities, [], "pickup removes the saved placement")
+
+func _assert_inventory_facility_installs_and_consumes_on_confirm(asserts) -> void:
+	var fixture := _facility_fixture(asserts)
+	asserts.true_value(fixture.inventory.add_item("portable_brazier", 1).ok, "fixture carries a portable brazier")
+	var begun: Dictionary = fixture.session.begin_inventory_item("portable_brazier", fixture.placement, fixture.world, Vector2i(3, 3), false, {})
+	asserts.true_value(begun.ok, "inventory facility starts placement")
+	asserts.equal(fixture.inventory.get_total_quantity("portable_brazier"), 1, "starting placement does not consume the item")
+	var validation: Dictionary = fixture.session.select_origin(Vector2i(4, 3), fixture.placement, fixture.world, Vector2i(3, 3))
+	var placed: Dictionary = fixture.session.place_selected(fixture.crafting, fixture.inventory, {}, fixture.placement, fixture.world, validation)
+	asserts.true_value(placed.ok, "inventory facility confirms placement")
+	asserts.equal(fixture.inventory.get_total_quantity("portable_brazier"), 0, "confirmed placement consumes one carried facility")
 
 func _facility_fixture(asserts) -> Dictionary:
 	var inventory := InventoryModel.new()

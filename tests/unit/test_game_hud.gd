@@ -429,7 +429,8 @@ func _assert_read_model_uses_runtime_and_balance_sources(asserts) -> void:
 	if quick_ability != null:
 		asserts.equal(quick_ability.text, "", "ability secondary quick action does not render explanatory text")
 	asserts.true_value(hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionMenuBar/ActionMenuButton") == null, "HUD does not duplicate the settings button")
-	asserts.equal((hud.get_node_or_null("Root/ActionMenuPanel/ActionMenuScroll/ShortcutGrid") as GridContainer).get_child_count(), 1, "settings drawer owns only facilities")
+	asserts.true_value(hud.get_node_or_null("Root/ActionMenuPanel/SettingsRows") != null, "settings drawer owns the central settings controls")
+	asserts.true_value(hud.get_node_or_null("Root/FacilitiesShortcutButton") != null, "facilities remain available outside the settings drawer")
 	asserts.equal(read_model.time_phase, "night", "HUD reads current time phase")
 	asserts.equal(read_model.time_progress_percent, 25, "HUD calculates time progress from the time read model")
 	asserts.true_value(hud.get_node_or_null("Root/StatusPanel/StatusBody/PlayerPortrait") != null, "HUD renders the mockup-style player portrait block")
@@ -741,9 +742,12 @@ func _assert_narrative_dialogue_emits_option_commands(asserts) -> void:
 		"text": "물이 끓기 전에 서두르지 마라.",
 		"options": [{"id": "accept_farewell", "display_text": "고개를 끄덕인다"}]
 	}), "HUD shows narrative dialogue read models")
-	asserts.true_value(hud.get_node_or_null("Root/NarrativeOverlay") is NarrativeDialoguePresenter, "HUD mounts the common narrative presenter")
+	var presenter := hud.get_node_or_null("Root/NarrativeOverlay") as NarrativeDialoguePresenter
+	asserts.true_value(presenter != null, "HUD mounts the common narrative presenter")
 	asserts.true_value(hud.narrative_dialogue_visible(), "HUD reports the narrative panel as visible")
 	asserts.true_value(_tree_has_text(hud, "아버지 — 차를 사랑하는 구미호"), "HUD resolves narrative speaker names from character data")
+	if presenter != null:
+		presenter.request_skip()
 	asserts.true_value(_tree_has_text(hud, "물이 끓기 전에 서두르지 마라."), "HUD renders narrative dialogue text")
 	asserts.true_value(_texture_rect_has_texture(hud.get_node_or_null("Root/NarrativeOverlay/NarrativeBackground")), "prologue dialogue renders its scene background")
 	asserts.true_value(_tree_uses_texture(hud.get_node_or_null("Root/NarrativeOverlay/LeftPortrait"), "chr_1_kitsune_father_96x96.png"), "prologue dialogue renders the father portrait")

@@ -14,6 +14,7 @@ func run(asserts) -> void:
 	_assert_multicell_footprints_keep_original_texture(asserts)
 	_assert_sleep_facility_uses_common_interaction_prompt(asserts)
 	_assert_dungeon_landmark_uses_multicell_house_and_label(asserts)
+	_assert_searched_abandoned_house_hides_prompt(asserts)
 	_assert_special_objects_have_role_colored_outlines(asserts)
 
 func _assert_sixteen_adjacency_masks(asserts) -> void:
@@ -270,3 +271,14 @@ func _assert_dungeon_landmark_uses_multicell_house_and_label(asserts) -> void:
 			asserts.equal(sprite.texture.get_width(), 64, "dungeon structure spans two tiles")
 		asserts.true_value(landmarks.get_node_or_null("InteractionPrompt") != null, "dungeon has an explicit entry prompt")
 	root.queue_free()
+
+func _assert_searched_abandoned_house_hides_prompt(asserts) -> void:
+	var renderer := WorldSceneRenderer.new()
+	var root := Node2D.new()
+	var input := {"schema_version": 1, "read_only": true, "tile_size": 32, "bounds": {"width": 4, "height": 4}, "layers": [], "required_landmarks": [{"id": "abandoned_house_0", "kind": WorldData.LANDMARK_ABANDONED_HOUSE, "position": {"x": 1, "y": 1}, "interaction_consumed": true}]}
+	var result: Dictionary = renderer.render(root, input, {"abandoned_house_0": "asset_assets_sprites_objects_structures_warehouse_2x2_64x64_png"})
+	asserts.true_value(result.ok, "searched abandoned house renders")
+	var landmarks := root.get_node_or_null(WorldSceneRenderer.LANDMARK_LAYER) as Node2D
+	asserts.true_value(landmarks != null and landmarks.get_child_count() == 1, "searched abandoned house remains visible")
+	asserts.true_value(landmarks != null and landmarks.get_node_or_null("InteractionPrompt") == null, "searched abandoned house hides the search prompt")
+	root.free()

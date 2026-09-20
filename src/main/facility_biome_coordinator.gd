@@ -291,6 +291,29 @@ func craft_recipe_or_begin_facility_placement(recipe_id: String) -> Dictionary:
 	result.erase("initial_origin")
 	return result
 
+func begin_inventory_facility_placement(facility_item_id: String) -> Dictionary:
+	var result := _session.begin_inventory_item(
+		facility_item_id,
+		_call_value(_ports.get_facility_placement_service),
+		_call_value(_ports.get_world_data),
+		_call_value(_ports.player_world_cell, Vector2i.ZERO),
+		bool(_call_value(_ports.is_in_dungeon_map, false)),
+		_call_dictionary(_ports.player_facility_metadata, [facility_item_id])
+	)
+	if not result.ok:
+		return result
+	_call_void(_ports.clear_pointer_movement)
+	_call_void(_ports.clear_facility_placement_preview)
+	var hud = _call_value(_ports.get_game_hud)
+	if hud != null:
+		hud.hide_menu()
+		hud.show_facility_placement_controls()
+	var initial_origin: Vector2i = result.get("initial_origin", Vector2i(-1, -1))
+	if initial_origin.x >= 0:
+		select_pending_facility_at(initial_origin)
+	result.erase("initial_origin")
+	return result
+
 func has_pending_facility_placement() -> bool:
 	return _session.has_pending()
 
@@ -526,6 +549,7 @@ func _handle_abandoned_house_interaction(target_id: String) -> bool:
 				"quantity": int(result.get("quantity", 0)),
 				"event_id": target_id
 			})
+		_call_void(_ports.sync_runtime_world_render)
 		_call_dictionary(_ports.save_current_run)
 		return true
 	if hud != null:

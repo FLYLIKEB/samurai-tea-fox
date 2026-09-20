@@ -106,6 +106,7 @@ func sync_runtime_world_render() -> void:
 	var world_snapshot: Dictionary = world_data.to_dictionary()
 	var renderer_input: Dictionary = WorldRendererProjection.new().project(world_snapshot)
 	WorldPresentation.apply_teleport_states(renderer_input, _call_object(_ports.get_run_state))
+	WorldPresentation.apply_world_interaction_states(renderer_input, _call_object(_ports.get_run_state))
 	generated_world["world_data"] = world_snapshot
 	generated_world["renderer_input"] = renderer_input
 	_call_void(_ports.set_generated_world, [generated_world])
@@ -276,6 +277,7 @@ func owner_sprite_sources(world: Dictionary) -> Dictionary:
 func _render_world_snapshot(world: Dictionary) -> void:
 	var renderer_input: Dictionary = world.get("renderer_input", {})
 	WorldPresentation.apply_teleport_states(renderer_input, _call_object(_ports.get_run_state))
+	WorldPresentation.apply_world_interaction_states(renderer_input, _call_object(_ports.get_run_state))
 	var result: Dictionary = WorldSceneRenderer.new().render(
 		_call_object(_ports.get_world_visuals),
 		renderer_input,
