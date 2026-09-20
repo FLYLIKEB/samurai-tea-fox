@@ -1,5 +1,5 @@
 {
-  "content_hash": "71a5e73108bcfce5bd7d9e3c766e09bb4905b41306695b4172c8dea4f1230ebe",
+  "content_hash": "753f430e55bc0f0d2f68ee47d17cc074423158d15dc73793ef86a0042de061e0",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -295,6 +295,21 @@
       "effect": "버려진 장비를 분해해 얻는 재활용 금속.",
       "grade": "일반",
       "id": "item_28",
+      "interaction_definition": {
+        "applies_to": "overworld_and_dungeon",
+        "failure_mutates": false,
+        "loot_and_shop_require_tool": false,
+        "rules": [
+          {
+            "action": "mine",
+            "node_kind": "ore_vein",
+            "required_tool_item_id": "stone_pickaxe"
+          }
+        ],
+        "schema_version": 1,
+        "success_depletes": true,
+        "tool_consumed": false
+      },
       "name": "철 조각",
       "notion_id": "3cd37369-9e66-81f4-b415-f186b43ae89a",
       "status": "확정",
@@ -343,6 +358,21 @@
       "effect": "향 문화용 희귀 향재. 전투 자원을 직접 올리지 않는다.",
       "grade": "희귀",
       "id": "item_5",
+      "interaction_definition": {
+        "applies_to": "overworld_and_dungeon",
+        "failure_mutates": false,
+        "loot_and_shop_require_tool": false,
+        "rules": [
+          {
+            "action": "chop",
+            "node_kind": "tree",
+            "required_tool_item_id": "stone_axe"
+          }
+        ],
+        "schema_version": 1,
+        "success_depletes": true,
+        "tool_consumed": false
+      },
       "name": "침향",
       "notion_id": "3cd37369-9e66-811a-9067-d29c5359b149",
       "status": "확정",
@@ -862,6 +892,21 @@
       "effect": "기초 제작 재료.",
       "grade": "일반",
       "id": "wood",
+      "interaction_definition": {
+        "applies_to": "overworld_and_dungeon",
+        "failure_mutates": false,
+        "loot_and_shop_require_tool": false,
+        "rules": [
+          {
+            "action": "chop",
+            "node_kind": "tree",
+            "required_tool_item_id": "stone_axe"
+          }
+        ],
+        "schema_version": 1,
+        "success_depletes": true,
+        "tool_consumed": false
+      },
       "name": "목재",
       "notion_id": "3cd37369-9e66-81ef-bda7-d89370229f2d",
       "status": "확정",
