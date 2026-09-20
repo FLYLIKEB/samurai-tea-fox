@@ -41,6 +41,7 @@ func run(asserts) -> void:
 	_assert_four_fixture_types_share_interact_contract(asserts)
 	_assert_inventory_full_preserves_pickup(asserts)
 	_assert_monster_drop_uses_stable_definition(asserts)
+	_assert_full_inventory_monster_drop_round_trip(asserts)
 	_assert_conditional_drop_uses_evaluator_context(asserts)
 	_assert_run_save_round_trip_preserves_world_state(asserts)
 	_assert_invalid_definitions_are_atomic(asserts)
@@ -121,6 +122,30 @@ func _assert_monster_drop_uses_stable_definition(asserts) -> void:
 	asserts.false_value(duplicate.ok, "duplicate monster drop request is rejected")
 	asserts.equal(duplicate.reason, "drop_already_processed", "duplicate drop uses stable reason")
 
+func _assert_full_inventory_monster_drop_round_trip(asserts) -> void:
+	var runtime := _runtime(1, Vector2i(4, 2))
+	asserts.true_value(runtime.inventory.add_item("filler", 1).ok, "monster overflow fixture fills inventory")
+	var dropped: Dictionary = runtime.service.process_drop_request({
+		"type": "monster_drop_requested",
+		"combat_id": "overflow_01",
+		"definition_id": "overflow_drop"
+	}, Vector2i(1, 1))
+	asserts.true_value(dropped.ok, "full inventory monster drop falls back to a world pickup")
+	asserts.equal(dropped.grants[0].delivery, AcquisitionService.POLICY_PICKUP, "monster overflow uses pickup delivery")
+	asserts.equal(dropped.grants[0].position, {"x": 1, "y": 1}, "monster pickup result exposes its reserved world position")
+
+	var run_state := RunState.new()
+	run_state.acquisitions = runtime.service.to_snapshot()
+	var decoded: Dictionary = SaveCodec.decode_run(SaveCodec.encode_run(run_state.to_dictionary()))
+	var restored := _runtime(1, Vector2i(4, 2))
+	asserts.true_value(restored.inventory.add_item("filler", 1).ok, "restored monster overflow fixture mirrors full inventory")
+	asserts.true_value(restored.service.load_snapshot(decoded.run_state.acquisitions).ok, "monster pickup survives run save round-trip")
+	var pickup_id := String(dropped.grants[0].pickup_id)
+	asserts.equal(restored.service.pickup_for(pickup_id).item_id, "wood", "restored monster pickup keeps its stable item id")
+	asserts.true_value(restored.inventory.remove_item("filler", 1).ok, "restored monster overflow fixture frees capacity")
+	asserts.true_value(restored.service.collect_pickup(pickup_id).ok, "restored monster pickup can be collected")
+	asserts.equal(restored.inventory.get_total_quantity("wood"), 1, "restored monster pickup reaches inventory")
+
 func _assert_conditional_drop_uses_evaluator_context(asserts) -> void:
 	var runtime := _runtime(6, Vector2i(4, 2))
 	var dropped: Dictionary = runtime.service.process_drop_request({
@@ -132,6 +157,7 @@ func _assert_conditional_drop_uses_evaluator_context(asserts) -> void:
 	asserts.equal(dropped.grants.size(), 2, "day evaluation includes always and day grants only")
 	asserts.equal(dropped.grants[0].drop_id, "conditional_always", "always grant preserves its stable drop id")
 	asserts.equal(dropped.grants[1].drop_id, "conditional_day", "day grant preserves its stable drop id")
+	asserts.equal(dropped.grants[0].position, {"x": 0, "y": 0}, "direct monster grant exposes its world origin")
 	asserts.equal(runtime.inventory.get_total_quantity("wood"), 1, "always grant uses direct inventory delivery")
 	asserts.equal(runtime.inventory.get_total_quantity("clay"), 2, "day grant quantity uses its configured range")
 	asserts.equal(runtime.inventory.get_total_quantity("fixture_ore_item"), 0, "night grant is not delivered during day")
@@ -285,6 +311,9 @@ func _drop_definitions() -> Array:
 		{"monster_id": "multi_drop", "grants": [
 			{"item_id": "wood", "quantity": 1, "policy": "direct"},
 			{"item_id": "clay", "quantity": 1, "policy": "pickup"}
+		]},
+		{"monster_id": "overflow_drop", "grants": [
+			{"drop_id": "overflow_wood", "item_id": "wood", "quantity": 1, "chance": 1.0, "condition": "항상", "policy": "direct"}
 		]},
 		{"monster_id": "conditional_drop", "grants": [
 			{"drop_id": "conditional_always", "item_id": "wood", "quantity": 1, "chance": 1.0, "condition": "항상", "policy": "direct"},

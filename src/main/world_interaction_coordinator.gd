@@ -330,6 +330,14 @@ func acquisition_changed(main, snapshot: Dictionary) -> void:
 	main._sync_runtime_world_render()
 
 func acquisition_completed(main, result: Dictionary) -> void:
+	if String(result.get("kind", "")) == "monster_drop":
+		for grant in result.get("grants", []):
+			if grant is Dictionary and String(grant.get("delivery", "")) == AcquisitionService.POLICY_DIRECT:
+				var completed_grant: Dictionary = grant.duplicate(true)
+				completed_grant["ok"] = true
+				completed_grant["kind"] = AcquisitionService.PICKUP_KIND
+				acquisition_completed(main, completed_grant)
+		return
 	if not bool(result.get("ok", false)) or not result.get("position", null) is Dictionary:
 		return
 	main._play_sfx_event(SfxEventRouter.event_id_for_acquisition(result), result, String(result.get("pickup_id", result.get("node_id", result.get("item_id", "acquisition")))))
@@ -382,6 +390,8 @@ func combat_drop_requested(main, event: Dictionary, source = null) -> void:
 	var result: Dictionary = main.acquisition_service.process_drop_request(normalized, Vector2i.ZERO, evaluation_context)
 	if not result.ok:
 		push_error(result.error)
+		return
+	main._save_progress_after_turn()
 
 func combat_dummy_defeated(main, _event: Dictionary) -> void:
 	if main.combat_dummy == null:
