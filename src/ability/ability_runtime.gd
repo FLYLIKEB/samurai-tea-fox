@@ -48,6 +48,8 @@ func equip(slot: int, ability_id: String, context := {}) -> Dictionary:
 	if not definitions.has(ability_id):
 		return {"ok": false, "reason": "unknown_ability", "ability_id": ability_id}
 	var definition: AbilityDefinition = definitions[ability_id]
+	if not _strategies.has(definition.type):
+		return {"ok": false, "reason": "unsupported_effect_type", "ability_id": definition.id, "effect_type": definition.type}
 	var tail_check := _tail_condition_result(definition, context)
 	if not tail_check.ok:
 		return tail_check
@@ -142,6 +144,8 @@ func ability_candidates(context := {}) -> Dictionary:
 	sorted_ids.sort()
 	for ability_id in sorted_ids:
 		var definition: AbilityDefinition = definitions[ability_id]
+		if not _strategies.has(definition.type):
+			continue
 		var tail_check := _tail_condition_result(definition, context)
 		if tail_check.ok:
 			ids.append(definition.id)
