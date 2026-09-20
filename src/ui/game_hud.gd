@@ -39,9 +39,9 @@ const HUD_EDGE_GAP := 4.0
 const STATUS_PANEL_SIZE := Vector2(172, 90)
 const PORTRAIT_BOX_SIZE := Vector2(40, 40)
 const RESOURCE_ICON_COUNT := 5
-const RESOURCE_ICON_SIZE := Vector2(14, 14)
-const EQUIPMENT_ICON_SIZE := Vector2(18, 18)
-const EQUIPMENT_SLOT_SIZE := Vector2(34, 30)
+const RESOURCE_ICON_SIZE := Vector2(12, 12)
+const EQUIPMENT_ICON_SIZE := Vector2(15, 15)
+const EQUIPMENT_SLOT_SIZE := Vector2(28, 24)
 const EQUIPMENT_SLOT_KEYS := ["weapon", "armor", "tea_ware"]
 const EQUIPMENT_SLOT_LABELS := {
 	"weapon": "무기",
@@ -64,8 +64,8 @@ const SECONDARY_ACTION_ICON_BUTTON_SIZE := Vector2(20, 20)
 const ACTION_PANEL_SIZE := Vector2(132, 126)
 const ACTION_MENU_PANEL_SIZE := Vector2(280, 180)
 const BOTTOM_NAV_PANEL_SIZE := Vector2(326, 60)
-const SETTINGS_BUTTON_SIZE := Vector2(48, 38)
-const SIDE_SHORTCUT_FRAME_SIZE := Vector2(52, 84)
+const SETTINGS_BUTTON_SIZE := Vector2(56, 34)
+const SIDE_SHORTCUT_FRAME_SIZE := Vector2(64, 84)
 const ACTION_PANEL_COLUMNS := 2
 const MENU_PANEL_SIZE := Vector2(560, 280)
 const MENU_CONTENT_SIZE := Vector2(544, 228)
@@ -526,6 +526,7 @@ func _build() -> void:
 
 	var status_panel := _panel(STATUS_PANEL_SIZE)
 	status_panel.name = "StatusPanel"
+	status_panel.clip_contents = true
 	status_panel.theme = PixelUiTheme.create_parchment()
 	status_panel.add_theme_stylebox_override("panel", PixelUiTheme.hud_status_style())
 	root.add_child(status_panel)
@@ -533,7 +534,7 @@ func _build() -> void:
 	var status_body := HBoxContainer.new()
 	status_body.name = "StatusBody"
 	_ignore_mouse(status_body)
-	status_body.add_theme_constant_override("separation", 8)
+	status_body.add_theme_constant_override("separation", 6)
 	status_panel.add_child(status_body)
 	var portrait_box := _portrait_box(PORTRAIT_PLAYER)
 	portrait_box.name = "PlayerPortrait"
@@ -541,7 +542,7 @@ func _build() -> void:
 	var status_rows := VBoxContainer.new()
 	status_rows.name = "StatusRows"
 	_ignore_mouse(status_rows)
-	status_rows.add_theme_constant_override("separation", 2)
+	status_rows.add_theme_constant_override("separation", 1)
 	status_body.add_child(status_rows)
 	_labels.hp = _add_resource_icon_row(status_rows, "hp", ICON_HP, "체력", Color(0.86, 0.28, 0.16, 1.0))
 	_labels.ki = _add_resource_icon_row(status_rows, "ki", ICON_KI, "기운", Color(0.82, 0.53, 0.19, 1.0))
@@ -551,6 +552,7 @@ func _build() -> void:
 
 	var map_panel := _panel(MAP_PANEL_SIZE)
 	map_panel.name = "MapPanel"
+	map_panel.clip_contents = true
 	map_panel.add_theme_stylebox_override("panel", PixelUiTheme.hud_minimap_style())
 	root.add_child(map_panel)
 	_panels.map = map_panel
@@ -560,7 +562,6 @@ func _build() -> void:
 	map_rows.add_theme_constant_override("separation", 3)
 	map_panel.add_child(map_rows)
 	_labels.map_title = _add_icon_row(map_rows, ICON_MAP, "초록 평원")
-	_labels.map_title.add_theme_color_override("font_color", PixelUiTheme.INK_COLOR)
 	_build_time_dial_row(map_rows)
 	_labels.map_stats = _label("타일 0 · 사물 0", 11)
 	_labels.map_stats.visible = false
@@ -599,6 +600,7 @@ func _build() -> void:
 
 	var quickslot_panel := _panel(QUICKSLOT_PANEL_SIZE)
 	quickslot_panel.name = "QuickSlotPanel"
+	quickslot_panel.clip_contents = true
 	quickslot_panel.add_theme_stylebox_override("panel", PixelUiTheme.hud_resources_style())
 	root.add_child(quickslot_panel)
 	_panels.quickslot = quickslot_panel
@@ -644,9 +646,6 @@ func _build() -> void:
 	settings_button.name = "SettingsButton"
 	settings_button.custom_minimum_size = SETTINGS_BUTTON_SIZE
 	settings_button.text = "설정"
-	settings_button.icon = _load_texture(ICON_SCROLL)
-	settings_button.expand_icon = true
-	settings_button.add_theme_constant_override("icon_max_width", 14)
 	settings_button.tooltip_text = "설정"
 	settings_button.focus_mode = Control.FOCUS_NONE
 	settings_button.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -659,9 +658,6 @@ func _build() -> void:
 	facilities_button.name = "FacilitiesShortcutButton"
 	facilities_button.custom_minimum_size = SETTINGS_BUTTON_SIZE
 	facilities_button.text = "시설"
-	facilities_button.icon = _load_texture(ICON_WORKBENCH)
-	facilities_button.expand_icon = true
-	facilities_button.add_theme_constant_override("icon_max_width", 14)
 	facilities_button.tooltip_text = "시설"
 	facilities_button.focus_mode = Control.FOCUS_NONE
 	facilities_button.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -673,6 +669,7 @@ func _build() -> void:
 
 	var bottom_nav := _panel(BOTTOM_NAV_PANEL_SIZE)
 	bottom_nav.name = "BottomNavPanel"
+	bottom_nav.clip_contents = true
 	bottom_nav.add_theme_stylebox_override("panel", PixelUiTheme.hud_bottom_nav_style())
 	root.add_child(bottom_nav)
 	_panels.bottom_nav = bottom_nav
@@ -928,7 +925,7 @@ func _add_nav_button(parent: Container, name: String, icon_path: String, text: S
 func _add_bottom_nav_item(parent: Container, name: String, icon_path: String, text: String, button_id: String) -> void:
 	var button := Button.new()
 	button.name = name
-	button.custom_minimum_size = Vector2(60, 38)
+	button.custom_minimum_size = Vector2(48, 38)
 	button.text = ""
 	button.tooltip_text = text
 	button.focus_mode = Control.FOCUS_NONE
@@ -946,11 +943,11 @@ func _add_bottom_nav_item(parent: Container, name: String, icon_path: String, te
 	icon.size = Vector2(18, 18)
 	_ignore_mouse(icon)
 	button.add_child(icon)
-	var label := _label(text, 8)
+	var label := _label(text, 9)
 	label.name = "Label"
 	label.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	label.offset_top = -14
-	label.offset_bottom = -2
+	label.offset_top = -21
+	label.offset_bottom = -7
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_color_override("font_color", PixelUiTheme.INK_COLOR)
 	_ignore_mouse(label)
@@ -2269,7 +2266,7 @@ func _build_equipment_strip() -> HBoxContainer:
 	var strip := HBoxContainer.new()
 	strip.name = "EquipmentStrip"
 	_ignore_mouse(strip)
-	strip.add_theme_constant_override("separation", 3)
+	strip.add_theme_constant_override("separation", 1)
 	_equipment_slots.clear()
 	for slot_key in EQUIPMENT_SLOT_KEYS:
 		var cell := PanelContainer.new()
@@ -2291,7 +2288,7 @@ func _build_equipment_strip() -> HBoxContainer:
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		rows.add_child(icon)
-		var label := _label(String(EQUIPMENT_SLOT_LABELS.get(slot_key, slot_key)), 7)
+		var label := _label(String(EQUIPMENT_SLOT_SHORT_LABELS.get(slot_key, slot_key)), 7)
 		label.name = "ItemName"
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.custom_minimum_size = Vector2(EQUIPMENT_SLOT_SIZE.x - 4.0, 8.0)
@@ -2458,8 +2455,8 @@ func _apply_safe_area_layout() -> void:
 	_place_panel(_panels.action, Control.PRESET_BOTTOM_RIGHT, Vector2(-margin.z, -margin.w))
 	var side_shortcut_top := map_rect.end.y + HUD_EDGE_GAP
 	_place_panel(_panels.side_shortcuts, Control.PRESET_TOP_RIGHT, Vector2(-margin.z, side_shortcut_top))
-	_place_panel(_panels.settings, Control.PRESET_TOP_RIGHT, Vector2(-margin.z - 2.0, side_shortcut_top + 3.0))
-	_place_panel(_panels.facilities_shortcut, Control.PRESET_TOP_RIGHT, Vector2(-margin.z - 2.0, side_shortcut_top + 43.0))
+	_place_panel(_panels.settings, Control.PRESET_TOP_RIGHT, Vector2(-margin.z - 4.0, side_shortcut_top + 4.0))
+	_place_panel(_panels.facilities_shortcut, Control.PRESET_TOP_RIGHT, Vector2(-margin.z - 4.0, side_shortcut_top + 45.0))
 	_place_panel(_panels.bottom_nav, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w))
 	_panels.bottom_nav.visible = wide_landscape
 	var action_rect := _panel_rect(_panels.action)

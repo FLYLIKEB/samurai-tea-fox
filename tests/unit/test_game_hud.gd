@@ -466,7 +466,7 @@ func _assert_status_resources_use_visual_meters(asserts) -> void:
 	asserts.true_value(hearts != null, "HUD renders HP as a heart row")
 	if hearts != null:
 		asserts.equal(hearts.get_child_count(), 5, "HP uses five heart slots")
-		asserts.equal((hearts.get_child(0) as Control).custom_minimum_size, Vector2(14, 14), "resource icons use the compact HUD size")
+		asserts.equal((hearts.get_child(0) as Control).custom_minimum_size, Vector2(12, 12), "resource icons fit inside the generated status frame")
 		asserts.equal((hearts.get_child(0) as TextureRect).expand_mode, TextureRect.EXPAND_IGNORE_SIZE, "resource icons ignore their source texture size")
 		asserts.equal((hearts.get_child(0) as TextureRect).get_meta("fill_ratio"), 1.0, "full HP heart is filled")
 		asserts.true_value(is_equal_approx(float((hearts.get_child(4) as TextureRect).get_meta("fill_ratio")), 0.1), "partial HP remains visible in the final heart")
