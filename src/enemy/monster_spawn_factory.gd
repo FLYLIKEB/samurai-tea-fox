@@ -27,6 +27,8 @@ func spawn(monster_id: String, spawn_context := {}) -> Dictionary:
 		combat_id = _next_combat_id(monster_id)
 	var state := MonsterState.new(definition_result.definition, combat_id)
 	var behavior := MonsterBehaviorRuntime.new(definition_result.definition, combat_id)
+	if not behavior.initialization_error().is_empty():
+		return {"ok": false, "error": behavior.initialization_error()}
 	state.staggered.connect(behavior.on_staggered)
 	return {
 		"ok": true,
