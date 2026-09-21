@@ -2,8 +2,6 @@ extends RefCounted
 class_name AbilityRuntime
 
 const AbilityDefinition = preload("res://src/ability/ability_definition.gd")
-const AbilityDamageEffectStrategy = preload("res://src/ability/ability_damage_effect_strategy.gd")
-const AbilityMovementEffectStrategy = preload("res://src/ability/ability_movement_effect_strategy.gd")
 
 const ABILITY_EQUIP_SLOTS_ID := "ability_equip_slots"
 
@@ -13,14 +11,12 @@ signal ability_cast(result: Dictionary)
 var definitions: Dictionary = {}
 var equip_slots: Array[String] = []
 var cooldown_remaining: Dictionary = {}
-var _strategies: Dictionary = {}
 
 func _init(initial_definitions := {}, equip_slot_count := 0) -> void:
 	definitions = initial_definitions.duplicate()
 	equip_slots.resize(maxi(int(equip_slot_count), 0))
 	for index in equip_slots.size():
 		equip_slots[index] = ""
-	_register_default_strategies()
 
 static func from_catalog(catalog) -> Dictionary:
 	var slot_value := _required_balance_value(catalog, ABILITY_EQUIP_SLOTS_ID)
@@ -48,7 +44,7 @@ func equip(slot: int, ability_id: String, context := {}) -> Dictionary:
 	if not definitions.has(ability_id):
 		return {"ok": false, "reason": "unknown_ability", "ability_id": ability_id}
 	var definition: AbilityDefinition = definitions[ability_id]
-	if not _strategies.has(definition.type):
+	if not _supports_effect_type(definition.type):
 		return {"ok": false, "reason": "unsupported_effect_type", "ability_id": definition.id, "effect_type": definition.type}
 	var tail_check := _tail_condition_result(definition, context)
 	if not tail_check.ok:
@@ -62,7 +58,7 @@ func can_cast(slot: int, context: Dictionary) -> Dictionary:
 	if not ability_result.ok:
 		return ability_result
 	var definition: AbilityDefinition = ability_result.definition
-	if not _strategies.has(definition.type):
+	if not _supports_effect_type(definition.type):
 		return {"ok": false, "reason": "unsupported_effect_type", "ability_id": definition.id, "effect_type": definition.type}
 
 	var tail_check := _tail_condition_result(definition, context)
@@ -94,8 +90,14 @@ func cast(slot: int, context: Dictionary) -> Dictionary:
 	if not resources.spend_ki(int(cast_check.ki_cost)):
 		return {"ok": false, "reason": "insufficient_ki", "ability_id": definition.id, "ki_cost": int(cast_check.ki_cost), "current_ki": int(resources.ki)}
 
-	var strategy = _strategies[definition.type]
-	var effect_result: Dictionary = strategy.execute(definition, context)
+	var effect_result: Dictionary
+	match definition.type:
+		"공격":
+			effect_result = _execute_damage_effect(definition, context)
+		"이동":
+			effect_result = _execute_movement_effect(definition, context)
+		_:
+			return {"ok": false, "reason": "unsupported_effect_type", "ability_id": definition.id, "effect_type": definition.type}
 	if not effect_result.ok:
 		resources.recover_ki(int(cast_check.ki_cost))
 		return effect_result
@@ -144,7 +146,7 @@ func ability_candidates(context := {}) -> Dictionary:
 	sorted_ids.sort()
 	for ability_id in sorted_ids:
 		var definition: AbilityDefinition = definitions[ability_id]
-		if not _strategies.has(definition.type):
+		if not _supports_effect_type(definition.type):
 			continue
 		var tail_check := _tail_condition_result(definition, context)
 		if tail_check.ok:
@@ -159,9 +161,77 @@ func equipped_ability_id(slot: int) -> String:
 		return ""
 	return equip_slots[slot]
 
-func _register_default_strategies() -> void:
-	_strategies["공격"] = AbilityDamageEffectStrategy.new()
-	_strategies["이동"] = AbilityMovementEffectStrategy.new()
+func _supports_effect_type(effect_type: String) -> bool:
+	match effect_type:
+		"공격", "이동":
+			return true
+		_:
+			return false
+
+func _execute_damage_effect(definition, context: Dictionary) -> Dictionary:
+	var targets: Array = context.get("targets", [])
+	if targets.is_empty():
+		return {"ok": false, "reason": "missing_targets", "ability_id": definition.id}
+
+	var events: Array = []
+	var applied_damage := 0
+	for target in targets:
+		var target_id := _target_id(target)
+		if target_id == "":
+			return {"ok": false, "reason": "missing_target_id", "ability_id": definition.id}
+		var event := {
+			"type": "ability_damage",
+			"source_id": String(context.get("source_id", "")),
+			"target_id": target_id,
+			"ability_id": definition.id,
+			"damage": definition.base_damage,
+			"range_tiles": definition.range_tiles,
+			"direction": context.get("direction", Vector2.ZERO),
+			"status_effect": definition.status_effect
+		}
+		events.append(event)
+		if target != null and typeof(target) != TYPE_DICTIONARY and target.has_method("apply_damage_event"):
+			applied_damage += int(target.apply_damage_event(event))
+		else:
+			applied_damage += int(event.damage)
+
+	return {
+		"ok": true,
+		"effect_type": "damage",
+		"ability_id": definition.id,
+		"events": events,
+		"applied_damage": applied_damage
+	}
+
+func _target_id(target) -> String:
+	if typeof(target) == TYPE_DICTIONARY:
+		return String(target.get("combat_id", target.get("id", "")))
+	if target != null and target.has_method("get_combat_id"):
+		return String(target.get_combat_id())
+	return ""
+
+func _execute_movement_effect(definition, context: Dictionary) -> Dictionary:
+	var direction = context.get("direction", Vector2.ZERO)
+	if direction is Vector2i:
+		direction = Vector2(direction)
+	if not direction is Vector2:
+		return {"ok": false, "reason": "invalid_direction", "ability_id": definition.id}
+	var normalized: Vector2 = direction.normalized() if direction != Vector2.ZERO else Vector2.ZERO
+	var result := {
+		"ok": true,
+		"effect_type": "movement",
+		"ability_id": definition.id,
+		"distance_tiles": definition.range_tiles,
+		"direction": normalized
+	}
+	var movement_actor = context.get("movement_actor")
+	if movement_actor != null and movement_actor.has_method("apply_ability_movement"):
+		var movement_result: Dictionary = movement_actor.apply_ability_movement(normalized, definition.range_tiles)
+		if not movement_result.ok:
+			movement_result["ability_id"] = definition.id
+			return movement_result
+		result.merge(movement_result, true)
+	return result
 
 func _ability_for_slot(slot: int) -> Dictionary:
 	if slot < 0 or slot >= equip_slots.size():
