@@ -57,7 +57,8 @@ const RESOURCE_DETAIL_PANEL_SIZE := Vector2(172, 62)
 const ENEMY_PANEL_SIZE := Vector2(136, 46)
 const MAP_PANEL_SIZE := Vector2(128, 120)
 const MAP_PANEL_TIME_HEIGHT := 120.0
-const QUICKSLOT_PANEL_SIZE := Vector2(248, 44)
+const QUICKSLOT_PANEL_SIZE := Vector2(264, 52)
+const QUICKSLOT_CONTENT_MARGIN := Vector4(18, 14, 18, 18)
 const DPAD_BOARD_SIZE := Vector2(96, 96)
 const ACTION_BUTTON_SIZE := Vector2(48, 48)
 const SECONDARY_ACTION_ICON_BUTTON_SIZE := Vector2(20, 20)
@@ -603,17 +604,32 @@ func _build() -> void:
 	_labels.enemy_attack = _label("공격 0", 10)
 	enemy_rows.add_child(_labels.enemy_attack)
 
-	var quickslot_panel := _panel(QUICKSLOT_PANEL_SIZE)
+	var quickslot_panel := _unstyled_panel(QUICKSLOT_PANEL_SIZE)
 	quickslot_panel.name = "QuickSlotPanel"
 	quickslot_panel.clip_contents = true
-	quickslot_panel.add_theme_stylebox_override("panel", PixelUiTheme.hud_resources_style())
 	root.add_child(quickslot_panel)
 	_panels.quickslot = quickslot_panel
+	var quickslot_frame := TextureRect.new()
+	quickslot_frame.name = "QuickSlotFrame"
+	quickslot_frame.texture = _load_texture(PixelUiTheme.HUD_RESOURCES_TEXTURE)
+	quickslot_frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	quickslot_frame.stretch_mode = TextureRect.STRETCH_SCALE
+	_ignore_mouse(quickslot_frame)
+	quickslot_panel.add_child(quickslot_frame)
+	var quickslot_content := MarginContainer.new()
+	quickslot_content.name = "QuickSlotContent"
+	quickslot_content.add_theme_constant_override("margin_left", int(QUICKSLOT_CONTENT_MARGIN.x))
+	quickslot_content.add_theme_constant_override("margin_top", int(QUICKSLOT_CONTENT_MARGIN.y))
+	quickslot_content.add_theme_constant_override("margin_right", int(QUICKSLOT_CONTENT_MARGIN.z))
+	quickslot_content.add_theme_constant_override("margin_bottom", int(QUICKSLOT_CONTENT_MARGIN.w))
+	_ignore_mouse(quickslot_content)
+	quickslot_panel.add_child(quickslot_content)
 	var quick_rows := HBoxContainer.new()
+	quick_rows.name = "QuickSlotRows"
 	_ignore_mouse(quick_rows)
 	quick_rows.alignment = BoxContainer.ALIGNMENT_CENTER
 	quick_rows.add_theme_constant_override("separation", 6)
-	quickslot_panel.add_child(quick_rows)
+	quickslot_content.add_child(quick_rows)
 	_labels.inventory = _add_icon_row(quick_rows, ICON_BAG, "가방")
 	_labels.tea_slots = _add_icon_row(quick_rows, ICON_KI, "차")
 	_labels.consumable = _add_icon_row(quick_rows, ICON_CONSUMABLE, "소모")
@@ -2673,6 +2689,8 @@ func _add_resource_icon_row(parent: Container, id: String, icon_path: String, te
 		icons.add_child(icon)
 	_labels["%s_icons" % id] = icons
 	var value := _label(text, 8)
+	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	value.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	row.add_child(value)
 	return value
 
@@ -2741,6 +2759,7 @@ func _update_resource_icons(id: String, current: int, maximum: int) -> void:
 func _add_icon_row(parent: Container, icon_path: String, text: String) -> Label:
 	var row := HBoxContainer.new()
 	_ignore_mouse(row)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 6)
 	parent.add_child(row)
 	var icon := TextureRect.new()
@@ -2751,9 +2770,9 @@ func _add_icon_row(parent: Container, icon_path: String, text: String) -> Label:
 	icon.texture = _load_texture(icon_path)
 	row.add_child(icon)
 	var value := _label(text)
-	if text.is_empty():
-		row.alignment = BoxContainer.ALIGNMENT_CENTER
-	else:
+	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	value.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	if not text.is_empty():
 		row.add_child(value)
 	return value
 

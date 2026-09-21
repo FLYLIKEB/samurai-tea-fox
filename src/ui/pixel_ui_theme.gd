@@ -93,9 +93,6 @@ static func parchment_button_style(selected := false) -> StyleBoxTexture:
 static func hud_status_style() -> StyleBoxTexture:
 	return _texture_style(HUD_STATUS_TEXTURE, Vector4.ZERO, Vector4(24, 20, 10, 8))
 
-static func hud_resources_style() -> StyleBoxTexture:
-	return _texture_style(HUD_RESOURCES_TEXTURE, Vector4.ZERO, Vector4(22, 12, 28, 14))
-
 static func hud_minimap_style() -> StyleBoxTexture:
 	return _texture_style(HUD_MINIMAP_TEXTURE, Vector4.ZERO, Vector4(28, 27, 20, 8))
 

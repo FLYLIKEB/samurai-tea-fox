@@ -688,8 +688,10 @@ func _assert_safe_area_layout_uses_viewport_top(asserts) -> void:
 		asserts.equal(int(round(status_panel.position.y)), 12, "status panel anchors to the viewport top margin")
 	if quickslot_panel != null:
 		asserts.equal(int(round(quickslot_panel.position.y)), 12, "quickslot panel anchors to the viewport top margin")
-		asserts.true_value(quickslot_panel.size.y >= 44.0, "quickslot frame leaves enough vertical room for its generated border and content")
-		var quick_rows := quickslot_panel.get_child(0) as HBoxContainer
+		asserts.equal(quickslot_panel.size, Vector2(264, 52), "quickslot outer frame keeps its generated image dimensions separate from content")
+		asserts.true_value(quickslot_panel.get_node_or_null("QuickSlotFrame") is TextureRect, "quickslot frame image stays separate from its content region")
+		asserts.true_value(quickslot_panel.get_node_or_null("QuickSlotContent") is MarginContainer, "quickslot content uses an explicit safe-area container")
+		var quick_rows := quickslot_panel.get_node("QuickSlotContent/QuickSlotRows") as HBoxContainer
 		asserts.equal(quick_rows.alignment, BoxContainer.ALIGNMENT_CENTER, "quickslot content stays centered inside the generated frame")
 	hud.free()
 
