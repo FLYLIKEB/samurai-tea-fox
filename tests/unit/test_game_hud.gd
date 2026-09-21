@@ -689,6 +689,8 @@ func _assert_safe_area_layout_uses_viewport_top(asserts) -> void:
 	if quickslot_panel != null:
 		asserts.equal(int(round(quickslot_panel.position.y)), 12, "quickslot panel anchors to the viewport top margin")
 		asserts.true_value(quickslot_panel.size.y >= 44.0, "quickslot frame leaves enough vertical room for its generated border and content")
+		var quick_rows := quickslot_panel.get_child(0) as HBoxContainer
+		asserts.equal(quick_rows.alignment, BoxContainer.ALIGNMENT_CENTER, "quickslot content stays centered inside the generated frame")
 	hud.free()
 
 func _assert_status_toasts_use_event_models_icons_and_queue_limits(asserts) -> void:

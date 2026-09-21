@@ -611,6 +611,7 @@ func _build() -> void:
 	_panels.quickslot = quickslot_panel
 	var quick_rows := HBoxContainer.new()
 	_ignore_mouse(quick_rows)
+	quick_rows.alignment = BoxContainer.ALIGNMENT_CENTER
 	quick_rows.add_theme_constant_override("separation", 6)
 	quickslot_panel.add_child(quick_rows)
 	_labels.inventory = _add_icon_row(quick_rows, ICON_BAG, "가방")
@@ -618,7 +619,9 @@ func _build() -> void:
 	_labels.consumable = _add_icon_row(quick_rows, ICON_CONSUMABLE, "소모")
 	_labels.abilities = _add_icon_row(quick_rows, ICON_ABILITY, "요술")
 	for label_id in ["inventory", "tea_slots", "consumable", "abilities"]:
-		(_labels[label_id] as Label).add_theme_font_size_override("font_size", 10)
+		var label := _labels[label_id] as Label
+		label.add_theme_font_size_override("font_size", 10)
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	for row in quick_rows.get_children():
 		(row as Control).size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
