@@ -1751,6 +1751,7 @@ func _crafting_row(row_model: Dictionary) -> Control:
 		String(result.get("name", row_model.get("name", row_model.get("recipe_id", "")))),
 		String(row_model.get("reason_label", ""))
 	], 9)
+	UiContentBounds.fit_label(label, false, true)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	summary.add_child(label)
 	card.add_child(summary)
@@ -2813,7 +2814,7 @@ func _section_label(text: String) -> Label:
 
 func _wrapped_label(text: String, font_size := 12) -> Label:
 	var label := _label(text, font_size)
-	UiContentBounds.fit_label(label, true)
+	UiContentBounds.fit_label(label, true, true)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return label
 

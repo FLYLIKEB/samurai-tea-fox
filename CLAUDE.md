@@ -35,6 +35,19 @@ See [AGENTS.md](AGENTS.md) for authority hierarchy and scope rules. This file do
 
 ---
 
+## 생성된 픽셀아트 프레임 위 콘텐츠 배치
+
+**Pitfall**: `assets/ui/generated/*.png` 프레임 텍스처는 자체 여백/테두리를 가진다. Label/Button을 프레임에 꽉 채우면 텍스트가 잘리거나 테두리를 침범한다.
+
+**Pattern**: `src/ui/ui_content_bounds.gd::UiContentBounds` 공용 헬퍼 사용.
+- `fit_label(label, wrap := false, bounded := false)` — 일반 라벨은 고유 폭을 유지하고, 고정 콘텐츠 영역만 `bounded = true`로 clip + ellipsis 적용
+- `fit_button(button)` — clip_contents + clip_text + ellipsis
+- `add_safe_content(button, content, margins)` — 버튼 안에 `mouse_filter = IGNORE` 인 `MarginContainer("SafeContent")`를 두어 프레임 여백만큼 콘텐츠를 안쪽으로 배치
+
+**When to apply**: `game_hud.gd`, `detail_popup.gd` 등에서 생성된 프레임 텍스처 위에 라벨/버튼을 올릴 때 매번 새로 구현하지 말고 이 헬퍼를 재사용한다.
+
+---
+
 ## UI 텍스트 효과
 
 **Class**: `DialogueTextEffect` (extends Label)

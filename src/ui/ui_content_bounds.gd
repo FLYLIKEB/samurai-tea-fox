@@ -1,9 +1,10 @@
 class_name UiContentBounds
 extends RefCounted
 
-static func fit_label(label: Label, wrap := false) -> Label:
-	label.clip_text = true
-	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+static func fit_label(label: Label, wrap := false, bounded := false) -> Label:
+	label.clip_text = bounded
+	if bounded:
+		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	if wrap:
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

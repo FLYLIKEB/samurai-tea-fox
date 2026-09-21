@@ -472,6 +472,9 @@ func _assert_status_resources_use_visual_meters(asserts) -> void:
 		asserts.true_value(is_equal_approx(float((hearts.get_child(4) as TextureRect).get_meta("fill_ratio")), 0.1), "partial HP remains visible in the final heart")
 	var ki_icons := hud.get_node_or_null("Root/StatusPanel/StatusBody/StatusRows/KiDisplay/Icons") as HBoxContainer
 	var kokoro_icons := hud.get_node_or_null("Root/StatusPanel/StatusBody/StatusRows/KokoroDisplay/Icons") as HBoxContainer
+	var hp_label := hud.get("_labels").get("hp") as Label
+	asserts.true_value(hp_label != null and not hp_label.clip_text, "HUD labels preserve intrinsic width inside layout containers")
+	asserts.true_value(hp_label != null and hp_label.get_combined_minimum_size().x > 0, "resource label keeps visible text width")
 	asserts.true_value(ki_icons != null and ki_icons.get_child_count() == 5, "ki uses five tea cup icons")
 	asserts.true_value(kokoro_icons != null and kokoro_icons.get_child_count() == 5, "kokoro uses five tea leaf icons")
 	if ki_icons != null:
@@ -700,6 +703,9 @@ func _assert_safe_area_layout_uses_viewport_top(asserts) -> void:
 		asserts.true_value(quickslot_panel.get_node_or_null("QuickSlotContent") is MarginContainer, "quickslot content uses an explicit safe-area container")
 		var quick_rows := quickslot_panel.get_node("QuickSlotContent/QuickSlotRows") as HBoxContainer
 		asserts.equal(quick_rows.alignment, BoxContainer.ALIGNMENT_CENTER, "quickslot content stays centered inside the generated frame")
+		var inventory_label := hud.get("_labels").get("inventory") as Label
+		asserts.true_value(inventory_label != null and not inventory_label.clip_text, "quick resource labels preserve their layout width")
+		asserts.true_value(inventory_label != null and inventory_label.get_combined_minimum_size().x > 0, "quick resource text remains visible beside its icon")
 	hud.free()
 
 func _assert_status_toasts_use_event_models_icons_and_queue_limits(asserts) -> void:
