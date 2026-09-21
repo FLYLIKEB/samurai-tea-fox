@@ -243,6 +243,7 @@ class FakeCatalog:
 		return {}
 
 func run(asserts) -> void:
+	_assert_menu_helpers_preserve_page_and_filter_behavior(asserts)
 	_assert_read_model_provider_owns_runtime_traversal(asserts)
 	_assert_combat_target_visibility_requires_active_close_combat(asserts)
 	_assert_hud_renders_provider_snapshot_without_runtime_access(asserts)
@@ -265,6 +266,17 @@ func run(asserts) -> void:
 	_assert_narrative_dialogue_emits_option_commands(asserts)
 	_assert_narrative_dialogue_uses_common_presenter_for_boss_models(asserts)
 	_assert_major_character_portraits_follow_speaker_ids(asserts)
+
+func _assert_menu_helpers_preserve_page_and_filter_behavior(asserts) -> void:
+	var hud := GameHud.new()
+	var rows := []
+	for index in range(10):
+		rows.append({"slot_index": index, "id": "entry_%d" % index})
+	asserts.equal(hud.call("_page_start", rows, "slot_index", 6, 4, -1), 4, "page helper clamps selected row near the top of the visible page")
+	asserts.equal(hud.call("_page_start", rows, "id", "entry_1", 4), 0, "page helper clamps early selections to the first page")
+	asserts.equal(hud.call("_page_start", rows, "id", "missing", 4), 0, "page helper falls back to the first page when selection is absent")
+	asserts.equal(hud.call("_filter_label", "all"), "전체", "shared filter label localizes the all filter")
+	asserts.equal(hud.call("_filter_label", "재료"), "재료", "shared filter label preserves concrete filters")
 
 func _assert_read_model_provider_owns_runtime_traversal(asserts) -> void:
 	var provider := GameHudReadModelProvider.new()

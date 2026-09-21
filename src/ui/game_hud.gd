@@ -1204,7 +1204,7 @@ func _inventory_rows() -> Array:
 		summary.name = "InventorySummary"
 		summary.add_theme_constant_override("separation", 8)
 		summary.add_child(_icon_text_row(ICON_BAG, "%d / %d칸" % [int(model.capacity.used), int(model.capacity.total)], 11))
-		summary.add_child(_icon_text_row(_inventory_kind_icon_reference(String(model.filter_kind)), _inventory_filter_label(String(model.filter_kind)), 11))
+		summary.add_child(_icon_text_row(_inventory_kind_icon_reference(String(model.filter_kind)), _filter_label(String(model.filter_kind)), 11))
 		rows.append(summary)
 		var toolbar := GridContainer.new()
 		toolbar.name = "InventoryToolbar"
@@ -1218,10 +1218,10 @@ func _inventory_rows() -> Array:
 		toolbar.add_child(_inventory_command_button("정렬", GameCommand.new(GameCommand.Type.INVENTORY_SORT), ICON_BAG, toolbar_button_size, "정렬"))
 		for kind in model.available_filters:
 			var kind_id := String(kind)
-			toolbar.add_child(_inventory_command_button(_inventory_filter_label(kind_id), GameCommand.new(GameCommand.Type.INVENTORY_SET_FILTER, Vector2i.ZERO, -1, {"kind": kind_id}), _inventory_kind_icon_reference(kind_id), toolbar_button_size, _inventory_filter_label(kind_id)))
+			toolbar.add_child(_inventory_command_button(_filter_label(kind_id), GameCommand.new(GameCommand.Type.INVENTORY_SET_FILTER, Vector2i.ZERO, -1, {"kind": kind_id}), _inventory_kind_icon_reference(kind_id), toolbar_button_size, _filter_label(kind_id)))
 		rows.append(toolbar)
 		var visible_rows: Array = _inventory_display_rows(model.slots, int(model.get("selected_slot_index", -1)))
-		var page_start := _inventory_page_start(visible_rows, int(model.get("selected_slot_index", -1)), 8)
+		var page_start := _page_start(visible_rows, "slot_index", int(model.get("selected_slot_index", -1)), 8, -1)
 		var page_end := mini(visible_rows.size(), page_start + 8)
 		var shelf := VBoxContainer.new()
 		shelf.name = "InventoryShelf"
@@ -1384,9 +1384,6 @@ func _command_button_base(text: String, min_size: Vector2, focus_mode: int, icon
 		button.add_theme_constant_override("icon_max_width", 18)
 	return button
 
-func _inventory_filter_label(kind: String) -> String:
-	return "전체" if kind == "all" else kind
-
 func _inventory_kind_icon_reference(kind: String) -> String:
 	match kind:
 		"소모품":
@@ -1404,17 +1401,16 @@ func _inventory_kind_icon_reference(kind: String) -> String:
 		_:
 			return ICON_BAG
 
-func _inventory_page_start(rows: Array, selected_slot_index: int, page_size: int) -> int:
+func _page_start(rows: Array, key: String, selected, page_size: int, default_value = "") -> int:
 	if rows.size() <= page_size:
 		return 0
-	var selected_position := -1
 	for index in range(rows.size()):
-		if int(rows[index].get("slot_index", -1)) == selected_slot_index:
-			selected_position = index
-			break
-	if selected_position < 0:
-		return 0
-	return clampi(selected_position - 2, 0, rows.size() - page_size)
+		if str(rows[index].get(key, default_value)) == str(selected):
+			return clampi(index - 2, 0, rows.size() - page_size)
+	return 0
+
+func _filter_label(value: String) -> String:
+	return "전체" if value == "all" else value
 
 func _tea_brewing_rows() -> Array:
 	var rows: Array = []
@@ -1583,7 +1579,7 @@ func _meta_codex_rows() -> Array:
 	rows.append(filters)
 	var model_rows := _array_value(model.get("rows", []))
 	var detail := _dictionary_value(model.get("detail", {}))
-	var page_start := _meta_codex_page_start(model_rows, String(detail.get("id", "")), 5)
+	var page_start := _page_start(model_rows, "id", String(detail.get("id", "")), 5)
 	var journal: BoxContainer = VBoxContainer.new() if _inventory_uses_compact_layout() else HBoxContainer.new()
 	journal.name = "CodexJournal"
 	journal.add_theme_constant_override("separation", 6)
@@ -1619,14 +1615,6 @@ func _meta_codex_option_card(row: Dictionary, tab: String, command: GameCommand)
 
 func _meta_codex_command_button(text: String, command: GameCommand) -> Button:
 	return _command_button(text, command, Vector2(40, 24), Control.FOCUS_ALL)
-
-func _meta_codex_page_start(rows: Array, selected: String, page_size: int) -> int:
-	if rows.size() <= page_size:
-		return 0
-	for index in range(rows.size()):
-		if String(rows[index].get("id", "")) == selected:
-			return clampi(index - 2, 0, rows.size() - page_size)
-	return 0
 
 func _meta_detail_text(detail: Dictionary) -> String:
 	if detail.is_empty():
@@ -1694,7 +1682,7 @@ func _crafting_rows() -> Array:
 		int(counts.get("visible", 0)),
 		int(counts.get("total", 0)),
 		int(counts.get("craftable", 0)),
-		_crafting_filter_label(_crafting_filter)
+		_filter_label(_crafting_filter)
 	]))
 	var filters := GridContainer.new()
 	filters.name = "CraftingFilterBar"
@@ -1704,22 +1692,21 @@ func _crafting_rows() -> Array:
 	filters.add_theme_constant_override("v_separation", 4)
 	for category in model.get("categories", []):
 		var category_id := String(category)
-		filters.add_child(_crafting_filter_button(_crafting_filter_label(category_id), category_id))
+		filters.add_child(_crafting_filter_button(_filter_label(category_id), category_id))
 	rows.append(filters)
 	rows.append(_section_label("제작법 목록"))
 	var model_rows: Array = model.get("rows", [])
 	# Keep the full recipe list visible; the menu is scrollable and hiding
 	# craftable entries behind an implicit six-item page made facilities appear
 	# to be missing.
-	var page_start := _crafting_page_start(model_rows, _selected_recipe_id, model_rows.size())
 	var recipe_strip := GridContainer.new()
 	recipe_strip.name = "CraftingRecipeStrip"
 	recipe_strip.columns = 3
 	_ignore_mouse(recipe_strip)
 	recipe_strip.add_theme_constant_override("h_separation", 5)
 	recipe_strip.add_theme_constant_override("v_separation", 5)
-	for index in range(page_start, model_rows.size()):
-		recipe_strip.add_child(_crafting_row(model_rows[index]))
+	for row_model in model_rows:
+		recipe_strip.add_child(_crafting_row(row_model))
 	rows.append(recipe_strip)
 	return rows
 
@@ -1921,17 +1908,6 @@ func _dismiss_detail_popup() -> void:
 			_detail_popup.get_parent().remove_child(_detail_popup)
 		_detail_popup.queue_free()
 	_detail_popup = null
-
-func _crafting_page_start(rows: Array, selected: String, page_size: int) -> int:
-	if rows.size() <= page_size:
-		return 0
-	for index in range(rows.size()):
-		if String(rows[index].get("recipe_id", "")) == selected:
-			return clampi(index - 2, 0, rows.size() - page_size)
-	return 0
-
-func _crafting_filter_label(category: String) -> String:
-	return "전체" if category == "all" else category
 
 func _facility_rows() -> Array:
 	var rows: Array = []
