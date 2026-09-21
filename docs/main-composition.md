@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | `src/main/run_bootstrap_coordinator.gd` | 부팅, 런 서비스 구성, 월드 생성, 저장, 전투·사망 수명주기 | 현재 런타임 값을 읽고 쓰는 명시적 `Ports`와 장면 수명주기 호출 시점의 Main |
 | `src/main/main_input_coordinator.gd` | 프레임 입력, 포인터·터치 입력, 메뉴별 명령 순서 | 입력 callback마다 현재 Main 진입점 사용 |
-| `src/main/main_command_coordinator.gd` | 명령 종류별 서비스 분배와 결과 효과 실행 | 명시적 `Ports`, `CommandDispatcher`, `ActionCommandResultEffects` |
+| `src/main/main_command_coordinator.gd` | 명령 종류별 서비스 분배와 결과 효과 실행 | 호출 시점의 현재 Main, `CommandDispatcher`, `ActionCommandResultEffects` |
 | `src/main/action_command_result_effects.gd` | 성공한 명령의 상태 동기화, 시간 진행, 피드백, 적 턴 예약 순서 | 좁은 callback 집합 |
 | `src/main/world_interaction_coordinator.gd` | 포인터 이동, 월드 대상 판정, 채집·드롭·던전 상호작용 | 호출 시점의 현재 Main과 기존 탐색·획득 서비스 |
 | `src/main/dungeon_scene_coordinator.gd` | 던전 진입·복귀, 장면 복원, 적 생성·제거, 보스 대화와 저장 동기화 | 호출 시점의 현재 Main과 던전 도메인 서비스 |
