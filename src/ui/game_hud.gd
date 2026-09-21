@@ -7,6 +7,7 @@ const AssetCatalog = preload("res://src/core/data/asset_catalog.gd")
 const GameHudReadModelProvider = preload("res://src/ui/game_hud_read_model_provider.gd")
 const NarrativeDialoguePresenter = preload("res://src/ui/narrative_dialogue_presenter.gd")
 const DetailPopup = preload("res://src/ui/detail_popup.gd")
+const UiContentBounds = preload("res://src/ui/ui_content_bounds.gd")
 
 const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
 const ICON_HP := "ui_hp_heart_icon"
@@ -579,7 +580,7 @@ func _build() -> void:
 	_minimap_grid.add_theme_constant_override("v_separation", 1)
 	_ignore_mouse(_minimap_grid)
 	map_rows.add_child(_minimap_grid)
-	var map_open_button := Button.new()
+	var map_open_button := _button()
 	map_open_button.name = "MapOpenButton"
 	map_open_button.flat = true
 	map_open_button.tooltip_text = "지도 열기"
@@ -660,7 +661,7 @@ func _build() -> void:
 	_panels.action_menu = action_menu_panel
 	_build_settings_panel(action_menu_panel)
 
-	var settings_button := Button.new()
+	var settings_button := _button()
 	var side_shortcut_frame := TextureRect.new()
 	side_shortcut_frame.name = "SideShortcutFrame"
 	side_shortcut_frame.custom_minimum_size = SIDE_SHORTCUT_FRAME_SIZE
@@ -682,7 +683,7 @@ func _build() -> void:
 	settings_button.pressed.connect(_toggle_action_menu)
 	root.add_child(settings_button)
 	_panels.settings = settings_button
-	var facilities_button := Button.new()
+	var facilities_button := _button()
 	facilities_button.name = "FacilitiesShortcutButton"
 	facilities_button.custom_minimum_size = SETTINGS_BUTTON_SIZE
 	facilities_button.text = "시설"
@@ -880,13 +881,13 @@ func _build_settings_panel(parent: PanelContainer) -> void:
 	volume.value = db_to_linear(AudioServer.get_bus_volume_db(master_bus)) * 100.0 if master_bus >= 0 else 100.0
 	volume.value_changed.connect(_set_game_volume)
 	rows.add_child(volume)
-	var home_button := Button.new()
+	var home_button := _button()
 	home_button.name = "ReturnHomeButton"
 	home_button.text = "홈 화면으로 돌아가기"
 	home_button.custom_minimum_size = Vector2(0, 38)
 	home_button.pressed.connect(func(): return_to_start_requested.emit())
 	rows.add_child(home_button)
-	var close_button := Button.new()
+	var close_button := _button()
 	close_button.name = "CloseSettingsButton"
 	close_button.text = "닫기"
 	close_button.custom_minimum_size = Vector2(0, 34)
@@ -934,7 +935,7 @@ func _toggle_action_menu() -> void:
 	_apply_safe_area_layout()
 
 func _add_nav_button(parent: Container, name: String, icon_path: String, text: String, button_id: String, size: Vector2) -> void:
-	var button := Button.new()
+	var button := _button()
 	button.name = name
 	button.custom_minimum_size = size
 	button.text = text
@@ -951,7 +952,7 @@ func _add_nav_button(parent: Container, name: String, icon_path: String, text: S
 	parent.add_child(button)
 
 func _add_bottom_nav_item(parent: Container, name: String, icon_path: String, text: String, button_id: String) -> void:
-	var button := Button.new()
+	var button := _button()
 	button.name = name
 	button.custom_minimum_size = Vector2(48, 38)
 	button.text = ""
@@ -982,7 +983,7 @@ func _add_bottom_nav_item(parent: Container, name: String, icon_path: String, te
 	button.add_child(label)
 
 func _add_direction_button(parent: Control, name: String, rect: Rect2, direction: Vector2i, tooltip: String) -> void:
-	var button := Button.new()
+	var button := _button()
 	button.name = name
 	button.position = rect.position
 	button.size = rect.size
@@ -1013,7 +1014,7 @@ func _add_direction_button(parent: Control, name: String, rect: Rect2, direction
 	)
 
 func _add_text_action(parent: Container, name: String, icon_path: String, text: String, button_id: String, direction: Vector2i, slot: int) -> void:
-	var button := Button.new()
+	var button := _button()
 	button.name = name
 	button.custom_minimum_size = ACTION_BUTTON_SIZE
 	button.text = ""
@@ -1033,7 +1034,7 @@ func _add_text_action(parent: Container, name: String, icon_path: String, text: 
 	parent.add_child(button)
 
 func _add_interaction_action(parent: Container) -> Button:
-	var button := Button.new()
+	var button := _button()
 	button.name = "InteractionButton"
 	button.custom_minimum_size = ACTION_BUTTON_SIZE
 	button.text = "상호\n작용"
@@ -1063,7 +1064,7 @@ func _apply_empty_button_style(button: Button) -> void:
 		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
 
 func _add_icon_action(parent: Container, name: String, icon_path: String, tooltip: String, button_id: String, direction: Vector2i, slot: int) -> void:
-	var button := Button.new()
+	var button := _button()
 	button.name = name
 	button.custom_minimum_size = SECONDARY_ACTION_ICON_BUTTON_SIZE
 	button.text = ""
@@ -1102,7 +1103,7 @@ func _build_menu_panel(parent: PanelContainer) -> void:
 	_ignore_mouse(spacer)
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(spacer)
-	var close := Button.new()
+	var close := _button()
 	close.name = "CloseMenuButton"
 	close.text = "닫기"
 	close.focus_mode = Control.FOCUS_NONE
@@ -1143,7 +1144,7 @@ func _advance_status_toast() -> void:
 	_apply_status_toast_model(_active_toast)
 
 func _placement_command_button(text: String, command_type: int) -> Button:
-	var button := Button.new()
+	var button := _button()
 	button.text = text
 	button.custom_minimum_size = Vector2(48, 26)
 	button.focus_mode = Control.FOCUS_NONE
@@ -1366,7 +1367,7 @@ func _inventory_uses_compact_layout() -> bool:
 	return viewport_size.x <= 480.0
 
 func _inventory_command_button(text: String, command: GameCommand, icon_reference := "", min_size := Vector2(40, 24), tooltip := "") -> Button:
-	var button := Button.new()
+	var button := _button()
 	button.text = text
 	button.custom_minimum_size = min_size
 	button.focus_mode = Control.FOCUS_ALL
@@ -1525,7 +1526,7 @@ func _tea_brewing_slot_label(slot: Dictionary) -> String:
 	return String(slot.get("label", "")) if not slot.is_empty() else "빈 찻잔이 없습니다"
 
 func _tea_brewing_command_button(text: String, command: GameCommand) -> Button:
-	var button := Button.new()
+	var button := _button()
 	button.text = text
 	button.custom_minimum_size = Vector2(42, 22)
 	button.focus_mode = Control.FOCUS_ALL
@@ -1619,7 +1620,7 @@ func _meta_codex_option_card(row: Dictionary, tab: String, command: GameCommand)
 	return button
 
 func _meta_codex_command_button(text: String, command: GameCommand) -> Button:
-	var button := Button.new()
+	var button := _button()
 	button.text = text
 	button.custom_minimum_size = Vector2(40, 24)
 	button.focus_mode = Control.FOCUS_ALL
@@ -1734,7 +1735,6 @@ func _crafting_row(row_model: Dictionary) -> Control:
 	var card := VBoxContainer.new()
 	card.name = "CraftingRecipeContent"
 	_ignore_mouse(card)
-	card.custom_minimum_size = Vector2(112, 82)
 	card.add_theme_constant_override("separation", 3)
 	var summary := VBoxContainer.new()
 	summary.name = "CraftingRecipeSummary"
@@ -1755,9 +1755,9 @@ func _crafting_row(row_model: Dictionary) -> Control:
 	summary.add_child(label)
 	card.add_child(summary)
 	var recipe_id := String(row_model.get("recipe_id", ""))
-	var button := Button.new()
+	var button := _button()
 	button.name = "CraftingRecipeCard"
-	button.custom_minimum_size = card.custom_minimum_size + Vector2(6, 6)
+	button.custom_minimum_size = Vector2(118, 88)
 	button.focus_mode = Control.FOCUS_ALL
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.tooltip_text = "%s 상세" % String(result.get("name", row_model.get("name", recipe_id)))
@@ -1767,11 +1767,11 @@ func _crafting_row(row_model: Dictionary) -> Control:
 	button.pressed.connect(func():
 		_show_crafting_detail_popup(recipe_id)
 	)
-	button.add_child(card)
+	UiContentBounds.add_safe_content(button, card, Vector4(8, 8, 8, 8))
 	return button
 
 func _crafting_filter_button(text: String, category: String) -> Button:
-	var button := Button.new()
+	var button := _button()
 	button.text = text
 	button.icon = _load_texture(_crafting_category_icon_reference(category))
 	button.expand_icon = true
@@ -1863,7 +1863,7 @@ func _crafting_detail_row(detail: Dictionary) -> Control:
 	if not unlock_biome_name.is_empty():
 		facts.add_child(_crafting_fact_card("해금 조건", unlock_biome_name))
 	rows.add_child(facts)
-	var craft_button := Button.new()
+	var craft_button := _button()
 	craft_button.name = "CraftSelectedRecipeButton"
 	craft_button.text = "제작"
 	craft_button.icon = _load_texture(ICON_WORKBENCH)
@@ -2022,7 +2022,7 @@ func _map_marker_grid(markers: Array) -> GridContainer:
 	return grid
 
 func _map_marker_button(marker: Dictionary, display_name := "") -> Button:
-	var button := Button.new()
+	var button := _button()
 	button.name = "MapMarker_%s" % String(marker.get("id", "unknown"))
 	button.text = "%s%s" % [display_name, " ?" if not bool(marker.get("discovered", true)) else ""]
 	button.tooltip_text = String(marker.get("description", "상세 정보를 봅니다."))
@@ -2048,7 +2048,7 @@ func _show_map_marker_info(marker: Dictionary) -> void:
 	_show_detail_popup(String(marker.get("display_name", "중요 지점")), card)
 
 func _map_back_button() -> Button:
-	var button := Button.new()
+	var button := _button()
 	button.text = "지도 돌아가기"
 	button.custom_minimum_size = Vector2(180, 30)
 	button.pressed.connect(func(): _show_menu("지도", _map_rows()))
@@ -2062,7 +2062,7 @@ func _ruin_travel_rows() -> Array:
 		var destination_id := String(definition.get("id", ""))
 		if destination_id.is_empty() or destination_id == current_id or not repaired_ids.has(destination_id):
 			continue
-		var button := Button.new()
+		var button := _button()
 		button.text = "이동 · %s" % String(definition.get("name", destination_id))
 		button.custom_minimum_size = Vector2(220, 34)
 		button.pressed.connect(func():
@@ -2095,7 +2095,7 @@ func _teleport_travel_rows() -> Array:
 		destinations.append(destination_id)
 	for destination_id in destinations:
 		var definition := _biome_definition(destination_id)
-		var button := Button.new()
+		var button := _button()
 		button.text = "이동 · %s" % String(definition.get("name", destination_id))
 		button.custom_minimum_size = Vector2(220, 34)
 		button.pressed.connect(func():
@@ -2114,7 +2114,7 @@ func _biome_map_selector() -> Control:
 	strip.add_theme_constant_override("separation", 4)
 	for definition in definitions:
 		var biome_id := String(definition.get("id", ""))
-		var button := Button.new()
+		var button := _button()
 		button.name = "BiomeMap_%s" % biome_id
 		button.text = String(definition.get("name", biome_id))
 		button.tooltip_text = "선택하여 지역 지도 보기"
@@ -2233,7 +2233,7 @@ func _render_minimap_grid(grid: GridContainer, minimap: Dictionary, cell_size: V
 			var key := "%d,%d" % [x, y]
 			var tile: Control
 			if marker_data_by_position.has(key):
-				var marker_button := Button.new()
+				var marker_button := _button()
 				var marker_type := String(marker_by_position.get(key, ""))
 				var marker_color := _minimap_marker_color(marker_type)
 				marker_button.text = ""
@@ -2777,11 +2777,14 @@ func _add_icon_row(parent: Container, icon_path: String, text: String) -> Label:
 	return value
 
 func _label(text: String, font_size := 12) -> Label:
-	var label := Label.new()
+	var label := UiContentBounds.fit_label(Label.new())
 	_ignore_mouse(label)
 	label.text = text
 	label.add_theme_font_size_override("font_size", font_size)
 	return label
+
+func _button() -> Button:
+	return UiContentBounds.fit_button(Button.new())
 
 func _build_time_dial_row(parent: Container) -> void:
 	var row := HBoxContainer.new()
@@ -2810,7 +2813,7 @@ func _section_label(text: String) -> Label:
 
 func _wrapped_label(text: String, font_size := 12) -> Label:
 	var label := _label(text, font_size)
-	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UiContentBounds.fit_label(label, true)
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return label
 

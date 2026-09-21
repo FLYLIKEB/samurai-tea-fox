@@ -2,6 +2,7 @@ extends RefCounted
 ## Main 장면의 로딩/종료 화면 구성. 런 전환과 타이머의 수명은 Main이 소유한다.
 
 const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
+const UiContentBounds = preload("res://src/ui/ui_content_bounds.gd")
 const LOADING_BACKDROP_PATH := "res://assets/backgrounds/prologue/first_run_father_muchau_teahouse.png"
 
 class LoadingSpinner extends Label:
@@ -31,6 +32,7 @@ static func create_loading(scene_root: Node) -> Label:
 	scrim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(scrim)
 	var spinner := LoadingSpinner.new()
+	UiContentBounds.fit_label(spinner)
 	spinner.name = "LoadingSpinner"
 	spinner.text = "↻"
 	spinner.set_anchors_preset(Control.PRESET_CENTER)
@@ -50,7 +52,7 @@ static func create_loading(scene_root: Node) -> Label:
 	panel.theme = PixelUiTheme.create()
 	panel.add_theme_stylebox_override("panel", PixelUiTheme.panel_style())
 	layer.add_child(panel)
-	var label := Label.new()
+	var label := UiContentBounds.fit_label(Label.new())
 	label.name = "LoadingStatus"
 	label.text = "0% · 준비 중…"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -73,7 +75,7 @@ static func show_ending(scene_root: Node) -> void:
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	background.color = Color(0.02, 0.015, 0.012, 1.0)
 	background.mouse_filter = Control.MOUSE_FILTER_STOP
-	var label := Label.new()
+	var label := UiContentBounds.fit_label(Label.new())
 	label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	label.text = "THE END"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

@@ -642,11 +642,15 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	var crafting_filter_bar := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingFilterBar") as GridContainer
 	asserts.true_value(_tree_has_icon_button_with_text(crafting_filter_bar, "전체"), "crafting filters use icon-backed touch commands")
 	asserts.true_value(crafting_filter_bar != null and crafting_filter_bar.columns == 7, "crafting filters stay on one row when room is available")
+	asserts.true_value(_tree_buttons_bound_content(crafting_filter_bar), "crafting filter buttons clip text and icons to their shared content bounds")
 	var crafting_grid := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip") as GridContainer
 	asserts.true_value(crafting_grid != null and crafting_grid.columns == 3, "crafting menu renders a mobile-friendly three-column grid")
+	asserts.true_value(_tree_labels_bound_content(crafting_grid), "crafting card labels cannot draw outside their assigned card bounds")
 	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingDetailCard") == null, "crafting keeps details out of the recipe list")
 	var recipe_card := crafting_grid.get_child(0) as Button if crafting_grid != null and crafting_grid.get_child_count() > 0 else null
 	asserts.true_value(recipe_card != null and recipe_card.name == "CraftingRecipeCard", "the whole recipe card is touchable")
+	asserts.true_value(recipe_card != null and recipe_card.get_node_or_null("SafeContent") is MarginContainer, "recipe cards place complex content inside the shared safe-area component")
+	asserts.true_value(recipe_card != null and _tree_controls_inside(recipe_card), "every recipe-card icon and label stays geometrically inside the card")
 	if recipe_card != null:
 		recipe_card.pressed.emit()
 	var crafting_popup := hud.get_node_or_null("Root/DetailPopup")
@@ -922,6 +926,41 @@ func _tree_has_textured_item_icon(node: Node) -> bool:
 		if _tree_has_textured_item_icon(child):
 			return true
 	return false
+
+func _tree_buttons_bound_content(node: Node) -> bool:
+	if node == null:
+		return false
+	var buttons := node.find_children("*", "Button", true, false)
+	if node is Button:
+		buttons.push_front(node)
+	if buttons.is_empty():
+		return false
+	for candidate in buttons:
+		var button := candidate as Button
+		if not button.clip_contents or not button.clip_text:
+			return false
+	return true
+
+func _tree_labels_bound_content(node: Node) -> bool:
+	if node == null:
+		return false
+	var labels := node.find_children("*", "Label", true, false)
+	if node is Label:
+		labels.push_front(node)
+	if labels.is_empty():
+		return false
+	for candidate in labels:
+		if not (candidate as Label).clip_text:
+			return false
+	return true
+
+func _tree_controls_inside(root: Control) -> bool:
+	var bounds := root.get_global_rect()
+	for candidate in root.find_children("*", "Control", true, false):
+		var control := candidate as Control
+		if control.visible and not bounds.encloses(control.get_global_rect()):
+			return false
+	return true
 
 func _crafting_recipe_cards_have_distinct_state_styles(node: Node) -> bool:
 	if node == null:

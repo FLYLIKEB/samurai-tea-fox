@@ -5,6 +5,7 @@ const GameCommand = preload("res://src/core/commands/game_command.gd")
 const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
 const NarrativePlaceholderBackdrop = preload("res://src/ui/narrative_placeholder_backdrop.gd")
 const DialogueTextEffect = preload("res://src/ui/dialogue_text_effect.gd")
+const UiContentBounds = preload("res://src/ui/ui_content_bounds.gd")
 
 const BACKGROUND_FIRST_RUN_PROLOGUE := "prologue_first_run_father_muchau_teahouse"
 const PORTRAIT_FATHER := "portrait_chr_1_kitsune_father"
@@ -227,7 +228,7 @@ func _build_panel_rows(parent: PanelContainer) -> void:
 func _add_option_button(event_id: String, node_id: String, option: Dictionary) -> void:
 	var option_id := String(option.get("id", ""))
 	var payload := _command_payload(event_id, node_id, option_id)
-	var button := Button.new()
+	var button := UiContentBounds.fit_button(Button.new())
 	button.text = "넘어가기"
 	button.tooltip_text = String(option.get("display_text", "넘어가기"))
 	button.custom_minimum_size = Vector2(112, 28)
@@ -344,7 +345,7 @@ func _dialogue_panel(size: Vector2) -> PanelContainer:
 	return panel
 
 func _label(text: String, font_size := 12) -> Label:
-	var label := Label.new()
+	var label := UiContentBounds.fit_label(Label.new())
 	label.text = text
 	label.add_theme_font_size_override("font_size", font_size)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE

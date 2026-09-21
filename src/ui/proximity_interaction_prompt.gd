@@ -2,6 +2,7 @@ extends PanelContainer
 class_name ProximityInteractionPrompt
 
 const PIXEL_FONT_PATH := "res://assets/fonts/galmuri/Galmuri11.ttf"
+const UiContentBounds = preload("res://src/ui/ui_content_bounds.gd")
 
 func configure(title: String, action_text: String, position: Vector2, size: Vector2) -> void:
 	name = "InteractionPrompt"
@@ -19,7 +20,7 @@ func configure(title: String, action_text: String, position: Vector2, size: Vect
 	background.content_margin_top = 1
 	background.content_margin_bottom = 1
 	add_theme_stylebox_override("panel", background)
-	var label := Label.new()
+	var label := UiContentBounds.fit_label(Label.new())
 	label.text = "%s\n%s" % [title, action_text]
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER

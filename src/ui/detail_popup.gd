@@ -2,6 +2,8 @@ extends ColorRect
 
 signal dismissed
 
+const UiContentBounds = preload("res://src/ui/ui_content_bounds.gd")
+
 func setup(title: String, content: Control, popup_size: Vector2, panel_style: StyleBox, popup_theme: Theme = null) -> void:
 	name = "DetailPopup"
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -27,11 +29,11 @@ func setup(title: String, content: Control, popup_size: Vector2, panel_style: St
 	var header := HBoxContainer.new()
 	header.name = "PopupHeader"
 	rows.add_child(header)
-	var heading := Label.new()
+	var heading := UiContentBounds.fit_label(Label.new())
 	heading.text = title
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(heading)
-	var close := Button.new()
+	var close := UiContentBounds.fit_button(Button.new())
 	close.name = "CloseDetailPopupButton"
 	close.text = "닫기"
 	close.custom_minimum_size = Vector2(54, 30)
