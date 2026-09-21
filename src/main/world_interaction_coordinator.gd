@@ -251,7 +251,13 @@ func configure_acquisition_for_generated_world(main) -> Dictionary:
 	var definitions: Array = main._acquisition_definitions().confirmed_generated_resource_definitions(main.generated_world.get("resource_nodes", []))
 	definitions.append_array(main._acquisition_definitions().terrain_tree_gatherable_definitions())
 	definitions.append_array(main._acquisition_definitions().mountain_mineral_gatherable_definitions())
-	var configured: Dictionary = main.acquisition_service.configure(main.inventory, main.world_data, definitions, generated_drop_definitions(main))
+	var configured: Dictionary = main.acquisition_service.configure(
+		main.inventory,
+		main.world_data,
+		definitions,
+		generated_drop_definitions(main),
+		main._acquisition_definitions().gather_evaluation_context(int(main.run_state.seed) if main.run_state != null else main.FRESH_RUN_SEED)
+	)
 	if not configured.ok:
 		return configured
 	var definition_ids := {}
@@ -338,6 +344,13 @@ func acquisition_completed(main, result: Dictionary) -> void:
 				completed_grant["kind"] = AcquisitionService.PICKUP_KIND
 				acquisition_completed(main, completed_grant)
 		return
+	if String(result.get("kind", "")) == AcquisitionService.GATHERABLE_KIND:
+		for bonus in result.get("bonus_grants", []):
+			if bonus is Dictionary and String(bonus.get("delivery", "")) == AcquisitionService.POLICY_DIRECT:
+				var completed_bonus: Dictionary = bonus.duplicate(true)
+				completed_bonus["ok"] = true
+				completed_bonus["kind"] = AcquisitionService.PICKUP_KIND
+				acquisition_completed(main, completed_bonus)
 	if not bool(result.get("ok", false)) or not result.get("position", null) is Dictionary:
 		return
 	main._play_sfx_event(SfxEventRouter.event_id_for_acquisition(result), result, String(result.get("pickup_id", result.get("node_id", result.get("item_id", "acquisition")))))

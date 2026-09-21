@@ -6,6 +6,7 @@ func run(asserts) -> void:
 	_assert_time_conditions(asserts)
 	_assert_seed_reproducibility_and_quantity_bounds(asserts)
 	_assert_probability_edges(asserts)
+	_assert_candidate_selection_is_deterministic(asserts)
 
 func _assert_time_conditions(asserts) -> void:
 	var always := _grant({"condition": DropEvaluator.CONDITION_ALWAYS})
@@ -44,6 +45,13 @@ func _assert_probability_edges(asserts) -> void:
 	asserts.false_value(DropEvaluator.evaluate(never, _context(3, "never", "day")).included, "zero chance never grants")
 	var always := _grant({"chance": 1.0})
 	asserts.true_value(DropEvaluator.evaluate(always, _context(3, "always", "day")).included, "unit chance always grants")
+
+func _assert_candidate_selection_is_deterministic(asserts) -> void:
+	var grant := _grant({"item_id": "", "candidate_item_ids": ["clay", "stone"], "chance": 1.0})
+	var context := _context(77, "tree_01", "day")
+	var first: Dictionary = DropEvaluator.evaluate(grant, context)
+	asserts.equal(DropEvaluator.evaluate(grant, context), first, "same gather identity selects the same bonus candidate")
+	asserts.true_value(String(first.grant.item_id) in ["clay", "stone"], "candidate grant resolves to one configured stable item id")
 
 func _grant(overrides := {}) -> Dictionary:
 	var grant := {

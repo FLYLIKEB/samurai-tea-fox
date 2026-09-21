@@ -35,11 +35,16 @@ static func evaluate(grant: Dictionary, context: Dictionary) -> Dictionary:
 	var quantity_span := maximum - minimum + 1
 	if quantity_span > 1:
 		quantity += int(floor(_stable_unit_interval(roll_key + "|quantity") * quantity_span))
+	var item_id := String(grant.get("item_id", ""))
+	var candidates: Array = grant.get("candidate_item_ids", [])
+	if item_id.is_empty() and not candidates.is_empty():
+		var candidate_index := int(floor(_stable_unit_interval(roll_key + "|candidate") * candidates.size()))
+		item_id = String(candidates[mini(candidate_index, candidates.size() - 1)])
 	return {
 		"ok": true,
 		"included": true,
 		"grant": {
-			"item_id": String(grant.get("item_id", "")),
+			"item_id": item_id,
 			"quantity": quantity,
 			"policy": String(grant.get("policy", ""))
 		}

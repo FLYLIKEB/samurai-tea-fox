@@ -51,6 +51,9 @@ func run(asserts) -> void:
 	_assert_interaction_kind_alone_cannot_be_adopted(asserts)
 	_assert_failed_snapshot_restore_is_atomic(asserts)
 	_assert_multi_grant_drop_rolls_back_on_world_failure(asserts)
+	_assert_gather_bonus_is_deterministic(asserts)
+	_assert_gather_bonus_rolls_back_atomically(asserts)
+	_assert_gather_bonus_pickups_survive_save(asserts)
 
 func _assert_four_fixture_types_share_interact_contract(asserts) -> void:
 	var runtime := _runtime(8, Vector2i(8, 2))
@@ -280,11 +283,56 @@ func _assert_multi_grant_drop_rolls_back_on_world_failure(asserts) -> void:
 	asserts.equal(runtime.inventory.to_snapshot(), before, "failed multi-grant drop rolls back earlier direct grants")
 	asserts.equal(runtime.service.to_snapshot().pickups, [], "failed multi-grant drop rolls back spawned pickups")
 
+func _assert_gather_bonus_is_deterministic(asserts) -> void:
+	var first := _runtime(4, Vector2i(2, 1))
+	var replay := _runtime(4, Vector2i(2, 1))
+	for runtime in [first, replay]:
+		asserts.true_value(runtime.service.register_gatherable("tree_bonus", "fixture_tree_bonus", Vector2i.ZERO).ok, "bonus tree registers")
+	var first_result: Dictionary = first.service.handle_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": "tree_bonus"}))
+	var replay_result: Dictionary = replay.service.gather("tree_bonus")
+	asserts.true_value(first_result.ok, "bonus gather succeeds")
+	asserts.equal(replay_result.bonus_grants, first_result.bonus_grants, "same seed and node reproduce the bonus grant")
+	asserts.equal(first.inventory.get_total_quantity("wood"), 1, "bonus gather keeps the guaranteed primary resource")
+	asserts.equal(first_result.bonus_grants.size(), 1, "successful bonus roll grants exactly one candidate")
+	var bonus_item_id := String(first_result.bonus_grants[0].item_id)
+	asserts.true_value(bonus_item_id in ["clay", "fixture_ore_item"], "bonus uses a configured non-primary stable item id")
+	asserts.equal(first.inventory.get_total_quantity(bonus_item_id), 1, "selected bonus reaches inventory once")
+
+func _assert_gather_bonus_rolls_back_atomically(asserts) -> void:
+	var runtime := _runtime(1, Vector2i(1, 1))
+	asserts.true_value(runtime.inventory.add_item("filler", 1).ok, "atomic bonus fixture fills inventory")
+	asserts.true_value(runtime.service.register_gatherable("tree_bonus_blocked", "fixture_tree_bonus_rollback", Vector2i.ZERO).ok, "atomic bonus tree registers")
+	var inventory_before: Dictionary = runtime.inventory.to_snapshot()
+	var failed: Dictionary = runtime.service.gather("tree_bonus_blocked")
+	asserts.false_value(failed.ok, "bonus placement failure rejects the complete gather")
+	asserts.equal(failed.reason, "no_pickup_space", "bonus placement failure exposes the world-space reason")
+	asserts.equal(runtime.inventory.to_snapshot(), inventory_before, "failed bonus gather rolls back inventory")
+	asserts.equal(runtime.service.to_snapshot().pickups, [], "failed bonus gather removes the primary pickup")
+	asserts.false_value(runtime.service.gatherable_for("tree_bonus_blocked").depleted, "failed bonus gather keeps the source available")
+	asserts.false_value(runtime.world.get_reservation("tree_bonus_blocked").is_empty(), "failed bonus gather restores the source reservation")
+
+func _assert_gather_bonus_pickups_survive_save(asserts) -> void:
+	var runtime := _runtime(1, Vector2i(4, 2))
+	asserts.true_value(runtime.inventory.add_item("filler", 1).ok, "bonus save fixture fills inventory")
+	asserts.true_value(runtime.service.register_gatherable("tree_bonus_save", "fixture_tree_bonus", Vector2i.ZERO).ok, "bonus save tree registers")
+	var gathered: Dictionary = runtime.service.gather("tree_bonus_save")
+	asserts.true_value(gathered.ok, "full inventory delivers primary and bonus as pickups")
+	asserts.equal(runtime.service.to_snapshot().pickups.size(), 2, "primary and bonus each create one pickup")
+	var run_state := RunState.new()
+	run_state.acquisitions = runtime.service.to_snapshot()
+	var decoded: Dictionary = SaveCodec.decode_run(SaveCodec.encode_run(run_state.to_dictionary()))
+	asserts.true_value(decoded.ok, "bonus acquisition save decodes")
+	var restored := _runtime(1, Vector2i(4, 2))
+	asserts.true_value(restored.service.load_snapshot(decoded.run_state.acquisitions).ok, "bonus pickups restore")
+	asserts.equal(restored.service.to_snapshot(), runtime.service.to_snapshot(), "bonus selection and depletion survive save")
+	asserts.false_value(restored.service.gather("tree_bonus_save").ok, "restored depleted tree cannot reroll")
+	asserts.equal(restored.service.to_snapshot().pickups.size(), 2, "retry creates no duplicate rewards")
+
 func _runtime(slot_count: int, world_size: Vector2i) -> Dictionary:
 	var inventory := _inventory(slot_count)
 	var world := WorldData.new(world_size.x, world_size.y, "grass", true)
 	var service := AcquisitionService.new()
-	var configured: Dictionary = service.configure(inventory, world, _gatherable_definitions(), _drop_definitions())
+	var configured: Dictionary = service.configure(inventory, world, _gatherable_definitions(), _drop_definitions(), {"run_seed": 42, "data_version": "fixture-acquisition"})
 	if not configured.ok:
 		push_error(configured.error)
 	return {"inventory": inventory, "world": world, "service": service}
@@ -300,7 +348,9 @@ func _gatherable_definitions() -> Array:
 		{"id": "fixture_ore_mountain", "item_id": "fixture_ore_item", "quantity": 1, "policy": "direct", "material_tag": "stone"},
 		{"id": "fixture_ore_requires_pickaxe", "item_id": "fixture_ore_item", "quantity": 1, "policy": "direct", "material_tag": "stone", "required_tool_item_id": "stone_pickaxe"},
 		{"id": "fixture_clay_common", "item_id": "clay", "quantity": 1, "policy": "pickup"},
-		{"id": "fixture_tea_leaf_common", "item_id": "fixture_tea_leaf_item", "quantity": 1, "policy": "direct"}
+		{"id": "fixture_tea_leaf_common", "item_id": "fixture_tea_leaf_item", "quantity": 1, "policy": "direct"},
+		{"id": "fixture_tree_bonus", "item_id": "wood", "quantity": 1, "policy": "direct", "bonus_grant": {"drop_id": "gather_bonus", "candidate_item_ids": ["fixture_ore_item", "clay"], "quantity": 1, "chance": 1.0, "condition": "항상", "policy": "direct"}},
+		{"id": "fixture_tree_bonus_rollback", "item_id": "wood", "quantity": 1, "policy": "pickup", "bonus_grant": {"drop_id": "gather_bonus", "candidate_item_ids": ["clay"], "quantity": 1, "chance": 1.0, "condition": "항상", "policy": "direct"}}
 	]
 
 func _drop_definitions() -> Array:

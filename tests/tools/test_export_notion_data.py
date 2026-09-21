@@ -13,7 +13,7 @@ SCHEMA = ROOT / "data/schemas/export_schema.json"
 class ExportedNotionDataTests(unittest.TestCase):
     EXPECTED_RUNTIME_ROW_COUNTS = {
         "abilities": 12,
-        "balance": 40,
+        "balance": 42,
         "biomes": 7,
         "bosses": 3,
         "characters": 9,
@@ -107,6 +107,8 @@ class ExportedNotionDataTests(unittest.TestCase):
 
         self.assertEqual(balance["consumable_use_base_seconds"]["value"], 1)
         self.assertEqual(balance["currency_max_stack"]["value"], 999)
+        self.assertEqual(balance["gather_bonus_chance"]["value"], 0.2)
+        self.assertEqual(balance["gather_bonus_quantity"]["value"], 1)
         self.assertIn("final_tea_room", dungeons)
         self.assertEqual(dungeons["final_tea_room"]["name"], "마지막 다실")
         self.assertIn("cloth", items)

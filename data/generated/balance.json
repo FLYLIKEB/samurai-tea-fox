@@ -1,5 +1,5 @@
 {
-  "content_hash": "73a9e7d161c0599326637c7b00e36c7a099102dc09b387d60351e852ebdec46b",
+  "content_hash": "0b9129fc747bdc98ed981f763de9097b58b19d9a7565a8fb84ee5b4868a00977",
   "data_version": "notion-2026-09-04",
   "items": [
     {
@@ -242,6 +242,28 @@
       "status": "테스트",
       "unit": "초",
       "value": 0.18
+    },
+    {
+      "category": "월드",
+      "description": "나무·광맥 채집 시 기본 자원 외에 현재 바이옴의 다른 확정 자원 1개를 추가로 지급할 확률.",
+      "formula_note": "gather_bonus_chance = 0.2. run seed + node ID + stable bonus ID로 결정적으로 평가한다.",
+      "id": "gather_bonus_chance",
+      "name": "채집 추가 부산물 확률",
+      "notion_id": "3e237369-9e66-8196-bd61-eecac9ade536",
+      "status": "확정",
+      "unit": "비율",
+      "value": 0.2
+    },
+    {
+      "category": "월드",
+      "description": "채집 추가 부산물 추첨 성공 시 지급하는 자원 수량.",
+      "formula_note": "gather_bonus_quantity = 1. 현재 바이옴 생성 자원 중 기본 보상과 다른 stable ID만 후보로 사용한다.",
+      "id": "gather_bonus_quantity",
+      "name": "채집 추가 부산물 수량",
+      "notion_id": "3e237369-9e66-81fa-b506-cb8f789bed80",
+      "status": "확정",
+      "unit": "개",
+      "value": 1
     },
     {
       "category": "心",

@@ -298,7 +298,9 @@
     "3d137369-9e66-81d5-9014-edfff4ace97c": "metal_workbench",
     "3d137369-9e66-81dc-926f-cfff17fbb39a": "stone_axe",
     "3d237369-9e66-8165-930e-fcdf1e909b16": "stone_pickaxe",
-    "3d237369-9e66-81c5-86f2-c809db3b1282": "stone_pickaxe"
+    "3d237369-9e66-81c5-86f2-c809db3b1282": "stone_pickaxe",
+    "3e237369-9e66-8196-bd61-eecac9ade536": "gather_bonus_chance",
+    "3e237369-9e66-81fa-b506-cb8f789bed80": "gather_bonus_quantity"
   },
   "legacy_names": {
     "abilities": {
@@ -344,6 +346,8 @@
       "밤 心 감소율": "night_kokoro_decay_per_second",
       "심야 心 감소율": "late_night_kokoro_decay_per_second",
       "안전 수면 HP 회복 비율": "safe_sleep_hp_recovery_ratio",
+      "채집 추가 부산물 수량": "gather_bonus_quantity",
+      "채집 추가 부산물 확률": "gather_bonus_chance",
       "소모품 기본 사용 시간": "consumable_use_base_seconds",
       "동전 최대 보유량": "currency_max_stack"
     },
