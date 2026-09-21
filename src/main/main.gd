@@ -379,11 +379,11 @@ func submit_interaction_at_world_cell(cell: Vector2i) -> bool:
 	return submit_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": target_id}))
 
 func submit_action_command(command) -> bool:
-	return _main_command_router().submit_action_command(command)
+	return _main_command_router().submit_action_command(self, command)
 
 func _main_command_router() -> MainCommandCoordinator:
 	if _main_command_coordinator == null:
-		_main_command_coordinator = MainCommandCoordinator.new(_main_command_ports(), _command_dispatcher, _action_command_result_effects)
+		_main_command_coordinator = MainCommandCoordinator.new(_command_dispatcher, _action_command_result_effects)
 	return _main_command_coordinator
 
 func _hud_presentation() -> HudPresentationCoordinator:
@@ -514,42 +514,6 @@ func _facility_biome_ports() -> FacilityBiomeCoordinator.Ports:
 	ports.content_image_asset_id = Callable(self, "_content_image_asset_id")
 	ports.get_start_mode = func(): return _start_mode
 	ports.get_catalog = func(): return catalog
-	return ports
-
-func _main_command_ports() -> MainCommandCoordinator.Ports:
-	var ports := MainCommandCoordinator.Ports.new()
-	ports.is_boss_action_locked = Callable(self, "_dungeon_boss_action_locked")
-	ports.handle_narrative_option_command = Callable(self, "_handle_narrative_option_command")
-	ports.submit_player_interaction = Callable(self, "submit_player_interaction")
-	ports.is_landmark_target = Callable(self, "_is_landmark_target")
-	ports.handle_landmark_interaction = Callable(self, "_handle_landmark_interaction")
-	ports.is_repair_interaction_target = Callable(self, "_is_repair_interaction_target")
-	ports.handle_repair_interaction_command = Callable(self, "_handle_repair_interaction_command")
-	ports.get_acquisition_service = func(): return acquisition_service
-	ports.handle_tea_command = Callable(self, "_handle_tea_command")
-	ports.handle_consumable_command = Callable(self, "_handle_consumable_command")
-	ports.handle_sleep_command = Callable(self, "_handle_sleep_command")
-	ports.handle_complete_dungeon_command = Callable(self, "_handle_complete_dungeon_command")
-	ports.handle_biome_progression_command = Callable(self, "_handle_biome_progression_command")
-	ports.travel_to_biome = Callable(self, "_travel_to_biome")
-	ports.rotate_pending_facility = Callable(self, "_rotate_pending_facility")
-	ports.confirm_pending_facility = Callable(self, "_confirm_pending_facility")
-	ports.cancel_pending_facility_placement = Callable(self, "_cancel_pending_facility_placement")
-	ports.get_game_hud = func(): return game_hud
-	ports.configure_game_hud = Callable(self, "_configure_game_hud")
-	ports.handle_tea_brewing_command = Callable(self, "_handle_tea_brewing_command")
-	ports.handle_meta_codex_command = Callable(self, "_handle_meta_codex_command")
-	ports.handle_craft_recipe_command = Callable(self, "_handle_craft_recipe_command")
-	ports.has_pending_facility_placement = Callable(self, "has_pending_facility_placement")
-	ports.handle_inventory_command = Callable(self, "_handle_inventory_command")
-	ports.sen_rikyu_phase_two_accepts_command = Callable(self, "_sen_rikyu_phase_two_accepts_command")
-	ports.handle_sen_rikyu_phase_two_action = Callable(self, "_handle_sen_rikyu_phase_two_action")
-	ports.get_player = func(): return player
-	ports.sync_runtime_state = Callable(self, "_sync_run_runtime_state")
-	ports.advance_time_for_turn = Callable(self, "_advance_time_for_turn")
-	ports.play_feedback_beep = Callable(self, "_play_feedback_beep")
-	ports.queue_enemy_turn = Callable(self, "_queue_enemy_turn_after_player_action")
-	ports.play_sfx_event = Callable(self, "_play_sfx_event")
 	return ports
 
 func _player_runtime_ports() -> PlayerRuntimeCoordinator.Ports:
