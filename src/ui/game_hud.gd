@@ -1145,11 +1145,7 @@ func _advance_status_toast() -> void:
 	_apply_status_toast_model(_active_toast)
 
 func _placement_command_button(text: String, command_type: int) -> Button:
-	var button := _button()
-	button.text = text
-	button.custom_minimum_size = Vector2(48, 26)
-	button.focus_mode = Control.FOCUS_NONE
-	button.mouse_filter = Control.MOUSE_FILTER_STOP
+	var button := _command_button_base(text, Vector2(48, 26), Control.FOCUS_NONE)
 	button.pressed.connect(func(): mobile_command_issued.emit(GameCommand.new(command_type)))
 	return button
 
@@ -1368,17 +1364,24 @@ func _inventory_uses_compact_layout() -> bool:
 	return viewport_size.x <= 480.0
 
 func _inventory_command_button(text: String, command: GameCommand, icon_reference := "", min_size := Vector2(40, 24), tooltip := "") -> Button:
+	return _command_button(text, command, min_size, Control.FOCUS_ALL, icon_reference, tooltip)
+
+func _command_button(text: String, command: GameCommand, min_size: Vector2, focus_mode: int, icon_reference := "", tooltip := "") -> Button:
+	var button := _command_button_base(text, min_size, focus_mode, icon_reference, tooltip)
+	button.pressed.connect(func(): mobile_command_issued.emit(command))
+	return button
+
+func _command_button_base(text: String, min_size: Vector2, focus_mode: int, icon_reference := "", tooltip := "") -> Button:
 	var button := _button()
 	button.text = text
 	button.custom_minimum_size = min_size
-	button.focus_mode = Control.FOCUS_ALL
+	button.focus_mode = focus_mode
 	button.mouse_filter = Control.MOUSE_FILTER_STOP
 	button.tooltip_text = tooltip
 	if not icon_reference.is_empty():
 		button.icon = _load_texture(icon_reference)
 		button.expand_icon = true
 		button.add_theme_constant_override("icon_max_width", 18)
-	button.pressed.connect(func(): mobile_command_issued.emit(command))
 	return button
 
 func _inventory_filter_label(kind: String) -> String:
@@ -1527,13 +1530,7 @@ func _tea_brewing_slot_label(slot: Dictionary) -> String:
 	return String(slot.get("label", "")) if not slot.is_empty() else "빈 찻잔이 없습니다"
 
 func _tea_brewing_command_button(text: String, command: GameCommand) -> Button:
-	var button := _button()
-	button.text = text
-	button.custom_minimum_size = Vector2(42, 22)
-	button.focus_mode = Control.FOCUS_ALL
-	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	button.pressed.connect(func(): mobile_command_issued.emit(command))
-	return button
+	return _command_button(text, command, Vector2(42, 22), Control.FOCUS_ALL)
 
 func _tea_brewing_preview_label(preview: Dictionary) -> String:
 	if not bool(preview.get("ok", false)):
@@ -1621,13 +1618,7 @@ func _meta_codex_option_card(row: Dictionary, tab: String, command: GameCommand)
 	return button
 
 func _meta_codex_command_button(text: String, command: GameCommand) -> Button:
-	var button := _button()
-	button.text = text
-	button.custom_minimum_size = Vector2(40, 24)
-	button.focus_mode = Control.FOCUS_ALL
-	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	button.pressed.connect(func(): mobile_command_issued.emit(command))
-	return button
+	return _command_button(text, command, Vector2(40, 24), Control.FOCUS_ALL)
 
 func _meta_codex_page_start(rows: Array, selected: String, page_size: int) -> int:
 	if rows.size() <= page_size:

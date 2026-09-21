@@ -257,6 +257,7 @@ func run(asserts) -> void:
 	_assert_reconfigure_clears_missing_time_context(asserts)
 	_assert_dpad_emits_press_and_release_movement(asserts)
 	_assert_mobile_controls_emit_shared_commands(asserts)
+	_assert_command_button_factories_preserve_contracts(asserts)
 	_assert_dodge_control_does_not_use_baked_dash_asset(asserts)
 	_assert_fast_menus_show_runtime_read_models(asserts)
 	_assert_safe_area_layout_uses_viewport_top(asserts)
@@ -596,6 +597,35 @@ func _assert_dodge_control_does_not_use_baked_dash_asset(asserts) -> void:
 	var dodge_button := hud.get_node_or_null("Root/ActionPanel/ActionRows/ActionGrid/DodgeButton") as Button
 	asserts.true_value(dodge_button != null, "HUD renders the dodge action button")
 	asserts.equal(dodge_button.tooltip_text if dodge_button != null else "", "회피", "HUD keeps the official dodge term in its accessible tooltip")
+	hud.free()
+
+func _assert_command_button_factories_preserve_contracts(asserts) -> void:
+	var hud := _configured_hud()
+	var received: Array = []
+	hud.mobile_command_issued.connect(func(command): received.append(command))
+	var placement := hud._placement_command_button("설치", GameCommand.Type.FACILITY_CONFIRM)
+	var inventory := hud._inventory_command_button("정렬", GameCommand.new(GameCommand.Type.INVENTORY_SORT), "asset_assets_ui_icons_atlas_bag_png", Vector2(54, 30), "정렬")
+	var tea := hud._tea_brewing_command_button("‹", GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.LEFT))
+	var meta := hud._meta_codex_command_button("전체", GameCommand.new(GameCommand.Type.META_CODEX_SET_FILTER, Vector2i.ZERO, -1, {"filter": "all"}))
+	asserts.equal(placement.custom_minimum_size, Vector2(48, 26), "placement command buttons keep their compact install surface")
+	asserts.equal(placement.focus_mode, Control.FOCUS_NONE, "placement command buttons do not steal focus")
+	asserts.equal(inventory.custom_minimum_size, Vector2(54, 30), "inventory command buttons preserve caller-provided size")
+	asserts.equal(inventory.focus_mode, Control.FOCUS_ALL, "inventory command buttons remain keyboard focusable")
+	asserts.true_value(inventory.icon != null and inventory.expand_icon and inventory.tooltip_text == "정렬", "inventory command buttons preserve icon and tooltip options")
+	asserts.equal(tea.custom_minimum_size, Vector2(42, 22), "tea brewing command buttons keep selector size")
+	asserts.equal(tea.focus_mode, Control.FOCUS_ALL, "tea brewing command buttons remain focusable")
+	asserts.equal(meta.custom_minimum_size, Vector2(40, 24), "meta codex command buttons keep tab/filter size")
+	asserts.equal(meta.focus_mode, Control.FOCUS_ALL, "meta codex command buttons remain focusable")
+	placement.pressed.emit()
+	for button in [placement, inventory, tea, meta]:
+		button.pressed.emit()
+	asserts.equal(received.size(), 5, "command button factories emit exactly one command per press")
+	asserts.equal(received[0].type, GameCommand.Type.FACILITY_CONFIRM, "placement command button creates the requested GameCommand")
+	asserts.equal(received[1].type, GameCommand.Type.FACILITY_CONFIRM, "placement command button creates the requested GameCommand on repeat press")
+	asserts.true_value(received[0].get_instance_id() != received[1].get_instance_id(), "placement command button creates a fresh GameCommand per press")
+	asserts.equal(received[2].type, GameCommand.Type.INVENTORY_SORT, "inventory command button emits the supplied command")
+	asserts.equal(received[3].type, GameCommand.Type.TEA_BREW_NAVIGATE, "tea brewing command button emits the supplied command")
+	asserts.equal(received[4].type, GameCommand.Type.META_CODEX_SET_FILTER, "meta codex command button emits the supplied command")
 	hud.free()
 
 func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
