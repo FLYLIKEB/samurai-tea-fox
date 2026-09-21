@@ -678,6 +678,7 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	asserts.true_value(_tree_has_text(crafting_popup, "목재 3/2"), "crafting popup shows selected recipe material availability")
 	asserts.true_value(_tree_has_text(crafting_popup, "손제작"), "crafting popup shows selected recipe facility mode")
 	asserts.true_value(_tree_has_text(crafting_popup, "일반 지역"), "crafting popup shows the Korean unlock biome name")
+	asserts.true_value(_crafting_detail_content_is_centered(crafting_detail), "crafting detail centers labels and icons inside framed content areas")
 	asserts.true_value(_tree_has_textured_item_icon(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/CraftingRecipeStrip")), "crafting recipe cards render result item images")
 	asserts.true_value(_tree_has_textured_item_icon(crafting_grid), "crafting recipe cards include state/result icons")
 	asserts.true_value(_panel_uses_parchment_background(crafting_detail), "crafting popup detail uses the shared parchment card background")
@@ -989,6 +990,22 @@ func _crafting_recipe_cards_have_distinct_state_styles(node: Node) -> bool:
 			continue
 		style_keys["%s:%.2f,%.2f,%.2f" % [style.texture.resource_path, style.modulate_color.r, style.modulate_color.g, style.modulate_color.b]] = true
 	return style_keys.size() >= 2
+
+func _crafting_detail_content_is_centered(detail: Control) -> bool:
+	if detail == null:
+		return false
+	var flow := detail.get_node_or_null("Rows/CraftingFlow")
+	var facts := detail.get_node_or_null("Rows/CraftingFacts")
+	var craft_button := detail.get_node_or_null("Rows/CraftSelectedRecipeButton") as Button
+	if flow == null or facts == null or craft_button == null or craft_button.get_node_or_null("SafeContent") == null:
+		return false
+	for card in flow.find_children("*", "PanelContainer", true, false):
+		if card.get_node_or_null("ContentCenter") == null:
+			return false
+	for card in facts.get_children():
+		if not (card is PanelContainer) or card.custom_minimum_size.y < 58.0 or card.get_node_or_null("SafeContent/CenteredContent") == null:
+			return false
+	return true
 
 func _tree_has_text(node: Node, text: String) -> bool:
 	if node is Label and (node as Label).text == text:

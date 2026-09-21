@@ -1839,14 +1839,16 @@ func _crafting_detail_row(detail: Dictionary) -> Control:
 	flow.alignment = BoxContainer.ALIGNMENT_CENTER
 	flow.add_theme_constant_override("separation", 6)
 	for material in detail.get("materials", []):
-		var material_card := _card_frame(_icon_text_row(_inventory_item_icon_reference(material), "%s\n%d/%d" % [String(material.get("name", material.get("item_id", ""))), int(material.get("available", 0)), int(material.get("required", 0))], 9))
-		material_card.custom_minimum_size = Vector2(82, 44)
+		var material_card := _card_frame(_icon_text_row(_inventory_item_icon_reference(material), "%s\n%d/%d" % [String(material.get("name", material.get("item_id", ""))), int(material.get("available", 0)), int(material.get("required", 0))], 9), false, true)
+		material_card.custom_minimum_size = Vector2(96, 56)
 		flow.add_child(material_card)
 	flow.add_child(_label("→", 18))
-	flow.add_child(_card_frame(_icon_text_row(_crafting_result_icon_reference(detail), "%s ×%d" % [
+	var result_card := _card_frame(_icon_text_row(_crafting_result_icon_reference(detail), "%s ×%d" % [
 		String(result.get("name", result.get("item_id", ""))),
 		int(result.get("quantity", 1))
-	], 11), true))
+	], 11), true, true)
+	result_card.custom_minimum_size = Vector2(126, 56)
+	flow.add_child(result_card)
 	rows.add_child(flow)
 	rows.add_child(_label("상태 %s" % String(detail.get("reason_label", "")), 10))
 	var description := String(result.get("description", "")).strip_edges()
@@ -1867,15 +1869,16 @@ func _crafting_detail_row(detail: Dictionary) -> Control:
 	rows.add_child(facts)
 	var craft_button := _button()
 	craft_button.name = "CraftSelectedRecipeButton"
-	craft_button.text = "제작"
-	craft_button.icon = _load_texture(ICON_WORKBENCH)
-	craft_button.expand_icon = true
-	craft_button.add_theme_constant_override("icon_max_width", 18)
-	craft_button.custom_minimum_size = Vector2(160, 34)
+	craft_button.custom_minimum_size = Vector2(160, 42)
 	craft_button.disabled = not bool(detail.get("craftable", false))
 	craft_button.focus_mode = Control.FOCUS_ALL
 	craft_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	craft_button.tooltip_text = String(detail.get("reason_label", "제작"))
+	var craft_button_content := _icon_text_row(ICON_WORKBENCH, "제작", 12)
+	craft_button_content.alignment = BoxContainer.ALIGNMENT_CENTER
+	craft_button_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	(craft_button_content.get_child(1) as Label).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	UiContentBounds.add_safe_content(craft_button, craft_button_content, Vector4(8, 6, 8, 6))
 	var recipe_id := String(detail.get("recipe_id", ""))
 	craft_button.pressed.connect(func():
 		mobile_command_issued.emit(GameCommand.new(GameCommand.Type.CRAFT_RECIPE, Vector2i.ZERO, 0, {"recipe_id": recipe_id}))
@@ -1885,15 +1888,24 @@ func _crafting_detail_row(detail: Dictionary) -> Control:
 
 func _crafting_fact_card(title: String, text: String) -> PanelContainer:
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(104, 42)
+	card.name = "CraftingFactCard"
+	card.custom_minimum_size = Vector2(120, 58)
 	_ignore_mouse(card)
 	card.add_theme_stylebox_override("panel", _menu_card_style(false))
 	var rows := VBoxContainer.new()
+	rows.name = "CenteredContent"
 	_ignore_mouse(rows)
+	rows.alignment = BoxContainer.ALIGNMENT_CENTER
 	rows.add_theme_constant_override("separation", 1)
-	card.add_child(rows)
-	rows.add_child(_label(title, 9))
-	rows.add_child(_wrapped_label(text, 10))
+	UiContentBounds.add_safe_content(card, rows, Vector4(4, 4, 4, 4))
+	var title_label := _label(title, 9)
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rows.add_child(title_label)
+	var text_label := _label(text, 10)
+	UiContentBounds.fit_label(text_label, false, true)
+	text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rows.add_child(text_label)
 	return card
 
 func _show_crafting_detail_popup(recipe_id: String) -> void:
@@ -2821,12 +2833,19 @@ func _wrapped_label(text: String, font_size := 12) -> Label:
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return label
 
-func _card_frame(content: Control, selected := false) -> PanelContainer:
+func _card_frame(content: Control, selected := false, centered := false) -> PanelContainer:
 	var frame := PanelContainer.new()
 	frame.custom_minimum_size = content.custom_minimum_size + Vector2(6, 6)
 	_ignore_mouse(frame)
 	frame.add_theme_stylebox_override("panel", _menu_card_style(selected))
-	frame.add_child(content)
+	if centered:
+		var center := CenterContainer.new()
+		center.name = "ContentCenter"
+		_ignore_mouse(center)
+		frame.add_child(center)
+		center.add_child(content)
+	else:
+		frame.add_child(content)
 	return frame
 
 func _detail_card(title: String) -> PanelContainer:
@@ -2834,7 +2853,12 @@ func _detail_card(title: String) -> PanelContainer:
 	card.name = "DetailCard"
 	card.custom_minimum_size = Vector2(288, 42)
 	_ignore_mouse(card)
-	card.add_theme_stylebox_override("panel", _menu_card_style(false))
+	var card_style := _menu_card_style(false)
+	card_style.content_margin_left += 6.0
+	card_style.content_margin_top += 4.0
+	card_style.content_margin_right += 6.0
+	card_style.content_margin_bottom += 4.0
+	card.add_theme_stylebox_override("panel", card_style)
 	var rows := VBoxContainer.new()
 	rows.name = "Rows"
 	_ignore_mouse(rows)

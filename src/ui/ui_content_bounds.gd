@@ -29,8 +29,9 @@ static func fit_close_button(button: Button) -> Button:
 	button.add_theme_stylebox_override("hover", PixelUiTheme.parchment_button_style())
 	return button
 
-static func add_safe_content(button: Button, content: Control, margins := Vector4(6, 6, 6, 6)) -> MarginContainer:
-	fit_button(button)
+static func add_safe_content(parent: Control, content: Control, margins := Vector4(6, 6, 6, 6)) -> MarginContainer:
+	if parent is Button:
+		fit_button(parent)
 	var safe_area := MarginContainer.new()
 	safe_area.name = "SafeContent"
 	safe_area.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -39,7 +40,7 @@ static func add_safe_content(button: Button, content: Control, margins := Vector
 	safe_area.add_theme_constant_override("margin_top", int(margins.y))
 	safe_area.add_theme_constant_override("margin_right", int(margins.z))
 	safe_area.add_theme_constant_override("margin_bottom", int(margins.w))
-	button.add_child(safe_area)
+	parent.add_child(safe_area)
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	safe_area.add_child(content)
