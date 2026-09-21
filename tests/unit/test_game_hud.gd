@@ -681,14 +681,17 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 func _assert_safe_area_layout_uses_viewport_top(asserts) -> void:
 	var hud := _configured_hud()
 	var status_panel := hud.get_node_or_null("Root/StatusPanel") as Control
+	var map_panel := hud.get_node_or_null("Root/MapPanel") as Control
 	var quickslot_panel := hud.get_node_or_null("Root/QuickSlotPanel") as Control
 	asserts.true_value(status_panel != null, "HUD status panel exists for safe-area layout")
+	asserts.true_value(map_panel != null, "HUD minimap panel exists for safe-area layout")
 	asserts.true_value(quickslot_panel != null, "HUD quickslot panel exists for safe-area layout")
 	if status_panel != null:
 		asserts.equal(int(round(status_panel.position.y)), 12, "status panel anchors to the viewport top margin")
-	if quickslot_panel != null:
-		asserts.equal(int(round(quickslot_panel.position.y)), 12, "quickslot panel anchors to the viewport top margin")
-		asserts.equal(quickslot_panel.size, Vector2(264, 52), "quickslot outer frame keeps its generated image dimensions separate from content")
+	if quickslot_panel != null and status_panel != null and map_panel != null:
+		asserts.false_value(quickslot_panel.get_global_rect().intersects(status_panel.get_global_rect()), "expanded quickslot frame does not overlap the status frame")
+		asserts.false_value(quickslot_panel.get_global_rect().intersects(map_panel.get_global_rect()), "expanded quickslot frame does not overlap the minimap frame")
+		asserts.equal(quickslot_panel.size, Vector2(264, 58), "quickslot outer frame keeps its generated image dimensions separate from content")
 		asserts.true_value(quickslot_panel.get_node_or_null("QuickSlotFrame") is TextureRect, "quickslot frame image stays separate from its content region")
 		asserts.true_value(quickslot_panel.get_node_or_null("QuickSlotContent") is MarginContainer, "quickslot content uses an explicit safe-area container")
 		var quick_rows := quickslot_panel.get_node("QuickSlotContent/QuickSlotRows") as HBoxContainer

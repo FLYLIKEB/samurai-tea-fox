@@ -36,7 +36,7 @@ const PORTRAIT_PLAYER := "portrait_chr_8_muchau"
 
 const BALANCE_ABILITY_SLOTS_ID := "ability_equip_slots"
 const HUD_EDGE_GAP := 4.0
-const STATUS_PANEL_SIZE := Vector2(172, 96)
+const STATUS_PANEL_SIZE := Vector2(184, 104)
 const PORTRAIT_BOX_SIZE := Vector2(40, 40)
 const RESOURCE_ICON_COUNT := 5
 const RESOURCE_ICON_SIZE := Vector2(12, 12)
@@ -55,18 +55,18 @@ const EQUIPMENT_SLOT_SHORT_LABELS := {
 }
 const RESOURCE_DETAIL_PANEL_SIZE := Vector2(172, 62)
 const ENEMY_PANEL_SIZE := Vector2(136, 46)
-const MAP_PANEL_SIZE := Vector2(128, 120)
-const MAP_PANEL_TIME_HEIGHT := 120.0
-const QUICKSLOT_PANEL_SIZE := Vector2(264, 52)
-const QUICKSLOT_CONTENT_MARGIN := Vector4(18, 14, 18, 18)
+const MAP_PANEL_SIZE := Vector2(140, 126)
+const MAP_PANEL_TIME_HEIGHT := 126.0
+const QUICKSLOT_PANEL_SIZE := Vector2(264, 58)
+const QUICKSLOT_CONTENT_MARGIN := Vector4(18, 16, 18, 20)
 const DPAD_BOARD_SIZE := Vector2(96, 96)
 const ACTION_BUTTON_SIZE := Vector2(48, 48)
 const SECONDARY_ACTION_ICON_BUTTON_SIZE := Vector2(20, 20)
 const ACTION_PANEL_SIZE := Vector2(132, 126)
 const ACTION_MENU_PANEL_SIZE := Vector2(280, 180)
-const BOTTOM_NAV_PANEL_SIZE := Vector2(326, 60)
-const SETTINGS_BUTTON_SIZE := Vector2(56, 34)
-const SIDE_SHORTCUT_FRAME_SIZE := Vector2(64, 84)
+const BOTTOM_NAV_PANEL_SIZE := Vector2(340, 66)
+const SETTINGS_BUTTON_SIZE := Vector2(60, 38)
+const SIDE_SHORTCUT_FRAME_SIZE := Vector2(68, 92)
 const ACTION_PANEL_COLUMNS := 2
 const MENU_PANEL_SIZE := Vector2(560, 280)
 const MENU_CONTENT_SIZE := Vector2(544, 228)
@@ -790,7 +790,7 @@ func _update() -> void:
 		_apply_safe_area_layout()
 	var minimap: Dictionary = model.get("minimap", {})
 	_set_label("map_stats", "발견 %d · 표식 %d" % [int(minimap.get("discovered_count", 0)), int(minimap.get("marker_count", 0))] if bool(minimap.get("ok", false)) else "타일 %d · 사물 %d" % [model.terrain_count, model.object_count])
-	_render_minimap_grid(_minimap_grid, minimap.get("minimap", {}) if bool(minimap.get("ok", false)) else {}, Vector2(4, 4))
+	_render_minimap_grid(_minimap_grid, minimap.get("minimap", {}) if bool(minimap.get("ok", false)) else {}, Vector2(3, 3))
 	_set_label("inventory", "%d / %d" % [model.inventory_used_slots, model.inventory_slot_count])
 	_set_label("tea_slots", "%d / %d" % [model.tea_ready_slots, model.tea_quickslot_count])
 	_set_label("consumable", "준비" if model.consumable_ready else "없음")
@@ -2474,7 +2474,7 @@ func _apply_safe_area_layout() -> void:
 	var side_shortcut_top := map_rect.end.y + HUD_EDGE_GAP
 	_place_panel(_panels.side_shortcuts, Control.PRESET_TOP_RIGHT, Vector2(-margin.z, side_shortcut_top))
 	_place_panel(_panels.settings, Control.PRESET_TOP_RIGHT, Vector2(-margin.z - 4.0, side_shortcut_top + 4.0))
-	_place_panel(_panels.facilities_shortcut, Control.PRESET_TOP_RIGHT, Vector2(-margin.z - 4.0, side_shortcut_top + 45.0))
+	_place_panel(_panels.facilities_shortcut, Control.PRESET_TOP_RIGHT, Vector2(-margin.z - 4.0, side_shortcut_top + 47.0))
 	_place_panel(_panels.bottom_nav, Control.PRESET_CENTER_BOTTOM, Vector2(0.0, -margin.w))
 	_panels.bottom_nav.visible = wide_landscape
 	var action_rect := _panel_rect(_panels.action)
