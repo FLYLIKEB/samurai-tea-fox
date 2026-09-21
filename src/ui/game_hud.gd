@@ -561,7 +561,12 @@ func _build() -> void:
 	_ignore_mouse(map_rows)
 	map_rows.add_theme_constant_override("separation", 3)
 	map_panel.add_child(map_rows)
-	_labels.map_title = _add_icon_row(map_rows, ICON_MAP, "초록 평원")
+	_labels.map_title = _label("초록 평원", 9)
+	_labels.map_title.custom_minimum_size = Vector2(0, 14)
+	_labels.map_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_labels.map_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_labels.map_title.add_theme_color_override("font_color", PixelUiTheme.INK_COLOR)
+	map_rows.add_child(_labels.map_title)
 	_build_time_dial_row(map_rows)
 	_labels.map_stats = _label("타일 0 · 사물 0", 11)
 	_labels.map_stats.visible = false
@@ -2291,6 +2296,7 @@ func _build_equipment_strip() -> HBoxContainer:
 		var label := _label(String(EQUIPMENT_SLOT_SHORT_LABELS.get(slot_key, slot_key)), 7)
 		label.name = "ItemName"
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.add_theme_color_override("font_color", Color(0.93, 0.83, 0.63, 1.0))
 		label.custom_minimum_size = Vector2(EQUIPMENT_SLOT_SIZE.x - 4.0, 8.0)
 		label.clip_text = true
 		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
@@ -2332,23 +2338,12 @@ func _set_equipment_slot_empty(slot_key: String, cell: PanelContainer, icon: Tex
 	cell.set_meta("item_id", "")
 	cell.set_meta("slot_key", slot_key)
 	cell.set_meta("name", "")
-	label.text = "%s -" % String(EQUIPMENT_SLOT_SHORT_LABELS.get(slot_key, slot_key))
+	label.text = String(EQUIPMENT_SLOT_SHORT_LABELS.get(slot_key, slot_key))
 	cell.tooltip_text = "%s: 비어 있음" % String(EQUIPMENT_SLOT_LABELS.get(slot_key, slot_key))
 	cell.add_theme_stylebox_override("panel", _equipment_slot_style(false))
 
-func _equipment_slot_display(slot_key: String, name: String) -> String:
-	return "%s %s" % [String(EQUIPMENT_SLOT_SHORT_LABELS.get(slot_key, slot_key)), _compact_equipment_name(name)]
-
-func _compact_equipment_name(name: String) -> String:
-	var trimmed := name.strip_edges()
-	if trimmed.is_empty():
-		return "-"
-	var words := trimmed.split(" ", false)
-	if not words.is_empty():
-		return String(words[0]).left(4)
-	if trimmed.length() <= 4:
-		return trimmed
-	return trimmed.left(4)
+func _equipment_slot_display(slot_key: String, _name: String) -> String:
+	return String(EQUIPMENT_SLOT_SHORT_LABELS.get(slot_key, slot_key))
 
 func _equipment_slot_style(equipped: bool) -> StyleBoxFlat:
 	var bg := Color(0.12, 0.085, 0.055, 0.90) if equipped else Color(0.06, 0.052, 0.042, 0.72)
