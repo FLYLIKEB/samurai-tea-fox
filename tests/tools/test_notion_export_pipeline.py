@@ -1472,6 +1472,18 @@ class NotionExportPipelineTests(unittest.TestCase):
                 self.assertEqual(runtime_id_map["notion_pages"][page_id], stable_id)
                 self.assertEqual(runtime_id_map["legacy_names"]["balance"][korean_name], stable_id)
 
+    def test_dev_150_gather_bonus_balance_ids_are_stable(self):
+        runtime_id_map = json.loads(RUNTIME_ID_MAP.read_text(encoding="utf-8"))
+        expected = {
+            "3e237369-9e66-8196-bd61-eecac9ade536": ("채집 추가 부산물 확률", "gather_bonus_chance"),
+            "3e237369-9e66-81fa-b506-cb8f789bed80": ("채집 추가 부산물 수량", "gather_bonus_quantity"),
+        }
+
+        for page_id, (korean_name, stable_id) in expected.items():
+            with self.subTest(page_id=page_id):
+                self.assertEqual(runtime_id_map["notion_pages"][page_id], stable_id)
+                self.assertEqual(runtime_id_map["legacy_names"]["balance"][korean_name], stable_id)
+
     def test_dev_9_general_biome_balance_export_is_present(self):
         generated = ROOT / "data/generated"
         self.pipeline.validate_directory(generated)

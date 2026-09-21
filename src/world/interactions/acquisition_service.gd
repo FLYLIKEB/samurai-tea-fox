@@ -23,12 +23,14 @@ var gatherables: Dictionary = {}
 var pickups: Dictionary = {}
 var processed_drop_request_ids: Array = []
 var next_pickup_id := 1
+var gather_evaluation_context: Dictionary = {}
 
 func configure(
 	new_inventory,
 	new_world_data,
 	new_gatherable_definitions: Array,
-	new_drop_definitions: Array
+	new_drop_definitions: Array,
+	new_gather_evaluation_context := {}
 ) -> Dictionary:
 	if new_inventory == null or not new_inventory.has_method("has_definition") or not new_inventory.has_method("add_item") or not new_inventory.has_method("get_total_quantity") or not new_inventory.has_method("to_snapshot") or not new_inventory.has_method("load_snapshot"):
 		return _fail("invalid_inventory", "Acquisition requires the Inventory public API.")
@@ -50,6 +52,7 @@ func configure(
 	pickups.clear()
 	processed_drop_request_ids.clear()
 	next_pickup_id = 1
+	gather_evaluation_context = new_gather_evaluation_context.duplicate(true) if new_gather_evaluation_context is Dictionary else {}
 	_emit_changed()
 	return {"ok": true}
 
@@ -95,7 +98,7 @@ func handle_command(command) -> Dictionary:
 		return collect_pickup(target_id)
 	return _fail_and_emit(_fail("unknown_target", "Unknown interaction target: %s" % target_id))
 
-func gather(node_id: String) -> Dictionary:
+func gather(node_id: String, evaluation_context := {}) -> Dictionary:
 	if not gatherables.has(node_id):
 		return _fail_and_emit(_fail("unknown_gatherable", "Unknown gatherable node: %s" % node_id))
 	var node: Dictionary = gatherables[node_id]
@@ -107,25 +110,33 @@ func gather(node_id: String) -> Dictionary:
 	if not tool_result.ok:
 		return _fail_and_emit(tool_result)
 	var position := _vector_from_dictionary(node.position)
-	var result: Dictionary
-	if definition.policy == POLICY_PICKUP:
-		world_data.release_footprint(node_id)
-		result = _spawn_pickup(definition.item_id, definition.quantity, position, {"source_kind": GATHERABLE_KIND, "source_id": node_id, "material_tag": String(definition.get("material_tag", ""))})
-		if not result.ok:
-			_restore_gatherable_reservation(node)
-			return _fail_and_emit(result)
-	else:
-		result = inventory.add_item(definition.item_id, definition.quantity)
-		if not result.ok:
-			if String(result.get("reason", "")) != "inventory_full":
-				return _fail_and_emit(result)
-			world_data.release_footprint(node_id)
-			result = _spawn_pickup(definition.item_id, definition.quantity, position, {"source_kind": GATHERABLE_KIND, "source_id": node_id, "material_tag": String(definition.get("material_tag", ""))})
-			if not result.ok:
-				_restore_gatherable_reservation(node)
-				return _fail_and_emit(result)
-		else:
-			world_data.release_footprint(node_id)
+	var inventory_before: Dictionary = inventory.to_snapshot()
+	var pickup_ids_before: Array = pickups.keys()
+	var next_pickup_id_before := next_pickup_id
+	world_data.release_footprint(node_id)
+	var source := {"source_kind": GATHERABLE_KIND, "source_id": node_id, "material_tag": String(definition.get("material_tag", ""))}
+	var result: Dictionary = _deliver_grant(definition, position, source)
+	if not result.ok:
+		_rollback_gather(node, inventory_before, pickup_ids_before, next_pickup_id_before)
+		return _fail_and_emit(result)
+	var bonus_results: Array = []
+	var bonus_grant: Dictionary = definition.get("bonus_grant", {})
+	if not bonus_grant.is_empty():
+		var context: Dictionary = gather_evaluation_context.duplicate(true)
+		if evaluation_context is Dictionary:
+			context.merge(evaluation_context, true)
+		context["request_id"] = node_id
+		var resolved: Dictionary = DropEvaluator.evaluate(bonus_grant, context)
+		if not resolved.ok:
+			_rollback_gather(node, inventory_before, pickup_ids_before, next_pickup_id_before)
+			return _fail_and_emit(resolved)
+		if resolved.included:
+			var bonus_result := _deliver_grant(resolved.grant, position, {"source_kind": "gatherable_bonus", "source_id": node_id, "drop_id": bonus_grant.drop_id})
+			if not bonus_result.ok:
+				_rollback_gather(node, inventory_before, pickup_ids_before, next_pickup_id_before)
+				return _fail_and_emit(bonus_result)
+			bonus_result["drop_id"] = bonus_grant.drop_id
+			bonus_results.append(bonus_result)
 
 	_apply_depleted_terrain(definition, position)
 	node.depleted = true
@@ -140,7 +151,8 @@ func gather(node_id: String) -> Dictionary:
 		"required_tool_item_id": String(definition.get("required_tool_item_id", "")),
 		"material_tag": String(definition.get("material_tag", "")),
 		"delivery": result.get("delivery", POLICY_DIRECT),
-		"pickup_id": result.get("pickup_id", "")
+		"pickup_id": result.get("pickup_id", ""),
+		"bonus_grants": bonus_results
 	}
 	_emit_changed()
 	acquisition_completed.emit(completed.duplicate(true))
@@ -434,8 +446,15 @@ func _index_gatherable_definitions(rows: Array, target_inventory) -> Dictionary:
 			"policy": grant_result.grant.policy,
 			"required_tool_item_id": required_tool_item_id,
 			"material_tag": String(row.get("material_tag", row.get("interaction_tag", ""))),
-			"depleted_terrain": row.get("depleted_terrain", {}).duplicate(true) if row.get("depleted_terrain", {}) is Dictionary else {}
+			"depleted_terrain": row.get("depleted_terrain", {}).duplicate(true) if row.get("depleted_terrain", {}) is Dictionary else {},
+			"bonus_grant": {}
 		}
+		var raw_bonus = row.get("bonus_grant", {})
+		if raw_bonus is Dictionary and not raw_bonus.is_empty():
+			var bonus_result := _normalize_grant(raw_bonus, target_inventory)
+			if not bonus_result.ok:
+				return bonus_result
+			definitions[id]["bonus_grant"] = bonus_result.grant
 	return {"ok": true, "definitions": definitions}
 
 func _index_drop_definitions(rows: Array, target_inventory) -> Dictionary:
@@ -460,14 +479,22 @@ func _normalize_grant(row, target_inventory) -> Dictionary:
 	if not row is Dictionary:
 		return _fail("invalid_grant", "Acquisition grant must be a dictionary.")
 	var item_id := String(row.get("item_id", ""))
+	var candidate_item_ids: Array = row.get("candidate_item_ids", []).duplicate() if row.get("candidate_item_ids", []) is Array else []
+	candidate_item_ids = candidate_item_ids.map(func(candidate): return String(candidate))
+	candidate_item_ids.sort()
 	var min_quantity := int(row.get("min_quantity", row.get("quantity", 0)))
 	var max_quantity := int(row.get("max_quantity", row.get("quantity", 0)))
 	var chance := float(row.get("chance", 1.0))
 	var condition := String(row.get("condition", "항상"))
 	var drop_id := String(row.get("drop_id", item_id))
 	var policy := String(row.get("policy", POLICY_DIRECT))
-	if item_id.is_empty() or not target_inventory.has_definition(item_id):
+	if item_id.is_empty() == candidate_item_ids.is_empty():
+		return _fail("invalid_grant_target", "Acquisition grant requires exactly one item_id or candidate_item_ids list.")
+	if not item_id.is_empty() and not target_inventory.has_definition(item_id):
 		return _fail("unknown_item", "Acquisition grant references unknown item: %s" % item_id)
+	for candidate_item_id in candidate_item_ids:
+		if candidate_item_id.is_empty() or not target_inventory.has_definition(candidate_item_id):
+			return _fail("unknown_item", "Acquisition grant references unknown candidate item: %s" % candidate_item_id)
 	if min_quantity <= 0 or max_quantity < min_quantity:
 		return _fail("invalid_quantity", "Acquisition quantity range must be positive and ordered.")
 	if not is_finite(chance) or chance < 0.0 or chance > 1.0:
@@ -481,6 +508,7 @@ func _normalize_grant(row, target_inventory) -> Dictionary:
 	return {"ok": true, "grant": {
 		"drop_id": drop_id,
 		"item_id": item_id,
+		"candidate_item_ids": candidate_item_ids,
 		"quantity": min_quantity,
 		"min_quantity": min_quantity,
 		"max_quantity": max_quantity,
@@ -488,6 +516,12 @@ func _normalize_grant(row, target_inventory) -> Dictionary:
 		"condition": condition,
 		"policy": policy
 	}}
+
+func _rollback_gather(node: Dictionary, inventory_before: Dictionary, pickup_ids_before: Array, next_pickup_id_before: int) -> void:
+	inventory.load_snapshot(inventory_before)
+	_rollback_new_pickups(pickup_ids_before)
+	next_pickup_id = next_pickup_id_before
+	_restore_gatherable_reservation(node)
 
 func _normalize_gatherable_snapshot(rows) -> Dictionary:
 	if typeof(rows) != TYPE_ARRAY:

@@ -7,6 +7,9 @@ const WorldGenerator = preload("res://src/world/generation/world_generator.gd")
 
 const TREE_HARVEST_TOOL_ITEM_ID := "stone_axe"
 const TREE_HARVEST_DEFINITION_PREFIX := "terrain_tree_wood"
+const GATHER_BONUS_CHANCE_ID := "gather_bonus_chance"
+const GATHER_BONUS_QUANTITY_ID := "gather_bonus_quantity"
+const GATHER_BONUS_DROP_ID := "gather_bonus"
 
 var catalog
 var inventory
@@ -29,7 +32,10 @@ func confirmed_generated_resource_definitions(resource_nodes: Array) -> Array:
 		var item: Dictionary = catalog.find_by_id("items", resource_id)
 		if String(item.get("status", "")) != "확정" or (not bool(node.get("ground_pickup", false)) and not is_generated_resource_item_type(String(item.get("type", "")))):
 			continue
-		definitions.append({"id": resource_id, "item_id": resource_id, "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT, "material_tag": String(node.get("material_tag", "")), "required_tool_item_id": required_tool_for_resource_node(resource_id, node)})
+		var definition := {"id": resource_id, "item_id": resource_id, "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT, "material_tag": String(node.get("material_tag", "")), "required_tool_item_id": required_tool_for_resource_node(resource_id, node)}
+		if _resource_action_for_node(resource_id, node) in ["chop", "mine"]:
+			definition = with_gather_bonus(definition)
+		definitions.append(definition)
 		seen[resource_id] = true
 	return definitions
 
@@ -46,7 +52,7 @@ func terrain_tree_gatherable_definitions() -> Array:
 		if tree_profile.is_empty():
 			continue
 		var position := _vector_from_dictionary(cell.get("position", {}))
-		definitions.append({
+		definitions.append(with_gather_bonus({
 			"id": terrain_tree_gatherable_id(position),
 			"item_id": "wood",
 			"quantity": 1,
@@ -54,7 +60,7 @@ func terrain_tree_gatherable_definitions() -> Array:
 			"material_tag": "wood",
 			"required_tool_item_id": TREE_HARVEST_TOOL_ITEM_ID,
 			"depleted_terrain": tree_profile
-		})
+		}))
 	return definitions
 
 func register_terrain_tree_gatherables(definition_ids: Dictionary, acquisition_service) -> Dictionary:
@@ -91,7 +97,7 @@ func mountain_mineral_gatherable_definitions() -> Array:
 		var position := _vector_from_dictionary(cell.get("position", {}))
 		var node_id := "terrain_mountain_mineral_%d_%d" % [position.x, position.y]
 		var item_id := "iron_ore" if absi(position.x * 31 + position.y * 17) % 3 == 0 else "stone"
-		definitions.append({
+		definitions.append(with_gather_bonus({
 			"id": node_id,
 			"item_id": item_id,
 			"quantity": 1,
@@ -99,8 +105,52 @@ func mountain_mineral_gatherable_definitions() -> Array:
 			"material_tag": "stone",
 			"required_tool_item_id": required_tool_for_resource_interaction(item_id, node_kind_for_resource_action(item_id, "mine")),
 			"depleted_terrain": {"id": WorldGenerator.TERRAIN_MOUNTAIN_SLOPE, "walkable": true}
-		})
+		}))
 	return definitions
+
+func with_gather_bonus(definition: Dictionary) -> Dictionary:
+	var result := definition.duplicate(true)
+	var primary_item_id := String(result.get("item_id", ""))
+	var candidates := _confirmed_biome_resource_ids_except(primary_item_id)
+	var chance: float = catalog.find_balance_value(GATHER_BONUS_CHANCE_ID, 0.0) if catalog != null and catalog.has_method("find_balance_value") else 0.0
+	var quantity := int(catalog.find_balance_value(GATHER_BONUS_QUANTITY_ID, 0.0)) if catalog != null and catalog.has_method("find_balance_value") else 0
+	if candidates.is_empty() or chance <= 0.0 or quantity <= 0:
+		return result
+	result["bonus_grant"] = {
+		"drop_id": GATHER_BONUS_DROP_ID,
+		"candidate_item_ids": candidates,
+		"quantity": quantity,
+		"chance": chance,
+		"condition": "항상",
+		"policy": AcquisitionService.POLICY_DIRECT
+	}
+	return result
+
+func gather_evaluation_context(run_seed: int) -> Dictionary:
+	return {"run_seed": run_seed, "data_version": String(catalog.data_version) if catalog != null else ""}
+
+func _confirmed_biome_resource_ids_except(primary_item_id: String) -> Array:
+	if catalog == null:
+		return []
+	var biome: Dictionary = catalog.find_by_id("biomes", biome_id)
+	var candidates: Array = []
+	for resource_id in biome.get("generation_resource_item_ids", []):
+		var candidate_id := String(resource_id)
+		var item: Dictionary = catalog.find_by_id("items", candidate_id)
+		if candidate_id != primary_item_id and String(item.get("status", "")) == "확정":
+			candidates.append(candidate_id)
+	candidates.sort()
+	return candidates
+
+func _resource_action_for_node(item_id: String, node: Dictionary) -> String:
+	var node_kind := String(node.get("node_kind", ""))
+	if node_kind.is_empty():
+		node_kind = node_kind_for_resource_context(item_id, biome_id)
+	var item: Dictionary = catalog.find_by_id("items", item_id) if catalog != null else {}
+	for rule in item.get("interaction_definition", {}).get("rules", []):
+		if rule is Dictionary and String(rule.get("node_kind", "")) == node_kind:
+			return String(rule.get("action", ""))
+	return ""
 
 func required_tool_for_resource_node(resource_id: String, node: Dictionary) -> String:
 	var node_kind := String(node.get("node_kind", ""))

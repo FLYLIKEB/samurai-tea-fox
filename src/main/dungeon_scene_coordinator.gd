@@ -182,8 +182,14 @@ func enter_dungeon_map(main, layout: WorldData, definition: Dictionary, is_new_e
 			var node_kind := String(node.get("node_kind", ""))
 			if node_kind.is_empty():
 				node_kind = main._acquisition_definitions().node_kind_for_resource_action(item_id, "mine")
-			dungeon_definitions.append({"id": String(node.id), "item_id": item_id, "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT, "material_tag": String(node.get("material_tag", "")), "required_tool_item_id": main._acquisition_definitions().required_tool_for_resource_interaction(item_id, node_kind)})
-		var dungeon_acquisition_result: Dictionary = main.acquisition_service.configure(main.inventory, main.world_data, dungeon_definitions, main._generated_drop_definitions())
+			dungeon_definitions.append(main._acquisition_definitions().with_gather_bonus({"id": String(node.id), "item_id": item_id, "quantity": 1, "policy": AcquisitionService.POLICY_DIRECT, "material_tag": String(node.get("material_tag", "")), "required_tool_item_id": main._acquisition_definitions().required_tool_for_resource_interaction(item_id, node_kind)}))
+		var dungeon_acquisition_result: Dictionary = main.acquisition_service.configure(
+			main.inventory,
+			main.world_data,
+			dungeon_definitions,
+			main._generated_drop_definitions(),
+			main._acquisition_definitions().gather_evaluation_context(int(main.run_state.seed) if main.run_state != null else main.FRESH_RUN_SEED)
+		)
 		if not dungeon_acquisition_result.ok:
 			main._dungeon_debug("광석 상호작용 설정 실패: %s" % dungeon_acquisition_result)
 		else:

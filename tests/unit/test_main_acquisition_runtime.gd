@@ -211,6 +211,9 @@ func _assert_tree_terrain_requires_crafted_axe_and_disappears(asserts, catalog: 
 		return
 	var main: Main = runtime.main
 	var tree_id := "terrain_tree_wood_1_0"
+	var tree_definitions: Array = main._acquisition_definitions().terrain_tree_gatherable_definitions()
+	var tree_definition: Dictionary = tree_definitions.filter(func(definition): return String(definition.get("id", "")) == tree_id)[0]
+	_assert_gather_bonus_contract(asserts, tree_definition, ["clay", "stone"], "common tree")
 	asserts.equal(main.acquisition_service.gatherable_for(tree_id).definition_id, tree_id, "main registers blocking tree terrain as a stable gatherable")
 	asserts.false_value(main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": tree_id})), "tree terrain cannot be harvested without an axe")
 	asserts.equal(main.inventory.get_total_quantity("wood"), 0, "failed tree harvest grants no wood")
@@ -272,6 +275,11 @@ func _assert_stone_pickaxe_crafts_from_bootstrap_stones_and_mines_ore(asserts, c
 		asserts.true_value(not mineral_id.is_empty(), "mountain runtime registers mineable terrain mineral")
 		var mineral_before: Dictionary = mountain_runtime.main.acquisition_service.gatherable_for(mineral_id)
 		var item_id := String(mineral_before.get("item_id", ""))
+		var mineral_definitions: Array = mountain_runtime.main._acquisition_definitions().mountain_mineral_gatherable_definitions()
+		var mineral_definition: Dictionary = mineral_definitions.filter(func(definition): return String(definition.get("id", "")) == mineral_id)[0]
+		var expected_candidates := ["copper_ore", "iron_ore", "stone", "wood"]
+		expected_candidates.erase(item_id)
+		_assert_gather_bonus_contract(asserts, mineral_definition, expected_candidates, "mountain mineral")
 		var ore_before: int = mountain_runtime.main.inventory.get_total_quantity(item_id)
 		asserts.true_value(mountain_runtime.main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": mineral_id})), "mountain mineral mines with stone pickaxe")
 		var mined: Dictionary = mountain_runtime.main.acquisition_service.gatherable_for(mineral_id)
@@ -281,6 +289,12 @@ func _assert_stone_pickaxe_crafts_from_bootstrap_stones_and_mines_ore(asserts, c
 		asserts.equal(mountain_runtime.main.inventory.get_total_quantity(item_id), ore_before + 1, "mountain mining grants configured mineral")
 	mountain_runtime.main.free()
 	main.free()
+
+func _assert_gather_bonus_contract(asserts, definition: Dictionary, expected_candidates: Array, label: String) -> void:
+	var bonus: Dictionary = definition.get("bonus_grant", {})
+	asserts.equal(float(bonus.get("chance", 0.0)), 0.2, "%s uses canonical bonus chance" % label)
+	asserts.equal(int(bonus.get("quantity", 0)), 1, "%s uses canonical bonus quantity" % label)
+	asserts.equal(bonus.get("candidate_item_ids", []), expected_candidates, "%s uses sorted other-biome resources" % label)
 
 func _assert_biome_transition_scopes_acquisition_snapshots(asserts, catalog: DataCatalog) -> void:
 	var fixture := _transition_runtime(catalog, "scope")
