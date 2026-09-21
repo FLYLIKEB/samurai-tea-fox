@@ -65,7 +65,7 @@ const ACTION_BUTTON_SIZE := Vector2(48, 48)
 const SECONDARY_ACTION_ICON_BUTTON_SIZE := Vector2(20, 20)
 const ACTION_PANEL_SIZE := Vector2(132, 126)
 const ACTION_MENU_PANEL_SIZE := Vector2(280, 180)
-const BOTTOM_NAV_PANEL_SIZE := Vector2(340, 66)
+const BOTTOM_NAV_PANEL_SIZE := Vector2(340, 84)
 const SETTINGS_BUTTON_SIZE := Vector2(60, 38)
 const SIDE_SHORTCUT_FRAME_SIZE := Vector2(68, 92)
 const ACTION_PANEL_COLUMNS := 2
@@ -968,15 +968,15 @@ func _add_bottom_nav_item(parent: Container, name: String, icon_path: String, te
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	icon.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	icon.position = Vector2(-9, 2)
-	icon.size = Vector2(18, 18)
+	icon.position = Vector2(-7, 2)
+	icon.size = Vector2(14, 14)
 	_ignore_mouse(icon)
 	button.add_child(icon)
 	var label := _label(text, 9)
 	label.name = "Label"
 	label.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	label.offset_top = -21
-	label.offset_bottom = -7
+	label.offset_top = -20
+	label.offset_bottom = -6
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_color_override("font_color", PixelUiTheme.INK_COLOR)
 	_ignore_mouse(label)
