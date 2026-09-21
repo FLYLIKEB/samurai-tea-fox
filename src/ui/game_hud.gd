@@ -14,6 +14,11 @@ const InventoryMenuBuilder = preload("res://src/ui/hud/inventory_menu_builder.gd
 const CraftingMenuBuilder = preload("res://src/ui/hud/crafting_menu_builder.gd")
 const TeaBrewingMenuBuilder = preload("res://src/ui/hud/tea_brewing_menu_builder.gd")
 const MetaCodexMenuBuilder = preload("res://src/ui/hud/meta_codex_menu_builder.gd")
+const StatusToastPresenter = preload("res://src/ui/hud/status_toast_presenter.gd")
+const StatusPanelPresenter = preload("res://src/ui/hud/status_panel_presenter.gd")
+const MapPanelPresenter = preload("res://src/ui/hud/map_panel_presenter.gd")
+const MobileControlsPresenter = preload("res://src/ui/hud/mobile_controls_presenter.gd")
+const SettingsPresenter = preload("res://src/ui/hud/settings_presenter.gd")
 
 const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
 const ICON_HP := "ui_hp_heart_icon"
@@ -96,49 +101,6 @@ const TOAST_BIOME_TRANSITION := "biome_transition"
 const TOAST_REGION_TRANSITION := "region_transition"
 const TOAST_MAP_TRANSITION := "map_transition"
 
-class TimeDial:
-	extends Control
-
-	var phase := "day"
-	var progress_percent := 0
-
-	func set_time(value_phase: String, value_progress_percent: int) -> void:
-		phase = value_phase
-		progress_percent = clampi(value_progress_percent, 0, 100)
-		queue_redraw()
-
-	func _draw() -> void:
-		var center := size * 0.5
-		var radius := minf(size.x, size.y) * 0.5 - 2.0
-		var track_color := Color(0.29, 0.25, 0.22, 0.92)
-		var progress_color := _phase_color()
-		draw_circle(center, radius, Color(0.055, 0.049, 0.038, 0.96))
-		draw_arc(center, radius, 0.0, TAU, 16, track_color, 2.0, false)
-		var filled_segments := int(ceil(float(progress_percent) / 100.0 * 12.0))
-		for segment in range(filled_segments):
-			var start_angle := -PI * 0.5 + TAU * float(segment) / 12.0
-			var end_angle := start_angle + TAU / 12.0 - 0.07
-			draw_arc(center, radius, start_angle, end_angle, 2, progress_color, 2.0, false)
-		_draw_phase_mark(center, progress_color)
-
-	func _draw_phase_mark(center: Vector2, color: Color) -> void:
-		if phase == "night":
-			draw_circle(center - Vector2(1.0, 0.0), 4.0, color)
-			draw_circle(center + Vector2(1.0, -1.0), 4.0, Color(0.055, 0.049, 0.038, 1.0))
-			return
-		draw_circle(center, 3.0, color)
-		for direction in [Vector2.UP, Vector2.RIGHT, Vector2.DOWN, Vector2.LEFT]:
-			draw_line(center + direction * 5.0, center + direction * 7.0, color, 1.0, false)
-
-	func _phase_color() -> Color:
-		match phase:
-			"night":
-				return Color(0.37, 0.53, 0.69, 1.0)
-			"dusk":
-				return Color(0.83, 0.50, 0.18, 1.0)
-			_:
-				return Color(0.84, 0.65, 0.36, 1.0)
-
 signal mobile_command_issued(command)
 
 signal movement_button_changed(direction: Vector2i)
@@ -149,39 +111,28 @@ signal return_to_start_requested
 var asset_catalog := AssetCatalog.new()
 var _asset_catalog_ready := false
 var _content_image_map_ready := false
-var _toast_queue: Array[Dictionary] = []
-var _active_toast: Dictionary = {}
-var _toast_label: Label
-var _toast_icon: TextureRect
-var _toast_panel: PanelContainer
-var _toast_remaining := 0.0
 var _crafting_filter := "all"
 var _selected_recipe_id := ""
-var _selected_map_biome_id := ""
 var read_model_provider := GameHudReadModelProvider.new()
 var _labels: Dictionary = {}
 var _panels: Dictionary = {}
-var _equipment_slots: Dictionary = {}
 var _mobile_adapter := MobileCommandAdapter.new()
 var _built := false
 var _theme: Theme
 var _time_refresh_elapsed := 0.0
-var _action_menu_open := false
-var _action_grid: GridContainer
-var _secondary_action_bar: GridContainer
-var _interaction_button: Button
 var _menu_content: VBoxContainer
-var _minimap_grid: GridContainer
 var _action_scroll: ScrollContainer
 var _narrative_presenter: NarrativeDialoguePresenter
 var _detail_popup: Control
 var _open_menu_id := ""
-var _time_dial: TimeDial
-var _resource_detail_label: Label
-var _resource_detail_id := ""
 var _facility_placement_panel: PanelContainer
 var _facility_placement_install_button: Button
 var _facility_placement_status: Label
+var _toast_presenter := StatusToastPresenter.new()
+var _status_presenter := StatusPanelPresenter.new()
+var _map_presenter := MapPanelPresenter.new()
+var _mobile_presenter := MobileControlsPresenter.new()
+var _settings_presenter := SettingsPresenter.new()
 
 func _ready() -> void:
 	_build()
@@ -197,7 +148,7 @@ func configure(player_node, generated_world: Dictionary, generated_render_result
 		read_model_provider = GameHudReadModelProvider.new()
 		read_model_provider.configure(player_node, generated_world, generated_render_result, runtime_context)
 	_build()
-	_rebuild_action_buttons()
+	_mobile_presenter.rebuild_actions()
 	_apply_safe_area_layout()
 	_bind_runtime_signals()
 	_update()
@@ -208,23 +159,7 @@ func runtime_read_model() -> Dictionary:
 	return read_model_provider.read_model()
 
 func equipment_hud_snapshot() -> Dictionary:
-	var snapshot := {}
-	for slot_key in EQUIPMENT_SLOT_KEYS:
-		var nodes: Dictionary = _equipment_slots.get(slot_key, {})
-		var label := nodes.get("name") as Label
-		var icon := nodes.get("icon") as TextureRect
-		var cell := nodes.get("cell") as Control
-		snapshot[slot_key] = {
-			"slot_key": slot_key,
-			"slot_label": String(EQUIPMENT_SLOT_LABELS.get(slot_key, slot_key)),
-			"item_id": String(cell.get_meta("item_id", "") if cell != null else ""),
-			"name": String(cell.get_meta("name", "") if cell != null else ""),
-			"display_text": label.text if label != null else "",
-			"icon_reference": String(icon.get_meta("icon_reference", "") if icon != null else ""),
-			"icon_has_texture": icon != null and icon.texture != null,
-			"tooltip": cell.tooltip_text if cell != null else ""
-		}
-	return snapshot
+	return _status_presenter.equipment_hud_snapshot()
 
 func press_mobile_button(button_id: String, direction := Vector2i.ZERO, slot := 0) -> bool:
 	if button_id == "repair_teleport":
@@ -281,7 +216,7 @@ func show_meta_codex_menu() -> bool:
 
 func show_map_menu() -> bool:
 	_open_menu_id = "map"
-	_selected_map_biome_id = _current_biome_id()
+	_map_presenter.reset_selection(_current_biome_id())
 	_show_menu("지도", _map_rows())
 	return true
 
@@ -335,48 +270,17 @@ func show_command_feedback(message: String) -> void:
 		_refresh_open_menu()
 
 func show_status_toast(message: String, kind := "info") -> void:
-	_enqueue_status_toast({"message": message, "kind": kind, "event_key": "message:%s" % message})
+	_toast_presenter.enqueue({"message": message, "kind": kind, "event_key": "message:%s" % message})
 
 func show_status_event(event: Dictionary) -> bool:
 	var model := _status_toast_model(event)
 	if model.is_empty():
 		return false
 	model["kind"] = String(event.get("kind", "success"))
-	return _enqueue_status_toast(model)
+	return _toast_presenter.enqueue(model)
 
 func status_toast_debug_snapshot() -> Dictionary:
-	return {
-		"active": _active_toast.duplicate(true),
-		"queue": _toast_queue.duplicate(true),
-		"remaining": _toast_remaining,
-		"panel_visible": _toast_panel != null and _toast_panel.visible,
-		"label_text": _toast_label.text if _toast_label != null else "",
-		"icon_visible": _toast_icon != null and _toast_icon.visible,
-		"icon_has_texture": _toast_icon != null and _toast_icon.texture != null
-	}
-
-func _enqueue_status_toast(model: Dictionary) -> bool:
-	var message := String(model.get("message", ""))
-	if message.is_empty():
-		return false
-	var event_key := String(model.get("event_key", message))
-	if _active_toast_key() == event_key:
-		return false
-	for pending in _toast_queue:
-		if String(pending.get("event_key", "")) == event_key:
-			return false
-	model["event_key"] = event_key
-	if _active_toast.is_empty() and _toast_queue.size() >= STATUS_TOAST_MAX_VISIBLE_QUEUE:
-		_toast_queue.pop_front()
-	elif not _active_toast.is_empty() and _toast_queue.size() >= STATUS_TOAST_MAX_VISIBLE_QUEUE - 1:
-		_toast_queue.pop_front()
-	_toast_queue.append(model)
-	if _toast_label != null and _toast_remaining <= 0.0:
-		_advance_status_toast()
-	return true
-
-func _active_toast_key() -> String:
-	return String(_active_toast.get("event_key", ""))
+	return _toast_presenter.debug_snapshot()
 
 func _status_toast_model(event: Dictionary) -> Dictionary:
 	if event.is_empty() or not bool(event.get("ok", true)):
@@ -461,23 +365,8 @@ func _ensure_content_image_map() -> bool:
 	push_warning("HUD content image map failed: %s" % result.get("error", "unknown error"))
 	return false
 
-func _apply_status_toast_model(model: Dictionary) -> void:
-	_toast_label.text = String(model.get("message", ""))
-	var icon_reference := String(model.get("icon_reference", ""))
-	var texture := _load_texture(icon_reference) if not icon_reference.is_empty() else null
-	if _toast_icon != null:
-		_toast_icon.texture = texture
-		_toast_icon.visible = texture != null
-	_toast_label.visible = true
-	_toast_panel.visible = true
-	_toast_remaining = STATUS_TOAST_DURATION
-	status_toast_presented.emit(String(model.get("kind", "info")), String(model.get("event_key", "")))
-
 func _process(delta: float) -> void:
-	if _toast_label != null and _toast_remaining > 0.0:
-		_toast_remaining -= maxf(delta, 0.0)
-		if _toast_remaining <= 0.0:
-			_advance_status_toast()
+	_toast_presenter.tick(delta)
 	var model := runtime_read_model()
 	if not bool(model.get("time_visible", false)):
 		return
@@ -503,98 +392,25 @@ func _build() -> void:
 	_ignore_mouse(root)
 	root.theme = _theme
 	add_child(root)
-	_toast_panel = _panel(STATUS_TOAST_PANEL_SIZE)
-	_toast_panel.name = "StatusToastPanel"
-	_toast_panel.z_index = 100
-	_toast_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_toast_panel.visible = false
-	root.add_child(_toast_panel)
-	var toast_row := HBoxContainer.new()
-	toast_row.name = "StatusToastRow"
-	toast_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	toast_row.add_theme_constant_override("separation", 5)
-	_ignore_mouse(toast_row)
-	_toast_panel.add_child(toast_row)
-	_toast_icon = TextureRect.new()
-	_toast_icon.name = "StatusToastIcon"
-	_toast_icon.custom_minimum_size = STATUS_TOAST_ICON_SIZE
-	_toast_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	_toast_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_toast_icon.visible = false
-	_ignore_mouse(_toast_icon)
-	toast_row.add_child(_toast_icon)
-	_toast_label = _label("", 12)
-	_toast_label.name = "StatusToastLabel"
-	_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_toast_label.clip_text = true
-	_toast_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	_toast_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_toast_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_toast_label.visible = false
-	toast_row.add_child(_toast_label)
-
-	var status_panel := _panel(STATUS_PANEL_SIZE)
-	status_panel.name = "StatusPanel"
-	status_panel.clip_contents = true
-	status_panel.theme = PixelUiTheme.create_parchment()
-	status_panel.add_theme_stylebox_override("panel", PixelUiTheme.hud_status_style())
-	root.add_child(status_panel)
-	_panels.status = status_panel
-	var status_body := HBoxContainer.new()
-	status_body.name = "StatusBody"
-	_ignore_mouse(status_body)
-	status_body.add_theme_constant_override("separation", 6)
-	status_panel.add_child(status_body)
-	var portrait_box := _portrait_box(PORTRAIT_PLAYER)
-	portrait_box.name = "PlayerPortrait"
-	status_body.add_child(portrait_box)
-	var status_rows := VBoxContainer.new()
-	status_rows.name = "StatusRows"
-	_ignore_mouse(status_rows)
-	status_rows.add_theme_constant_override("separation", 1)
-	status_body.add_child(status_rows)
-	_labels.hp = _add_resource_icon_row(status_rows, "hp", ICON_HP, "체력", Color(0.86, 0.28, 0.16, 1.0))
-	_labels.ki = _add_resource_icon_row(status_rows, "ki", ICON_KI, "기운", Color(0.82, 0.53, 0.19, 1.0))
-	_labels.kokoro = _add_resource_icon_row(status_rows, "kokoro", ICON_KOKORO, "心", Color(0.48, 0.40, 0.56, 1.0))
-	status_rows.add_child(_build_equipment_strip())
-	_build_resource_detail_panel(root)
-
-	var map_panel := _panel(MAP_PANEL_SIZE)
-	map_panel.name = "MapPanel"
-	map_panel.clip_contents = true
-	map_panel.add_theme_stylebox_override("panel", PixelUiTheme.hud_minimap_style())
-	root.add_child(map_panel)
-	_panels.map = map_panel
-	var map_rows := VBoxContainer.new()
-	map_rows.name = "MapRows"
-	_ignore_mouse(map_rows)
-	map_rows.add_theme_constant_override("separation", 3)
-	map_panel.add_child(map_rows)
-	_labels.map_title = _label("초록 평원", 9)
-	_labels.map_title.custom_minimum_size = Vector2(0, 14)
-	_labels.map_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_labels.map_title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_labels.map_title.add_theme_color_override("font_color", PixelUiTheme.INK_COLOR)
-	map_rows.add_child(_labels.map_title)
-	_build_time_dial_row(map_rows)
-	_labels.map_stats = _label("타일 0 · 사물 0", 11)
-	_labels.map_stats.visible = false
-	map_rows.add_child(_labels.map_stats)
-	_minimap_grid = GridContainer.new()
-	_minimap_grid.name = "MinimapGrid"
-	_minimap_grid.columns = 11
-	_minimap_grid.add_theme_constant_override("h_separation", 1)
-	_minimap_grid.add_theme_constant_override("v_separation", 1)
-	_ignore_mouse(_minimap_grid)
-	map_rows.add_child(_minimap_grid)
-	var map_open_button := _button()
-	map_open_button.name = "MapOpenButton"
-	map_open_button.flat = true
-	map_open_button.tooltip_text = "지도 열기"
-	map_open_button.focus_mode = Control.FOCUS_NONE
-	map_open_button.mouse_filter = Control.MOUSE_FILTER_STOP
-	map_open_button.pressed.connect(func(): press_mobile_button("open_map"))
-	map_panel.add_child(map_open_button)
+	_panels.merge(_toast_presenter.build(root, {
+		"texture_resolver": Callable(self, "_load_texture"),
+		"presented": Callable(self, "_emit_status_toast_presented")
+	}), true)
+	_panels.merge(_status_presenter.build(root, {
+		"texture_resolver": Callable(self, "_load_texture"),
+		"item_icon_reference": Callable(self, "_item_icon_reference"),
+		"request_layout": Callable(self, "_apply_safe_area_layout"),
+		"runtime_read_model": Callable(self, "runtime_read_model")
+	}), true)
+	_labels.merge(_status_presenter.labels, true)
+	_panels.merge(_map_presenter.build(root, {
+		"texture_resolver": Callable(self, "_load_texture"),
+		"press_mobile_button": Callable(self, "press_mobile_button"),
+		"show_detail_popup": Callable(self, "_show_detail_popup"),
+		"request_map_refresh": Callable(self, "_refresh_map_menu"),
+		"emit_command": Callable(self, "_emit_mobile_command")
+	}), true)
+	_labels.merge(_map_presenter.labels, true)
 
 	var enemy_panel := _panel(ENEMY_PANEL_SIZE)
 	enemy_panel.name = "EnemyPanel"
@@ -649,76 +465,18 @@ func _build() -> void:
 	for row in quick_rows.get_children():
 		(row as Control).size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
-	var dpad_panel := _unstyled_panel(DPAD_BOARD_SIZE)
-	dpad_panel.name = "DPadPanel"
-	root.add_child(dpad_panel)
-	_panels.dpad = dpad_panel
-	_build_dpad(dpad_panel)
-
-	var action_panel := _unstyled_panel(ACTION_PANEL_SIZE)
-	action_panel.name = "ActionPanel"
-	root.add_child(action_panel)
-	_panels.action = action_panel
-	_build_actions(action_panel)
-
-	var action_menu_panel := _panel(ACTION_MENU_PANEL_SIZE)
-	action_menu_panel.name = "ActionMenuPanel"
-	action_menu_panel.visible = false
-	root.add_child(action_menu_panel)
-	_panels.action_menu = action_menu_panel
-	_build_settings_panel(action_menu_panel)
-
-	var settings_button := _button()
-	var side_shortcut_frame := TextureRect.new()
-	side_shortcut_frame.name = "SideShortcutFrame"
-	side_shortcut_frame.custom_minimum_size = SIDE_SHORTCUT_FRAME_SIZE
-	side_shortcut_frame.texture = load("res://assets/ui/generated/hud_side_shortcuts_frame.png") as Texture2D
-	side_shortcut_frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	side_shortcut_frame.stretch_mode = TextureRect.STRETCH_SCALE
-	_ignore_mouse(side_shortcut_frame)
-	root.add_child(side_shortcut_frame)
-	_panels.side_shortcuts = side_shortcut_frame
-
-	settings_button.name = "SettingsButton"
-	settings_button.custom_minimum_size = SETTINGS_BUTTON_SIZE
-	settings_button.text = "설정"
-	settings_button.tooltip_text = "설정"
-	settings_button.focus_mode = Control.FOCUS_NONE
-	settings_button.mouse_filter = Control.MOUSE_FILTER_STOP
-	settings_button.add_theme_font_size_override("font_size", 9)
-	_apply_empty_button_style(settings_button)
-	settings_button.pressed.connect(_toggle_action_menu)
-	root.add_child(settings_button)
-	_panels.settings = settings_button
-	var facilities_button := _button()
-	facilities_button.name = "FacilitiesShortcutButton"
-	facilities_button.custom_minimum_size = SETTINGS_BUTTON_SIZE
-	facilities_button.text = "시설"
-	facilities_button.tooltip_text = "시설"
-	facilities_button.focus_mode = Control.FOCUS_NONE
-	facilities_button.mouse_filter = Control.MOUSE_FILTER_STOP
-	facilities_button.add_theme_font_size_override("font_size", 9)
-	_apply_empty_button_style(facilities_button)
-	facilities_button.pressed.connect(func(): press_mobile_button("open_facilities"))
-	root.add_child(facilities_button)
-	_panels.facilities_shortcut = facilities_button
-
-	var bottom_nav := _panel(BOTTOM_NAV_PANEL_SIZE)
-	bottom_nav.name = "BottomNavPanel"
-	bottom_nav.clip_contents = true
-	bottom_nav.add_theme_stylebox_override("panel", PixelUiTheme.hud_bottom_nav_style())
-	root.add_child(bottom_nav)
-	_panels.bottom_nav = bottom_nav
-	var bottom_nav_row := HBoxContainer.new()
-	bottom_nav_row.name = "BottomNavRow"
-	bottom_nav_row.add_theme_constant_override("separation", 5)
-	_ignore_mouse(bottom_nav_row)
-	bottom_nav.add_child(bottom_nav_row)
-	_add_bottom_nav_item(bottom_nav_row, "TeaBrewingNavButton", ICON_TEA_WARE, "다구", "open_tea_brewing")
-	_add_bottom_nav_item(bottom_nav_row, "InventoryNavButton", ICON_BAG, "가방", "open_inventory")
-	_add_bottom_nav_item(bottom_nav_row, "TeaNavButton", ICON_TEA, "차", "drink_tea")
-	_add_bottom_nav_item(bottom_nav_row, "CodexNavButton", ICON_SCROLL, "도감", "open_meta_codex")
-	_add_bottom_nav_item(bottom_nav_row, "CraftingNavButton", ICON_CRAFTING_SHORTCUT, "제작", "open_crafting")
+	_panels.merge(_mobile_presenter.build(root, {
+		"texture_resolver": Callable(self, "_load_texture"),
+		"press_mobile_button": Callable(self, "press_mobile_button"),
+		"movement_changed": Callable(self, "_emit_movement_button_changed"),
+		"tea_quickslot_count": Callable(self, "_tea_quickslot_count"),
+		"balance_integer": Callable(self, "_balance_integer")
+	}), true)
+	_panels.merge(_settings_presenter.build(root, {
+		"request_layout": Callable(self, "_apply_safe_area_layout"),
+		"return_to_start": Callable(self, "_emit_return_to_start_requested")
+	}), true)
+	_restore_touch_control_child_order(root)
 
 	var menu_panel := _menu_panel(MENU_PANEL_SIZE)
 	menu_panel.name = "MenuPanel"
@@ -768,19 +526,9 @@ func _update() -> void:
 	if not _built:
 		return
 	var model := runtime_read_model()
-	_set_label("hp", "체력")
-	_set_label("ki", "기운")
-	_set_label("kokoro", "心")
-	_update_resource_icons("hp_icons", model.hp, model.hp_max)
-	_update_resource_icons("ki_icons", model.ki, model.ki_max)
-	_update_resource_icons("kokoro_icons", model.kokoro, model.kokoro_max)
-	_update_equipment_strip(model.get("equipment", {}))
-	_update_resource_detail(model)
-	_set_label("map_title", model.biome_label)
-	_set_label("time_phase", String(model.time_phase_label))
-	_set_label("time_progress", "%d%%" % int(model.time_progress_percent))
-	if _time_dial != null:
-		_time_dial.set_time(String(model.time_phase), int(model.time_progress_percent))
+	_status_presenter.update(model)
+	if _map_presenter.update(model):
+		_apply_safe_area_layout()
 	var combat_model: Dictionary = model.get("combat_target", {})
 	var enemy_panel := _panels.get("enemy") as Control
 	if enemy_panel != null:
@@ -788,17 +536,6 @@ func _update() -> void:
 	_set_label("enemy_name", String(combat_model.get("name", "적 없음")))
 	_set_label("enemy_hp", "HP %d/%d" % [int(combat_model.get("hp", 0)), int(combat_model.get("hp_max", 0))])
 	_set_label("enemy_attack", "무기 공격 %d" % int(combat_model.get("attack", 0)))
-	var time_label := _labels.get("time_phase") as Label
-	if time_label != null:
-		time_label.get_parent().get_parent().visible = bool(model.get("time_visible", false))
-	var map_panel := _panels.get("map") as Control
-	var map_height := MAP_PANEL_TIME_HEIGHT if bool(model.get("time_visible", false)) else MAP_PANEL_SIZE.y
-	if map_panel != null and not is_equal_approx(map_panel.custom_minimum_size.y, map_height):
-		map_panel.custom_minimum_size.y = map_height
-		_apply_safe_area_layout()
-	var minimap: Dictionary = model.get("minimap", {})
-	_set_label("map_stats", "발견 %d · 표식 %d" % [int(minimap.get("discovered_count", 0)), int(minimap.get("marker_count", 0))] if bool(minimap.get("ok", false)) else "타일 %d · 사물 %d" % [model.terrain_count, model.object_count])
-	_render_minimap_grid(_minimap_grid, minimap.get("minimap", {}) if bool(minimap.get("ok", false)) else {}, Vector2(3, 3))
 	_set_label("inventory", "%d / %d" % [model.inventory_used_slots, model.inventory_slot_count])
 	_set_label("tea_slots", "%d / %d" % [model.tea_ready_slots, model.tea_quickslot_count])
 	_set_label("consumable", "준비" if model.consumable_ready else "없음")
@@ -820,273 +557,11 @@ func _on_provider_changed(_read_model: Dictionary) -> void:
 	_update()
 	_refresh_open_menu()
 
-func _build_dpad(parent: PanelContainer) -> void:
-	var board := Control.new()
-	board.name = "DPadBoard"
-	board.custom_minimum_size = DPAD_BOARD_SIZE
-	_ignore_mouse(board)
-	parent.add_child(board)
-	var plate := TextureRect.new()
-	plate.name = "DPadPlate"
-	plate.texture = _load_texture(BUTTON_DPAD)
-	plate.set_anchors_preset(Control.PRESET_FULL_RECT)
-	plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	board.add_child(plate)
-	var cell := DPAD_BOARD_SIZE.x / 3.0
-	_add_direction_button(board, "DPadUp", Rect2(cell, 0, cell, cell), Vector2i.UP, "위")
-	_add_direction_button(board, "DPadDown", Rect2(cell, cell * 2.0, cell, cell), Vector2i.DOWN, "아래")
-	_add_direction_button(board, "DPadLeft", Rect2(0, cell, cell, cell), Vector2i.LEFT, "왼쪽")
-	_add_direction_button(board, "DPadRight", Rect2(cell * 2.0, cell, cell, cell), Vector2i.RIGHT, "오른쪽")
-	_add_direction_button(board, "DPadStop", Rect2(cell, cell, cell, cell), Vector2i.ZERO, "정지")
-
-func _build_actions(parent: PanelContainer) -> void:
-	_block_mouse(parent)
-	var action_rows := VBoxContainer.new()
-	action_rows.name = "ActionRows"
-	_ignore_mouse(action_rows)
-	action_rows.add_theme_constant_override("separation", 4)
-	parent.add_child(action_rows)
-	var menu_row := HBoxContainer.new()
-	menu_row.name = "ActionMenuBar"
-	_ignore_mouse(menu_row)
-	menu_row.add_theme_constant_override("separation", 4)
-	action_rows.add_child(menu_row)
-	_secondary_action_bar = GridContainer.new()
-	_secondary_action_bar.name = "SecondaryActionBar"
-	_secondary_action_bar.columns = 5
-	_ignore_mouse(_secondary_action_bar)
-	_secondary_action_bar.add_theme_constant_override("h_separation", 3)
-	_secondary_action_bar.add_theme_constant_override("v_separation", 3)
-	menu_row.add_child(_secondary_action_bar)
-	_action_grid = GridContainer.new()
-	_action_grid.name = "ActionGrid"
-	_ignore_mouse(_action_grid)
-	_action_grid.columns = ACTION_PANEL_COLUMNS
-	_action_grid.add_theme_constant_override("h_separation", 4)
-	_action_grid.add_theme_constant_override("v_separation", 4)
-	action_rows.add_child(_action_grid)
-	_rebuild_action_buttons()
-
-func _build_settings_panel(parent: PanelContainer) -> void:
-	_block_mouse(parent)
-	var rows := VBoxContainer.new()
-	rows.name = "SettingsRows"
-	rows.add_theme_constant_override("separation", 10)
-	parent.add_child(rows)
-	var title := _label("설정", 16)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	rows.add_child(title)
-	rows.add_child(_label("게임 음량", 11))
-	var volume := HSlider.new()
-	volume.name = "GameVolumeSlider"
-	volume.min_value = 0.0
-	volume.max_value = 100.0
-	volume.step = 5.0
-	var master_bus := AudioServer.get_bus_index("Master")
-	volume.value = db_to_linear(AudioServer.get_bus_volume_db(master_bus)) * 100.0 if master_bus >= 0 else 100.0
-	volume.value_changed.connect(_set_game_volume)
-	rows.add_child(volume)
-	var home_button := _button()
-	home_button.name = "ReturnHomeButton"
-	home_button.text = "홈 화면으로 돌아가기"
-	home_button.custom_minimum_size = Vector2(0, 38)
-	home_button.pressed.connect(func(): return_to_start_requested.emit())
-	rows.add_child(home_button)
-	var close_button := _button()
-	close_button.name = "CloseSettingsButton"
-	close_button.text = "닫기"
-	close_button.custom_minimum_size = Vector2(0, 34)
-	close_button.pressed.connect(_toggle_action_menu)
-	rows.add_child(close_button)
-	_rebuild_action_buttons()
-
-func _set_game_volume(percent: float) -> void:
-	var master_bus := AudioServer.get_bus_index("Master")
-	if master_bus < 0:
-		return
-	AudioServer.set_bus_mute(master_bus, percent <= 0.0)
-	AudioServer.set_bus_volume_db(master_bus, linear_to_db(maxf(percent / 100.0, 0.0001)))
-
-func _rebuild_action_buttons() -> void:
-	if _action_grid == null:
-		return
-	if _secondary_action_bar != null:
-		_clear_container_children(_secondary_action_bar)
-		for slot in range(1, _tea_quickslot_count()):
-			_add_icon_action(_secondary_action_bar, "QuickTeaButton" if slot == 0 else "QuickTeaButton%d" % (slot + 1), ICON_TEA, "차 %d 사용" % (slot + 1), "drink_tea", Vector2i.ZERO, slot)
-		_add_icon_action(_secondary_action_bar, "QuickConsumableButton", ICON_CONSUMABLE, "소모품 사용", "use_consumable", Vector2i.ZERO, 0)
-		for slot in range(_balance_integer(BALANCE_ABILITY_SLOTS_ID)):
-			_add_icon_action(_secondary_action_bar, "QuickAbilityButton" if slot == 0 else "QuickAbilityButton%d" % (slot + 1), ICON_ABILITY, "요술 %d 사용" % (slot + 1), "cast_ability", Vector2i.ZERO, slot)
-	_clear_container_children(_action_grid)
-	_add_text_action(_action_grid, "AttackButton", ICON_ATTACK, "공격", "attack", Vector2i.ZERO, 0)
-	_add_text_action(_action_grid, "DodgeButton", ICON_DODGE, "회피", "dodge", Vector2i.ZERO, 0)
-	_add_text_action(_action_grid, "TeaButton", ICON_TEA, "차", "drink_tea", Vector2i.ZERO, 0)
-	_interaction_button = _add_interaction_action(_action_grid)
-	var action_panel := _panels.get("action") as Control
-	if action_panel != null:
-		action_panel.custom_minimum_size = ACTION_PANEL_SIZE
-		action_panel.size = ACTION_PANEL_SIZE
-	var action_menu_panel := _panels.get("action_menu") as Control
-	if action_menu_panel != null:
-		action_menu_panel.custom_minimum_size = ACTION_MENU_PANEL_SIZE
-		action_menu_panel.size = ACTION_MENU_PANEL_SIZE
-		action_menu_panel.visible = _action_menu_open
-
-func _toggle_action_menu() -> void:
-	_action_menu_open = not _action_menu_open
-	var action_menu_panel := _panels.get("action_menu") as Control
-	if action_menu_panel != null:
-		action_menu_panel.visible = _action_menu_open
-	_apply_safe_area_layout()
-
-func _add_nav_button(parent: Container, name: String, icon_path: String, text: String, button_id: String, size: Vector2) -> void:
-	var button := _button()
-	button.name = name
-	button.custom_minimum_size = size
-	button.text = text
-	button.icon = _load_texture(icon_path)
-	button.expand_icon = true
-	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	button.add_theme_constant_override("icon_max_width", 14)
-	button.add_theme_constant_override("h_separation", 2)
-	button.add_theme_font_size_override("font_size", 8)
-	button.tooltip_text = text
-	button.focus_mode = Control.FOCUS_NONE
-	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	button.pressed.connect(func(): press_mobile_button(button_id, Vector2i.ZERO, 0))
-	parent.add_child(button)
-
-func _add_bottom_nav_item(parent: Container, name: String, icon_path: String, text: String, button_id: String) -> void:
-	var button := _button()
-	button.name = name
-	button.custom_minimum_size = Vector2(48, 38)
-	button.text = ""
-	button.tooltip_text = text
-	button.focus_mode = Control.FOCUS_NONE
-	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	_apply_empty_button_style(button)
-	button.pressed.connect(func(): press_mobile_button(button_id, Vector2i.ZERO, 0))
-	parent.add_child(button)
-	var icon := TextureRect.new()
-	icon.name = "Icon"
-	icon.texture = _load_texture(icon_path)
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	icon.position = Vector2(-7, 2)
-	icon.size = Vector2(14, 14)
-	_ignore_mouse(icon)
-	button.add_child(icon)
-	var label := _label(text, 9)
-	label.name = "Label"
-	label.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	label.offset_top = -20
-	label.offset_bottom = -6
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_color_override("font_color", PixelUiTheme.INK_COLOR)
-	_ignore_mouse(label)
-	button.add_child(label)
-
-func _add_direction_button(parent: Control, name: String, rect: Rect2, direction: Vector2i, tooltip: String) -> void:
-	var button := _button()
-	button.name = name
-	button.position = rect.position
-	button.size = rect.size
-	button.tooltip_text = tooltip
-	button.text = ""
-	button.flat = true
-	button.focus_mode = Control.FOCUS_NONE
-	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	parent.add_child(button)
-	var feedback := Panel.new()
-	feedback.name = "PressFeedback"
-	feedback.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	feedback.add_theme_stylebox_override("panel", _dpad_feedback_style(Color(0.92, 0.68, 0.32, 0.62)))
-	feedback.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	feedback.visible = false
-	button.add_child(feedback)
-	button.button_down.connect(func():
-		feedback.visible = true
-		movement_button_changed.emit(direction)
-	)
-	button.button_up.connect(func():
-		feedback.visible = false
-		movement_button_changed.emit(Vector2i.ZERO)
-	)
-	button.focus_exited.connect(func():
-		feedback.visible = false
-		movement_button_changed.emit(Vector2i.ZERO)
-	)
-
-func _add_text_action(parent: Container, name: String, icon_path: String, text: String, button_id: String, direction: Vector2i, slot: int) -> void:
-	var button := _button()
-	button.name = name
-	button.custom_minimum_size = ACTION_BUTTON_SIZE
-	button.text = ""
-	button.icon = _load_texture(icon_path)
-	button.expand_icon = true
-	button.add_theme_constant_override("icon_max_width", 28)
-	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	button.alignment = HORIZONTAL_ALIGNMENT_CENTER
-	button.tooltip_text = text
-	button.focus_mode = Control.FOCUS_NONE
-	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	button.add_theme_font_size_override("font_size", 10)
-	button.add_theme_stylebox_override("normal", _circle_button_style(Color(0.08, 0.07, 0.055, 0.96)))
-	button.add_theme_stylebox_override("hover", _circle_button_style(Color(0.20, 0.15, 0.08, 0.98)))
-	button.add_theme_stylebox_override("pressed", _circle_button_style(Color(0.77, 0.54, 0.25, 1.0)))
-	button.pressed.connect(func(): press_mobile_button(button_id, direction, slot))
-	parent.add_child(button)
-
-func _add_interaction_action(parent: Container) -> Button:
-	var button := _button()
-	button.name = "InteractionButton"
-	button.custom_minimum_size = ACTION_BUTTON_SIZE
-	button.text = "상호\n작용"
-	button.tooltip_text = "가까운 유적·텔레포트와 상호작용"
-	button.focus_mode = Control.FOCUS_NONE
-	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	button.add_theme_font_size_override("font_size", 10)
-	button.add_theme_stylebox_override("normal", _circle_button_style(Color(0.10, 0.22, 0.16, 0.92)))
-	button.add_theme_stylebox_override("hover", _circle_button_style(Color(0.16, 0.38, 0.25, 0.96)))
-	button.add_theme_stylebox_override("pressed", _circle_button_style(Color(0.35, 0.68, 0.42, 0.98)))
-	button.pressed.connect(func(): press_mobile_button("interact", Vector2i.ZERO, 0))
-	parent.add_child(button)
-	return button
-
-func _circle_button_style(color: Color) -> StyleBoxTexture:
-	var tint := Color.WHITE
-	if color.g > color.r * 1.5:
-		tint = Color(0.72, 1.0, 0.78, 1.0)
-	elif color.r > 0.5:
-		tint = Color(1.0, 0.82, 0.54, 1.0)
-	elif color.r > 0.15:
-		tint = Color(1.0, 0.90, 0.72, 1.0)
-	return PixelUiTheme.hud_action_style(tint)
-
-func _apply_empty_button_style(button: Button) -> void:
-	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
-		button.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-
-func _add_icon_action(parent: Container, name: String, icon_path: String, tooltip: String, button_id: String, direction: Vector2i, slot: int) -> void:
-	var button := _button()
-	button.name = name
-	button.custom_minimum_size = SECONDARY_ACTION_ICON_BUTTON_SIZE
-	button.text = ""
-	button.icon = _load_texture(icon_path)
-	button.expand_icon = true
-	button.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	button.add_theme_constant_override("icon_max_width", 15)
-	button.tooltip_text = tooltip
-	button.focus_mode = Control.FOCUS_NONE
-	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	button.add_theme_stylebox_override("normal", PixelUiTheme.hud_action_style())
-	button.add_theme_stylebox_override("hover", PixelUiTheme.hud_action_style(Color(1.0, 0.90, 0.72, 1.0)))
-	button.add_theme_stylebox_override("pressed", PixelUiTheme.hud_action_style(Color(1.0, 0.82, 0.54, 1.0)))
-	button.pressed.connect(func(): press_mobile_button(button_id, direction, slot))
-	parent.add_child(button)
+func _restore_touch_control_child_order(root: Control) -> void:
+	for node_name in ["DPadPanel", "ActionPanel", "ActionMenuPanel", "SideShortcutFrame", "SettingsButton", "FacilitiesShortcutButton", "BottomNavPanel"]:
+		var node := root.get_node_or_null(NodePath(node_name))
+		if node != null:
+			root.move_child(node, root.get_child_count() - 1)
 
 func _build_menu_panel(parent: PanelContainer) -> void:
 	_block_mouse(parent)
@@ -1134,21 +609,6 @@ func _build_menu_panel(parent: PanelContainer) -> void:
 	scroll.add_child(_menu_content)
 	_labels.menu_feedback = _label("", 11)
 	rows.add_child(_labels.menu_feedback)
-func _advance_status_toast() -> void:
-	if _toast_label == null or _toast_queue.is_empty():
-		_active_toast.clear()
-		if _toast_label != null:
-			_toast_label.visible = false
-		if _toast_icon != null:
-			_toast_icon.visible = false
-			_toast_icon.texture = null
-		if _toast_panel != null:
-			_toast_panel.visible = false
-		_toast_remaining = 0.0
-		return
-	_active_toast = _toast_queue.pop_front()
-	_apply_status_toast_model(_active_toast)
-
 func _placement_command_button(text: String, command_type: int) -> Button:
 	var button := _command_button_base(text, Vector2(48, 26), Control.FOCUS_NONE)
 	button.pressed.connect(func(): mobile_command_issued.emit(GameCommand.new(command_type)))
@@ -1160,11 +620,11 @@ func _set_gameplay_hud_visible(visible: bool) -> void:
 		if panel != null:
 			panel.visible = visible and (
 				(panel_id != "menu" or not _open_menu_id.is_empty())
-				and (panel_id != "action_menu" or _action_menu_open)
+				and (panel_id != "action_menu" or _settings_presenter.is_open())
 			)
 	if not visible:
 		_open_menu_id = ""
-		_action_menu_open = false
+		_settings_presenter.set_open(false)
 
 func _show_menu(title: String, rows: Array) -> void:
 	_build()
@@ -1273,6 +733,19 @@ func _prepared_tea_rows() -> Array:
 func _emit_mobile_command(command) -> void:
 	mobile_command_issued.emit(command)
 
+func _emit_movement_button_changed(direction: Vector2i) -> void:
+	movement_button_changed.emit(direction)
+
+func _emit_return_to_start_requested() -> void:
+	return_to_start_requested.emit()
+
+func _emit_status_toast_presented(kind: String, event_key: String) -> void:
+	status_toast_presented.emit(kind, event_key)
+
+func _refresh_map_menu() -> void:
+	if _open_menu_id == "map":
+		_show_menu("지도", _map_rows())
+
 func _set_crafting_filter(value: String) -> void:
 	_crafting_filter = value
 
@@ -1365,167 +838,35 @@ func _facility_rows() -> Array:
 	return rows
 
 func _map_rows() -> Array:
-	var rows: Array = []
-	var current_biome_id := _current_biome_id()
-	var selected_id := _selected_map_biome_id if not _selected_map_biome_id.is_empty() else current_biome_id
-	var model := _map_read_model({"minimap_width": 48, "minimap_height": 28, "reveal_all": true}, selected_id)
-	if not bool(model.get("ok", false)):
-		rows.append(_label("지도 read model 없음", 11))
-		return rows
-	rows.append(_icon_text_row(ICON_SCROLL, "전체 지도 · 접근 가능한 지역", 11))
-	rows.append(_biome_map_selector())
-	var selected := _biome_definition(selected_id)
-	rows.append(_label("현재 보기: %s%s" % [String(selected.get("name", selected_id)), " · 현재 위치" if selected_id == current_biome_id else ""], 12))
-	if selected_id != current_biome_id and not _is_biome_map_accessible(selected_id):
-		rows.append(_label("이 지역은 아직 잠겨 있습니다. 해금 후 상세 지도가 표시됩니다.", 10))
-		return rows
-	var bounds: Dictionary = model.bounds
-	rows.append(_label("%s · %dx%d · 발견 %d · 안개 %d · 던전 %s" % [
-		"씨앗 %d" % int(model.get("seed", 0)),
-		int(bounds.width),
-		int(bounds.height),
-		int(model.discovered_count),
-		int(model.fog_count),
-		"완료" if _dungeon_cleared_for_current_biome() else "미완료"
-	], 10))
-	var compact := _inventory_uses_compact_layout()
-	var cell_size := COMPACT_MAP_CELL_SIZE if compact else FULL_MAP_CELL_SIZE
-	var map_canvas := CenterContainer.new()
-	map_canvas.name = "MapCanvas"
-	map_canvas.custom_minimum_size = Vector2(240, 140) if compact else Vector2(340, 196)
-	map_canvas.add_child(_map_color_grid(model.minimap, cell_size))
-	var map_frame := _card_frame(map_canvas)
-	map_frame.name = "MapFrame"
-	rows.append(map_frame)
-	var markers: Array = model.markers
-	rows.append(_label("표식 %d개 · 선택하면 위치와 설명을 볼 수 있습니다" % markers.size(), 10))
-	rows.append(_map_marker_grid(markers))
-	return rows
-
-func _map_marker_grid(markers: Array) -> GridContainer:
-	var grid := GridContainer.new()
-	grid.name = "MapMarkerGrid"
-	grid.columns = 2 if _inventory_uses_compact_layout() else 3
-	grid.add_theme_constant_override("h_separation", 4)
-	grid.add_theme_constant_override("v_separation", 4)
-	var totals := {}
-	for marker in markers:
-		var name := String(marker.get("display_name", _marker_label(String(marker.get("marker_type", "")))))
-		totals[name] = int(totals.get(name, 0)) + 1
-	var seen := {}
-	for marker in markers:
-		var name := String(marker.get("display_name", _marker_label(String(marker.get("marker_type", "")))))
-		seen[name] = int(seen.get(name, 0)) + 1
-		grid.add_child(_map_marker_button(marker, "%s %d" % [name, seen[name]] if int(totals[name]) > 1 else name))
-	return grid
-
-func _map_marker_button(marker: Dictionary, display_name := "") -> Button:
-	var button := _button()
-	button.name = "MapMarker_%s" % String(marker.get("id", "unknown"))
-	button.text = "%s%s" % [display_name, " ?" if not bool(marker.get("discovered", true)) else ""]
-	button.tooltip_text = String(marker.get("description", "상세 정보를 봅니다."))
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.custom_minimum_size = Vector2(104, 26)
-	button.pressed.connect(func(): _show_map_marker_info(marker))
-	return button
-
-func _show_map_marker_info(marker: Dictionary) -> void:
-	var position: Dictionary = marker.get("position", {})
-	var marker_type := String(marker.get("marker_type", ""))
-	var status := "확인됨" if bool(marker.get("discovered", true)) else "미발견"
-	var info := "%s\n종류: %s\n좌표: (%d, %d)\n상태: %s" % [
-		String(marker.get("description", "지도에 표시된 중요한 장소입니다.")),
-		_marker_label(marker_type),
-		int(position.get("x", 0)),
-		int(position.get("y", 0)),
-		status
-	]
-	var card := _detail_card("위치 정보")
-	var rows := card.get_node("Rows") as VBoxContainer
-	rows.add_child(_wrapped_label(info, 11))
-	_show_detail_popup(String(marker.get("display_name", "중요 지점")), card)
-
-func _map_back_button() -> Button:
-	var button := _button()
-	button.text = "지도 돌아가기"
-	button.custom_minimum_size = Vector2(180, 30)
-	button.pressed.connect(func(): _show_menu("지도", _map_rows()))
-	return button
+	return _map_presenter.map_rows(_map_context())
 
 func _ruin_travel_rows() -> Array:
-	var rows: Array = [_label("수리된 다른 유적을 선택하세요", 11)]
-	var current_id := _current_biome_id()
-	var repaired_ids := _repaired_ruin_biome_ids()
-	for definition in _ordered_biome_definitions():
-		var destination_id := String(definition.get("id", ""))
-		if destination_id.is_empty() or destination_id == current_id or not repaired_ids.has(destination_id):
-			continue
-		var button := _button()
-		button.text = "이동 · %s" % String(definition.get("name", destination_id))
-		button.custom_minimum_size = Vector2(220, 34)
-		button.pressed.connect(func():
-			mobile_command_issued.emit(GameCommand.new(GameCommand.Type.TRAVEL_TO_BIOME, Vector2i.ZERO, -1, {"biome_id": destination_id, "travel_mode": "ruin"}))
-		)
-		rows.append(button)
-	if rows.size() == 1:
-		rows.append(_label("이동할 수리 완료 유적이 없습니다", 11))
-	rows.append(_label("텔레포트는 별도로 수리·관리됩니다", 10))
-	return rows
+	return _map_presenter.ruin_travel_rows(_map_context())
 
 func _teleport_travel_rows() -> Array:
-	var rows: Array = [_label("수리된 텔레포트 · 연결된 일반 지역을 선택하세요", 11)]
-	var projection := _biome_progression_projection()
-	if projection.is_empty():
-		rows.append(_label("바이옴 연결 정보 없음", 11))
-		return rows
-	var order: Array = projection.get("biome_order", [])
-	var current_id := _current_biome_id()
-	var current_index := order.find(current_id)
-	var destinations: Array = []
-	for index in [current_index - 1, current_index + 1]:
-		if index < 0 or index >= order.size():
-			continue
-		var destination_id := String(order[index])
-		if index > current_index and String(projection.get("next_biome_id", "")) != destination_id:
-			continue
-		if index > current_index and not bool(projection.get("can_advance_biome", false)):
-			continue
-		destinations.append(destination_id)
-	for destination_id in destinations:
-		var definition := _biome_definition(destination_id)
-		var button := _button()
-		button.text = "이동 · %s" % String(definition.get("name", destination_id))
-		button.custom_minimum_size = Vector2(220, 34)
-		button.pressed.connect(func():
-			mobile_command_issued.emit(GameCommand.new(GameCommand.Type.TRAVEL_TO_BIOME, Vector2i.ZERO, -1, {"biome_id": destination_id, "travel_mode": "teleport"}))
-		)
-		rows.append(button)
-	if destinations.is_empty():
-		rows.append(_label("현재 연결된 다른 일반 지역이 없습니다", 11))
-	return rows
+	return _map_presenter.teleport_travel_rows(_map_context())
 
-func _biome_map_selector() -> Control:
-	var strip := GridContainer.new()
-	strip.name = "BiomeMapSelector"
+func _map_context() -> Dictionary:
+	var current_id := _current_biome_id()
+	var selected_id := _map_presenter.selected_biome_id(current_id)
 	var definitions := _ordered_biome_definitions()
-	strip.columns = maxi(1, ceili(definitions.size() / 2.0))
-	strip.add_theme_constant_override("separation", 4)
+	var accessible_ids := []
 	for definition in definitions:
 		var biome_id := String(definition.get("id", ""))
-		var button := _button()
-		button.name = "BiomeMap_%s" % biome_id
-		button.text = String(definition.get("name", biome_id))
-		button.tooltip_text = "선택하여 지역 지도 보기"
-		button.custom_minimum_size = Vector2(86, 30)
-		button.disabled = biome_id == _current_biome_id() and _selected_map_biome_id == biome_id
-		button.pressed.connect(func():
-			_selected_map_biome_id = biome_id
-			_show_menu("지도", _map_rows())
-		)
-		strip.add_child(button)
-	if strip.get_child_count() == 0:
-		strip.add_child(_label("지역 데이터 없음", 10))
-	return strip
+		if _is_biome_map_accessible(biome_id):
+			accessible_ids.append(biome_id)
+	return {
+		"current_biome_id": current_id,
+		"selected_biome_id": selected_id,
+		"map_model": _map_read_model({"minimap_width": 48, "minimap_height": 28, "reveal_all": true}, selected_id),
+		"minimap_model": _minimap_read_model(),
+		"biome_definitions": definitions,
+		"accessible_ids": accessible_ids,
+		"projection": _biome_progression_projection(),
+		"dungeon_cleared_current": _dungeon_cleared_for_current_biome(),
+		"compact": _inventory_uses_compact_layout(),
+		"repaired_ruin_biome_ids": _repaired_ruin_biome_ids()
+	}
 
 func _minimap_read_model() -> Dictionary:
 	return read_model_provider.minimap_read_model() if read_model_provider != null else {}
@@ -1533,247 +874,11 @@ func _minimap_read_model() -> Dictionary:
 func _map_read_model(options := {}, selected_biome_id := "") -> Dictionary:
 	return read_model_provider.map_read_model(options, selected_biome_id) if read_model_provider != null else {}
 
-func _combat_target_read_model() -> Dictionary:
-	return read_model_provider.combat_target_read_model() if read_model_provider != null else {"visible": false}
-
 func _player_cell() -> Vector2i:
 	return read_model_provider._player_cell() if read_model_provider != null else Vector2i.ZERO
 
-func _marker_label(marker_type: String) -> String:
-	match marker_type:
-		"player":
-			return "플레이어"
-		"dungeon":
-			return "던전"
-		"ruin":
-			return "유적"
-		"teleport":
-			return "텔레포트"
-		_:
-			return "표식"
-
-func _minimap_text(minimap: Dictionary) -> String:
-	var lines := _minimap_text_lines(minimap)
-	return "\n".join(lines)
-
-func _minimap_text_lines(minimap: Dictionary) -> Array:
-	if minimap.is_empty() or typeof(minimap.get("cells", [])) != TYPE_ARRAY:
-		return []
-	var origin: Dictionary = minimap.get("origin", {})
-	var size: Dictionary = minimap.get("size", {})
-	var width := int(size.get("width", 0))
-	var height := int(size.get("height", 0))
-	if width <= 0 or height <= 0:
-		return []
-	var glyphs := {}
-	for cell in minimap.cells:
-		var position: Dictionary = cell.get("position", {})
-		glyphs["%d,%d" % [int(position.x), int(position.y)]] = "?" if bool(cell.get("fog", true)) else "."
-	for marker in _array_value(minimap.get("markers", [])):
-		var position: Dictionary = marker.get("position", {})
-		glyphs["%d,%d" % [int(position.x), int(position.y)]] = _marker_glyph(String(marker.get("marker_type", "")))
-	var lines := []
-	for y in range(int(origin.get("y", 0)), int(origin.get("y", 0)) + height):
-		var line := ""
-		for x in range(int(origin.get("x", 0)), int(origin.get("x", 0)) + width):
-			line += String(glyphs.get("%d,%d" % [x, y], "?"))
-		lines.append(line)
-	return lines
-
-func _marker_glyph(marker_type: String) -> String:
-	match marker_type:
-		"player":
-			return "@"
-		"dungeon":
-			return "R"
-		"ruin":
-			return "U"
-		"teleport":
-			return "T"
-		_:
-			return "L"
-
-func _map_color_grid(minimap: Dictionary, cell_size: Vector2) -> GridContainer:
-	var grid := GridContainer.new()
-	grid.name = "MapColorGrid"
-	_ignore_mouse(grid)
-	var size: Dictionary = minimap.get("size", {})
-	grid.columns = maxi(1, int(size.get("width", 1)))
-	grid.add_theme_constant_override("h_separation", 1)
-	grid.add_theme_constant_override("v_separation", 1)
-	_render_minimap_grid(grid, minimap, cell_size)
-	return grid
-
-func _render_minimap_grid(grid: GridContainer, minimap: Dictionary, cell_size: Vector2) -> void:
-	if grid == null:
-		return
-	_clear_container_children(grid)
-	var size: Dictionary = minimap.get("size", {})
-	var width := int(size.get("width", 0))
-	var height := int(size.get("height", 0))
-	if width <= 0 or height <= 0:
-		return
-	grid.columns = width
-	var marker_by_position := {}
-	var marker_data_by_position := {}
-	for marker in _array_value(minimap.get("markers", [])):
-		var marker_position: Dictionary = marker.get("position", {})
-		var marker_key := "%d,%d" % [int(marker_position.get("x", 0)), int(marker_position.get("y", 0))]
-		marker_by_position[marker_key] = String(marker.get("marker_type", ""))
-		marker_data_by_position[marker_key] = marker
-	var cell_by_position := {}
-	for cell in _array_value(minimap.get("cells", [])):
-		var cell_position: Dictionary = cell.get("position", {})
-		cell_by_position["%d,%d" % [int(cell_position.get("x", 0)), int(cell_position.get("y", 0))]] = cell
-	var origin: Dictionary = minimap.get("origin", {})
-	for y in range(int(origin.get("y", 0)), int(origin.get("y", 0)) + height):
-		for x in range(int(origin.get("x", 0)), int(origin.get("x", 0)) + width):
-			var key := "%d,%d" % [x, y]
-			var tile: Control
-			if marker_data_by_position.has(key):
-				var marker_button := _button()
-				var marker_type := String(marker_by_position.get(key, ""))
-				var marker_color := _minimap_marker_color(marker_type)
-				marker_button.text = ""
-				marker_button.custom_minimum_size = cell_size
-				marker_button.add_theme_stylebox_override("normal", _button_style(marker_color))
-				marker_button.add_theme_stylebox_override("hover", _button_style(marker_color.lightened(0.16)))
-				marker_button.add_theme_stylebox_override("pressed", _button_style(marker_color.darkened(0.16)))
-				marker_button.name = "MapMarker_%s" % String(marker_data_by_position[key].get("id", "unknown"))
-				marker_button.tooltip_text = "%s: %s" % [
-					String(marker_data_by_position[key].get("display_name", "중요 지점")),
-					String(marker_data_by_position[key].get("description", "상세 정보를 봅니다."))
-				]
-				var marker: Dictionary = marker_data_by_position[key]
-				marker_button.pressed.connect(func(): _show_map_marker_info(marker))
-				tile = marker_button
-			else:
-				var color_tile := ColorRect.new()
-				color_tile.custom_minimum_size = cell_size
-				color_tile.color = _minimap_cell_color(cell_by_position.get(key, {}))
-				tile = color_tile
-				_ignore_mouse(tile)
-			grid.add_child(tile)
-
-func _minimap_cell_color(cell: Dictionary) -> Color:
-	if cell.is_empty() or bool(cell.get("fog", true)):
-		return Color(0.05, 0.05, 0.05, 0.88)
-	var terrain_id := String(cell.get("terrain_id", ""))
-	if "water" in terrain_id or "river" in terrain_id or "ice" in terrain_id:
-		return Color(0.18, 0.43, 0.68, 0.95)
-	if "forest" in terrain_id or "tree" in terrain_id or "jungle" in terrain_id or "pine" in terrain_id:
-		return Color(0.16, 0.45, 0.22, 0.95)
-	if "mountain" in terrain_id or "rock" in terrain_id or "cliff" in terrain_id:
-		return Color(0.42, 0.42, 0.36, 0.95)
-	if "path" in terrain_id or "road" in terrain_id:
-		return Color(0.63, 0.53, 0.33, 0.95)
-	if "snow" in terrain_id:
-		return Color(0.78, 0.84, 0.88, 0.95)
-	return Color(0.43, 0.57, 0.28, 0.95)
-
-func _minimap_marker_color(marker_type: String) -> Color:
-	match marker_type:
-		"player":
-			return Color(1.0, 0.95, 0.48, 1.0)
-		"dungeon":
-			return Color(0.76, 0.28, 0.22, 1.0)
-		"teleport":
-			return Color(0.56, 0.38, 0.92, 1.0)
-		_:
-			return Color(0.95, 0.72, 0.32, 1.0)
-
 func _inventory_definition(item_id: String) -> Dictionary:
 	return read_model_provider.inventory_definition(item_id) if read_model_provider != null else {"id": item_id, "name": item_id}
-
-func _equipment_read_model() -> Dictionary:
-	return read_model_provider.equipment_read_model() if read_model_provider != null else {}
-
-func _build_equipment_strip() -> HBoxContainer:
-	var strip := HBoxContainer.new()
-	strip.name = "EquipmentStrip"
-	_ignore_mouse(strip)
-	strip.add_theme_constant_override("separation", 1)
-	_equipment_slots.clear()
-	for slot_key in EQUIPMENT_SLOT_KEYS:
-		var cell := PanelContainer.new()
-		cell.name = "Equipment%s" % String(slot_key).to_pascal_case()
-		cell.custom_minimum_size = EQUIPMENT_SLOT_SIZE
-		cell.add_theme_stylebox_override("panel", _equipment_slot_style(false))
-		cell.mouse_filter = Control.MOUSE_FILTER_PASS
-		strip.add_child(cell)
-		var rows := VBoxContainer.new()
-		rows.name = "Rows"
-		rows.alignment = BoxContainer.ALIGNMENT_CENTER
-		rows.add_theme_constant_override("separation", 0)
-		_ignore_mouse(rows)
-		cell.add_child(rows)
-		var icon := TextureRect.new()
-		icon.name = "ItemIcon"
-		icon.custom_minimum_size = EQUIPMENT_ICON_SIZE
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		rows.add_child(icon)
-		var label := _label(String(EQUIPMENT_SLOT_SHORT_LABELS.get(slot_key, slot_key)), 7)
-		label.name = "ItemName"
-		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		label.add_theme_color_override("font_color", Color(0.93, 0.83, 0.63, 1.0))
-		label.custom_minimum_size = Vector2(EQUIPMENT_SLOT_SIZE.x - 4.0, 8.0)
-		label.clip_text = true
-		label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		rows.add_child(label)
-		_equipment_slots[slot_key] = {"cell": cell, "icon": icon, "name": label}
-	return strip
-
-func _update_equipment_strip(equipment: Dictionary) -> void:
-	for slot_key in EQUIPMENT_SLOT_KEYS:
-		var nodes: Dictionary = _equipment_slots.get(slot_key, {})
-		var cell := nodes.get("cell") as PanelContainer
-		var icon := nodes.get("icon") as TextureRect
-		var label := nodes.get("name") as Label
-		if cell == null or icon == null or label == null:
-			continue
-		var payload := _dictionary_value(equipment.get(slot_key, {}))
-		var item_id := String(payload.get("item_id", ""))
-		var definition := _dictionary_value(payload.get("definition", {}))
-		if item_id.is_empty():
-			_set_equipment_slot_empty(slot_key, cell, icon, label)
-			continue
-		var name := String(definition.get("name", item_id))
-		var kind := String(definition.get("type", definition.get("kind", EQUIPMENT_SLOT_LABELS.get(slot_key, ""))))
-		var icon_reference := _item_icon_reference(item_id, kind, definition)
-		icon.texture = _load_texture(icon_reference) if not icon_reference.is_empty() else null
-		icon.visible = icon.texture != null
-		icon.set_meta("icon_reference", icon_reference)
-		cell.set_meta("item_id", item_id)
-		cell.set_meta("slot_key", slot_key)
-		cell.set_meta("name", name)
-		label.text = _equipment_slot_display(slot_key, name)
-		cell.tooltip_text = "%s: %s" % [String(EQUIPMENT_SLOT_LABELS.get(slot_key, slot_key)), name]
-		cell.add_theme_stylebox_override("panel", _equipment_slot_style(true))
-
-func _set_equipment_slot_empty(slot_key: String, cell: PanelContainer, icon: TextureRect, label: Label) -> void:
-	icon.texture = null
-	icon.visible = false
-	icon.set_meta("icon_reference", "")
-	cell.set_meta("item_id", "")
-	cell.set_meta("slot_key", slot_key)
-	cell.set_meta("name", "")
-	label.text = String(EQUIPMENT_SLOT_SHORT_LABELS.get(slot_key, slot_key))
-	cell.tooltip_text = "%s: 비어 있음" % String(EQUIPMENT_SLOT_LABELS.get(slot_key, slot_key))
-	cell.add_theme_stylebox_override("panel", _equipment_slot_style(false))
-
-func _equipment_slot_display(slot_key: String, _name: String) -> String:
-	return String(EQUIPMENT_SLOT_SHORT_LABELS.get(slot_key, slot_key))
-
-func _equipment_slot_style(equipped: bool) -> StyleBoxFlat:
-	var bg := Color(0.12, 0.085, 0.055, 0.90) if equipped else Color(0.06, 0.052, 0.042, 0.72)
-	var border := Color(0.86, 0.66, 0.36, 0.92) if equipped else Color(0.33, 0.25, 0.16, 0.70)
-	var style := _button_style(bg, true)
-	style.border_color = border
-	style.set_border_width_all(1)
-	style.set_content_margin_all(2)
-	return style
 
 func _inventory_item_icon_reference(row: Dictionary) -> String:
 	if row.is_empty() or bool(row.get("empty", false)):
@@ -1864,7 +969,7 @@ func _apply_safe_area_layout() -> void:
 		if enemy_top + enemy_size.y > quickslot_rect.position.y - HUD_EDGE_GAP:
 			enemy_top = maxf(enemy_top, quickslot_rect.end.y + HUD_EDGE_GAP)
 	_place_panel(_panels.enemy, Control.PRESET_TOP_LEFT, Vector2(margin.x, enemy_top))
-	_place_panel(_toast_panel, Control.PRESET_CENTER_TOP, Vector2(0.0, top_stack_bottom + HUD_EDGE_GAP))
+	_place_panel(_panels.get("toast"), Control.PRESET_CENTER_TOP, Vector2(0.0, top_stack_bottom + HUD_EDGE_GAP))
 	_resize_menu_panel(viewport_size, margin)
 	_place_panel(_panels.menu, Control.PRESET_CENTER, Vector2.ZERO)
 	_place_panel(_panels.dpad, Control.PRESET_BOTTOM_LEFT, Vector2(margin.x, -margin.w))
@@ -2029,9 +1134,6 @@ func _panel(size: Vector2) -> PanelContainer:
 func _unstyled_panel(size: Vector2) -> PanelContainer:
 	return _styled_panel(size, StyleBoxEmpty.new())
 
-func _dialogue_panel(size: Vector2) -> PanelContainer:
-	return _styled_panel(size, _panel_style())
-
 func _menu_panel(size: Vector2) -> PanelContainer:
 	var panel := _styled_panel(size, PixelUiTheme.parchment_panel_style())
 	panel.theme = PixelUiTheme.create_parchment()
@@ -2059,100 +1161,6 @@ func _portrait_box(asset_id: String) -> PanelContainer:
 	texture.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(texture)
 	return box
-
-func _add_resource_icon_row(parent: Container, id: String, icon_path: String, text: String, color: Color) -> Label:
-	var row := HBoxContainer.new()
-	row.name = "%sDisplay" % ("Health" if id == "hp" else id.capitalize())
-	_block_mouse(row)
-	row.add_theme_constant_override("separation", 3)
-	row.tooltip_text = "%s 상세 보기" % text
-	row.gui_input.connect(func(event): _on_resource_row_gui_input(event, id, row))
-	parent.add_child(row)
-	var icons := HBoxContainer.new()
-	icons.name = "Icons"
-	_ignore_mouse(icons)
-	icons.add_theme_constant_override("separation", 0)
-	row.add_child(icons)
-	var texture := _load_texture(icon_path)
-	for index in range(RESOURCE_ICON_COUNT):
-		var icon := TextureRect.new()
-		icon.name = "Icon%d" % (index + 1)
-		icon.custom_minimum_size = RESOURCE_ICON_SIZE
-		icon.texture = texture
-		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.set_meta("empty_color", Color(0.20, 0.16, 0.13, 0.72))
-		icon.set_meta("filled_color", color)
-		_ignore_mouse(icon)
-		icons.add_child(icon)
-	_labels["%s_icons" % id] = icons
-	var value := _label(text, 8)
-	value.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	value.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	row.add_child(value)
-	return value
-
-func _build_resource_detail_panel(parent: Control) -> void:
-	var panel := _panel(RESOURCE_DETAIL_PANEL_SIZE)
-	panel.name = "ResourceDetailPanel"
-	panel.visible = false
-	_block_mouse(panel)
-	panel.gui_input.connect(func(event):
-		if event is InputEventMouseButton or event is InputEventScreenTouch:
-			panel.accept_event()
-	)
-	parent.add_child(panel)
-	_panels.resource_detail = panel
-	_resource_detail_label = _label("", 10)
-	panel.add_child(_resource_detail_label)
-
-func _on_resource_row_gui_input(event: InputEvent, id: String, row: Control) -> void:
-	var pressed: bool = false
-	if event is InputEventMouseButton:
-		pressed = event.button_index == MOUSE_BUTTON_LEFT and event.pressed
-	elif event is InputEventScreenTouch:
-		pressed = event.pressed
-	if not pressed:
-		return
-	row.accept_event()
-	if get_viewport() != null:
-		get_viewport().set_input_as_handled()
-	var panel := _panels.get("resource_detail") as Control
-	if panel == null:
-		return
-	if panel.visible:
-		panel.visible = false
-		_resource_detail_id = ""
-		_apply_safe_area_layout()
-		return
-	_resource_detail_id = "all"
-	panel.visible = true
-	panel.move_to_front()
-	_update_resource_detail(runtime_read_model())
-	_apply_safe_area_layout()
-
-func _update_resource_detail(model: Dictionary) -> void:
-	if _resource_detail_label == null or _resource_detail_id.is_empty():
-		return
-	_resource_detail_label.text = "자원 상세\n체력 %d / %d\n기운 %d / %d\n心 %d / %d" % [
-		int(model.hp), int(model.hp_max),
-		int(model.ki), int(model.ki_max),
-		int(model.kokoro), int(model.kokoro_max)
-	]
-
-func _update_resource_icons(id: String, current: int, maximum: int) -> void:
-	var icons := _labels.get(id) as HBoxContainer
-	if icons == null:
-		return
-	var filled_units := 0.0
-	if maximum > 0:
-		filled_units = clampf(float(current) / float(maximum), 0.0, 1.0) * RESOURCE_ICON_COUNT
-	for index in range(icons.get_child_count()):
-		var icon := icons.get_child(index) as TextureRect
-		if icon != null:
-			var fill_ratio := clampf(filled_units - float(index), 0.0, 1.0)
-			icon.set_meta("fill_ratio", fill_ratio)
-			icon.modulate = (icon.get_meta("empty_color") as Color).lerp(icon.get_meta("filled_color") as Color, fill_ratio)
 
 func _add_icon_row(parent: Container, icon_path: String, text: String) -> Label:
 	var row := HBoxContainer.new()
@@ -2183,28 +1191,6 @@ func _label(text: String, font_size := 12) -> Label:
 
 func _button() -> Button:
 	return UiContentBounds.fit_button(Button.new())
-
-func _build_time_dial_row(parent: Container) -> void:
-	var row := HBoxContainer.new()
-	row.name = "TimeDialRow"
-	_ignore_mouse(row)
-	row.add_theme_constant_override("separation", 5)
-	parent.add_child(row)
-	_time_dial = TimeDial.new()
-	_time_dial.name = "TimeDial"
-	_time_dial.custom_minimum_size = TIME_DIAL_SIZE
-	_ignore_mouse(_time_dial)
-	row.add_child(_time_dial)
-	var labels := VBoxContainer.new()
-	labels.name = "TimeLabels"
-	_ignore_mouse(labels)
-	labels.add_theme_constant_override("separation", -2)
-	row.add_child(labels)
-	_labels.time_phase = _label("낮", 10)
-	labels.add_child(_labels.time_phase)
-	_labels.time_progress = _label("0%", 9)
-	_labels.time_progress.modulate = Color(0.84, 0.65, 0.36, 1.0)
-	labels.add_child(_labels.time_progress)
 
 func _section_label(text: String) -> Label:
 	return _wrapped_label(text, 11)
@@ -2305,58 +1291,11 @@ func _dpad_feedback_style(color: Color) -> StyleBoxFlat:
 func _menu_card_style(selected := false) -> StyleBoxTexture:
 	return PixelUiTheme.parchment_card_style(selected)
 
-func _crafting_card_style(row_model: Dictionary) -> StyleBoxTexture:
-	var selected := bool(row_model.get("selected", false))
-	var style := _menu_card_style(selected)
-	if bool(row_model.get("craftable", false)):
-		style = _menu_card_style(true)
-	elif String(row_model.get("reason", "")) == "missing_materials":
-		style.modulate_color = Color(0.88, 0.62, 0.54, 1.0)
-	return style
-
-func _parchment_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.67, 0.55, 0.36, 0.96)
-	style.border_color = Color(0.30, 0.12, 0.06, 0.96)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.content_margin_left = 8
-	style.content_margin_top = 6
-	style.content_margin_right = 8
-	style.content_margin_bottom = 6
-	return style
-
-func _biome_label(id: String) -> String:
-	return read_model_provider.biome_label(id) if read_model_provider != null else id
-
-func _time_phase_label(id: String) -> String:
-	return read_model_provider.time_phase_label(id) if read_model_provider != null else id
-
-func _render_count(key: String) -> int:
-	return read_model_provider.render_count(key) if read_model_provider != null else 0
-
-func _inventory_slot_count() -> int:
-	return read_model_provider.inventory_slot_count() if read_model_provider != null else 0
-
-func _inventory_used_slots() -> int:
-	return read_model_provider.inventory_used_slots() if read_model_provider != null else 0
-
 func _tea_quickslot_count() -> int:
 	return read_model_provider.tea_quickslot_count() if read_model_provider != null else 0
 
-func _tea_ready_slots() -> int:
-	return read_model_provider.tea_ready_slots() if read_model_provider != null else 0
-
 func _balance_integer(id: String) -> int:
 	return read_model_provider.balance_integer(id) if read_model_provider != null else 0
-
-func _consumable_ready() -> bool:
-	return read_model_provider.consumable_ready() if read_model_provider != null else false
-
-func _time_progress_percent() -> int:
-	return read_model_provider.time_progress_percent() if read_model_provider != null else 0
 
 func _inventory_read_model() -> Dictionary:
 	return read_model_provider.inventory_read_model() if read_model_provider != null else {}
@@ -2387,9 +1326,6 @@ func _biome_progression_projection() -> Dictionary:
 
 func _ordered_biome_definitions() -> Array:
 	return read_model_provider.ordered_biome_definitions() if read_model_provider != null else []
-
-func _biome_definition(biome_id: String) -> Dictionary:
-	return read_model_provider.biome_definition(biome_id) if read_model_provider != null else {}
 
 func _is_biome_map_accessible(biome_id: String) -> bool:
 	return read_model_provider.is_biome_map_accessible(biome_id) if read_model_provider != null else false
