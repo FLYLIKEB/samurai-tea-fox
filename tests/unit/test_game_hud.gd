@@ -698,7 +698,7 @@ func _assert_safe_area_layout_uses_viewport_top(asserts) -> void:
 	if quickslot_panel != null and status_panel != null and map_panel != null:
 		asserts.false_value(quickslot_panel.get_global_rect().intersects(status_panel.get_global_rect()), "expanded quickslot frame does not overlap the status frame")
 		asserts.false_value(quickslot_panel.get_global_rect().intersects(map_panel.get_global_rect()), "expanded quickslot frame does not overlap the minimap frame")
-		asserts.equal(quickslot_panel.size, Vector2(264, 58), "quickslot outer frame keeps its generated image dimensions separate from content")
+		asserts.equal(quickslot_panel.size, Vector2(264, 70), "quickslot outer frame reserves enough vertical room for icons and text")
 		asserts.true_value(quickslot_panel.get_node_or_null("QuickSlotFrame") is TextureRect, "quickslot frame image stays separate from its content region")
 		asserts.true_value(quickslot_panel.get_node_or_null("QuickSlotContent") is MarginContainer, "quickslot content uses an explicit safe-area container")
 		var quick_rows := quickslot_panel.get_node("QuickSlotContent/QuickSlotRows") as HBoxContainer
