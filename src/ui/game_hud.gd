@@ -1239,8 +1239,7 @@ func _inventory_menu_deps() -> Dictionary:
 		"view": _menu_view(),
 		"emit_command": Callable(self, "_emit_mobile_command"),
 		"show_detail_popup": Callable(self, "_show_detail_popup"),
-		"inventory_item_icon_reference": Callable(self, "_inventory_item_icon_reference"),
-		"inventory_item_icon": Callable(self, "_inventory_item_icon")
+		"inventory_item_icon_reference": Callable(self, "_inventory_item_icon_reference")
 	}
 
 func _tea_brewing_menu_deps() -> Dictionary:
@@ -1279,9 +1278,6 @@ func _set_crafting_filter(value: String) -> void:
 
 func _set_selected_recipe_id(value: String) -> void:
 	_selected_recipe_id = value
-
-func _inventory_item_icon(row: Dictionary) -> Texture2D:
-	return _load_texture(_inventory_item_icon_reference(row))
 
 func _inventory_uses_compact_layout() -> bool:
 	var viewport_size := get_viewport().get_visible_rect().size if get_viewport() != null else Vector2(640, 360)

@@ -91,7 +91,7 @@ static func _slot_card(row: Dictionary, state: Dictionary, deps: Dictionary) -> 
 	)
 	button.name = "InventorySlotCard%d" % int(row.get("slot_index", -1))
 	button.custom_minimum_size = Vector2(64, 62) if compact else Vector2(78, 70)
-	button.icon = deps.inventory_item_icon.call(row)
+	button.icon = view.load_texture(deps.inventory_item_icon_reference.call(row))
 	button.expand_icon = true
 	button.add_theme_constant_override("icon_max_width", 28 if compact else 34)
 	button.add_theme_font_size_override("font_size", 9)

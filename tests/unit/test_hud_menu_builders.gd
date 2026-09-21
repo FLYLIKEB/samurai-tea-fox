@@ -128,7 +128,6 @@ func _inventory_deps() -> Dictionary:
 	var deps := _base_deps()
 	deps["show_detail_popup"] = Callable(self, "_record_popup")
 	deps["inventory_item_icon_reference"] = Callable(self, "_inventory_item_icon_reference")
-	deps["inventory_item_icon"] = Callable(self, "_inventory_item_icon")
 	return deps
 
 func _crafting_deps() -> Dictionary:
@@ -241,9 +240,6 @@ func _reset_spies() -> void:
 
 func _inventory_item_icon_reference(row: Dictionary) -> String:
 	return String(row.get("icon_reference", ""))
-
-func _inventory_item_icon(_row: Dictionary) -> Texture2D:
-	return null
 
 func _crafting_result_icon_reference(row: Dictionary) -> String:
 	return String(_dictionary_value(row.get("result", {})).get("icon_reference", ""))
