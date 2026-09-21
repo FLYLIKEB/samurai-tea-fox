@@ -9,6 +9,11 @@ const NarrativeDialoguePresenter = preload("res://src/ui/narrative_dialogue_pres
 const DetailPopup = preload("res://src/ui/detail_popup.gd")
 const UiContentBounds = preload("res://src/ui/ui_content_bounds.gd")
 const UiPopupLayout = preload("res://src/ui/ui_popup_layout.gd")
+const HudMenuViewHelpers = preload("res://src/ui/hud/hud_menu_view_helpers.gd")
+const InventoryMenuBuilder = preload("res://src/ui/hud/inventory_menu_builder.gd")
+const CraftingMenuBuilder = preload("res://src/ui/hud/crafting_menu_builder.gd")
+const TeaBrewingMenuBuilder = preload("res://src/ui/hud/tea_brewing_menu_builder.gd")
+const MetaCodexMenuBuilder = preload("res://src/ui/hud/meta_codex_menu_builder.gd")
 
 const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
 const ICON_HP := "ui_hp_heart_icon"
@@ -1197,179 +1202,97 @@ func _refresh_open_menu() -> void:
 			_show_menu("텔레포트 연결지", _teleport_travel_rows())
 
 func _inventory_rows() -> Array:
-	var rows: Array = []
-	var model := _inventory_read_model()
-	if not model.is_empty():
-		var summary := HBoxContainer.new()
-		summary.name = "InventorySummary"
-		summary.add_theme_constant_override("separation", 8)
-		summary.add_child(_icon_text_row(ICON_BAG, "%d / %d칸" % [int(model.capacity.used), int(model.capacity.total)], 11))
-		summary.add_child(_icon_text_row(_inventory_kind_icon_reference(String(model.filter_kind)), _filter_label(String(model.filter_kind)), 11))
-		rows.append(summary)
-		var toolbar := GridContainer.new()
-		toolbar.name = "InventoryToolbar"
-		toolbar.columns = 3 if _inventory_uses_compact_layout() else 7
-		_ignore_mouse(toolbar)
-		toolbar.add_theme_constant_override("h_separation", 4)
-		toolbar.add_theme_constant_override("v_separation", 4)
-		var toolbar_button_size := Vector2(50, 30) if _inventory_uses_compact_layout() else Vector2(54, 30)
-		toolbar.add_child(_inventory_command_button("이전", GameCommand.new(GameCommand.Type.INVENTORY_NAVIGATE, Vector2i.LEFT), ICON_SCROLL, toolbar_button_size, "이전"))
-		toolbar.add_child(_inventory_command_button("다음", GameCommand.new(GameCommand.Type.INVENTORY_NAVIGATE, Vector2i.RIGHT), ICON_SCROLL, toolbar_button_size, "다음"))
-		toolbar.add_child(_inventory_command_button("정렬", GameCommand.new(GameCommand.Type.INVENTORY_SORT), ICON_BAG, toolbar_button_size, "정렬"))
-		for kind in model.available_filters:
-			var kind_id := String(kind)
-			toolbar.add_child(_inventory_command_button(_filter_label(kind_id), GameCommand.new(GameCommand.Type.INVENTORY_SET_FILTER, Vector2i.ZERO, -1, {"kind": kind_id}), _inventory_kind_icon_reference(kind_id), toolbar_button_size, _filter_label(kind_id)))
-		rows.append(toolbar)
-		var visible_rows: Array = _inventory_display_rows(model.slots, int(model.get("selected_slot_index", -1)))
-		var page_start := _page_start(visible_rows, "slot_index", int(model.get("selected_slot_index", -1)), 8, -1)
-		var page_end := mini(visible_rows.size(), page_start + 8)
-		var shelf := VBoxContainer.new()
-		shelf.name = "InventoryShelf"
-		shelf.add_theme_constant_override("separation", 8)
-		var slot_strip := GridContainer.new()
-		slot_strip.name = "InventorySlotStrip"
-		slot_strip.columns = 3 if _inventory_uses_compact_layout() else 4
-		_ignore_mouse(slot_strip)
-		slot_strip.add_theme_constant_override("h_separation", 5)
-		slot_strip.add_theme_constant_override("v_separation", 5)
-		for row_index in range(page_start, page_end):
-			var row: Dictionary = visible_rows[row_index]
-			slot_strip.add_child(_inventory_slot_card(row))
-		shelf.add_child(slot_strip)
-		var selected_row := _selected_inventory_row(visible_rows, int(model.get("selected_slot_index", -1)))
-		var preview := _inventory_detail_card(selected_row)
-		preview.name = "InventoryPreview"
-		preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		shelf.add_child(preview)
-		rows.append(shelf)
-		if visible_rows.size() > 8:
-			rows.append(_label("%d-%d / %d" % [page_start + 1, page_end, visible_rows.size()], 11))
-		_append_prepared_tea_rows(rows)
-		return rows
-	rows.append(_label("인벤토리 read model 없음", 11))
-	_append_prepared_tea_rows(rows)
-	return rows
+	return InventoryMenuBuilder.rows(_inventory_read_model(), _prepared_tea_rows(), _menu_state(), _inventory_menu_deps())
 
-func _append_prepared_tea_rows(rows: Array) -> void:
-	var prepared_teas := read_model_provider.prepared_tea_rows() if read_model_provider != null else []
-	if prepared_teas.is_empty():
-		return
-	rows.append(_section_label("우린 차"))
-	var tea_strip := GridContainer.new()
-	tea_strip.name = "PreparedTeaStrip"
-	tea_strip.columns = 3 if _inventory_uses_compact_layout() else 4
-	tea_strip.add_theme_constant_override("h_separation", 5)
-	tea_strip.add_theme_constant_override("v_separation", 5)
-	for prepared in prepared_teas:
-		var card := _card_frame(_label("%s\n%d회" % [String(prepared.get("tea_name", prepared.get("tea_id", "차"))), int(prepared.get("remaining_uses", 1))], 9))
-		card.custom_minimum_size = Vector2(66, 60)
-		tea_strip.add_child(card)
-	rows.append(tea_strip)
+func _tea_brewing_rows() -> Array:
+	return TeaBrewingMenuBuilder.rows(_tea_brewing_read_model(), _menu_state(), _tea_brewing_menu_deps())
 
-func _inventory_slot_card(row: Dictionary) -> Button:
-	var button := _inventory_command_button(
-		"빈칸" if bool(row.get("empty", false)) else "%s\n× %d" % [String(row.get("name", row.get("item_id", ""))), int(row.get("quantity", 0))],
-		GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, int(row.slot_index), {"slot_index": int(row.slot_index)})
-	)
-	button.name = "InventorySlotCard%d" % int(row.get("slot_index", -1))
-	button.custom_minimum_size = Vector2(64, 62) if _inventory_uses_compact_layout() else Vector2(78, 70)
-	button.icon = _load_texture(_inventory_item_icon_reference(row))
-	button.expand_icon = true
-	button.add_theme_constant_override("icon_max_width", 28 if _inventory_uses_compact_layout() else 34)
-	button.add_theme_font_size_override("font_size", 9)
-	button.add_theme_stylebox_override("normal", _menu_card_style(false))
-	button.add_theme_stylebox_override("hover", _menu_card_style(true))
-	button.add_theme_stylebox_override("pressed", _menu_card_style(true))
-	if bool(row.get("selected", false)):
-		button.add_theme_stylebox_override("normal", _menu_card_style(true))
-	button.disabled = bool(row.get("empty", false))
-	button.tooltip_text = String(row.get("name", row.get("item_id", "")))
-	button.pressed.connect(func(): _show_detail_popup("아이템 상세", _inventory_detail_card(row)))
-	return button
+func _meta_codex_rows() -> Array:
+	return MetaCodexMenuBuilder.rows(_meta_codex_read_model(), _menu_state(), _meta_codex_menu_deps())
 
-func _inventory_display_rows(slot_rows: Array, selected_slot_index: int) -> Array:
-	var display_rows := []
-	var group_indexes := {}
-	for row in slot_rows:
-		if typeof(row) != TYPE_DICTIONARY:
-			continue
-		if bool(row.get("empty", false)) or bool(row.get("can_equip", false)):
-			display_rows.append(row)
-			continue
-		var item_id := String(row.get("item_id", ""))
-		if item_id.is_empty():
-			display_rows.append(row)
-			continue
-		if not group_indexes.has(item_id):
-			var group: Dictionary = row.duplicate(true)
-			group["slot_indexes"] = [int(row.get("slot_index", -1))]
-			group["quantity"] = int(row.get("quantity", 0))
-			group["stack_label"] = "합계 %d개" % int(group.quantity)
-			group["selected"] = int(row.get("slot_index", -1)) == selected_slot_index
-			group_indexes[item_id] = display_rows.size()
-			display_rows.append(group)
-			continue
-		var group_index := int(group_indexes[item_id])
-		var existing: Dictionary = display_rows[group_index]
-		existing["quantity"] = int(existing.get("quantity", 0)) + int(row.get("quantity", 0))
-		existing["stack_label"] = "합계 %d개" % int(existing.quantity)
-		existing["slot_indexes"].append(int(row.get("slot_index", -1)))
-		if int(row.get("slot_index", -1)) == selected_slot_index:
-			existing["slot_index"] = selected_slot_index
-			existing["selected"] = true
-		display_rows[group_index] = existing
-	return display_rows
+func _crafting_rows() -> Array:
+	var model := _crafting_read_model(_crafting_filter, _selected_recipe_id)
+	if not model.is_empty() and bool(model.get("ok", false)):
+		_selected_recipe_id = String(model.get("selected_recipe_id", ""))
+	return CraftingMenuBuilder.rows(model, _menu_state(), _crafting_menu_deps())
 
-func _selected_inventory_row(rows: Array, selected_slot_index: int) -> Dictionary:
-	for row in rows:
-		if typeof(row) != TYPE_DICTIONARY:
-			continue
-		if int(row.get("slot_index", -1)) == selected_slot_index:
-			return row
-		if row.has("slot_indexes") and row.slot_indexes.has(selected_slot_index):
-			return row
-	return rows[0] if not rows.is_empty() and typeof(rows[0]) == TYPE_DICTIONARY else {}
+func _show_crafting_detail_popup(recipe_id: String) -> void:
+	_selected_recipe_id = recipe_id
+	_refresh_open_menu()
+	var model := _crafting_read_model(_crafting_filter, recipe_id)
+	_show_detail_popup("제작 상세", CraftingMenuBuilder.detail_content(model.get("detail", {}), _menu_state(), _crafting_menu_deps()))
 
-func _inventory_detail_card(row: Dictionary) -> Control:
-	var card := _detail_card("선택한 항목")
-	card.custom_minimum_size = Vector2(220, 42) if _inventory_uses_compact_layout() else Vector2(288, 42)
-	var rows := card.get_node("Rows") as VBoxContainer
-	if not row.is_empty() and not bool(row.get("empty", false)):
-		rows.add_child(_icon_text_row(_inventory_item_icon_reference(row), String(row.get("name", row.get("item_id", ""))), 11))
-		rows.add_child(_label("%s · × %d · %s" % [
-			String(row.get("kind", "")),
-			int(row.get("quantity", 0)),
-			String(row.get("stack_label", ""))
-		], 10))
-		var description := String(row.get("description", "")).strip_edges()
-		if not description.is_empty():
-			rows.add_child(_wrapped_label(description, 10))
-	else:
-		rows.add_child(_icon_text_row("", "표시할 항목 없음", 11))
-	var actions := HBoxContainer.new()
-	_ignore_mouse(actions)
-	actions.add_theme_constant_override("separation", 4)
-	if not row.is_empty():
-		var slot_index := int(row.get("slot_index", -1))
-		if bool(row.get("can_use", false)):
-			var action_label := "설치" if bool(row.get("can_install", false)) else "사용"
-			actions.add_child(_inventory_command_button(action_label, GameCommand.new(GameCommand.Type.USE_INVENTORY_SLOT, Vector2i.ZERO, slot_index, {"slot_index": slot_index}), _inventory_item_icon_reference(row), Vector2(54, 28), action_label))
-		if bool(row.get("can_equip", false)):
-			actions.add_child(_inventory_command_button("장착", GameCommand.new(GameCommand.Type.EQUIP_INVENTORY_SLOT, Vector2i.ZERO, slot_index, {"slot_index": slot_index}), _inventory_item_icon_reference(row), Vector2(54, 28), "장착"))
-	rows.add_child(actions)
-	return card
+func _menu_state() -> Dictionary:
+	return {
+		"compact": _inventory_uses_compact_layout(),
+		"filter": _crafting_filter,
+		"selected_recipe_id": _selected_recipe_id
+	}
+
+func _menu_view() -> HudMenuViewHelpers:
+	var view := HudMenuViewHelpers.new()
+	view.texture_resolver = Callable(self, "_load_texture")
+	return view
+
+func _inventory_menu_deps() -> Dictionary:
+	return {
+		"view": _menu_view(),
+		"emit_command": Callable(self, "_emit_mobile_command"),
+		"show_detail_popup": Callable(self, "_show_detail_popup"),
+		"inventory_item_icon_reference": Callable(self, "_inventory_item_icon_reference")
+	}
+
+func _tea_brewing_menu_deps() -> Dictionary:
+	return {
+		"view": _menu_view(),
+		"emit_command": Callable(self, "_emit_mobile_command"),
+		"item_icon_reference": Callable(self, "_item_icon_reference")
+	}
+
+func _meta_codex_menu_deps() -> Dictionary:
+	return {
+		"view": _menu_view(),
+		"emit_command": Callable(self, "_emit_mobile_command")
+	}
+
+func _crafting_menu_deps() -> Dictionary:
+	return {
+		"view": _menu_view(),
+		"emit_command": Callable(self, "_emit_mobile_command"),
+		"refresh_open_menu": Callable(self, "_refresh_open_menu"),
+		"show_detail_popup": Callable(self, "_show_crafting_detail_popup"),
+		"set_filter": Callable(self, "_set_crafting_filter"),
+		"set_selected_recipe_id": Callable(self, "_set_selected_recipe_id"),
+		"inventory_item_icon_reference": Callable(self, "_inventory_item_icon_reference"),
+		"crafting_result_icon_reference": Callable(self, "_crafting_result_icon_reference")
+	}
+
+func _prepared_tea_rows() -> Array:
+	return read_model_provider.prepared_tea_rows() if read_model_provider != null else []
+
+func _emit_mobile_command(command) -> void:
+	mobile_command_issued.emit(command)
+
+func _set_crafting_filter(value: String) -> void:
+	_crafting_filter = value
+
+func _set_selected_recipe_id(value: String) -> void:
+	_selected_recipe_id = value
 
 func _inventory_uses_compact_layout() -> bool:
 	var viewport_size := get_viewport().get_visible_rect().size if get_viewport() != null else Vector2(640, 360)
 	return viewport_size.x <= 480.0
 
-func _inventory_command_button(text: String, command: GameCommand, icon_reference := "", min_size := Vector2(40, 24), tooltip := "") -> Button:
-	return _command_button(text, command, min_size, Control.FOCUS_ALL, icon_reference, tooltip)
+func _page_start(rows: Array, key: String, selected, page_size: int, default_value = "") -> int:
+	if rows.size() <= page_size:
+		return 0
+	for index in range(rows.size()):
+		if str(rows[index].get(key, default_value)) == str(selected):
+			return clampi(index - 2, 0, rows.size() - page_size)
+	return 0
 
-func _command_button(text: String, command: GameCommand, min_size: Vector2, focus_mode: int, icon_reference := "", tooltip := "") -> Button:
-	var button := _command_button_base(text, min_size, focus_mode, icon_reference, tooltip)
-	button.pressed.connect(func(): mobile_command_issued.emit(command))
-	return button
+func _filter_label(value: String) -> String:
+	return "전체" if value == "all" else value
 
 func _command_button_base(text: String, min_size: Vector2, focus_mode: int, icon_reference := "", tooltip := "") -> Button:
 	var button := _button()
@@ -1383,514 +1306,6 @@ func _command_button_base(text: String, min_size: Vector2, focus_mode: int, icon
 		button.expand_icon = true
 		button.add_theme_constant_override("icon_max_width", 18)
 	return button
-
-func _inventory_kind_icon_reference(kind: String) -> String:
-	match kind:
-		"소모품":
-			return ICON_CONSUMABLE
-		"찻잎":
-			return ICON_TEA
-		"재료":
-			return ICON_MATERIAL
-		"다구":
-			return ICON_TEA_WARE
-		"무기":
-			return ICON_ATTACK
-		"방어구":
-			return ICON_TOOL
-		_:
-			return ICON_BAG
-
-func _page_start(rows: Array, key: String, selected, page_size: int, default_value = "") -> int:
-	if rows.size() <= page_size:
-		return 0
-	for index in range(rows.size()):
-		if str(rows[index].get(key, default_value)) == str(selected):
-			return clampi(index - 2, 0, rows.size() - page_size)
-	return 0
-
-func _filter_label(value: String) -> String:
-	return "전체" if value == "all" else value
-
-func _tea_brewing_rows() -> Array:
-	var rows: Array = []
-	var model := _tea_brewing_read_model()
-	if model.is_empty():
-		rows.append(_label("차 우리기 read model 없음", 11))
-		return rows
-	var leaves := _array_value(model.get("leaves", []))
-	var vessels := _array_value(model.get("vessels", []))
-	var slots := _array_value(model.get("quickslots", []))
-	var preview: Dictionary = model.get("preview", {})
-	var leaf := _tea_brewing_selected_row(leaves, "id", String(model.get("selected_leaf_id", "")))
-	var vessel := _tea_brewing_selected_row(vessels, "selection_key", String(model.get("selected_vessel_key", "")))
-	var slot := _tea_brewing_selected_row(slots, "slot_index", int(model.get("selected_slot_index", -1)))
-
-	var location := _icon_text_row(ICON_TEA_TABLE, "찻상 준비됨" if bool(model.get("has_brewing_location", false)) else "이 차를 우리려면 찻상이 필요합니다", 10)
-	location.name = "TeaBrewingLocation"
-	rows.append(location)
-
-	var stage: BoxContainer = HBoxContainer.new()
-	if _inventory_uses_compact_layout():
-		stage = VBoxContainer.new()
-	stage.name = "TeaBrewingStage"
-	stage.alignment = BoxContainer.ALIGNMENT_CENTER
-	stage.add_theme_constant_override("separation", 8)
-	_ignore_mouse(stage)
-	stage.add_child(_tea_brewing_selector_card("찻잎", ICON_KOKORO, _tea_brewing_leaf_label(leaf), "leaf", not leaves.is_empty()))
-	stage.add_child(_tea_brewing_stage_mark("+"))
-	stage.add_child(_tea_brewing_selector_card("다구", _tea_brewing_vessel_icon(vessel), _tea_brewing_vessel_label(vessel), "vessel", not vessels.is_empty()))
-	stage.add_child(_tea_brewing_stage_mark("↓" if stage is VBoxContainer else "→"))
-	stage.add_child(_tea_brewing_selector_card("찻잔", ICON_TEA, _tea_brewing_slot_label(slot), "slot", not slots.is_empty()))
-	rows.append(stage)
-
-	var finish := HBoxContainer.new()
-	finish.name = "TeaBrewingFinish"
-	finish.add_theme_constant_override("separation", 8)
-	_ignore_mouse(finish)
-	var preview_label := _wrapped_label(_tea_brewing_preview_label(preview), 10)
-	preview_label.name = "TeaBrewingPreview"
-	preview_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	preview_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	finish.add_child(preview_label)
-	var brew_button := _tea_brewing_command_button("차 우리기", GameCommand.new(GameCommand.Type.BREW_TEA))
-	brew_button.name = "BrewTeaButton"
-	brew_button.icon = _load_texture(ICON_TEA)
-	brew_button.expand_icon = true
-	brew_button.add_theme_constant_override("icon_max_width", 24)
-	brew_button.custom_minimum_size = Vector2(132, 38)
-	brew_button.add_theme_stylebox_override("normal", _button_style(Color(0.16, 0.27, 0.14, 0.96)))
-	brew_button.add_theme_stylebox_override("hover", _button_style(Color(0.24, 0.40, 0.18, 0.98)))
-	brew_button.add_theme_stylebox_override("pressed", _button_style(Color(0.38, 0.52, 0.20, 1.0)))
-	brew_button.disabled = not bool(model.get("can_brew", false))
-	finish.add_child(brew_button)
-	rows.append(finish)
-	return rows
-
-func _tea_brewing_selector_card(title: String, icon_reference: String, text: String, target: String, enabled: bool) -> PanelContainer:
-	var content := VBoxContainer.new()
-	content.custom_minimum_size = Vector2(132, 112)
-	content.alignment = BoxContainer.ALIGNMENT_CENTER
-	content.add_theme_constant_override("separation", 2)
-	_ignore_mouse(content)
-	var title_label := _label(title, 10)
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	content.add_child(title_label)
-	var icon := _item_icon_rect(icon_reference, Vector2(48, 48))
-	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	content.add_child(icon)
-	var name_label := _wrapped_label(text, 9)
-	name_label.custom_minimum_size = Vector2(124, 24)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	content.add_child(name_label)
-	var controls := HBoxContainer.new()
-	controls.alignment = BoxContainer.ALIGNMENT_CENTER
-	controls.add_theme_constant_override("separation", 4)
-	_ignore_mouse(controls)
-	var previous := _tea_brewing_command_button("‹", GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.LEFT, -1, {"target": target}))
-	previous.name = "%sPreviousButton" % target.capitalize()
-	previous.disabled = not enabled
-	controls.add_child(previous)
-	var next := _tea_brewing_command_button("›", GameCommand.new(GameCommand.Type.TEA_BREW_NAVIGATE, Vector2i.RIGHT, -1, {"target": target}))
-	next.name = "%sNextButton" % target.capitalize()
-	next.disabled = not enabled
-	controls.add_child(next)
-	content.add_child(controls)
-	var card := _card_frame(content, enabled)
-	card.name = "%sCard" % title
-	return card
-
-func _tea_brewing_stage_mark(text: String) -> Label:
-	var label := _label(text, 18)
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_color_override("font_color", Color(0.84, 0.65, 0.36, 1.0))
-	return label
-
-func _tea_brewing_selected_row(rows: Array, key: String, selected) -> Dictionary:
-	for row in rows:
-		if row.get(key) == selected:
-			return row
-	return rows[0] if not rows.is_empty() else {}
-
-func _tea_brewing_vessel_icon(vessel: Dictionary) -> String:
-	return _item_icon_reference(String(vessel.get("id", "")), "다구", vessel) if not vessel.is_empty() else ICON_TEA_WARE
-
-func _tea_brewing_leaf_label(leaf: Dictionary) -> String:
-	return "%s  ×%d" % [String(leaf.get("name", "")), int(leaf.get("quantity", 0))] if not leaf.is_empty() else "찻잎을 고르세요"
-
-func _tea_brewing_vessel_label(vessel: Dictionary) -> String:
-	return String(vessel.get("name", "")) if not vessel.is_empty() else "다구를 고르세요"
-
-func _tea_brewing_slot_label(slot: Dictionary) -> String:
-	return String(slot.get("label", "")) if not slot.is_empty() else "빈 찻잔이 없습니다"
-
-func _tea_brewing_command_button(text: String, command: GameCommand) -> Button:
-	return _command_button(text, command, Vector2(42, 22), Control.FOCUS_ALL)
-
-func _tea_brewing_preview_label(preview: Dictionary) -> String:
-	if not bool(preview.get("ok", false)):
-		match String(preview.get("reason", "")):
-			"missing_tea_leaf":
-				return "찻잎을 골라 주세요"
-			"unknown_vessel", "missing_vessel":
-				return "다구를 골라 주세요"
-			"missing_brewing_location":
-				return "찻상이 있는 곳에서 우릴 수 있습니다"
-			"quickslot_occupied":
-				return "다른 찻잔을 골라 주세요"
-			_:
-				return "찻잎과 다구를 골라 주세요"
-	var prepared: Dictionary = preview.get("prepared_tea", {})
-	var slot_status := "빈 칸" if not bool(preview.get("target_slot_occupied", false)) else "차 있음"
-	return "%s\n기운 +%d  ·  %d잔  ·  %.1f초  ·  %s" % [
-		String(prepared.get("tea_name", prepared.get("tea_id", ""))),
-		int(prepared.get("ki_recovery", 0)),
-		int(prepared.get("remaining_uses", 0)),
-		float(prepared.get("drink_seconds", 0.0)),
-		slot_status
-	]
-
-func _meta_codex_rows() -> Array:
-	var rows: Array = []
-	var model := _meta_codex_read_model()
-	if model.is_empty():
-		rows.append(_label("도감 read model 없음", 11))
-		return rows
-	rows.append(_icon_text_row(_meta_tab_icon(String(model.get("selected_tab", ""))), "%s · 발견 %d · 엔딩 %d" % [
-		_meta_tab_label(String(model.get("selected_tab", ""))),
-		int(_dictionary_value(model.get("counts", {})).get("discovered_records", 0)),
-		int(_dictionary_value(model.get("counts", {})).get("endings", 0))
-	], 11))
-	var tabs := HBoxContainer.new()
-	_ignore_mouse(tabs)
-	tabs.add_theme_constant_override("separation", 4)
-	for tab in _array_value(model.get("available_tabs", [])):
-		tabs.add_child(_meta_codex_command_button(_meta_tab_label(String(tab)), GameCommand.new(GameCommand.Type.META_CODEX_SET_TAB, Vector2i.ZERO, -1, {"tab": String(tab)})))
-	rows.append(tabs)
-	var filters := HBoxContainer.new()
-	_ignore_mouse(filters)
-	filters.add_theme_constant_override("separation", 4)
-	filters.add_child(_meta_codex_command_button("전체", GameCommand.new(GameCommand.Type.META_CODEX_SET_FILTER, Vector2i.ZERO, -1, {"filter": "all"})))
-	filters.add_child(_meta_codex_command_button("발견", GameCommand.new(GameCommand.Type.META_CODEX_SET_FILTER, Vector2i.ZERO, -1, {"filter": "discovered"})))
-	filters.add_child(_meta_codex_command_button("미발견", GameCommand.new(GameCommand.Type.META_CODEX_SET_FILTER, Vector2i.ZERO, -1, {"filter": "masked"})))
-	filters.add_child(_meta_codex_command_button("‹", GameCommand.new(GameCommand.Type.META_CODEX_NAVIGATE, Vector2i.LEFT)))
-	filters.add_child(_meta_codex_command_button("›", GameCommand.new(GameCommand.Type.META_CODEX_NAVIGATE, Vector2i.RIGHT)))
-	rows.append(filters)
-	var model_rows := _array_value(model.get("rows", []))
-	var detail := _dictionary_value(model.get("detail", {}))
-	var page_start := _page_start(model_rows, "id", String(detail.get("id", "")), 5)
-	var journal: BoxContainer = VBoxContainer.new() if _inventory_uses_compact_layout() else HBoxContainer.new()
-	journal.name = "CodexJournal"
-	journal.add_theme_constant_override("separation", 6)
-	var entries := GridContainer.new()
-	entries.name = "CodexEntryGrid"
-	entries.columns = 1 if _inventory_uses_compact_layout() else 2
-	entries.add_theme_constant_override("h_separation", 4)
-	entries.add_theme_constant_override("v_separation", 4)
-	for index in range(page_start, mini(model_rows.size(), page_start + 5)):
-		var row: Dictionary = model_rows[index]
-		entries.add_child(_meta_codex_option_card(row, String(model.get("selected_tab", "")), GameCommand.new(GameCommand.Type.META_CODEX_SELECT_DETAIL, Vector2i.ZERO, -1, {"id": String(row.get("id", ""))})))
-	journal.add_child(entries)
-	var detail_card := _detail_card("기록 상세")
-	detail_card.name = "CodexDetailCard"
-	detail_card.custom_minimum_size = Vector2(166, 90)
-	var detail_rows := detail_card.get_node("Rows") as VBoxContainer
-	detail_rows.add_child(_wrapped_label(_meta_detail_text(detail), 10))
-	journal.add_child(detail_card)
-	rows.append(journal)
-	if model_rows.size() > 5:
-		rows.append(_label("항목 %d-%d / %d" % [page_start + 1, mini(model_rows.size(), page_start + 5), model_rows.size()], 10))
-	return rows
-
-func _meta_codex_option_card(row: Dictionary, tab: String, command: GameCommand) -> Button:
-	var button := _meta_codex_command_button("%s\n%s" % [String(row.get("name", "")), String(row.get("summary", ""))], command)
-	button.custom_minimum_size = Vector2(136, 54)
-	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	button.icon = _load_texture(_meta_tab_icon(tab))
-	button.expand_icon = true
-	button.add_theme_constant_override("icon_max_width", 28)
-	button.add_theme_stylebox_override("normal", _menu_card_style(bool(row.get("selected", false))))
-	return button
-
-func _meta_codex_command_button(text: String, command: GameCommand) -> Button:
-	return _command_button(text, command, Vector2(40, 24), Control.FOCUS_ALL)
-
-func _meta_detail_text(detail: Dictionary) -> String:
-	if detail.is_empty():
-		return "표시할 항목 없음"
-	if bool(detail.get("masked", false)):
-		return "미발견 항목 — 스포일러를 가립니다"
-	var related := _dictionary_value(detail.get("related", {}))
-	var characters := _array_value(related.get("characters", []))
-	var memories := _array_value(related.get("memories", []))
-	var parts := [String(detail.get("name", detail.get("id", "")))]
-	if not characters.is_empty():
-		parts.append("인물 %s" % ", ".join(_related_names(characters)))
-	if not memories.is_empty():
-		parts.append("기억 %s" % ", ".join(_related_names(memories)))
-	return " · ".join(parts)
-
-func _related_names(rows: Array) -> Array:
-	var names := []
-	for row in rows:
-		if typeof(row) == TYPE_DICTIONARY:
-			names.append(String(row.get("name", row.get("id", ""))))
-		else:
-			names.append(String(row))
-	return names
-
-func _meta_tab_label(tab: String) -> String:
-	match tab:
-		"quests":
-			return "퀘스트"
-		"teas":
-			return "차"
-		"tea_ware":
-			return "다구"
-		"yokai":
-			return "요괴"
-		"memories":
-			return "기억"
-		_:
-			return tab
-
-func _meta_tab_icon(tab: String) -> String:
-	match tab:
-		"teas":
-			return ICON_TEA
-		"tea_ware":
-			return ICON_TEA_WARE
-		"yokai":
-			return ICON_KOKORO
-		"memories":
-			return ICON_SCROLL
-		_:
-			return ICON_SCROLL
-
-func _crafting_rows() -> Array:
-	var rows: Array = []
-	var model := _crafting_read_model(_crafting_filter, _selected_recipe_id)
-	if model.is_empty():
-		return rows
-	if not bool(model.get("ok", false)):
-		rows.append(_label("제작 read model 없음", 11))
-		return rows
-	_selected_recipe_id = String(model.get("selected_recipe_id", ""))
-	var counts: Dictionary = model.get("counts", {})
-	rows.append(_section_label("제작법 %d/%d · 가능 %d · 필터 %s" % [
-		int(counts.get("visible", 0)),
-		int(counts.get("total", 0)),
-		int(counts.get("craftable", 0)),
-		_filter_label(_crafting_filter)
-	]))
-	var filters := GridContainer.new()
-	filters.name = "CraftingFilterBar"
-	filters.columns = 3 if _inventory_uses_compact_layout() else 7
-	_ignore_mouse(filters)
-	filters.add_theme_constant_override("h_separation", 4)
-	filters.add_theme_constant_override("v_separation", 4)
-	for category in model.get("categories", []):
-		var category_id := String(category)
-		filters.add_child(_crafting_filter_button(_filter_label(category_id), category_id))
-	rows.append(filters)
-	rows.append(_section_label("제작법 목록"))
-	var model_rows: Array = model.get("rows", [])
-	# Keep the full recipe list visible; the menu is scrollable and hiding
-	# craftable entries behind an implicit six-item page made facilities appear
-	# to be missing.
-	var recipe_strip := GridContainer.new()
-	recipe_strip.name = "CraftingRecipeStrip"
-	recipe_strip.columns = 3
-	_ignore_mouse(recipe_strip)
-	recipe_strip.add_theme_constant_override("h_separation", 5)
-	recipe_strip.add_theme_constant_override("v_separation", 5)
-	for row_model in model_rows:
-		recipe_strip.add_child(_crafting_row(row_model))
-	rows.append(recipe_strip)
-	return rows
-
-func _crafting_row(row_model: Dictionary) -> Control:
-	var card := VBoxContainer.new()
-	card.name = "CraftingRecipeContent"
-	_ignore_mouse(card)
-	card.add_theme_constant_override("separation", 3)
-	var summary := VBoxContainer.new()
-	summary.name = "CraftingRecipeSummary"
-	_ignore_mouse(summary)
-	summary.add_theme_constant_override("separation", 2)
-	var icon_row := HBoxContainer.new()
-	_ignore_mouse(icon_row)
-	icon_row.add_theme_constant_override("separation", 4)
-	icon_row.add_child(_item_icon_rect(_crafting_result_icon_reference(row_model), Vector2(34, 34)))
-	icon_row.add_child(_item_icon_rect(_crafting_state_icon_reference(row_model), Vector2(16, 16)))
-	summary.add_child(icon_row)
-	var result := _dictionary_value(row_model.get("result", {}))
-	var label := _label("%s\n%s" % [
-		String(result.get("name", row_model.get("name", row_model.get("recipe_id", "")))),
-		String(row_model.get("reason_label", ""))
-	], 9)
-	UiContentBounds.fit_label(label, false, true)
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	summary.add_child(label)
-	card.add_child(summary)
-	var recipe_id := String(row_model.get("recipe_id", ""))
-	var button := _button()
-	button.name = "CraftingRecipeCard"
-	button.custom_minimum_size = Vector2(118, 88)
-	button.focus_mode = Control.FOCUS_ALL
-	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	button.tooltip_text = "%s 상세" % String(result.get("name", row_model.get("name", recipe_id)))
-	button.add_theme_stylebox_override("normal", _crafting_card_style(row_model))
-	button.add_theme_stylebox_override("hover", _menu_card_style(true))
-	button.add_theme_stylebox_override("pressed", _menu_card_style(true))
-	button.pressed.connect(func():
-		_show_crafting_detail_popup(recipe_id)
-	)
-	UiContentBounds.add_safe_content(button, card, Vector4(8, 8, 8, 8))
-	return button
-
-func _crafting_filter_button(text: String, category: String) -> Button:
-	var button := _button()
-	button.text = text
-	button.icon = _load_texture(_crafting_category_icon_reference(category))
-	button.expand_icon = true
-	button.add_theme_constant_override("icon_max_width", 18)
-	button.custom_minimum_size = Vector2(58, 30)
-	button.disabled = category == _crafting_filter
-	button.focus_mode = Control.FOCUS_ALL
-	button.mouse_filter = Control.MOUSE_FILTER_STOP
-	button.tooltip_text = text
-	button.pressed.connect(func():
-		_crafting_filter = category
-		_selected_recipe_id = ""
-		_refresh_open_menu()
-	)
-	return button
-
-func _crafting_state_icon_reference(row_model: Dictionary) -> String:
-	if bool(row_model.get("craftable", false)):
-		return ICON_CHECK
-	if String(row_model.get("reason", "")) == "missing_materials":
-		return ICON_MATERIAL
-	return ICON_TOOL
-
-func _crafting_category_icon_reference(category: String) -> String:
-	match category:
-		"다구":
-			return ICON_TEA_WARE
-		"도구":
-			return ICON_TOOL
-		"소모품":
-			return ICON_CONSUMABLE
-		"찻잎":
-			return ICON_TEA
-		"재료":
-			return ICON_MATERIAL
-		_:
-			return ICON_WORKBENCH
-
-func _crafting_detail_row(detail: Dictionary) -> Control:
-	if detail.is_empty():
-		return _detail_card_with_text("상세", "표시할 제작법 없음")
-	var result: Dictionary = detail.get("result", {})
-	var materials := []
-	for material in detail.get("materials", []):
-		materials.append("%s %d/%d" % [
-			String(material.get("name", material.get("item_id", ""))),
-			int(material.get("available", 0)),
-			int(material.get("required", 0))
-		])
-	var facilities := []
-	for facility in detail.get("facilities", []):
-		facilities.append("%s%s" % [
-			String(facility.get("name", facility.get("item_id", ""))),
-			"" if bool(facility.get("available", false)) else "(필요)"
-		])
-	var compact := _inventory_uses_compact_layout()
-	var card := _detail_card("제작 상세")
-	card.name = "CraftingDetailCard"
-	card.custom_minimum_size = Vector2(220, 42) if compact else Vector2(520, 42)
-	var rows := card.get_node("Rows") as VBoxContainer
-	var flow := HBoxContainer.new()
-	flow.name = "CraftingFlow"
-	flow.alignment = BoxContainer.ALIGNMENT_CENTER
-	flow.add_theme_constant_override("separation", 6)
-	for material in detail.get("materials", []):
-		var material_card := _card_frame(_icon_text_row(_inventory_item_icon_reference(material), "%s\n%d/%d" % [String(material.get("name", material.get("item_id", ""))), int(material.get("available", 0)), int(material.get("required", 0))], 9), false, true)
-		material_card.custom_minimum_size = Vector2(96, 56)
-		flow.add_child(material_card)
-	flow.add_child(_label("→", 18))
-	var result_card := _card_frame(_icon_text_row(_crafting_result_icon_reference(detail), "%s ×%d" % [
-		String(result.get("name", result.get("item_id", ""))),
-		int(result.get("quantity", 1))
-	], 11), true, true)
-	result_card.custom_minimum_size = Vector2(126, 56)
-	flow.add_child(result_card)
-	rows.add_child(flow)
-	rows.add_child(_label("상태 %s" % String(detail.get("reason_label", "")), 10))
-	var description := String(result.get("description", "")).strip_edges()
-	if not description.is_empty():
-		rows.add_child(_section_label("설명"))
-		rows.add_child(_wrapped_label(description, 10))
-	var facts := GridContainer.new()
-	facts.name = "CraftingFacts"
-	facts.columns = 1 if compact else 3
-	_ignore_mouse(facts)
-	facts.add_theme_constant_override("h_separation", 5)
-	facts.add_theme_constant_override("v_separation", 5)
-	facts.add_child(_crafting_fact_card("필요 재료", "없음" if materials.is_empty() else "\n".join(materials)))
-	facts.add_child(_crafting_fact_card("제작 방식", "손제작" if facilities.is_empty() else "\n".join(facilities)))
-	var unlock_biome_name := String(detail.get("unlock_biome_name", "")).strip_edges()
-	if not unlock_biome_name.is_empty():
-		facts.add_child(_crafting_fact_card("해금 조건", unlock_biome_name))
-	rows.add_child(facts)
-	var craft_button := _button()
-	craft_button.name = "CraftSelectedRecipeButton"
-	craft_button.custom_minimum_size = Vector2(160, 42)
-	craft_button.disabled = not bool(detail.get("craftable", false))
-	craft_button.focus_mode = Control.FOCUS_ALL
-	craft_button.mouse_filter = Control.MOUSE_FILTER_STOP
-	craft_button.tooltip_text = String(detail.get("reason_label", "제작"))
-	var craft_button_content := _icon_text_row(ICON_WORKBENCH, "제작", 12)
-	craft_button_content.alignment = BoxContainer.ALIGNMENT_CENTER
-	craft_button_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	(craft_button_content.get_child(1) as Label).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	UiContentBounds.add_safe_content(craft_button, craft_button_content, Vector4(8, 6, 8, 6))
-	var recipe_id := String(detail.get("recipe_id", ""))
-	craft_button.pressed.connect(func():
-		mobile_command_issued.emit(GameCommand.new(GameCommand.Type.CRAFT_RECIPE, Vector2i.ZERO, 0, {"recipe_id": recipe_id}))
-	)
-	rows.add_child(craft_button)
-	return card
-
-func _crafting_fact_card(title: String, text: String) -> PanelContainer:
-	var card := PanelContainer.new()
-	card.name = "CraftingFactCard"
-	card.custom_minimum_size = Vector2(120, 58)
-	_ignore_mouse(card)
-	card.add_theme_stylebox_override("panel", _menu_card_style(false))
-	var rows := VBoxContainer.new()
-	rows.name = "CenteredContent"
-	_ignore_mouse(rows)
-	rows.alignment = BoxContainer.ALIGNMENT_CENTER
-	rows.add_theme_constant_override("separation", 1)
-	UiContentBounds.add_safe_content(card, rows, Vector4(4, 4, 4, 4))
-	var title_label := _label(title, 9)
-	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	rows.add_child(title_label)
-	var text_label := _label(text, 10)
-	UiContentBounds.fit_label(text_label, false, true)
-	text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	text_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	rows.add_child(text_label)
-	return card
-
-func _show_crafting_detail_popup(recipe_id: String) -> void:
-	_selected_recipe_id = recipe_id
-	_refresh_open_menu()
-	var model := _crafting_read_model(_crafting_filter, recipe_id)
-	_show_detail_popup("제작 상세", _crafting_detail_row(model.get("detail", {})))
 
 func _show_detail_popup(title: String, content: Control) -> void:
 	_dismiss_detail_popup()

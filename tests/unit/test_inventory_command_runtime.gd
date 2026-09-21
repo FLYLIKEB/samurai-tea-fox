@@ -130,11 +130,11 @@ func _assert_hud_inventory_menu_uses_command_read_model(asserts) -> void:
 	var hud := GameHud.new()
 	hud.configure(FakePlayer.new(), {"biome_id": "common_region"}, {"counts": {}}, {"inventory": fixture[1], "inventory_command_runtime": runtime, "catalog": FakeHudCatalog.new()})
 	asserts.true_value(hud.show_inventory_menu(), "HUD opens command-backed inventory menu")
-	asserts.true_value(_tree_has_text(hud, "차 & 도구 (인벤토리) · 4/24"), "HUD shows capacity from inventory command read model")
+	asserts.true_value(_tree_has_text(hud, "4 / 24칸"), "HUD shows capacity from inventory command read model")
 	asserts.true_value(_tree_has_text(hud, "이전"), "HUD exposes previous navigation without dragging")
 	asserts.true_value(_tree_has_text(hud, "다음"), "HUD exposes next navigation without dragging")
 	asserts.true_value(_tree_has_text(hud, "정렬"), "HUD exposes sort command without dragging")
-	var selected_card := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip/InventorySlotCard%d" % selected_slot_index) as Button
+	var selected_card := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryShelf/InventorySlotStrip/InventorySlotCard%d" % selected_slot_index) as Button
 	asserts.true_value(selected_card != null, "HUD exposes the selected item as a touchable card")
 	if selected_card != null:
 		selected_card.pressed.emit()
@@ -145,7 +145,7 @@ func _assert_hud_inventory_menu_uses_command_read_model(asserts) -> void:
 	var tea_ware_row := _row_for_item(runtime, "ash_stained_iron_kettle")
 	runtime.handle_command(GameCommand.new(GameCommand.Type.INVENTORY_SELECT_SLOT, Vector2i.ZERO, int(tea_ware_row.slot_index), {"slot_index": int(tea_ware_row.slot_index)}))
 	hud.show_inventory_menu()
-	var tea_ware_card := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySlotStrip/InventorySlotCard%d" % int(tea_ware_row.slot_index)) as Button
+	var tea_ware_card := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryShelf/InventorySlotStrip/InventorySlotCard%d" % int(tea_ware_row.slot_index)) as Button
 	asserts.true_value(tea_ware_card != null, "HUD shows selected tea ware in inventory")
 	if tea_ware_card != null:
 		tea_ware_card.pressed.emit()
