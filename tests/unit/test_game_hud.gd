@@ -604,7 +604,7 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	var menu_panel := hud.get_node_or_null("Root/MenuPanel") as Control
 	asserts.true_value(menu_panel != null, "HUD owns the shared fast menu panel")
 	if menu_panel != null:
-		asserts.equal(int(round(menu_panel.custom_minimum_size.x)), 560, "fast menu expands to a near-full logical viewport width")
+		asserts.equal(int(round(menu_panel.custom_minimum_size.x)), 500, "fast menu uses the shared bounded popup width")
 		asserts.equal(int(round(menu_panel.custom_minimum_size.y)), 280, "fast menu expands to a near-full logical viewport height")
 		asserts.equal(int(round(menu_panel.anchor_left * 100.0)), 50, "fast menu anchors from the horizontal center")
 		asserts.equal(int(round(menu_panel.anchor_top * 100.0)), 50, "fast menu anchors from the vertical center")
@@ -633,6 +633,7 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	var inventory_popup := hud.get_node_or_null("Root/DetailPopup")
 	asserts.true_value(inventory_popup != null and inventory_popup.get_script() == DetailPopup, "inventory opens the shared detail popup")
 	asserts.true_value(_tree_has_text(inventory_popup, "wood"), "inventory popup shows the selected item")
+	asserts.equal((inventory_popup.get_node_or_null("PopupCenter/PopupPanel") as Control).custom_minimum_size.x, 420.0, "detail popup uses the shared bounded width")
 	asserts.true_value(inventory_popup.get_node_or_null("PopupCenter/PopupPanel/PopupRows/PopupHeader/CloseDetailPopupButton") is Button, "inventory popup exposes a touch-sized close button")
 	hud._dismiss_detail_popup()
 	asserts.true_value(hud.show_facilities_menu(), "HUD opens the facilities menu")

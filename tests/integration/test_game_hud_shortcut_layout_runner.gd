@@ -1,6 +1,7 @@
 extends SceneTree
 
 const GameHud = preload("res://src/ui/game_hud.gd")
+const UiPopupLayout = preload("res://src/ui/ui_popup_layout.gd")
 const VIEWPORTS := [Vector2i(1280, 720), Vector2i(640, 360), Vector2i(480, 270), Vector2i(360, 640)]
 
 var _failures: Array[String] = []
@@ -72,5 +73,13 @@ func _check_viewport(viewport_size: Vector2i) -> void:
 		for path in ["Root/DPadPanel", "Root/ActionPanel"]:
 			if bottom_nav.get_global_rect().intersects((hud.get_node(path) as Control).get_global_rect()):
 				_failures.append("%s bottom nav overlaps %s" % [viewport_size, path])
+	hud.show_inventory_menu()
+	await process_frame
+	hud._apply_safe_area_layout()
+	await process_frame
+	var menu_panel := hud.get_node("Root/MenuPanel") as Control
+	var expected_menu_size := UiPopupLayout.fitted_size(Vector2(500, 280), Vector2(viewport_size) - Vector2(24, 24))
+	if not is_equal_approx(menu_panel.size.x, expected_menu_size.x):
+		_failures.append("%s menu does not use shared popup bounds: %s" % [viewport_size, menu_panel.size])
 	viewport.queue_free()
 	await process_frame

@@ -17,6 +17,7 @@ const TESTS := [
 	preload("res://tests/unit/test_command_layer.gd"),
 	preload("res://tests/unit/test_game_hud.gd"),
 	preload("res://tests/unit/test_game_hud_shortcuts.gd"),
+	preload("res://tests/unit/test_ui_popup_layout.gd"),
 	preload("res://tests/unit/test_narrative_placeholder_backdrop.gd"),
 	preload("res://tests/unit/test_main_scene_overlays.gd"),
 	preload("res://tests/unit/test_world_tone_overlay.gd"),
