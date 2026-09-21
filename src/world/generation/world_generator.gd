@@ -96,6 +96,9 @@ const STARTING_HOME_BRIDGE_IDS := [
 ]
 
 const BALANCE_MIN_RESOURCE_NODES_ID := "biome_min_resource_nodes"
+const TREASURE_CHEST_COUNT := 3
+const TREASURE_CHEST_NODE_KIND := "treasure_chest"
+const TREASURE_CHEST_SOURCE_ID := "asset_assets_sprites_objects_village_props_wooden_treasure_chest_32x32_png"
 const TEMPLATE_PATH_SPINE := "path_spine"
 const TEMPLATE_WATER_STROKE := "water_stroke"
 const TEMPLATE_RESOURCE_CLUSTER := "resource_cluster"
@@ -1060,6 +1063,17 @@ func _place_resource_nodes(world_data: WorldData, rng: DeterministicRng, min_res
 			var access_position := _reachable_access_position(position, reachable_cells, cardinal_offsets)
 			if access_position != Vector2i(-1, -1) and _try_place_resource_node(world_data, position, access_position, ["bandage"], item_definitions, biome_rule_id, nodes, true):
 				break
+	var chest_resource_ids := _treasure_chest_resource_ids(resource_ids)
+	var chest_count := 0
+	for candidate_position in candidate_positions:
+		if chest_count >= TREASURE_CHEST_COUNT:
+			break
+		var position: Vector2i = candidate_position
+		if path_cell_keys.has(_key(position)) or not world_data.is_walkable(position) or not reachable_cells.has(_key(position)):
+			continue
+		var access_position := _reachable_access_position(position, reachable_cells, cardinal_offsets)
+		if access_position != Vector2i(-1, -1) and _try_place_resource_node(world_data, position, access_position, chest_resource_ids, item_definitions, biome_rule_id, nodes, false, "treasure_chest", TREASURE_CHEST_NODE_KIND, TREASURE_CHEST_SOURCE_ID):
+			chest_count += 1
 	return nodes
 
 func _template_path_key_set(templates: Array) -> Dictionary:
@@ -1068,15 +1082,19 @@ func _template_path_key_set(templates: Array) -> Dictionary:
 		path_keys[_key(position)] = true
 	return path_keys
 
-func _try_place_resource_node(world_data: WorldData, position: Vector2i, access_position: Vector2i, resource_ids: Array, item_definitions: Array, biome_rule_id: String, nodes: Array, ground_pickup := false) -> bool:
-	var owner_id := "resource_%d" % nodes.size()
+func _try_place_resource_node(world_data: WorldData, position: Vector2i, access_position: Vector2i, resource_ids: Array, item_definitions: Array, biome_rule_id: String, nodes: Array, ground_pickup := false, owner_prefix := "resource", node_kind_override := "", source_id := "") -> bool:
+	var owner_id := "%s_%d" % [owner_prefix, nodes.size()]
 	var resource_id: String = String(resource_ids[nodes.size() % resource_ids.size()])
 	var node_kind := _node_kind_for_resource_context(resource_id, biome_rule_id, item_definitions)
+	if not node_kind_override.is_empty():
+		node_kind = node_kind_override
 	var metadata := {"resource_id": resource_id, "biome_rule_id": biome_rule_id}
 	if ground_pickup:
 		metadata["ground_pickup"] = true
 	if not node_kind.is_empty():
 		metadata["node_kind"] = node_kind
+	if not source_id.is_empty():
+		metadata["source_id"] = source_id
 	var reserved := world_data.reserve_entity(owner_id, position, Vector2i.ONE, true, metadata)
 	if not reserved.ok:
 		return false
@@ -1107,6 +1125,14 @@ func _try_place_resource_node(world_data: WorldData, position: Vector2i, access_
 		node["node_kind"] = node_kind
 	nodes.append(node)
 	return true
+
+func _treasure_chest_resource_ids(resource_ids: Array) -> Array:
+	var chest_ids := []
+	for resource_id in resource_ids:
+		var id := String(resource_id)
+		if id != "clay" and id != "bandage":
+			chest_ids.append(id)
+	return chest_ids if not chest_ids.is_empty() else resource_ids
 
 func _item_is_available_in_biome(item_id: String, biome_id: String, item_definitions: Array) -> bool:
 	var item := _item_definition_by_id(item_definitions, item_id)

@@ -49,6 +49,7 @@ func run(asserts) -> void:
 	_assert_teleport_landmark_metadata(asserts, a.world_data, "common_region")
 	_assert_core_dungeon_contract(asserts, a, "common_region", "dungeon_4", "chr_3")
 	_assert_renderer_source_paths_exist(asserts, a.renderer_input)
+	_assert_treasure_chests(asserts, a)
 	_assert_large_fenced_house(asserts, a)
 	_assert_path_edge_fences(asserts, a)
 	_assert_tree_obstacles_render_over_base(asserts, a, WorldGenerator.TERRAIN_FOREST, _terrain_source_id(WorldGenerator.TERRAIN_GRASS), _tree_source_id(WorldGenerator.TERRAIN_FOREST), "common forest")
@@ -92,6 +93,7 @@ func run(asserts) -> void:
 		asserts.true_value(generated.resource_nodes.size() >= generated.min_resource_nodes, "seed %d places minimum resources" % seed)
 		asserts.equal(_resource_count(generated.resource_nodes, "clay"), 5, "seed %d preserves the common-map clay allocation" % seed)
 		asserts.equal(_resource_count(generated.resource_nodes, "bandage"), 1, "seed %d places one bandage pickup" % seed)
+		_assert_treasure_chests(asserts, generated, "seed %d" % seed)
 		_assert_renderer_source_paths_exist(asserts, generated.renderer_input)
 		_assert_resource_accessibility(asserts, generated)
 		_assert_common_templates(asserts, generated)
@@ -725,6 +727,18 @@ func _assert_resources_near_templates(asserts, world: Dictionary) -> void:
 				near_template = true
 				break
 		asserts.true_value(near_template, "%s resource is clustered near a path, landmark, or template anchor" % node.id)
+
+func _assert_treasure_chests(asserts, world: Dictionary, label := "world") -> void:
+	var chest_nodes := []
+	var entity_sources := _layer_source_ids_by_owner(world.renderer_input, WorldData.LAYER_ENTITIES)
+	for node in world.resource_nodes:
+		if String(node.get("node_kind", "")) == WorldGenerator.TREASURE_CHEST_NODE_KIND:
+			chest_nodes.append(node)
+	asserts.equal(chest_nodes.size(), WorldGenerator.TREASURE_CHEST_COUNT, "%s places deterministic treasure chests" % label)
+	for node in chest_nodes:
+		asserts.true_value(String(node.get("id", "")).begins_with("treasure_chest_"), "%s uses stable treasure chest ids" % node.id)
+		asserts.true_value(String(node.get("resource_id", "")) != "clay", "%s does not perturb common clay resource counts" % node.id)
+		asserts.equal(String(entity_sources.get(String(node.id), "")), WorldGenerator.TREASURE_CHEST_SOURCE_ID, "%s renders with the treasure chest asset" % node.id)
 
 func _template_by_id(world: Dictionary, template_id: String) -> Dictionary:
 	for template in world.get("templates", []):

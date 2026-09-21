@@ -52,6 +52,7 @@ func run(asserts) -> void:
 	_assert_repair_hammer_runtime_commands_save_and_reset(asserts, catalog)
 	_assert_biome_transition_scopes_acquisition_snapshots(asserts, catalog)
 	_assert_failed_biome_transition_rolls_back_acquisition_scope(asserts, catalog)
+	_assert_treasure_chest_runtime_opens_once_and_saves(asserts, catalog)
 	var runtime := _configured_runtime(catalog, RunState.new())
 	asserts.true_value(runtime.result.ok, "main configures acquisition against generated world data: %s" % runtime.result.get("error", ""))
 	if not runtime.result.ok:
@@ -468,6 +469,34 @@ func _assert_rainforest_runtime_sources(asserts, runtime: Main) -> void:
 		has_agarwood_source = true
 	asserts.true_value(has_agarwood_source, "rainforest runtime generates sourced agarwood resources")
 	asserts.true_value(has_incense_gatherable, "rainforest runtime registers confirmed 침향 rare resources")
+
+func _assert_treasure_chest_runtime_opens_once_and_saves(asserts, catalog: DataCatalog) -> void:
+	var runtime := _transition_runtime(catalog, "dev140_treasure_chest")
+	asserts.true_value(runtime.result.ok, "treasure chest fixture configures")
+	if not runtime.result.ok:
+		_cleanup_transition_runtime(runtime.main)
+		return
+	var chest_node := {}
+	for node in runtime.main.generated_world.get("resource_nodes", []):
+		if String(node.get("node_kind", "")) == WorldGenerator.TREASURE_CHEST_NODE_KIND:
+			chest_node = node
+			break
+	asserts.false_value(chest_node.is_empty(), "generated world exposes treasure chest resource nodes")
+	var chest_id := String(chest_node.get("id", ""))
+	var reward_id := String(chest_node.get("resource_id", ""))
+	var before_quantity: int = runtime.main.inventory.get_total_quantity(reward_id)
+	asserts.true_value(runtime.main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": chest_id})), "treasure chest opens through the shared acquisition command")
+	asserts.equal(runtime.main.inventory.get_total_quantity(reward_id), before_quantity + 1, "treasure chest grants its deterministic resource reward")
+	asserts.true_value(runtime.main.acquisition_service.gatherable_for(chest_id).depleted, "opened treasure chest is depleted")
+	asserts.false_value(runtime.main.submit_mobile_action_command(GameCommand.new(GameCommand.Type.INTERACT, Vector2i.ZERO, -1, {"target_id": chest_id})), "opened treasure chest cannot grant twice")
+	var saved_state: RunState = RunState.from_dictionary(runtime.main.snapshot_run_state())
+	var restored := _transition_runtime(catalog, "dev140_treasure_chest_restore", saved_state)
+	asserts.true_value(restored.result.ok, "treasure chest depletion restores")
+	if restored.result.ok:
+		asserts.true_value(restored.main.acquisition_service.gatherable_for(chest_id).depleted, "restored treasure chest remains depleted")
+		asserts.equal(restored.main.inventory.get_total_quantity(reward_id), before_quantity + 1, "restored run keeps the chest reward once")
+	_cleanup_transition_runtime(restored.main)
+	_cleanup_transition_runtime(runtime.main)
 
 func _assert_main_crafting_context_uses_current_run_unlocks(asserts) -> void:
 	var runtime := Main.new()
