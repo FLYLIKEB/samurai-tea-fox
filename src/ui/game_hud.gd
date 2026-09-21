@@ -57,7 +57,7 @@ const RESOURCE_DETAIL_PANEL_SIZE := Vector2(172, 62)
 const ENEMY_PANEL_SIZE := Vector2(136, 46)
 const MAP_PANEL_SIZE := Vector2(128, 120)
 const MAP_PANEL_TIME_HEIGHT := 120.0
-const QUICKSLOT_PANEL_SIZE := Vector2(172, 26)
+const QUICKSLOT_PANEL_SIZE := Vector2(248, 44)
 const DPAD_BOARD_SIZE := Vector2(96, 96)
 const ACTION_BUTTON_SIZE := Vector2(48, 48)
 const SECONDARY_ACTION_ICON_BUTTON_SIZE := Vector2(20, 20)
@@ -619,6 +619,8 @@ func _build() -> void:
 	_labels.abilities = _add_icon_row(quick_rows, ICON_ABILITY, "요술")
 	for label_id in ["inventory", "tea_slots", "consumable", "abilities"]:
 		(_labels[label_id] as Label).add_theme_font_size_override("font_size", 10)
+	for row in quick_rows.get_children():
+		(row as Control).size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 	var dpad_panel := _unstyled_panel(DPAD_BOARD_SIZE)
 	dpad_panel.name = "DPadPanel"
