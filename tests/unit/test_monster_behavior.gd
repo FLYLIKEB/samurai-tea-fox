@@ -18,13 +18,25 @@ class FakeCatalog:
 				return definition
 		return {}
 
+class FakeRuntimeDefinition:
+	extends RefCounted
+	var behavior_type: String
+	var attack := 10
+	var attack_period_seconds := 1.0
+	var movement_speed := 2.0
+
+	func _init(initial_behavior_type: String) -> void:
+		behavior_type = initial_behavior_type
+
 func run(asserts) -> void:
 	_assert_definition_requires_supported_behavior(asserts)
+	_assert_runtime_rejects_unsupported_behavior_before_idle(asserts)
 	_assert_factory_builds_shared_runtime_with_role_strategies(asserts)
 	_assert_target_detection_and_loss(asserts)
 	_assert_melee_and_attack_cadence(asserts)
 	_assert_delta_ticks_are_deterministic(asserts)
 	_assert_charge_windup_transition(asserts)
+	_assert_charge_interrupts_reset_windup(asserts)
 	_assert_ranged_distance_control(asserts)
 	_assert_disruptor_and_rare_actions(asserts)
 	_assert_stagger_interrupts_behavior(asserts)
@@ -40,6 +52,20 @@ func _assert_definition_requires_supported_behavior(asserts) -> void:
 	asserts.false_value(missing.ok, "missing behavior type is rejected")
 	var unsupported: Dictionary = MonsterDefinition.from_dictionary(_monster("unknown", "순간이동", 10, 1.8, 1.6))
 	asserts.false_value(unsupported.ok, "unsupported behavior type is rejected")
+
+func _assert_runtime_rejects_unsupported_behavior_before_idle(asserts) -> void:
+	var runtime := MonsterBehaviorRuntime.new(FakeRuntimeDefinition.new("순간이동"), "monster_unsupported")
+	asserts.true_value(
+		runtime.initialization_error().contains("Unsupported monster behavior type"),
+		"runtime construction records unsupported behavior before ticking"
+	)
+	var command: Dictionary = runtime.tick(
+		0.0,
+		_observation(Vector2i(1, 1), Vector2i(2, 1), true),
+		WorldData.new(8, 8)
+	)
+	asserts.equal(command.type, "error", "unsupported runtime cannot quietly idle in release")
+	asserts.equal(command.reason, "unsupported_behavior", "unsupported runtime reports a stable error reason")
 
 func _assert_factory_builds_shared_runtime_with_role_strategies(asserts) -> void:
 	var factory := MonsterSpawnFactory.new(FakeCatalog.new([
@@ -110,6 +136,31 @@ func _assert_charge_windup_transition(asserts) -> void:
 	var charge: Dictionary = runtime.tick(0.0, observation, world)
 	asserts.equal(charge.type, "navigate", "completed windup emits charge navigation")
 	asserts.equal(charge.reason, "charge", "charge command preserves strategy reason")
+
+func _assert_charge_interrupts_reset_windup(asserts) -> void:
+	var world := WorldData.new(8, 8)
+	var target_loss = _runtime("돌진")
+	var windup := _observation(Vector2i(1, 1), Vector2i(4, 1), false)
+	windup["charge_opportunity"] = true
+	target_loss.tick(0.0, windup, world)
+	target_loss.tick(0.0, {"detected": false}, world)
+	var resumed: Dictionary = target_loss.tick(
+		0.0,
+		_observation(Vector2i(1, 1), Vector2i(2, 1), true),
+		world
+	)
+	asserts.equal(resumed.attack_kind, "charge_melee", "target loss clears pending charge windup")
+
+	var stagger = _runtime("돌진")
+	stagger.tick(0.0, windup, world)
+	stagger.interrupt_for_stagger(0.1)
+	stagger.tick(0.05, _observation(Vector2i(1, 1), Vector2i(2, 1), true), world)
+	var after_stagger: Dictionary = stagger.tick(
+		0.05,
+		_observation(Vector2i(1, 1), Vector2i(2, 1), true),
+		world
+	)
+	asserts.equal(after_stagger.attack_kind, "charge_melee", "stagger clears pending charge windup")
 
 func _assert_ranged_distance_control(asserts) -> void:
 	var runtime = _runtime("원거리")
