@@ -704,7 +704,7 @@ func _build() -> void:
 	_panels.bottom_nav = bottom_nav
 	var bottom_nav_row := HBoxContainer.new()
 	bottom_nav_row.name = "BottomNavRow"
-	bottom_nav_row.add_theme_constant_override("separation", 2)
+	bottom_nav_row.add_theme_constant_override("separation", 5)
 	_ignore_mouse(bottom_nav_row)
 	bottom_nav.add_child(bottom_nav_row)
 	_add_bottom_nav_item(bottom_nav_row, "TeaBrewingNavButton", ICON_TEA_WARE, "다구", "open_tea_brewing")

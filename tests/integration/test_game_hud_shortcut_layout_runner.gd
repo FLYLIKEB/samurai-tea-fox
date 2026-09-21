@@ -54,6 +54,13 @@ func _check_viewport(viewport_size: Vector2i) -> void:
 			_failures.append("%s %s outside viewport" % [viewport_size, path])
 	if wide_landscape:
 		var bottom_nav := hud.get_node("Root/BottomNavPanel") as Control
+		var expected_label_centers := [Vector2(62, 36), Vector2(115, 36), Vector2(168, 36), Vector2(221, 36), Vector2(274, 36)]
+		var nav_buttons := bottom_nav.get_node("BottomNavRow").get_children()
+		for index in range(nav_buttons.size()):
+			var label := (nav_buttons[index] as Button).get_node("Label") as Label
+			var actual_center := label.get_global_rect().get_center() - bottom_nav.global_position
+			if actual_center.distance_to(expected_label_centers[index]) > 1.5:
+				_failures.append("%s bottom nav label %d misses frame content center: %s" % [viewport_size, index, actual_center])
 		for path in ["Root/DPadPanel", "Root/ActionPanel"]:
 			if bottom_nav.get_global_rect().intersects((hud.get_node(path) as Control).get_global_rect()):
 				_failures.append("%s bottom nav overlaps %s" % [viewport_size, path])

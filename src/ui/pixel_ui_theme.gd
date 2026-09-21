@@ -97,7 +97,7 @@ static func hud_minimap_style() -> StyleBoxTexture:
 	return _texture_style(HUD_MINIMAP_TEXTURE, Vector4.ZERO, Vector4(31, 29, 22, 9))
 
 static func hud_bottom_nav_style() -> StyleBoxTexture:
-	return _texture_style(HUD_BOTTOM_NAV_TEXTURE, Vector4.ZERO, Vector4(31, 9, 50, 8))
+	return _texture_style(HUD_BOTTOM_NAV_TEXTURE, Vector4.ZERO, Vector4(38, 9, 42, 16))
 
 static func hud_action_style(modulate := Color.WHITE) -> StyleBoxTexture:
 	var style := _texture_style(HUD_ACTION_TEXTURE, Vector4.ZERO, Vector4(4, 4, 4, 4))
