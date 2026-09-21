@@ -36,7 +36,7 @@ const PORTRAIT_PLAYER := "portrait_chr_8_muchau"
 
 const BALANCE_ABILITY_SLOTS_ID := "ability_equip_slots"
 const HUD_EDGE_GAP := 4.0
-const STATUS_PANEL_SIZE := Vector2(172, 90)
+const STATUS_PANEL_SIZE := Vector2(172, 96)
 const PORTRAIT_BOX_SIZE := Vector2(40, 40)
 const RESOURCE_ICON_COUNT := 5
 const RESOURCE_ICON_SIZE := Vector2(12, 12)
@@ -55,8 +55,8 @@ const EQUIPMENT_SLOT_SHORT_LABELS := {
 }
 const RESOURCE_DETAIL_PANEL_SIZE := Vector2(172, 62)
 const ENEMY_PANEL_SIZE := Vector2(136, 46)
-const MAP_PANEL_SIZE := Vector2(104, 48)
-const MAP_PANEL_TIME_HEIGHT := 70.0
+const MAP_PANEL_SIZE := Vector2(128, 120)
+const MAP_PANEL_TIME_HEIGHT := 120.0
 const QUICKSLOT_PANEL_SIZE := Vector2(172, 26)
 const DPAD_BOARD_SIZE := Vector2(96, 96)
 const ACTION_BUTTON_SIZE := Vector2(48, 48)
@@ -617,6 +617,8 @@ func _build() -> void:
 	_labels.tea_slots = _add_icon_row(quick_rows, ICON_KI, "차")
 	_labels.consumable = _add_icon_row(quick_rows, ICON_CONSUMABLE, "소모")
 	_labels.abilities = _add_icon_row(quick_rows, ICON_ABILITY, "요술")
+	for label_id in ["inventory", "tea_slots", "consumable", "abilities"]:
+		(_labels[label_id] as Label).add_theme_font_size_override("font_size", 10)
 
 	var dpad_panel := _unstyled_panel(DPAD_BOARD_SIZE)
 	dpad_panel.name = "DPadPanel"
