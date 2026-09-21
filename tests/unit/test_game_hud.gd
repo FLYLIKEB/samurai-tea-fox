@@ -610,7 +610,9 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 		asserts.equal(int(round(menu_panel.anchor_top * 100.0)), 50, "fast menu anchors from the vertical center")
 		asserts.true_value(_panel_uses_parchment_background(menu_panel), "fast menu uses the shared parchment background")
 	asserts.equal((hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll") as Control).mouse_filter, Control.MOUSE_FILTER_STOP, "menu scroll consumes touch input instead of moving the player")
-	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuTitleBar/CloseMenuButton") is Button, "fast menu exposes a stable close command button for layout checks")
+	var close_menu_button := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuTitleBar/CloseMenuButton") as Button
+	asserts.true_value(close_menu_button != null, "fast menu exposes a stable close command button for layout checks")
+	asserts.true_value(close_menu_button != null and close_menu_button.text == "×" and close_menu_button.custom_minimum_size == Vector2(38, 38), "fast menu exposes a legible touch-sized close glyph")
 	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySummary") != null, "inventory menu renders the icon-first capacity summary")
 	asserts.true_value(_tree_has_text(hud, "3 / 14칸"), "inventory menu renders capacity in Korean")
 	var inventory_toolbar := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryToolbar") as GridContainer
@@ -635,7 +637,8 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	asserts.true_value(inventory_popup != null and inventory_popup.get_script() == DetailPopup, "inventory opens the shared detail popup")
 	asserts.true_value(_tree_has_text(inventory_popup, "wood"), "inventory popup shows the selected item")
 	asserts.equal((inventory_popup.get_node_or_null("PopupCenter/PopupPanel") as Control).custom_minimum_size.x, 420.0, "detail popup uses the shared bounded width")
-	asserts.true_value(inventory_popup.get_node_or_null("PopupCenter/PopupPanel/PopupRows/PopupHeader/CloseDetailPopupButton") is Button, "inventory popup exposes a touch-sized close button")
+	var close_detail_button := inventory_popup.get_node_or_null("PopupCenter/PopupPanel/PopupRows/PopupHeader/CloseDetailPopupButton") as Button
+	asserts.true_value(close_detail_button != null and close_detail_button.text == "×" and close_detail_button.custom_minimum_size == Vector2(38, 38), "inventory popup exposes a legible touch-sized close button")
 	hud._dismiss_detail_popup()
 	asserts.true_value(hud.show_facilities_menu(), "HUD opens the facilities menu")
 	asserts.true_value(_tree_has_text(hud, "우물 (4,5)"), "facilities menu lists generated facility nodes")

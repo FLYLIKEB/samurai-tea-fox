@@ -33,10 +33,8 @@ func setup(title: String, content: Control, popup_size: Vector2, panel_style: St
 	heading.text = title
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(heading)
-	var close := UiContentBounds.fit_button(Button.new())
+	var close := UiContentBounds.fit_close_button(Button.new())
 	close.name = "CloseDetailPopupButton"
-	close.text = "닫기"
-	close.custom_minimum_size = Vector2(54, 30)
 	close.pressed.connect(dismiss)
 	header.add_child(close)
 	var scroll := ScrollContainer.new()

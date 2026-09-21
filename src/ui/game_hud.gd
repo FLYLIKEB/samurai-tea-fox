@@ -1105,9 +1105,8 @@ func _build_menu_panel(parent: PanelContainer) -> void:
 	_ignore_mouse(spacer)
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(spacer)
-	var close := _button()
+	var close := UiContentBounds.fit_close_button(_button())
 	close.name = "CloseMenuButton"
-	close.text = "닫기"
 	close.focus_mode = Control.FOCUS_NONE
 	close.mouse_filter = Control.MOUSE_FILTER_STOP
 	close.pressed.connect(func(): mobile_command_issued.emit(GameCommand.new(GameCommand.Type.HIDE_MENU)))

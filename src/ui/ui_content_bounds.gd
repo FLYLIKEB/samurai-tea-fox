@@ -16,6 +16,13 @@ static func fit_button(button: Button) -> Button:
 	button.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	return button
 
+static func fit_close_button(button: Button) -> Button:
+	fit_button(button)
+	button.text = "×"
+	button.custom_minimum_size = Vector2(38, 38)
+	button.add_theme_font_size_override("font_size", 22)
+	return button
+
 static func add_safe_content(button: Button, content: Control, margins := Vector4(6, 6, 6, 6)) -> MarginContainer:
 	fit_button(button)
 	var safe_area := MarginContainer.new()
