@@ -1,6 +1,8 @@
 class_name UiContentBounds
 extends RefCounted
 
+const PixelUiTheme = preload("res://src/ui/pixel_ui_theme.gd")
+
 static func fit_label(label: Label, wrap := false, bounded := false) -> Label:
 	label.clip_text = bounded
 	if bounded:
@@ -21,6 +23,10 @@ static func fit_close_button(button: Button) -> Button:
 	button.text = "×"
 	button.custom_minimum_size = Vector2(38, 38)
 	button.add_theme_font_size_override("font_size", 22)
+	button.add_theme_color_override("font_color", PixelUiTheme.INK_COLOR)
+	button.add_theme_color_override("font_hover_color", PixelUiTheme.INK_COLOR)
+	button.add_theme_stylebox_override("normal", PixelUiTheme.parchment_button_style())
+	button.add_theme_stylebox_override("hover", PixelUiTheme.parchment_button_style())
 	return button
 
 static func add_safe_content(button: Button, content: Control, margins := Vector4(6, 6, 6, 6)) -> MarginContainer:

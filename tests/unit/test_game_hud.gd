@@ -613,6 +613,9 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	var close_menu_button := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuTitleBar/CloseMenuButton") as Button
 	asserts.true_value(close_menu_button != null, "fast menu exposes a stable close command button for layout checks")
 	asserts.true_value(close_menu_button != null and close_menu_button.text == "×" and close_menu_button.custom_minimum_size == Vector2(38, 38), "fast menu exposes a legible touch-sized close glyph")
+	var close_normal_style := close_menu_button.get_theme_stylebox("normal") as StyleBoxTexture
+	var close_hover_style := close_menu_button.get_theme_stylebox("hover") as StyleBoxTexture
+	asserts.equal(close_hover_style.texture.resource_path, close_normal_style.texture.resource_path, "close glyph keeps the same frame when hovered")
 	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventorySummary") != null, "inventory menu renders the icon-first capacity summary")
 	asserts.true_value(_tree_has_text(hud, "3 / 14칸"), "inventory menu renders capacity in Korean")
 	var inventory_toolbar := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryToolbar") as GridContainer
