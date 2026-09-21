@@ -2,6 +2,7 @@ extends SceneTree
 
 const GameCommand = preload("res://src/core/commands/game_command.gd")
 const GameHud = preload("res://src/ui/game_hud.gd")
+const UiPopupLayout = preload("res://src/ui/ui_popup_layout.gd")
 const DataCatalog = preload("res://src/core/data/data_catalog.gd")
 const InventoryModel = preload("res://src/inventory/inventory_model.gd")
 const EquipmentModel = preload("res://src/inventory/equipment_model.gd")
@@ -89,12 +90,22 @@ func _settle(hud: GameHud) -> void:
 
 func _assert_inventory_leaf_menu(case_name: String, hud: GameHud, viewport_size: Vector2i) -> void:
 	_assert_visible_rect_inside(case_name, hud, "Root/MenuPanel", viewport_size)
+	var menu_panel := hud.get_node_or_null("Root/MenuPanel") as Control
+	var expected_width := UiPopupLayout.fitted_size(Vector2(500, 280), Vector2(viewport_size) - Vector2(24, 24)).x
+	if menu_panel != null and not is_equal_approx(menu_panel.size.x, expected_width):
+		_failures.append("%s populated inventory expands shared popup width: %s" % [case_name, menu_panel.size])
 	_assert_visible_rect_inside(case_name, hud, "Root/MenuPanel/MenuRows/MenuTitleBar", viewport_size)
 	_assert_visible_rect_inside(case_name, hud, "Root/MenuPanel/MenuRows/MenuTitleBar/MenuTitleLabel", viewport_size)
 	_assert_visible_rect_inside(case_name, hud, "Root/MenuPanel/MenuRows/MenuTitleBar/CloseMenuButton", viewport_size)
 	_assert_visible_rect_inside(case_name, hud, "Root/MenuPanel/MenuRows/MenuScroll", viewport_size)
 	_assert_visible_rect_inside(case_name, hud, "Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryToolbar", viewport_size)
 	_assert_visible_horizontal_inside(case_name, hud, "Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryShelf", viewport_size)
+	var shelf := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryShelf") as Control
+	if menu_panel != null and shelf != null:
+		var shelf_rect := shelf.get_global_rect()
+		var panel_rect := menu_panel.get_global_rect()
+		if shelf_rect.position.x < panel_rect.position.x or shelf_rect.end.x > panel_rect.end.x:
+			_failures.append("%s inventory shelf escapes shared popup horizontally: %s outside %s" % [case_name, shelf_rect, panel_rect])
 	for text in ["인벤토리", "전체", "찻잎", "소모품", "서호용정"]:
 		var node := _find_text_control(hud, text)
 		if node == null:

@@ -620,6 +620,7 @@ func _assert_fast_menus_show_runtime_read_models(asserts) -> void:
 	asserts.true_value(_tree_has_icon_button_with_text(inventory_toolbar, "정렬"), "inventory toolbar uses icon-backed touch commands")
 	var inventory_grid := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryShelf/InventorySlotStrip") as GridContainer
 	asserts.true_value(inventory_grid != null and inventory_grid.columns == 4, "inventory menu renders a mobile-friendly four-column grid")
+	asserts.true_value(hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryShelf") is VBoxContainer, "inventory shelf stacks preview below slots inside the shared popup width")
 	var inventory_card := hud.get_node_or_null("Root/MenuPanel/MenuRows/MenuScroll/MenuContent/InventoryShelf/InventorySlotStrip/InventorySlotCard0") as Button
 	asserts.true_value(inventory_card != null, "inventory menu renders slot cards")
 	asserts.true_value(_button_has_icon(inventory_card), "inventory slot cards render item images")

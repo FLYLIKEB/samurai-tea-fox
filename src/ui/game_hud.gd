@@ -1228,7 +1228,7 @@ func _inventory_rows() -> Array:
 		var visible_rows: Array = _inventory_display_rows(model.slots, int(model.get("selected_slot_index", -1)))
 		var page_start := _inventory_page_start(visible_rows, int(model.get("selected_slot_index", -1)), 8)
 		var page_end := mini(visible_rows.size(), page_start + 8)
-		var shelf: BoxContainer = VBoxContainer.new() if _inventory_uses_compact_layout() else HBoxContainer.new()
+		var shelf := VBoxContainer.new()
 		shelf.name = "InventoryShelf"
 		shelf.add_theme_constant_override("separation", 8)
 		var slot_strip := GridContainer.new()
